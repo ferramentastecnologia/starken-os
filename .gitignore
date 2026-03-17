@@ -1,0 +1,13 @@
+# Mac
+.DS_Store
+__MACOSX/
+*.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pdf
+*.xlsx
+
+# Pastas de clientes (PDFs ficam locais)
+ASSESSORIA/CLIENTES/

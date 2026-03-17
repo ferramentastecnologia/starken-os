@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find C:UsersjuanfOneDriveDocumentsASSESSORIA -type d -name *CLIENTES*)",
+      "Bash(python sync_relatorios.py)",
+      "Bash(where python3:*)",
+      "Bash(where python3.exe)",
+      "Bash(where py:*)",
+      "Bash(py --version)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\juanf\\\\OneDrive\\\\Documents\\\\ASSESSORIA\\\\sync_relatorios.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -NonInteractive -File \"C:\\\\Users\\\\juanf\\\\OneDrive\\\\Documents\\\\ASSESSORIA\\\\sync_relatorios.ps1\")"
+    ]
+  }
+}

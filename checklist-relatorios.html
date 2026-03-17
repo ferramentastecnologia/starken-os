@@ -1,0 +1,2384 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checklist de Relatórios - Starken & Alpha</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --starken: #3b82f6;
+  --starken-bg: #eff6ff;
+  --starken-border: #bfdbfe;
+  --starken-dark: #1d4ed8;
+  --alpha: #10b981;
+  --alpha-bg: #ecfdf5;
+  --alpha-border: #a7f3d0;
+  --alpha-dark: #059669;
+  --bg: #f1f5f9;
+  --bg-subtle: #f8fafc;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --text: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --warning-bg: #fffbeb;
+  --purple: #8b5cf6;
+  --purple-bg: #f5f3ff;
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --whatsapp: #25d366;
+  --whatsapp-dark: #128c7e;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.04);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ===== LAYOUT ===== */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 220px;
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  color: white;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s;
+}
+
+.sidebar-brand {
+  padding: 20px 16px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-brand h1 { font-size: 0.95rem; font-weight: 800; line-height: 1.3; }
+.sidebar-brand span { font-size: 0.65rem; color: rgba(255,255,255,0.45); font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 4px; }
+
+.sidebar-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+
+.sidebar-nav button {
+  width: 100%; text-align: left; background: none; border: none;
+  color: rgba(255,255,255,0.55); padding: 9px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 0.82rem; font-weight: 500;
+  display: flex; align-items: center; gap: 9px; transition: all 0.15s; margin-bottom: 1px; font-family: inherit;
+}
+.sidebar-nav button:hover { background: rgba(255,255,255,0.08); color: white; }
+.sidebar-nav button.active { background: rgba(255,255,255,0.12); color: white; font-weight: 600; }
+.sidebar-nav button .icon { font-size: 1rem; width: 20px; text-align: center; }
+.sidebar-nav button.sub { padding-left: 22px; font-size: 0.79rem; }
+
+.nav-category {
+  font-size: 0.63rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+  color: rgba(255,255,255,0.28); padding: 10px 12px 4px; margin-top: 4px;
+}
+
+.sidebar-footer { padding: 10px 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+.sidebar-footer button {
+  width: 100%; text-align: left; background: none; border: none;
+  color: rgba(255,255,255,0.45); padding: 7px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 0.75rem; font-weight: 500;
+  display: flex; align-items: center; gap: 7px; transition: all 0.15s; font-family: inherit;
+}
+.sidebar-footer button:hover { background: rgba(255,255,255,0.08); color: white; }
+
+.menu-toggle {
+  display: none; position: fixed; top: 10px; left: 10px; z-index: 200;
+  background: var(--text); color: white; border: none; width: 38px; height: 38px;
+  border-radius: var(--radius-sm); cursor: pointer; font-size: 1.1rem; box-shadow: var(--shadow-md);
+}
+
+.content { margin-left: 220px; flex: 1; min-height: 100vh; }
+
+.topbar {
+  background: var(--card); border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.topbar-title { font-size: 1.05rem; font-weight: 700; }
+
+.main { padding: 20px 24px; max-width: 1400px; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  padding: 20px; margin-bottom: 16px; border: 1px solid var(--border);
+}
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+}
+.card-title { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+
+/* ===== STATS ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+
+.stat-card {
+  background: var(--card); border-radius: var(--radius); padding: 16px;
+  border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.stat-card.starken::before { background: var(--starken); }
+.stat-card.alpha::before { background: var(--alpha); }
+.stat-card.warning::before { background: var(--warning); }
+.stat-card.success::before { background: var(--success); }
+
+.stat-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; margin-bottom: 10px;
+}
+.stat-card.starken .stat-icon { background: var(--starken-bg); }
+.stat-card.alpha .stat-icon { background: var(--alpha-bg); }
+.stat-card.warning .stat-icon { background: var(--warning-bg); }
+.stat-card.success .stat-icon { background: var(--success-bg); }
+
+.stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+.stat-value { font-size: 1.5rem; font-weight: 800; }
+
+/* ===== TWO COLUMN LAYOUT ===== */
+.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.company-column {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.column-header {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.column-header.starken {
+  background: linear-gradient(135deg, var(--starken), var(--starken-dark));
+  color: white;
+}
+
+.column-header.alpha {
+  background: linear-gradient(135deg, var(--alpha), var(--alpha-dark));
+  color: white;
+}
+
+.column-header .count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.col-seg-filter {
+  font-size: 0.72rem;
+  font-family: inherit;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.2);
+  color: white;
+  cursor: pointer;
+}
+.col-seg-filter option {
+  background: #1e293b;
+  color: white;
+}
+
+.column-body { padding: 12px; }
+
+.column-empty {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ===== CLIENT ROW ===== */
+.client-row {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  background: white;
+  transition: all 0.15s;
+}
+
+.client-row:hover { border-color: var(--text-muted); box-shadow: var(--shadow); }
+.client-row.status-2 { background: #f0fdf4; border-color: var(--alpha-border); }
+.client-row.status-1 { background: #eef2ff; border-color: #c7d2fe; }
+.client-row.dragging { opacity: 0.35; }
+.client-row.drag-over { border-color: var(--starken); box-shadow: 0 0 0 2px rgba(59,130,246,0.18); }
+
+.drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 1rem;
+  padding: 0 3px;
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+.drag-handle:active { cursor: grabbing; }
+
+.client-row-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.client-avatar {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.72rem; color: white; flex-shrink: 0;
+}
+.client-avatar.starken { background: linear-gradient(135deg, var(--starken), var(--starken-dark)); }
+.client-avatar.alpha { background: linear-gradient(135deg, var(--alpha), var(--alpha-dark)); }
+
+.client-name { font-weight: 600; font-size: 0.85rem; flex: 1; }
+
+.client-row-bottom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.client-row-bottom input[type="text"] {
+  flex: 1;
+  min-width: 100px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg-subtle);
+}
+.client-row-bottom input:focus {
+  outline: none; border-color: var(--starken); background: white;
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.08);
+}
+
+/* ===== STATUS SELECT ===== */
+.status-select {
+  padding: 5px 28px 5px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 10px;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  letter-spacing: 0.2px;
+}
+
+.status-select:hover { filter: brightness(0.95); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.status-select:focus { outline: none; }
+
+.status-select.s0 {
+  background-color: #fef9c3;
+  color: #854d0e;
+  border-color: #fde047;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23854d0e'/%3E%3C/svg%3E");
+}
+.status-select.s1 {
+  background-color: #ede9fe;
+  color: #4c1d95;
+  border-color: #a78bfa;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234c1d95'/%3E%3C/svg%3E");
+}
+.status-select.s2 {
+  background-color: #dcfce7;
+  color: #14532d;
+  border-color: #4ade80;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2314532d'/%3E%3C/svg%3E");
+}
+
+.status-select option { background: white; color: var(--text); font-weight: 600; }
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-flex; align-items: center; padding: 2px 9px;
+  border-radius: 20px; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.3px;
+}
+.badge-starken { background: var(--starken-bg); color: var(--starken-dark); border: 1px solid var(--starken-border); }
+.badge-alpha { background: var(--alpha-bg); color: var(--alpha-dark); border: 1px solid var(--alpha-border); }
+
+.status-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+}
+.status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-pending .dot { background: #f59e0b; }
+.status-generated { background: #e0e7ff; color: #3730a3; }
+.status-generated .dot { background: #6366f1; }
+.status-sent { background: #dcfce7; color: #166534; }
+.status-sent .dot { background: #22c55e; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 6px 14px; border-radius: var(--radius-sm); font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 5px; font-family: inherit;
+}
+.btn-primary { background: var(--starken); color: white; }
+.btn-primary:hover { background: var(--starken-dark); }
+.btn-success { background: var(--alpha); color: white; }
+.btn-success:hover { background: var(--alpha-dark); }
+.btn-danger { background: #fee2e2; color: #dc2626; }
+.btn-danger:hover { background: #fecaca; }
+.btn-outline { background: white; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-outline:hover { background: var(--bg); }
+.btn-sm { padding: 4px 9px; font-size: 0.75rem; }
+.btn-whatsapp { background: var(--whatsapp); color: white; padding: 4px 10px; font-size: 0.72rem; }
+.btn-whatsapp:hover { background: var(--whatsapp-dark); }
+
+/* ===== PERIOD SELECTOR ===== */
+.period-bar {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 16px; padding: 12px 16px;
+  background: var(--bg-subtle); border-radius: var(--radius-sm); border: 1px solid var(--border);
+}
+
+.period-bar label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+
+.period-bar select, .period-bar input {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.82rem; font-family: inherit; color: var(--text); background: white;
+}
+
+.period-nav {
+  display: flex; align-items: center; gap: 4px;
+}
+
+.period-nav button {
+  background: white; border: 1px solid var(--border); width: 28px; height: 28px;
+  border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; color: var(--text-secondary); transition: all 0.15s;
+}
+.period-nav button:hover { background: var(--starken-bg); color: var(--starken); border-color: var(--starken-border); }
+
+.period-label { font-weight: 700; font-size: 0.85rem; min-width: 140px; text-align: center; }
+
+/* ===== TABLE ===== */
+.table-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-light); }
+th { background: var(--bg-subtle); font-weight: 600; color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; }
+tbody tr:hover { background: var(--bg-subtle); }
+
+/* ===== FORMS ===== */
+.form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.form-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); }
+.form-input {
+  padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: 0.85rem; font-family: inherit; color: var(--text); background: white;
+}
+.form-input:focus { outline: none; border-color: var(--starken); box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6);
+  backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: white; border-radius: var(--radius); padding: 24px;
+  max-width: 480px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow-lg);
+}
+.modal h3 { font-size: 1rem; font-weight: 700; margin-bottom: 16px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-light); }
+
+/* ===== PROGRESS ===== */
+.progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s; }
+.progress-fill.starken { background: linear-gradient(90deg, var(--starken), #60a5fa); }
+.progress-fill.alpha { background: linear-gradient(90deg, var(--alpha), #34d399); }
+
+/* ===== FILTER BAR ===== */
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.filter-bar select {
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 0.8rem; font-family: inherit; color: var(--text-secondary); background: white;
+}
+
+/* ===== EMPTY ===== */
+.empty-state { text-align: center; padding: 40px 16px; color: var(--text-muted); }
+.empty-state .empty-icon { font-size: 2rem; margin-bottom: 10px; opacity: 0.5; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: 20px; right: 20px; background: var(--text); color: white;
+  padding: 10px 18px; border-radius: var(--radius-sm); font-size: 0.82rem; font-weight: 500;
+  z-index: 2000; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.5s forwards;
+  box-shadow: var(--shadow-lg); font-family: inherit;
+}
+@keyframes toastIn { from { transform: translateY(14px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(6px); } }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1024px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .two-columns { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .menu-toggle { display: flex; align-items: center; justify-content: center; }
+  .content { margin-left: 0; }
+  .topbar { padding: 14px 14px 14px 56px; }
+  .main { padding: 14px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
+
+/* ===== CONTENT APPROVAL ===== */
+.ca-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px; }
+.ca-bar select, .ca-bar input[type="text"] {
+  padding:7px 11px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  font-size:0.84rem; font-family:inherit; color:var(--text); background:white;
+}
+.ca-bar select:focus, .ca-bar input:focus { outline:none; border-color:var(--starken); }
+.ca-bar label { font-size:0.8rem; font-weight:600; color:var(--text-secondary); }
+
+.ca-empty { text-align:center; padding:50px 20px; color:var(--text-muted); font-size:0.9rem; }
+.ca-empty-icon { font-size:2.5rem; margin-bottom:10px; }
+
+.ca-post-card {
+  background:white; border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); padding:16px; margin-bottom:12px;
+  display:grid; grid-template-columns:36px 1fr 36px; gap:12px; align-items:start;
+  transition: box-shadow 0.15s;
+}
+.ca-post-card:hover { box-shadow:var(--shadow-md); }
+
+.ca-num {
+  width:32px; height:32px; border-radius:50%; background:var(--bg);
+  border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+  font-size:0.75rem; font-weight:700; color:var(--text-secondary); flex-shrink:0;
+  margin-top:2px;
+}
+.ca-remove-btn {
+  width:32px; height:32px; border-radius:6px; border:1px solid #fecaca;
+  background:#fff5f5; color:#ef4444; cursor:pointer; font-size:0.85rem;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  margin-top:2px; transition: background 0.15s;
+}
+.ca-remove-btn:hover { background:#fee2e2; }
+
+.ca-fields { display:flex; flex-direction:column; gap:10px; }
+.ca-field-row { display:grid; grid-template-columns:130px 1fr; gap:10px; }
+.ca-field-row3 { display:grid; grid-template-columns:120px 1fr 1fr; gap:10px; }
+
+.ca-label { font-size:0.75rem; font-weight:600; color:var(--text-secondary); margin-bottom:4px; display:block; }
+.ca-input {
+  width:100%; padding:7px 10px; border:1px solid var(--border); border-radius:6px;
+  font-size:0.83rem; font-family:inherit; color:var(--text); background:var(--bg-subtle);
+  transition: border-color 0.15s, background 0.15s;
+}
+.ca-input:focus { outline:none; border-color:var(--starken); background:white; box-shadow:0 0 0 2px rgba(59,130,246,0.08); }
+textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
+
+.ca-image-area {
+  border:2px dashed var(--border); border-radius:8px; padding:14px;
+  text-align:center; cursor:pointer; color:var(--text-muted); font-size:0.8rem;
+  transition: border-color 0.15s, background 0.15s; background:var(--bg-subtle);
+  min-height:60px; display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px;
+}
+.ca-image-area:hover { border-color:var(--starken); background:#f0f7ff; }
+.ca-image-thumb { max-width:100%; max-height:120px; border-radius:6px; display:block; margin:0 auto; }
+
+.ca-type-badge {
+  display:inline-block; padding:3px 10px; border-radius:20px; font-size:0.7rem;
+  font-weight:700; letter-spacing:0.4px; margin-bottom:2px;
+}
+.ca-type-feed { background:#eff6ff; color:#1d4ed8; }
+.ca-type-stories { background:#fff7ed; color:#c2410c; }
+.ca-type-reels { background:#fdf4ff; color:#7e22ce; }
+
+/* ===== PRINT WINDOW (Approval PDF) ===== */
+@media print {
+  .no-print { display:none !important; }
+}
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h1>Checklist</h1>
+      <span>Starken & Alpha</span>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="active" onclick="switchTab('dashboard')"><span class="icon">&#9632;</span> Dashboard</button>
+
+      <div class="nav-category">Relatórios</div>
+      <button class="sub" onclick="switchTab('weekly')"><span class="icon">&#128197;</span> Semanal</button>
+      <button class="sub" onclick="switchTab('monthly')"><span class="icon">&#128198;</span> Mensal</button>
+
+      <div class="nav-category">Cronogramas</div>
+      <button class="sub" onclick="switchTab('sched-weekly')"><span class="icon">&#128197;</span> Semanal</button>
+      <button class="sub" onclick="switchTab('content-approval')"><span class="icon">&#128203;</span> Aprovação</button>
+
+      <div class="nav-category">Geral</div>
+      <button class="sub" onclick="switchTab('clients')"><span class="icon">&#128101;</span> Clientes</button>
+      <button class="sub" onclick="switchTab('history')"><span class="icon">&#128203;</span> Histórico</button>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="document.getElementById('syncFile').click()" style="color:#10b981">&#128260; Sincronizar Relatórios</button>
+      <input type="file" id="syncFile" accept=".json" style="display:none" onchange="importSyncData(event)">
+      <button onclick="exportData()">&#128229; Exportar Backup</button>
+      <button onclick="document.getElementById('importFile').click()">&#128228; Importar Backup</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+    </div>
+  </aside>
+
+  <div class="content">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    </div>
+
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div id="tab-dashboard" class="tab-content active">
+        <div class="stats-grid" id="dashboardStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="card">
+            <div class="card-title" style="margin-bottom:14px">Progresso Semanal</div>
+            <div id="weeklyProgress"></div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:14px">Progresso Mensal</div>
+            <div id="monthlyProgress"></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="margin-bottom:14px">Últimos Envios</div>
+          <div id="recentSends"></div>
+        </div>
+      </div>
+
+      <!-- SEMANAL -->
+      <div id="tab-weekly" class="tab-content">
+        <div class="period-bar">
+          <label>Mês:</label>
+          <select id="weekMonth" onchange="renderWeeklyChecklist()"></select>
+          <label>Semana:</label>
+          <select id="weekNumber" onchange="renderWeeklyChecklist()">
+            <option value="1">Semana 1</option>
+            <option value="2">Semana 2</option>
+            <option value="3">Semana 3</option>
+            <option value="4">Semana 4</option>
+            <option value="5">Semana 5</option>
+          </select>
+          <div id="weekDatesDisplay" style="font-size:0.82rem;color:var(--text-secondary);font-weight:600;margin-left:4px"></div>
+        </div>
+        <div class="two-columns" id="weeklyColumns"></div>
+      </div>
+
+      <!-- MENSAL -->
+      <div id="tab-monthly" class="tab-content">
+        <div class="period-bar">
+          <label>Mês:</label>
+          <select id="monthSelect" onchange="renderMonthlyChecklist()"></select>
+        </div>
+        <div class="two-columns" id="monthlyColumns"></div>
+      </div>
+
+      <!-- CRONOGRAMA SEMANAL -->
+      <div id="tab-sched-weekly" class="tab-content">
+        <div class="period-bar">
+          <label>Mês:</label>
+          <select id="schedWeekMonth" onchange="renderSchedWeekly()"></select>
+          <label>Semana:</label>
+          <select id="schedWeekNumber" onchange="renderSchedWeekly()"></select>
+          <div id="schedWeekDatesDisplay" style="font-size:0.82rem;color:var(--text-secondary);font-weight:600;margin-left:4px"></div>
+        </div>
+        <div class="two-columns" id="schedWeeklyColumns"></div>
+      </div>
+
+      <!-- APROVAÇÃO DE CONTEÚDO -->
+      <div id="tab-content-approval" class="tab-content">
+        <div class="ca-bar">
+          <label>Cliente:</label>
+          <select id="caClient" onchange="caOnClientChange()" style="min-width:200px">
+            <option value="">— selecione —</option>
+          </select>
+          <label>Semana:</label>
+          <input type="text" id="caWeekLabel" placeholder="Ex: 3ª Semana de Março" style="width:200px" oninput="caOnWeekChange()">
+          <button class="btn btn-outline" style="font-size:0.82rem;padding:7px 14px" onclick="caAddPost()">+ Post</button>
+          <button class="btn btn-primary" style="font-size:0.82rem;padding:7px 16px" onclick="caOpenPreview()">🖨️ Gerar Aprovação</button>
+        </div>
+        <div id="caPostsContainer">
+          <div class="ca-empty"><div class="ca-empty-icon">📋</div>Selecione um cliente e a semana para começar</div>
+        </div>
+      </div>
+
+      <!-- CLIENTES -->
+      <div id="tab-clients" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Gerenciar Clientes</div>
+            <button class="btn btn-primary" onclick="openClientModal()">+ Novo Cliente</button>
+          </div>
+          <div class="filter-bar" style="margin-bottom:14px">
+            <select id="clientCompanyFilter" onchange="renderClients()">
+              <option value="all">Todas empresas</option>
+              <option value="Starken">Starken</option>
+              <option value="Alpha">Alpha Assessoria</option>
+            </select>
+            <select id="clientSegmentFilter" onchange="renderClients()">
+              <option value="all">Todos segmentos</option>
+              <option value="Gastronomia">Gastronomia</option>
+              <option value="Eventos">Eventos</option>
+              <option value="Academia">Academia</option>
+              <option value="Indústria">Indústria</option>
+              <option value="Outros">Outros</option>
+            </select>
+            <select id="clientStatusFilter" onchange="renderClients()">
+              <option value="active">Ativos</option>
+              <option value="inactive">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+          <div class="two-columns" id="clientsColumns"></div>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div id="tab-history" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Histórico de Envios</div>
+          </div>
+          <div class="filter-bar" style="margin-bottom:14px">
+            <select id="historyCompanyFilter" onchange="renderHistory()">
+              <option value="all">Todas empresas</option>
+              <option value="Starken">Starken</option>
+              <option value="Alpha">Alpha Assessoria</option>
+            </select>
+            <select id="historyClientFilter" onchange="renderHistory()">
+              <option value="all">Todos clientes</option>
+            </select>
+            <select id="historyTypeFilter" onchange="renderHistory()">
+              <option value="all">Todos tipos</option>
+              <option value="weekly">Semanal</option>
+              <option value="monthly">Mensal</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr><th>Cliente</th><th>Empresa</th><th>Tipo</th><th>Período</th><th>Status</th><th>Data</th><th>Obs</th></tr>
+              </thead>
+              <tbody id="historyTable"></tbody>
+            </table>
+          </div>
+          <div id="historyEmpty" class="empty-state" style="display:none">
+            <div class="empty-icon">&#128203;</div>
+            <p><strong>Nenhum registro</strong></p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal Cliente -->
+<div class="modal-overlay" id="clientModal">
+  <div class="modal">
+    <h3 id="clientModalTitle">Novo Cliente</h3>
+    <input type="hidden" id="clientEditId">
+    <div class="form-group">
+      <label class="form-label">Nome do Cliente</label>
+      <input type="text" class="form-input" id="clientName" placeholder="Ex: Pizzaria do Nei">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Empresa</label>
+      <select class="form-input" id="clientCompany">
+        <option value="Starken">Starken</option>
+        <option value="Alpha">Alpha Assessoria</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Segmento</label>
+      <select class="form-input" id="clientSegment">
+        <option value="Gastronomia">Gastronomia</option>
+        <option value="Eventos">Eventos</option>
+        <option value="Academia">Academia</option>
+        <option value="Indústria">Indústria</option>
+        <option value="Clínica Ótica">Clínica Ótica</option>
+        <option value="Automação Residencial">Automação Residencial</option>
+        <option value="Artigos de Tênis">Artigos de Tênis</option>
+        <option value="Mesas p/ Área de Festas">Mesas p/ Área de Festas</option>
+        <option value="Outros">Outros</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Telefone WhatsApp (com DDD)</label>
+      <input type="text" class="form-input" id="clientPhone" placeholder="Ex: 54999999999">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Período Personalizado do Relatório</label>
+      <input type="text" class="form-input" id="clientCustomPeriod" placeholder="Ex: Dia 1 a 15, Quinzenal, etc.">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-input" id="clientStatusInput">
+        <option value="true">Ativo</option>
+        <option value="false">Inativo</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeClientModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveClient()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Data de Envio -->
+<div class="modal-overlay" id="sentDateModal">
+  <div class="modal" style="max-width:380px">
+    <h3>&#9993; Data de Envio</h3>
+    <div id="sentDateModalClient" style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;font-weight:600;padding:8px 12px;background:var(--bg-subtle);border-radius:var(--radius-sm)"></div>
+    <input type="hidden" id="sentDateClientId">
+    <input type="hidden" id="sentDateType">
+    <input type="hidden" id="sentDatePeriod">
+    <div class="form-group">
+      <label class="form-label">Data</label>
+      <input type="date" class="form-input" id="sentDateDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Hora</label>
+      <input type="time" class="form-input" id="sentDateTime" value="09:00">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSentDateModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveSentDate()">&#10003; Confirmar Envio</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Período do Relatório -->
+<div class="modal-overlay" id="periodModal">
+  <div class="modal" style="max-width:400px">
+    <h3>📅 Período Real do Relatório</h3>
+    <div id="periodModalClientName" style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;font-weight:600;padding:8px 12px;background:var(--bg-subtle);border-radius:var(--radius-sm)"></div>
+    <input type="hidden" id="periodModalClientId">
+    <input type="hidden" id="periodModalType">
+    <input type="hidden" id="periodModalPeriodKey">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Data de início</label>
+        <input type="date" class="form-input" id="periodModalStart">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Data de fim</label>
+        <input type="date" class="form-input" id="periodModalEnd">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Observação (opcional)</label>
+      <input type="text" class="form-input" id="periodModalNote" placeholder="Ex: Atrasado, quinzenal, pedido do cliente...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closePeriodModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="savePeriodModal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Sincronizar Relatórios -->
+<div class="modal-overlay" id="syncModal">
+  <div class="modal" style="max-width:620px">
+    <h3>&#128260; Relatórios Detectados</h3>
+    <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px">
+      PDFs encontrados nas pastas de clientes. Selecione os que deseja registrar no checklist.
+    </p>
+    <div id="syncReportsList" style="max-height:400px;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeSyncModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="applySyncReports()">Registrar Selecionados</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Relatórios do Cliente -->
+<div class="modal-overlay" id="clientReportsModal">
+  <div class="modal" style="max-width:560px">
+    <h3 id="clientReportsTitle">Relatórios Gerados</h3>
+    <div id="clientReportsList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="clientReportsClearBtn" onclick="clearAllClientReports()" style="color:var(--danger);border-color:var(--danger)">&#128465; Limpar tudo</button>
+      <button class="btn btn-outline" onclick="document.getElementById('clientReportsModal').classList.remove('active')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+const STORAGE_KEY = 'checklist_relatorios_v3';
+
+function gid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+
+// Todos os clientes conhecidos — usados para seed automático
+const SEED_CLIENTS = [
+  // ── Alpha Assessoria ──────────────────────────────────────────────────
+  { name: 'Mestre do Frango Passo Fundo', company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Patricia Salgados',            company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Pizzaria do Nei',              company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Super Duper',                  company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Sorveteria Maciel',            company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'WorldBurguer',                 company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Salfest',                      company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Saporito Pizzaria',            company: 'Alpha',   segment: 'Gastronomia' },
+  { name: "D' Britos",                    company: 'Alpha',   segment: 'Gastronomia' },
+  { name: 'Fratellis Pizzaria',           company: 'Alpha',   segment: 'Gastronomia' },
+  // ── Starken · Gastronomia ─────────────────────────────────────────────
+  { name: 'Mortadella Blumenau',          company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Hamburgueria Feio',            company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Rosa Mexicano Blumenau',       company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Rosa Mexicano Brusque',        company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Suprema Pizza',                company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Arena Gourmet',                company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Super X - Garuva',             company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Super X - Guaratuba',          company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Madrugão - Centro',            company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Madrugão - Garcia',            company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Madrugão - Fortaleza',         company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Restaurante Oca',              company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Aseyori Restaurante',          company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Super X - Itapoa',             company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Oklahoma Burger',              company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Pizzaria Super X',             company: 'Starken', segment: 'Gastronomia' },
+  { name: 'Sr Salsicha',                  company: 'Starken', segment: 'Gastronomia' },
+  // ── Starken · Outros segmentos ────────────────────────────────────────
+  { name: 'The Garrison',                 company: 'Starken', segment: 'Eventos' },
+  { name: 'JPR Móveis Rústicos',          company: 'Starken', segment: 'Mesas p/ Área de Festas' },
+  { name: 'Estilo Tulipa',                company: 'Starken', segment: 'Artigos de Tênis' },
+  { name: 'Academia São Pedro',           company: 'Starken', segment: 'Academia' },
+  { name: 'New Service',                  company: 'Starken', segment: 'Indústria' },
+  { name: 'Melhor Visão',                 company: 'Starken', segment: 'Clínica Ótica' },
+  { name: 'Bengers - Empresa',            company: 'Starken', segment: 'Eventos' },
+  { name: 'Dommus Smart Home',            company: 'Starken', segment: 'Automação Residencial' },
+];
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  let d;
+  if (raw) {
+    try {
+      d = JSON.parse(raw);
+    } catch(e) { d = null; }
+  }
+  if (!d) {
+    d = { clients: [], reports: [] };
+  }
+
+  // Migrations
+  d.clients.forEach(c => {
+    if (!c.phone) c.phone = '';
+    if (!c.customPeriod) c.customPeriod = '';
+    if (!c.segment) c.segment = '';
+  });
+  d.reports.forEach(r => { if (typeof r.status === 'undefined') r.status = r.sent ? 2 : 0; });
+
+  // Seed: add new clients; also update segment if blank
+  const existingNames = d.clients.map(c => c.name.toLowerCase());
+  for (const seed of SEED_CLIENTS) {
+    const idx = d.clients.findIndex(c => c.name.toLowerCase() === seed.name.toLowerCase());
+    if (idx === -1) {
+      d.clients.push({ id: gid(), name: seed.name, company: seed.company, phone: '', customPeriod: '', segment: seed.segment || '', active: true });
+    } else if (!d.clients[idx].segment && seed.segment) {
+      d.clients[idx].segment = seed.segment;
+    }
+  }
+
+  saveData(d);
+  return d;
+}
+
+function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+let data = loadData();
+
+// ============ PER-COLUMN SEGMENT FILTERS ============
+const segFilters = { weekly: { Starken: 'all', Alpha: 'all' }, monthly: { Starken: 'all', Alpha: 'all' } };
+function setSegFilter(tabType, company, val) {
+  segFilters[tabType][company] = val;
+  if (tabType === 'weekly') renderWeeklyChecklist();
+  else renderMonthlyChecklist();
+}
+
+// ============ DRAG & DROP REORDER ============
+let _dragClientId = null;
+
+function clientDragStart(event, id) {
+  _dragClientId = id;
+  event.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.querySelector('[data-client-id="' + id + '"]');
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function clientDragEnd() {
+  document.querySelectorAll('.client-row.dragging, .client-row.drag-over')
+    .forEach(el => el.classList.remove('dragging', 'drag-over'));
+}
+
+function clientDragOver(event, id) {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+  if (id === _dragClientId) return;
+  document.querySelectorAll('.client-row.drag-over').forEach(el => el.classList.remove('drag-over'));
+  const el = document.querySelector('[data-client-id="' + id + '"]');
+  if (el) el.classList.add('drag-over');
+}
+
+function clientDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    event.currentTarget.classList.remove('drag-over');
+  }
+}
+
+function clientDrop(event, targetId) {
+  event.preventDefault();
+  clientDragEnd();
+  if (!_dragClientId || _dragClientId === targetId) { _dragClientId = null; return; }
+
+  const fromIdx = data.clients.findIndex(c => c.id === _dragClientId);
+  const toIdx = data.clients.findIndex(c => c.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) { _dragClientId = null; return; }
+
+  const [item] = data.clients.splice(fromIdx, 1);
+  const newToIdx = data.clients.findIndex(c => c.id === targetId);
+  data.clients.splice(newToIdx, 0, item);
+
+  saveData(data);
+  _dragClientId = null;
+
+  const activeTab = document.querySelector('.tab-content.active');
+  if (!activeTab) return;
+  const tabId = activeTab.id.replace('tab-', '');
+  if (tabId === 'weekly') renderWeeklyChecklist();
+  else if (tabId === 'monthly') renderMonthlyChecklist();
+}
+
+// ============ MONTHS & WEEKS 2026 ============
+const MONTHS_2026 = [
+  { key: '2026-03', label: 'Março 2026', month: 2, year: 2026 },
+  { key: '2026-04', label: 'Abril 2026', month: 3, year: 2026 },
+  { key: '2026-05', label: 'Maio 2026', month: 4, year: 2026 },
+  { key: '2026-06', label: 'Junho 2026', month: 5, year: 2026 },
+  { key: '2026-07', label: 'Julho 2026', month: 6, year: 2026 },
+  { key: '2026-08', label: 'Agosto 2026', month: 7, year: 2026 },
+  { key: '2026-09', label: 'Setembro 2026', month: 8, year: 2026 },
+  { key: '2026-10', label: 'Outubro 2026', month: 9, year: 2026 },
+  { key: '2026-11', label: 'Novembro 2026', month: 10, year: 2026 },
+  { key: '2026-12', label: 'Dezembro 2026', month: 11, year: 2026 },
+];
+
+// ============ SEMANAS BASEADAS EM SEGUNDA-FEIRA ============
+// Regra: relatório semanal é ENVIADO toda segunda-feira
+// e cobre a semana anterior (seg a dom)
+// Ex: enviado 16/03 → período 09/03 a 15/03
+// Ex: enviado 30/03 (5ª seg do mês) → período 23/03 a 29/03
+function getMonthWeeks(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weeks = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const date = new Date(year, month, day);
+    if (date.getDay() !== 1) continue; // apenas segundas-feiras
+
+    // Período coberto: segunda anterior (day-7) até domingo anterior (day-1)
+    const periodStart = new Date(year, month, day - 7);
+    const periodEnd   = new Date(year, month, day - 1);
+
+    weeks.push({
+      week: weeks.length + 1,
+      sendDay: day,
+      sendDate: date,
+      periodStartDate: periodStart,
+      periodEndDate:   periodEnd,
+      // helpers de formatação
+      sendLabel: pad(day) + '/' + pad(month + 1) + '/' + year,
+      periodStartLabel: pad(periodStart.getDate()) + '/' + pad(periodStart.getMonth() + 1) + '/' + periodStart.getFullYear(),
+      periodEndLabel:   pad(periodEnd.getDate())   + '/' + pad(periodEnd.getMonth()   + 1) + '/' + periodEnd.getFullYear(),
+      // ISO para o modal de período
+      periodStartISO: periodStart.getFullYear() + '-' + pad(periodStart.getMonth() + 1) + '-' + pad(periodStart.getDate()),
+      periodEndISO:   periodEnd.getFullYear()   + '-' + pad(periodEnd.getMonth()   + 1) + '-' + pad(periodEnd.getDate()),
+      // ISO da data de envio (para pre-fill do modal de envio)
+      sendDateISO: year + '-' + pad(month + 1) + '-' + pad(day),
+    });
+  }
+
+  return weeks;
+}
+
+// Retorna a semana de um mês dado o número da semana (1-based)
+function getWeekInfo(monthKey, weekNum) {
+  const mInfo = MONTHS_2026.find(m => m.key === monthKey);
+  if (!mInfo) return null;
+  const weeks = getMonthWeeks(mInfo.year, mInfo.month);
+  return weeks.find(w => w.week === weekNum) || null;
+}
+
+// Data de envio do mensal = dia 01 do mês seguinte
+function getMonthlyExpectedSendDate(monthKey) {
+  const mInfo = MONTHS_2026.find(m => m.key === monthKey);
+  if (!mInfo) return null;
+  const sendDate = new Date(mInfo.year, mInfo.month + 1, 1);
+  return {
+    sendLabel: '01/' + pad(sendDate.getMonth() + 1) + '/' + sendDate.getFullYear(),
+    sendDateISO: sendDate.getFullYear() + '-' + pad(sendDate.getMonth() + 1) + '-01',
+    // Período coberto = mês inteiro
+    periodStartISO: mInfo.year + '-' + pad(mInfo.month + 1) + '-01',
+    periodEndISO: mInfo.year + '-' + pad(mInfo.month + 1) + '-' + pad(new Date(mInfo.year, mInfo.month + 1, 0).getDate()),
+  };
+}
+
+function pad(n) { return String(n).padStart(2, '0'); }
+
+// ============ CURRENT SELECTIONS ============
+function getCurrentMonthKey() {
+  // Default to current month if it's in our list
+  const now = new Date();
+  const key = now.getFullYear() + '-' + pad(now.getMonth() + 1);
+  return MONTHS_2026.find(m => m.key === key) ? key : '2026-03';
+}
+
+// ============ NAVIGATION ============
+const TAB_TITLES = {
+  dashboard:     'Dashboard',
+  weekly:        'Relatórios — Semanal',
+  monthly:       'Relatórios — Mensal',
+  'sched-weekly':      'Cronogramas — Semanal',
+  'content-approval':  'Cronogramas — Aprovação de Conteúdo',
+  clients:             'Gerenciar Clientes',
+  history:       'Histórico de Envios'
+};
+
+function switchTab(tabName) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tabName).classList.add('active');
+  // Marca o botão ativo pelo onclick
+  document.querySelectorAll('.sidebar-nav button').forEach(b => {
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + tabName + "'")) {
+      b.classList.add('active');
+    }
+  });
+  document.getElementById('topbarTitle').textContent = TAB_TITLES[tabName] || '';
+  document.getElementById('sidebar').classList.remove('open');
+  if (tabName === 'content-approval') caInitTab();
+  else renderAll();
+}
+
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+// ============ STATUS ============
+const STATUS_LABELS       = ['⏳ Pendente', '📄 Gerado', '✅ Enviado'];
+const STATUS_LABELS_SHORT = ['Pendente',    'Gerado',    'Enviado'];
+const STATUS_CLASSES      = ['s0', 's1', 's2'];
+const STATUS_BADGE_CLASSES = ['status-pending', 'status-generated', 'status-sent'];
+
+function setReportStatus(clientId, type, period, newStatus) {
+  newStatus = parseInt(newStatus);
+  if (newStatus === 2) {
+    openSentDateModal(clientId, type, period);
+    return;
+  }
+  let r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === period);
+  if (!r) {
+    r = { id: gid(), clientId, type, period, status: newStatus, sent: false, sentDate: null, notes: '', createdAt: new Date().toISOString() };
+    data.reports.push(r);
+  } else {
+    r.status = newStatus;
+    r.sent = false;
+    r.sentDate = null;
+  }
+  saveData(data);
+  showToast('Status: ' + STATUS_LABELS_SHORT[newStatus]);
+  renderAll();
+}
+
+function openSentDateModal(clientId, type, period) {
+  const c = data.clients.find(x => x.id === clientId);
+  const r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === period);
+  document.getElementById('sentDateModalClient').textContent = c ? c.name : clientId;
+  document.getElementById('sentDateClientId').value = clientId;
+  document.getElementById('sentDateType').value = type;
+  document.getElementById('sentDatePeriod').value = period;
+  // Se já tem data de envio, usa ela; senão calcula a data correta pelo tipo/período
+  let defaultDateISO = '';
+  if (r && r.sentDate) {
+    defaultDateISO = new Date(r.sentDate).toISOString().slice(0, 10);
+  } else if (type === 'weekly' || type === 'sched-weekly') {
+    const parts = period.split('-S');
+    if (parts.length === 2) {
+      const wk = getWeekInfo(parts[0], parseInt(parts[1]));
+      defaultDateISO = wk ? wk.sendDateISO : new Date().toISOString().slice(0, 10);
+    }
+  } else if (type === 'monthly') {
+    const info = getMonthlyExpectedSendDate(period);
+    defaultDateISO = info ? info.sendDateISO : new Date().toISOString().slice(0, 10);
+  } else {
+    defaultDateISO = new Date().toISOString().slice(0, 10);
+  }
+  document.getElementById('sentDateDate').value = defaultDateISO;
+  document.getElementById('sentDateTime').value = '09:00';
+  document.getElementById('sentDateModal').classList.add('active');
+}
+
+function closeSentDateModal() {
+  document.getElementById('sentDateModal').classList.remove('active');
+  renderAll(); // re-render para restaurar o select ao estado anterior
+}
+
+function saveSentDate() {
+  const clientId = document.getElementById('sentDateClientId').value;
+  const type     = document.getElementById('sentDateType').value;
+  const period   = document.getElementById('sentDatePeriod').value;
+  const date     = document.getElementById('sentDateDate').value;
+  const time     = document.getElementById('sentDateTime').value || '00:00';
+  if (!date) { showToast('Selecione uma data'); return; }
+
+  const sentDate = new Date(date + 'T' + time + ':00').toISOString();
+
+  let r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === period);
+  if (!r) {
+    r = { id: gid(), clientId, type, period, status: 2, sent: true, sentDate, notes: '', createdAt: new Date().toISOString() };
+    data.reports.push(r);
+  } else {
+    r.status = 2;
+    r.sent = true;
+    r.sentDate = sentDate;
+  }
+  saveData(data);
+  document.getElementById('sentDateModal').classList.remove('active');
+  showToast('Enviado em ' + new Date(sentDate).toLocaleDateString('pt-BR'));
+  renderAll();
+  // Atualiza modal de relatórios do cliente se estiver aberto
+  if (_clientReportsCurrentId) renderClientReportsList(_clientReportsCurrentId);
+}
+
+function updateNotes(clientId, type, period, notes) {
+  let r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === period);
+  if (!r) {
+    r = { id: gid(), clientId, type, period, status: 0, sent: false, sentDate: null, notes, createdAt: new Date().toISOString() };
+    data.reports.push(r);
+  } else { r.notes = notes; }
+  saveData(data);
+}
+
+// ============ INITIALS ============
+function getInitials(name) { return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase(); }
+
+// ============ POPULATE MONTH SELECTS ============
+function populateMonthSelects() {
+  const def = getCurrentMonthKey();
+  const opts = MONTHS_2026.map(m => '<option value="' + m.key + '"' + (m.key === def ? ' selected' : '') + '>' + m.label + '</option>').join('');
+  const wm  = document.getElementById('weekMonth');
+  const ms  = document.getElementById('monthSelect');
+  const swm = document.getElementById('schedWeekMonth');
+  if (wm)  wm.innerHTML  = opts;
+  if (ms)  ms.innerHTML  = opts;
+  if (swm) swm.innerHTML = opts;
+
+  // Semana atual: encontra qual segunda-feira do mês é hoje ou a próxima
+  const now = new Date();
+  const monthKey = document.getElementById('weekMonth') ? document.getElementById('weekMonth').value : getCurrentMonthKey();
+  const mInfo = MONTHS_2026.find(m => m.key === monthKey);
+  if (mInfo) {
+    const weeks = getMonthWeeks(mInfo.year, mInfo.month);
+    // Seleciona a semana cujo envio (segunda) é hoje ou a mais recente passada
+    let bestWeek = weeks[0];
+    for (const w of weeks) {
+      if (new Date(w.sendDateISO) <= now) bestWeek = w;
+    }
+    const wn = document.getElementById('weekNumber');
+    if (wn && bestWeek) wn.value = String(bestWeek.week);
+  }
+}
+
+// ============ GET WEEK PERIOD KEY ============
+function getWeekPeriodKey() {
+  const monthKey = document.getElementById('weekMonth').value;
+  const weekNum = document.getElementById('weekNumber').value;
+  return monthKey + '-S' + weekNum;
+}
+
+function getMonthPeriodKey() {
+  return document.getElementById('monthSelect').value;
+}
+
+// ============ RENDER TWO-COLUMN CHECKLIST ============
+function renderTwoColumnChecklist(containerId, type, periodKey) {
+  const companies = [
+    { key: 'Starken', label: 'Starken', css: 'starken' },
+    { key: 'Alpha', label: 'Alpha Assessoria', css: 'alpha' }
+  ];
+
+  const knownSegs = ['Gastronomia','Eventos','Academia','Indústria'];
+  const SEG_OPTS_STARKEN = [
+    ['all','Todos'],['Gastronomia','🍽️ Gastronomia'],['Eventos','🎉 Eventos'],
+    ['Academia','💪 Academia'],['Indústria','🏭 Indústria'],['Outros','📦 Outros']
+  ];
+  const SEG_OPTS_ALPHA = [
+    ['all','Todos'],['Gastronomia','🍽️ Gastronomia']
+  ];
+
+  let html = '';
+  for (const co of companies) {
+    const curSeg = (segFilters[type] && segFilters[type][co.key]) || 'all';
+    const segOpts = co.key === 'Alpha' ? SEG_OPTS_ALPHA : SEG_OPTS_STARKEN;
+
+    function matchSegment(c) {
+      if (!curSeg || curSeg === 'all') return true;
+      if (curSeg === 'Outros') return !knownSegs.includes(c.segment);
+      return c.segment === curSeg;
+    }
+
+    const allActive = data.clients.filter(c => c.active && c.company === co.key);
+    const clients = allActive.filter(c => matchSegment(c));
+    const sentCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status === 2)).length;
+    const genCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status >= 1)).length;
+
+    let segSelectHtml = '<select class="col-seg-filter" onchange="setSegFilter(\'' + type + '\',\'' + co.key + '\',this.value)">';
+    for (const [val, lbl] of segOpts) {
+      segSelectHtml += '<option value="' + val + '"' + (val === curSeg ? ' selected' : '') + '>' + lbl + '</option>';
+    }
+    segSelectHtml += '</select>';
+
+    html += '<div class="company-column">';
+    html += '<div class="column-header ' + co.css + '">';
+    html += '<span>' + co.label + '</span>';
+    html += segSelectHtml;
+    html += '<span class="count">' + sentCount + '/' + clients.length + ' enviados &middot; ' + genCount + ' gerados</span>';
+    html += '</div>';
+    html += '<div class="column-body">';
+
+    if (clients.length === 0) {
+      html += '<div class="column-empty">Nenhum cliente ' + co.label + ' ativo</div>';
+    }
+
+    for (const c of clients) {
+      const report = data.reports.find(r => r.clientId === c.id && r.type === type && r.period === periodKey);
+      const status = report ? report.status : 0;
+      const notes = report ? (report.notes || '') : '';
+      const sentDate = report && report.sentDate ? new Date(report.sentDate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      const periodInfo = c.customPeriod ? c.customPeriod : '';
+      const hasCustomPeriod = report && report.periodStart;
+      const customPeriodLabel = hasCustomPeriod
+        ? report.periodStart.split('-').slice(1).reverse().join('/') + (report.periodEnd ? ' → ' + report.periodEnd.split('-').slice(1).reverse().join('/') : '')
+        : '';
+
+      html += '<div class="client-row status-' + status + '" draggable="true" data-client-id="' + c.id + '" ondragstart="clientDragStart(event,\'' + c.id + '\')" ondragend="clientDragEnd()" ondragover="clientDragOver(event,\'' + c.id + '\')" ondragleave="clientDragLeave(event)" ondrop="clientDrop(event,\'' + c.id + '\')">';
+
+      // Top row: avatar + name + status + whatsapp
+      html += '<div class="client-row-top">';
+      html += '<div class="drag-handle" title="Arrastar para reordenar">⠿</div>';
+      html += '<div class="client-avatar ' + co.css + '">' + getInitials(c.name) + '</div>';
+      html += '<div style="flex:1">';
+      html += '<div class="client-name">' + esc(c.name) + '</div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;flex-wrap:wrap;gap:4px">';
+      if (c.segment) html += '<span style="background:#f1f5f9;border-radius:3px;padding:1px 5px;font-weight:600">' + esc(c.segment) + '</span>';
+      if (hasCustomPeriod) html += '<span style="background:#dbeafe;color:#1e40af;border-radius:3px;padding:1px 5px;font-weight:600">📅 ' + customPeriodLabel + '</span>';
+      else if (periodInfo) html += '<span style="color:var(--text-muted)">Período: ' + esc(periodInfo) + '</span>';
+      html += '</div>';
+      if (status === 2) {
+        const sentLabel = sentDate ? 'Enviado ' + sentDate : 'Enviado (sem data)';
+        html += '<div style="font-size:0.7rem;color:var(--alpha-dark);margin-top:1px;cursor:pointer;text-decoration:underline dotted" onclick="openSentDateModal(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Editar data de envio">' + sentLabel + ' ✏️</div>';
+      } else {
+        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:1px;cursor:pointer;opacity:0.6" onclick="openSentDateModal(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Registrar envio manual">+ Registrar envio</div>';
+      }
+      html += '</div>';
+
+      // Status select
+      html += '<select class="status-select ' + STATUS_CLASSES[status] + '" onchange="setReportStatus(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\',this.value)">';
+      for (let s = 0; s < 3; s++) {
+        html += '<option value="' + s + '"' + (s === status ? ' selected' : '') + '>' + STATUS_LABELS[s] + '</option>';
+      }
+      html += '</select>';
+
+      // Período real
+      html += '<button class="btn btn-sm" style="background:' + (hasCustomPeriod ? '#dbeafe' : '#f1f5f9') + ';color:' + (hasCustomPeriod ? '#1e40af' : 'var(--text-secondary)') + ';border:1px solid ' + (hasCustomPeriod ? '#bfdbfe' : 'var(--border)') + ';padding:4px 8px" onclick="openPeriodModal(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Definir período real do relatório">📅</button>';
+
+      // Relatórios gerados
+      const pdfCount = data.reports.filter(rep => rep.clientId === c.id && rep.pdfFilename).length;
+      if (pdfCount > 0) {
+        html += '<button class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:4px 8px" onclick="openClientReports(\'' + c.id + '\')" title="Ver relatórios gerados">&#128196; ' + pdfCount + '</button>';
+      }
+
+      // WhatsApp
+      if (c.phone) {
+        html += '<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar WhatsApp">&#9993; Zap</button>';
+      }
+
+      html += '</div>';
+
+      html += '</div>';
+    }
+
+    html += '</div></div>';
+  }
+
+  document.getElementById(containerId).innerHTML = html;
+}
+
+// ============ WEEKLY ============
+function renderWeeklyChecklist() {
+  const monthKey = document.getElementById('weekMonth').value;
+  const mInfo = MONTHS_2026.find(m => m.key === monthKey);
+  if (!mInfo) return;
+
+  const weeks = getMonthWeeks(mInfo.year, mInfo.month);
+
+  // Atualiza select de semanas dinamicamente com as segundas do mês
+  const wkSelect = document.getElementById('weekNumber');
+  const currentVal = parseInt(wkSelect.value) || 1;
+  wkSelect.innerHTML = weeks.map(w =>
+    '<option value="' + w.week + '"' + (w.week === currentVal ? ' selected' : '') + '>Semana ' + w.week + ' — Envio ' + w.sendLabel + '</option>'
+  ).join('');
+
+  const weekNum = parseInt(wkSelect.value);
+  const wk = weeks.find(w => w.week === weekNum) || weeks[0];
+
+  const display = document.getElementById('weekDatesDisplay');
+  if (wk) {
+    display.innerHTML =
+      '<span style="color:#1e40af;font-weight:700">&#128197; Envio: ' + wk.sendLabel + '</span>' +
+      ' &nbsp;|&nbsp; ' +
+      '<span style="color:var(--text-secondary)">Período: ' + wk.periodStartLabel + ' a ' + wk.periodEndLabel + '</span>';
+  } else {
+    display.textContent = 'Nenhuma segunda-feira neste mês';
+  }
+
+  const periodKey = getWeekPeriodKey();
+  renderTwoColumnChecklist('weeklyColumns', 'weekly', periodKey);
+}
+
+// ============ CRONOGRAMA SEMANAL ============
+function renderSchedWeekly() {
+  const monthKey = document.getElementById('schedWeekMonth').value;
+  const mInfo = MONTHS_2026.find(m => m.key === monthKey);
+  if (!mInfo) return;
+
+  const weeks = getMonthWeeks(mInfo.year, mInfo.month);
+
+  const wkSelect = document.getElementById('schedWeekNumber');
+  const currentVal = parseInt(wkSelect.value) || 1;
+  wkSelect.innerHTML = weeks.map(w =>
+    '<option value="' + w.week + '"' + (w.week === currentVal ? ' selected' : '') + '>Semana ' + w.week + ' — Envio ' + w.sendLabel + '</option>'
+  ).join('');
+
+  const weekNum = parseInt(wkSelect.value);
+  const wk = weeks.find(w => w.week === weekNum) || weeks[0];
+
+  const display = document.getElementById('schedWeekDatesDisplay');
+  if (wk) {
+    display.innerHTML =
+      '<span style="color:#1e40af;font-weight:700">&#128197; Envio: ' + wk.sendLabel + '</span>' +
+      ' &nbsp;|&nbsp; ' +
+      '<span style="color:var(--text-secondary)">Período: ' + wk.periodStartLabel + ' a ' + wk.periodEndLabel + '</span>';
+  }
+
+  const periodKey = monthKey + '-S' + (wk ? wk.week : 1);
+  renderTwoColumnChecklist('schedWeeklyColumns', 'sched-weekly', periodKey);
+}
+
+// ============ MONTHLY ============
+function renderMonthlyChecklist() {
+  const periodKey = getMonthPeriodKey();
+  const sendInfo = getMonthlyExpectedSendDate(periodKey);
+  const bar = document.querySelector('#tab-monthly .period-bar');
+  // Remove display anterior do envio se existir
+  const oldInfo = bar ? bar.querySelector('.monthly-send-info') : null;
+  if (oldInfo) oldInfo.remove();
+  if (bar && sendInfo) {
+    const span = document.createElement('div');
+    span.className = 'monthly-send-info';
+    span.style.cssText = 'font-size:0.82rem;color:#1e40af;font-weight:700;margin-left:8px';
+    span.innerHTML = '&#128197; Envio: ' + sendInfo.sendLabel + ' &nbsp;|&nbsp; <span style="color:var(--text-secondary);font-weight:600">Período: mês completo</span>';
+    bar.appendChild(span);
+  }
+  renderTwoColumnChecklist('monthlyColumns', 'monthly', periodKey);
+}
+
+// ============ WHATSAPP ============
+function sendWhatsApp(clientId, type, period) {
+  const c = data.clients.find(x => x.id === clientId);
+  if (!c || !c.phone) { showToast('Cadastre o telefone primeiro'); return; }
+  const typeLabel = type === 'weekly' ? 'semanal' : 'mensal';
+  const phone = c.phone.replace(/\D/g, '');
+  const msg = encodeURIComponent('Olá! Segue o relatório ' + typeLabel + ' de tráfego pago (' + period + ').\n\nQualquer dúvida estou à disposição!');
+  window.open('https://wa.me/55' + phone + '?text=' + msg, '_blank');
+
+  let r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === period);
+  if (!r) {
+    r = { id: gid(), clientId, type, period, status: 2, sent: true, sentDate: new Date().toISOString(), notes: 'Enviado via WhatsApp', createdAt: new Date().toISOString() };
+    data.reports.push(r);
+  } else { r.status = 2; r.sent = true; r.sentDate = new Date().toISOString(); if (!r.notes) r.notes = 'Enviado via WhatsApp'; }
+  saveData(data);
+  setTimeout(() => renderAll(), 500);
+}
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  const active = data.clients.filter(c => c.active);
+  const starken = active.filter(c => c.company === 'Starken');
+  const alpha = active.filter(c => c.company === 'Alpha');
+
+  const mk = getCurrentMonthKey();
+  const mSent = data.reports.filter(r => r.type === 'monthly' && r.period === mk && r.status === 2).length;
+
+  // Find current week key
+  const now = new Date();
+  const weekNum = Math.min(5, Math.ceil(now.getDate() / 7));
+  const wk = mk + '-S' + weekNum;
+  const wSent = data.reports.filter(r => r.type === 'weekly' && r.period === wk && r.status === 2).length;
+  const wGen = data.reports.filter(r => r.type === 'weekly' && r.period === wk && r.status >= 1).length;
+
+  document.getElementById('dashboardStats').innerHTML =
+    '<div class="stat-card starken"><div class="stat-icon starken">S</div><div class="stat-label">Clientes Starken</div><div class="stat-value">' + starken.length + '</div></div>' +
+    '<div class="stat-card alpha"><div class="stat-icon alpha">A</div><div class="stat-label">Clientes Alpha</div><div class="stat-value">' + alpha.length + '</div></div>' +
+    '<div class="stat-card warning"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Pendentes Semana</div><div class="stat-value">' + Math.max(0, active.length - wGen) + '</div></div>' +
+    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Enviados Mês</div><div class="stat-value">' + mSent + '/' + active.length + '</div></div>';
+
+  renderProgress('weeklyProgress', 'weekly', wk, active);
+  renderProgress('monthlyProgress', 'monthly', mk, active);
+
+  // Recent
+  const recent = data.reports.filter(r => r.status >= 1).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 6);
+  if (!recent.length) { document.getElementById('recentSends').innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Nenhum registro recente.</p>'; return; }
+
+  let rh = '';
+  for (const r of recent) {
+    const c = data.clients.find(x => x.id === r.clientId);
+    const name = c ? c.name : '(Removido)';
+    const co = c ? c.company : '';
+    const typeL = r.type === 'weekly' ? 'Semanal' : 'Mensal';
+    const dateStr = (r.sentDate || r.createdAt) ? new Date(r.sentDate || r.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    rh += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light)">';
+    rh += '<div class="client-avatar ' + (co === 'Starken' ? 'starken' : 'alpha') + '" style="width:30px;height:30px;font-size:0.65rem">' + getInitials(name) + '</div>';
+    rh += '<div style="flex:1"><span style="font-weight:600;font-size:0.85rem">' + esc(name) + '</span> <span style="font-size:0.72rem;color:var(--text-muted)">' + typeL + ' - ' + r.period + '</span></div>';
+    rh += '<span class="status-badge ' + STATUS_BADGE_CLASSES[r.status] + '"><span class="dot"></span>' + STATUS_LABELS_SHORT[r.status] + '</span>';
+    rh += '<span style="font-size:0.75rem;color:var(--text-muted)">' + dateStr + '</span>';
+    rh += '</div>';
+  }
+  document.getElementById('recentSends').innerHTML = rh;
+}
+
+function renderProgress(containerId, type, periodKey, active) {
+  const cos = [{ key: 'Starken', label: 'Starken', css: 'starken' }, { key: 'Alpha', label: 'Alpha Assessoria', css: 'alpha' }];
+  let h = '';
+  for (const co of cos) {
+    const cls = active.filter(c => c.company === co.key);
+    if (!cls.length) continue;
+    const sent = cls.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status === 2)).length;
+    const gen = cls.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status >= 1)).length;
+    const pct = Math.round((sent / cls.length) * 100);
+    h += '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-weight:600;font-size:0.82rem">' + co.label + '</span><span style="font-size:0.75rem;color:var(--text-muted)">' + sent + '/' + cls.length + ' env &middot; ' + gen + ' ger</span></div><div class="progress-bar"><div class="progress-fill ' + co.css + '" style="width:' + pct + '%"></div></div></div>';
+  }
+  document.getElementById(containerId).innerHTML = h || '<p style="color:var(--text-muted);font-size:0.85rem">Sem clientes.</p>';
+}
+
+// ============ CLIENTS ============
+function renderClients() {
+  const cf = document.getElementById('clientCompanyFilter').value;
+  const segf = document.getElementById('clientSegmentFilter').value;
+  const sf = document.getElementById('clientStatusFilter').value;
+  let cls = data.clients;
+  if (cf !== 'all') cls = cls.filter(c => c.company === cf);
+  if (sf === 'active') cls = cls.filter(c => c.active);
+  else if (sf === 'inactive') cls = cls.filter(c => !c.active);
+  if (segf !== 'all') {
+    if (segf === 'Outros') {
+      const known = ['Gastronomia','Eventos','Academia','Indústria'];
+      cls = cls.filter(c => !known.includes(c.segment));
+    } else {
+      cls = cls.filter(c => c.segment === segf);
+    }
+  }
+
+  const cos = [{ key: 'Starken', label: 'Starken', css: 'starken' }, { key: 'Alpha', label: 'Alpha Assessoria', css: 'alpha' }];
+  let html = '';
+
+  for (const co of cos) {
+    const coCls = cls.filter(c => c.company === co.key);
+    html += '<div class="company-column">';
+    html += '<div class="column-header ' + co.css + '"><span>' + co.label + '</span><span class="count">' + coCls.length + ' clientes</span></div>';
+    html += '<div class="column-body">';
+
+    if (!coCls.length) {
+      html += '<div class="column-empty">Nenhum cliente</div>';
+    }
+
+    for (const c of coCls) {
+      const statusBadge = c.active
+        ? '<span class="status-badge status-sent"><span class="dot"></span>Ativo</span>'
+        : '<span class="status-badge status-pending"><span class="dot"></span>Inativo</span>';
+
+      const segBadge = c.segment ? '<span style="display:inline-block;background:#f1f5f9;color:var(--text-secondary);border-radius:4px;padding:1px 7px;font-size:0.68rem;font-weight:600;margin-right:4px">' + esc(c.segment) + '</span>' : '';
+
+      html += '<div class="client-row">';
+      html += '<div class="client-row-top">';
+      html += '<div class="client-avatar ' + co.css + '">' + getInitials(c.name) + '</div>';
+      html += '<div style="flex:1">';
+      html += '<div class="client-name">' + esc(c.name) + '</div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">' + segBadge;
+      html += (c.phone ? '&#128172; ' + esc(c.phone) : 'Sem telefone');
+      if (c.customPeriod) html += ' &middot; ' + esc(c.customPeriod);
+      html += '</div>';
+      html += '</div>';
+      html += statusBadge;
+      html += '<button class="btn btn-outline btn-sm" onclick="editClient(\'' + c.id + '\')">Editar</button>';
+      html += '<button class="btn btn-danger btn-sm" onclick="deleteClient(\'' + c.id + '\')">Remover</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+
+    html += '</div></div>';
+  }
+
+  document.getElementById('clientsColumns').innerHTML = html;
+}
+
+function openClientModal(id) {
+  document.getElementById('clientModal').classList.add('active');
+  document.getElementById('clientEditId').value = '';
+  document.getElementById('clientName').value = '';
+  document.getElementById('clientCompany').value = 'Alpha';
+  document.getElementById('clientSegment').value = 'Gastronomia';
+  document.getElementById('clientPhone').value = '';
+  document.getElementById('clientCustomPeriod').value = '';
+  document.getElementById('clientStatusInput').value = 'true';
+  document.getElementById('clientModalTitle').textContent = 'Novo Cliente';
+
+  if (id) {
+    const c = data.clients.find(x => x.id === id);
+    if (c) {
+      document.getElementById('clientEditId').value = c.id;
+      document.getElementById('clientName').value = c.name;
+      document.getElementById('clientCompany').value = c.company;
+      document.getElementById('clientSegment').value = c.segment || 'Gastronomia';
+      document.getElementById('clientPhone').value = c.phone || '';
+      document.getElementById('clientCustomPeriod').value = c.customPeriod || '';
+      document.getElementById('clientStatusInput').value = String(c.active);
+      document.getElementById('clientModalTitle').textContent = 'Editar Cliente';
+    }
+  }
+}
+
+function closeClientModal() { document.getElementById('clientModal').classList.remove('active'); }
+
+// ============ PERIOD MODAL ============
+function openPeriodModal(clientId, type, periodKey) {
+  const c = data.clients.find(x => x.id === clientId);
+  const r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === periodKey);
+
+  document.getElementById('periodModalClientId').value = clientId;
+  document.getElementById('periodModalType').value = type;
+  document.getElementById('periodModalPeriodKey').value = periodKey;
+  document.getElementById('periodModalClientName').textContent = c ? c.name : '';
+
+  // Se já tem datas salvas, usa elas; senão calcula automaticamente
+  if (r && r.periodStart) {
+    document.getElementById('periodModalStart').value = r.periodStart;
+    document.getElementById('periodModalEnd').value = r.periodEnd || '';
+  } else {
+    // Pré-preenche com datas calculadas pela inteligência do sistema
+    let autoStart = '', autoEnd = '';
+    if (type === 'weekly' || type === 'sched-weekly') {
+      // periodKey = YYYY-MM-S# → extrai o número da semana
+      const parts = periodKey.split('-S');
+      if (parts.length === 2) {
+        const monthKey = parts[0];
+        const weekNum  = parseInt(parts[1]);
+        const wk = getWeekInfo(monthKey, weekNum);
+        if (wk) { autoStart = wk.periodStartISO; autoEnd = wk.periodEndISO; }
+      }
+    } else if (type === 'monthly') {
+      // periodKey = YYYY-MM → período = mês inteiro
+      const info = getMonthlyExpectedSendDate(periodKey);
+      if (info) { autoStart = info.periodStartISO; autoEnd = info.periodEndISO; }
+    }
+    document.getElementById('periodModalStart').value = autoStart;
+    document.getElementById('periodModalEnd').value   = autoEnd;
+  }
+
+  document.getElementById('periodModalNote').value = r && r.periodNote ? r.periodNote : '';
+  document.getElementById('periodModal').classList.add('active');
+}
+
+function closePeriodModal() { document.getElementById('periodModal').classList.remove('active'); }
+
+function savePeriodModal() {
+  const clientId = document.getElementById('periodModalClientId').value;
+  const type = document.getElementById('periodModalType').value;
+  const periodKey = document.getElementById('periodModalPeriodKey').value;
+  const periodStart = document.getElementById('periodModalStart').value;
+  const periodEnd = document.getElementById('periodModalEnd').value;
+  const periodNote = document.getElementById('periodModalNote').value.trim();
+
+  let r = data.reports.find(x => x.clientId === clientId && x.type === type && x.period === periodKey);
+  if (!r) {
+    r = { id: gid(), clientId, type, period: periodKey, status: 0, sent: false, sentDate: null, notes: '', createdAt: new Date().toISOString() };
+    data.reports.push(r);
+  }
+  r.periodStart = periodStart;
+  r.periodEnd = periodEnd;
+  r.periodNote = periodNote;
+  saveData(data);
+  closePeriodModal();
+  showToast('Período salvo');
+  const activeTab = document.querySelector('.tab-content.active');
+  if (!activeTab) return;
+  const tabId = activeTab.id.replace('tab-', '');
+  if (tabId === 'weekly') renderWeeklyChecklist();
+  else if (tabId === 'monthly') renderMonthlyChecklist();
+}
+
+function saveClient() {
+  const id = document.getElementById('clientEditId').value;
+  const name = document.getElementById('clientName').value.trim();
+  const company = document.getElementById('clientCompany').value;
+  const segment = document.getElementById('clientSegment').value;
+  const phone = document.getElementById('clientPhone').value.trim();
+  const customPeriod = document.getElementById('clientCustomPeriod').value.trim();
+  const active = document.getElementById('clientStatusInput').value === 'true';
+
+  if (!name) { showToast('Digite o nome do cliente'); return; }
+
+  if (id) {
+    const c = data.clients.find(x => x.id === id);
+    if (c) { c.name = name; c.company = company; c.segment = segment; c.phone = phone; c.customPeriod = customPeriod; c.active = active; }
+    showToast('Cliente atualizado');
+  } else {
+    data.clients.push({ id: gid(), name, company, segment, phone, customPeriod, active });
+    showToast('Cliente adicionado');
+  }
+  saveData(data);
+  closeClientModal();
+  renderAll();
+}
+
+function editClient(id) { openClientModal(id); }
+
+function deleteClient(id) {
+  const c = data.clients.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm('Remover "' + c.name + '"?')) return;
+  data.clients = data.clients.filter(x => x.id !== id);
+  saveData(data);
+  showToast('Removido');
+  renderAll();
+}
+
+// ============ HISTORY ============
+function renderHistory() {
+  const cf = document.getElementById('historyCompanyFilter').value;
+  const clf = document.getElementById('historyClientFilter').value;
+  const tf = document.getElementById('historyTypeFilter').value;
+
+  const sel = document.getElementById('historyClientFilter');
+  const cv = sel.value;
+  sel.innerHTML = '<option value="all">Todos clientes</option>' + data.clients.map(c => '<option value="' + c.id + '">' + esc(c.name) + '</option>').join('');
+  sel.value = cv || 'all';
+
+  let reps = data.reports.filter(r => r.status >= 1);
+  if (tf !== 'all') reps = reps.filter(r => r.type === tf);
+  if (clf !== 'all') reps = reps.filter(r => r.clientId === clf);
+  if (cf !== 'all') {
+    const ids = data.clients.filter(c => c.company === cf).map(c => c.id);
+    reps = reps.filter(r => ids.includes(r.clientId));
+  }
+  reps.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (!reps.length) {
+    document.getElementById('historyTable').innerHTML = '';
+    document.getElementById('historyEmpty').style.display = 'block';
+    return;
+  }
+  document.getElementById('historyEmpty').style.display = 'none';
+
+  let h = '';
+  for (const r of reps) {
+    const c = data.clients.find(x => x.id === r.clientId);
+    const name = c ? c.name : '(Removido)';
+    const co = c ? c.company : '—';
+    const bCls = co === 'Starken' ? 'badge-starken' : 'badge-alpha';
+    const tl = r.type === 'weekly' ? 'Semanal' : 'Mensal';
+    const ds = (r.sentDate || r.createdAt) ? new Date(r.sentDate || r.createdAt).toLocaleString('pt-BR') : '—';
+    h += '<tr><td><strong>' + esc(name) + '</strong></td><td><span class="badge ' + bCls + '">' + (co === 'Alpha' ? 'Alpha' : co) + '</span></td><td>' + tl + '</td><td>' + r.period + '</td><td><span class="status-badge ' + STATUS_BADGE_CLASSES[r.status] + '"><span class="dot"></span>' + STATUS_LABELS_SHORT[r.status] + '</span></td><td>' + ds + '</td><td>' + esc(r.notes || '—') + '</td></tr>';
+  }
+  document.getElementById('historyTable').innerHTML = h;
+}
+
+// ============ BACKUP ============
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'checklist-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  showToast('Exportado');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imp = JSON.parse(e.target.result);
+      if (!imp.clients || !imp.reports) { showToast('Arquivo inválido'); return; }
+      if (!confirm('Substituir dados?')) return;
+      data = imp;
+      data.clients.forEach(c => { if (!c.phone) c.phone = ''; if (!c.customPeriod) c.customPeriod = ''; });
+      data.reports.forEach(r => { if (typeof r.status === 'undefined') r.status = r.sent ? 2 : 0; });
+      saveData(data);
+      renderAll();
+      showToast('Importado');
+    } catch(e) { showToast('Erro'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============ UTILS ============
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function showToast(msg) {
+  const old = document.querySelector('.toast');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function renderAll() {
+  renderDashboard();
+  renderWeeklyChecklist();
+  renderMonthlyChecklist();
+  renderSchedWeekly();
+  renderClients();
+  renderHistory();
+}
+
+// ============ SYNC RELATÓRIOS ============
+let _pendingSyncReports = [];
+
+function importSyncData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const syncData = JSON.parse(e.target.result);
+      if (!syncData.reports || !Array.isArray(syncData.reports)) {
+        showToast('Arquivo de sync inválido');
+        return;
+      }
+      _pendingSyncReports = syncData.reports;
+      renderSyncModal(syncData);
+    } catch(err) {
+      showToast('Erro ao ler arquivo');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function renderSyncModal(syncData) {
+  const container = document.getElementById('syncReportsList');
+  const reports = syncData.reports;
+
+  if (!reports.length) {
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128196;</div><p>Nenhum PDF encontrado nas pastas.</p></div>';
+    document.getElementById('syncModal').classList.add('active');
+    return;
+  }
+
+  // Verifica quais já estão registrados
+  let html = '';
+  reports.forEach((r, idx) => {
+    const client = data.clients.find(c =>
+      c.name.toLowerCase() === r.clientName.toLowerCase() ||
+      c.name.toLowerCase().replace(/['\u2019]/g, '').trim() === r.clientName.toLowerCase().replace(/['\u2019]/g, '').trim()
+    );
+    const matched = !!client;
+    const period = r.periodFromFilename || r.periodLabel;
+
+    // Verifica se já existe registro para esse cliente/período
+    let alreadyExists = false;
+    if (client) {
+      alreadyExists = data.reports.some(rep =>
+        rep.clientId === client.id && rep.notes && rep.notes.includes(r.filename)
+      );
+    }
+
+    const badgeCls = r.company === 'Starken' ? 'badge-starken' : 'badge-alpha';
+    const statusTag = alreadyExists
+      ? '<span style="color:var(--alpha-dark);font-size:0.72rem;font-weight:600">&#10003; Já registrado</span>'
+      : (!matched ? '<span style="color:var(--danger);font-size:0.72rem;font-weight:600">&#9888; Cliente não encontrado</span>' : '');
+
+    const fileDate = r.fileDate ? new Date(r.fileDate).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+    const fileSizeKB = r.fileSize ? Math.round(r.fileSize / 1024) + ' KB' : '';
+
+    html += '<div style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;background:' + (alreadyExists ? 'var(--bg-subtle)' : 'white') + '">';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    if (!alreadyExists && matched) {
+      html += '<input type="checkbox" checked data-sync-idx="' + idx + '" style="width:16px;height:16px;cursor:pointer">';
+    } else {
+      html += '<div style="width:16px"></div>';
+    }
+    html += '<div style="flex:1">';
+    html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+    html += '<strong style="font-size:0.85rem">' + esc(r.clientName) + '</strong>';
+    html += '<span class="badge ' + badgeCls + '">' + esc(r.company) + '</span>';
+    html += statusTag;
+    html += '</div>';
+    html += '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:3px">';
+    html += '&#128197; ' + esc(period);
+    if (fileSizeKB) html += ' &middot; ' + fileSizeKB;
+    if (fileDate) html += ' &middot; Gerado: ' + fileDate;
+    html += '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">&#128196; ' + esc(r.filename) + '</div>';
+    if (!alreadyExists && matched) {
+      // Linha 1: tipo + semana
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">';
+      html += '<select data-sync-type="' + idx + '" onchange="syncToggleWeek(' + idx + ',this.value)" style="font-size:0.78rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:white">';
+      html += '<option value="monthly">Mensal</option>';
+      html += '<option value="weekly">Semanal</option>';
+      html += '</select>';
+      html += '<div id="syncWeekSel' + idx + '" style="display:none">';
+      html += '<select data-sync-week="' + idx + '" style="font-size:0.78rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:white">';
+      html += '<option value="1">Semana 1</option><option value="2">Semana 2</option><option value="3">Semana 3</option><option value="4">Semana 4</option><option value="5">Semana 5</option>';
+      html += '</select></div>';
+      // Data de geração manual
+      const defaultDate = r.fileDate ? r.fileDate.slice(0,10) : new Date().toISOString().slice(0,10);
+      html += '<div style="display:flex;align-items:center;gap:4px">';
+      html += '<label style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap">&#128197; Geração:</label>';
+      html += '<input type="date" data-sync-gendate="' + idx + '" value="' + defaultDate + '" style="font-size:0.78rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:white">';
+      html += '</div>';
+      html += '</div>';
+    }
+    html += '</div></div></div>';
+  });
+
+  container.innerHTML = html;
+  document.getElementById('syncModal').classList.add('active');
+}
+
+function syncToggleWeek(idx, val) {
+  const el = document.getElementById('syncWeekSel' + idx);
+  if (el) el.style.display = val === 'weekly' ? 'block' : 'none';
+}
+
+function closeSyncModal() {
+  document.getElementById('syncModal').classList.remove('active');
+  _pendingSyncReports = [];
+}
+
+function applySyncReports() {
+  const checkboxes = document.querySelectorAll('#syncReportsList input[type="checkbox"]:checked');
+  let count = 0;
+
+  checkboxes.forEach(cb => {
+    const idx = parseInt(cb.getAttribute('data-sync-idx'));
+    const r = _pendingSyncReports[idx];
+    if (!r) return;
+
+    const client = data.clients.find(c =>
+      c.name.toLowerCase() === r.clientName.toLowerCase() ||
+      c.name.toLowerCase().replace(/['\u2019]/g, '').trim() === r.clientName.toLowerCase().replace(/['\u2019]/g, '').trim()
+    );
+    if (!client) return;
+
+    // Lê tipo, semana e data de geração selecionados no modal
+    const typeEl    = document.querySelector('[data-sync-type="' + idx + '"]');
+    const weekEl    = document.querySelector('[data-sync-week="' + idx + '"]');
+    const genDateEl = document.querySelector('[data-sync-gendate="' + idx + '"]');
+    const reportType = typeEl ? typeEl.value : 'monthly';
+    const reportWeek = weekEl ? weekEl.value : '1';
+    const genDate    = genDateEl ? genDateEl.value : (r.fileDate ? r.fileDate.slice(0,10) : new Date().toISOString().slice(0,10));
+
+    // Determina o período no formato do checklist
+    // Mensal: YYYY-MM | Semanal: YYYY-MM-S# (ex: 2026-03-S2)
+    const periodKey = reportType === 'weekly'
+      ? r.year + '-' + r.month + '-S' + reportWeek
+      : r.year + '-' + r.month;
+
+    const period = r.periodFromFilename || r.periodLabel;
+    const weekLabel = reportType === 'weekly' ? ' | Semana ' + reportWeek : '';
+    const notes = 'PDF: ' + r.filename + (period ? ' | Período: ' + period : '') + weekLabel;
+
+    // Tenta encontrar relatório existente (por clientId + type + period) para ATUALIZAR
+    // ou por filename para evitar duplicata
+    let existing = data.reports.find(rep =>
+      rep.clientId === client.id && rep.type === reportType && rep.period === periodKey
+    );
+
+    if (existing) {
+      // Atualiza o report existente com os dados do PDF
+      existing.status = 1;
+      existing.pdfFilename = r.filename;
+      existing.pdfPeriod   = period;
+      existing.pdfDate     = genDate + 'T00:00:00';
+      if (!existing.notes || existing.notes === '') existing.notes = notes;
+    } else {
+      // Cria novo report
+      const report = {
+        id: gid(),
+        clientId: client.id,
+        type: reportType,
+        period: periodKey,
+        status: 1,
+        sent: false,
+        sentDate: null,
+        notes: notes,
+        createdAt: new Date().toISOString(),
+        pdfFilename: r.filename,
+        pdfPeriod: period,
+        pdfDate: genDate + 'T00:00:00',
+      };
+      if (r.periodFromFilename) {
+        const parts = r.periodFromFilename.split(' a ');
+        if (parts.length === 2) {
+          const toISO = (dStr) => { const p = dStr.trim().split('/'); return p.length === 3 ? p[2]+'-'+p[1]+'-'+p[0] : ''; };
+          report.periodStart = toISO(parts[0]);
+          report.periodEnd   = toISO(parts[1]);
+        }
+      }
+      data.reports.push(report);
+    }
+    count++;
+  });
+
+  if (count > 0) {
+    saveData(data);
+    renderAll();
+    showToast(count + ' relatório(s) registrado(s)');
+  } else {
+    showToast('Nenhum novo relatório para registrar');
+  }
+
+  closeSyncModal();
+}
+
+// ============ RELATÓRIOS DO CLIENTE (Modal) ============
+let _clientReportsCurrentId = null;
+
+function openClientReports(clientId) {
+  const client = data.clients.find(c => c.id === clientId);
+  if (!client) return;
+  _clientReportsCurrentId = clientId;
+
+  document.getElementById('clientReportsTitle').textContent = 'Relatórios — ' + client.name;
+  renderClientReportsList(clientId);
+  document.getElementById('clientReportsModal').classList.add('active');
+}
+
+function renderClientReportsList(clientId) {
+  const reports = data.reports
+    .filter(r => r.clientId === clientId && r.pdfFilename)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const clearBtn = document.getElementById('clientReportsClearBtn');
+  clearBtn.style.display = reports.length ? 'inline-flex' : 'none';
+
+  let html = '';
+  if (!reports.length) {
+    html = '<div class="empty-state" style="padding:20px"><div class="empty-icon">&#128196;</div><p>Nenhum relatório sincronizado.</p><p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">Execute o sync_relatorios.ps1 e importe o JSON.</p></div>';
+  } else {
+    reports.forEach(r => {
+      const statusLabel = STATUS_LABELS_SHORT[r.status] || 'Pendente';
+      const statusCls = STATUS_BADGE_CLASSES[r.status] || 'status-pending';
+      const period = r.pdfPeriod || r.period || '—';
+      const filename = r.pdfFilename || '—';
+      const date = r.pdfDate ? new Date(r.pdfDate).toLocaleDateString('pt-BR') : (r.createdAt ? new Date(r.createdAt).toLocaleDateString('pt-BR') : '—');
+      const typeLabel = r.type === 'weekly' ? 'Semanal' : 'Mensal';
+
+      html += '<div style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">';
+      html += '<div style="flex:1">';
+      html += '<div style="font-weight:600;font-size:0.85rem">&#128197; ' + esc(period) + '</div>';
+      html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">&#128196; ' + esc(filename) + '</div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px">' + typeLabel + ' &middot; ' + date + '</div>';
+      html += '</div>';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
+      // Botão de status clicável
+      html += '<button onclick="cycleSyncReportStatus(\'' + r.id + '\')" class="status-badge ' + statusCls + '" style="border:none;cursor:pointer;font-size:0.72rem;font-weight:600;padding:3px 8px" title="Clique para alterar status"><span class="dot"></span>' + statusLabel + '</button>';
+      html += '<button onclick="deleteSyncReport(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:1rem;padding:2px 6px;border-radius:4px;line-height:1" title="Remover">&#128465;</button>';
+      html += '</div>';
+      html += '</div></div>';
+    });
+  }
+
+  document.getElementById('clientReportsList').innerHTML = html;
+}
+
+function cycleSyncReportStatus(reportId) {
+  const r = data.reports.find(x => x.id === reportId);
+  if (!r) return;
+  const next = (r.status + 1) % 3;
+  if (next === 2) {
+    // Vai para "Enviado" → abre modal de data de envio
+    openSentDateModal(r.clientId, r.type, r.period);
+    return;
+  }
+  r.status = next;
+  r.sent = false;
+  r.sentDate = null;
+  saveData(data);
+  renderAll();
+  renderClientReportsList(_clientReportsCurrentId);
+  showToast('Status: ' + STATUS_LABELS_SHORT[next]);
+}
+
+function deleteSyncReport(reportId) {
+  data.reports = data.reports.filter(r => r.id !== reportId);
+  saveData(data);
+  renderAll();
+  renderClientReportsList(_clientReportsCurrentId);
+  showToast('Relatório removido');
+}
+
+function clearAllClientReports() {
+  if (!_clientReportsCurrentId) return;
+  const client = data.clients.find(c => c.id === _clientReportsCurrentId);
+  const name = client ? client.name : 'este cliente';
+  if (!confirm('Remover todos os relatórios sincronizados de ' + name + '?')) return;
+  data.reports = data.reports.filter(r => !(r.clientId === _clientReportsCurrentId && r.pdfFilename));
+  saveData(data);
+  renderAll();
+  renderClientReportsList(_clientReportsCurrentId);
+  showToast('Sync limpo');
+}
+
+// ============ CONTENT APPROVAL MODULE ============
+const CA_STORAGE = 'content_approvals_v1';
+
+const CA_TYPES = [
+  { label: 'CARROSSEL DE FOTOS',      section: 'feed',    cls: 'ca-type-feed'    },
+  { label: 'CRIATIVO FEED',           section: 'feed',    cls: 'ca-type-feed'    },
+  { label: 'CRIATIVO FEED - STORIES', section: 'stories', cls: 'ca-type-stories' },
+  { label: 'REELS',                   section: 'feed',    cls: 'ca-type-reels'   },
+  { label: 'STORIES',                 section: 'stories', cls: 'ca-type-stories' },
+  { label: 'VÍDEO',                   section: 'feed',    cls: 'ca-type-reels'   },
+  { label: 'ENQUETE',                 section: 'stories', cls: 'ca-type-stories' },
+];
+
+let caPosts      = [];
+let caClientId   = '';
+let caWeekLabel  = '';
+
+function getCaAll()          { try { return JSON.parse(localStorage.getItem(CA_STORAGE) || '{}'); } catch(e){ return {}; } }
+function saveCaAll(d)        { localStorage.setItem(CA_STORAGE, JSON.stringify(d)); }
+function caCacheKey()        { return caClientId + '||' + caWeekLabel; }
+
+function caPopulateClients() {
+  const sel = document.getElementById('caClient');
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— selecione —</option>';
+  const sorted = [...data.clients].filter(c => c.active !== false).sort((a,b) => a.company.localeCompare(b.company) || a.name.localeCompare(b.name));
+  let lastCo = '';
+  sorted.forEach(c => {
+    if (c.company !== lastCo) {
+      const og = document.createElement('optgroup');
+      og.label = c.company === 'Alpha' ? 'Alpha Assessoria' : 'Starken';
+      sel.appendChild(og);
+      lastCo = c.company;
+    }
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = c.name;
+    if (c.id === current) opt.selected = true;
+    sel.lastChild.appendChild(opt);
+  });
+}
+
+function caOnClientChange() {
+  caClientId = document.getElementById('caClient').value;
+  caWeekLabel = document.getElementById('caWeekLabel').value.trim();
+  caLoadPosts();
+}
+
+function caOnWeekChange() {
+  caWeekLabel = document.getElementById('caWeekLabel').value.trim();
+  if (caClientId) caLoadPosts();
+}
+
+function caLoadPosts() {
+  if (!caClientId || !caWeekLabel) { caPosts = []; caRender(); return; }
+  const all = getCaAll();
+  caPosts = JSON.parse(JSON.stringify(all[caCacheKey()] || []));
+  caRender();
+}
+
+function caAddPost() {
+  if (!caClientId) { showToast('Selecione um cliente primeiro'); return; }
+  if (!caWeekLabel) { showToast('Informe a semana/período'); return; }
+  caPosts.push({ id: gid(), date: '', type: 'CARROSSEL DE FOTOS', section: 'feed', caption: '', imageData: null });
+  caRender();
+  caSave();
+}
+
+function caRemovePost(id) {
+  caPosts = caPosts.filter(p => p.id !== id);
+  caRender();
+  caSave();
+}
+
+function caUpdateField(id, field, val) {
+  const p = caPosts.find(x => x.id === id);
+  if (p) { p[field] = val; caSave(); }
+}
+
+function caUpdateType(id, val) {
+  const p = caPosts.find(x => x.id === id);
+  if (!p) return;
+  p.type = val;
+  const t = CA_TYPES.find(t => t.label === val);
+  p.section = t ? t.section : 'feed';
+  caSave();
+}
+
+function caSelectImage(id) {
+  document.getElementById('caFile_' + id).click();
+}
+
+function caLoadImage(id, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const p = caPosts.find(x => x.id === id);
+    if (p) { p.imageData = e.target.result; caRender(); caSave(); }
+  };
+  reader.readAsDataURL(file);
+}
+
+function caRemoveImage(id, ev) {
+  ev.stopPropagation();
+  const p = caPosts.find(x => x.id === id);
+  if (p) { p.imageData = null; caRender(); caSave(); }
+}
+
+function caSave() {
+  if (!caClientId || !caWeekLabel) return;
+  const all = getCaAll();
+  all[caCacheKey()] = caPosts;
+  saveCaAll(all);
+}
+
+function caRender() {
+  const container = document.getElementById('caPostsContainer');
+  if (!container) return;
+  if (!caClientId || !caWeekLabel) {
+    container.innerHTML = '<div class="ca-empty"><div class="ca-empty-icon">📋</div>Selecione um cliente e informe a semana para começar</div>';
+    return;
+  }
+  if (caPosts.length === 0) {
+    container.innerHTML = '<div class="ca-empty"><div class="ca-empty-icon">➕</div>Nenhum post ainda — clique em <strong>+ Post</strong> para adicionar</div>';
+    return;
+  }
+  container.innerHTML = caPosts.map((p, i) => {
+    const typeInfo = CA_TYPES.find(t => t.label === p.type) || CA_TYPES[0];
+    const typeOpts = CA_TYPES.map(t => `<option value="${t.label}" ${p.type === t.label ? 'selected' : ''}>${t.label}</option>`).join('');
+    const imgBlock = p.imageData
+      ? `<img src="${p.imageData}" class="ca-image-thumb"><br><button onclick="caRemoveImage('${p.id}',event)" style="margin-top:6px;font-size:0.75rem;background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:4px;padding:2px 8px;cursor:pointer">✕ Remover imagem</button>`
+      : `<span>📷 Clique para carregar imagem da arte</span>`;
+    return `
+    <div class="ca-post-card">
+      <div class="ca-num">${i + 1}</div>
+      <div class="ca-fields">
+        <div class="ca-field-row">
+          <div>
+            <span class="ca-label">Data de postagem</span>
+            <input class="ca-input" type="text" placeholder="Ex: 18.03" value="${esc(p.date)}"
+              oninput="caUpdateField('${p.id}','date',this.value)">
+          </div>
+          <div>
+            <span class="ca-label">Tipo de conteúdo</span>
+            <select class="ca-input" onchange="caUpdateType('${p.id}',this.value)">${typeOpts}</select>
+          </div>
+        </div>
+        <div>
+          <span class="ca-label">Legenda <small style="color:var(--text-muted);font-weight:400">(texto completo do post)</small></span>
+          <textarea class="ca-input" rows="5" placeholder="Cole aqui a legenda completa do post..."
+            oninput="caUpdateField('${p.id}','caption',this.value)">${esc(p.caption)}</textarea>
+        </div>
+        <div>
+          <span class="ca-label">Arte / Criativo <span class="ca-type-badge ${typeInfo.cls}">${typeInfo.section.toUpperCase()}</span></span>
+          <div class="ca-image-area" onclick="caSelectImage('${p.id}')">
+            ${imgBlock}
+            <input type="file" id="caFile_${p.id}" accept="image/*" style="display:none" onchange="caLoadImage('${p.id}',event)">
+          </div>
+        </div>
+      </div>
+      <button class="ca-remove-btn" onclick="caRemovePost('${p.id}')" title="Remover post">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function caOpenPreview() {
+  if (!caClientId || !caWeekLabel) { showToast('Selecione cliente e semana'); return; }
+  if (caPosts.length === 0) { showToast('Adicione ao menos um post'); return; }
+  const client = data.clients.find(c => c.id === caClientId);
+  const clientName = client ? client.name : 'Cliente';
+
+  // Agrupar por seção
+  const feedPosts    = caPosts.filter(p => p.section === 'feed');
+  const storiesPosts = caPosts.filter(p => p.section === 'stories');
+
+  function postSlide(p) {
+    const imgHtml = p.imageData
+      ? `<img src="${p.imageData}" style="max-width:42%;max-height:340px;object-fit:contain;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.18);">`
+      : `<div style="width:38%;height:260px;background:rgba(255,255,255,0.12);border-radius:8px;border:2px dashed rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:0.9rem;">[sem imagem]</div>`;
+    const captionHtml = (p.caption || '').replace(/\n/g, '<br>');
+    return `
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:48px 52px;box-sizing:border-box;">
+        <div style="font-size:0.72rem;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.6);margin-bottom:6px;text-transform:uppercase">${p.section === 'feed' ? 'CONTEÚDO · FEED' : 'CONTEÚDO · STORIES'}</div>
+        <div style="font-size:1.35rem;font-weight:800;color:white;margin-bottom:24px;letter-spacing:0.5px">${p.type} <span style="font-weight:400;font-size:1rem;opacity:0.7">(${p.date || '—'})</span></div>
+        <div style="display:flex;gap:40px;align-items:flex-start;flex:1">
+          <div style="flex-shrink:0;display:flex;align-items:flex-start">${imgHtml}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase">Legenda:</div>
+            <div style="font-size:0.97rem;color:rgba(255,255,255,0.92);line-height:1.75;max-height:320px;overflow:hidden">${captionHtml || '<em style="opacity:0.4">sem legenda</em>'}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function sectionDivider(label, sub) {
+    return `
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:2.8rem;font-weight:300;color:white;letter-spacing:2px">${label}</div>
+        ${sub ? `<div style="font-size:1.1rem;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:6px;margin-top:6px;text-transform:uppercase">${sub}</div>` : ''}
+      </div>`;
+  }
+
+  let slides = [];
+  // Capa
+  slides.push(`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:space-between;padding:60px 80px;box-sizing:border-box;">
+    <div>
+      <div style="font-size:1.5rem;font-weight:300;color:rgba(255,255,255,0.8);margin-bottom:8px">Aprovação de</div>
+      <div style="font-size:3rem;font-weight:800;color:white;line-height:1.1">conteúdos</div>
+      <div style="margin-top:20px;font-size:1rem;font-weight:600;color:rgba(255,255,255,0.55);text-decoration:underline;letter-spacing:0.5px">${caWeekLabel}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:2rem;font-weight:700;color:white;opacity:0.9">${clientName}</div>
+    </div>
+  </div>`);
+
+  // Feed
+  if (feedPosts.length > 0) {
+    slides.push(sectionDivider('conteúdo', 'feed'));
+    feedPosts.forEach(p => slides.push(postSlide(p)));
+  }
+  // Stories
+  if (storiesPosts.length > 0) {
+    slides.push(sectionDivider('conteúdo', 'stories'));
+    storiesPosts.forEach(p => slides.push(postSlide(p)));
+  }
+  // Encerramento
+  slides.push(`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+    <div style="font-size:2.5rem;font-weight:300;color:white;text-align:center;line-height:1.5">
+      aguardamos a<br><span style="font-weight:700">aprovação!</span>
+    </div>
+  </div>`);
+
+  const BG = '#A9A49A';
+  const slidesHtml = slides.map(content => `
+    <div style="width:297mm;height:210mm;background:${BG};position:relative;overflow:hidden;page-break-after:always;box-sizing:border-box;">
+      ${content}
+    </div>`).join('');
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Aprovação de Conteúdo — ${clientName}</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}
+      body{background:#666;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:white}
+      @media print{
+        @page{size:A4 landscape;margin:0}
+        body{background:none}
+        .no-print{display:none}
+        div[style*="page-break"]{page-break-after:always}
+      }
+      .print-btn{
+        position:fixed;top:16px;right:16px;z-index:999;
+        background:white;color:#333;border:none;padding:10px 20px;
+        border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;
+        box-shadow:0 4px 16px rgba(0,0,0,0.3);
+      }
+      .print-btn:hover{background:#f0f0f0}
+    </style>
+  </head><body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Salvar como PDF</button>
+    ${slidesHtml}
+  </body></html>`;
+
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+  else showToast('Permita pop-ups para abrir a prévia');
+}
+
+function caInitTab() {
+  caPopulateClients();
+  caRender();
+}
+
+// ============ INIT ============
+populateMonthSelects();
+renderAll();
+</script>
+</body>
+</html>
