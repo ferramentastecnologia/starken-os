@@ -532,6 +532,173 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ca-type-stories { background:#fff7ed; color:#c2410c; }
 .ca-type-reels { background:#fdf4ff; color:#7e22ce; }
 
+/* ===== CRONOGRAMA V2 — DASHBOARD ===== */
+.ca-dashboard { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
+.ca-filters { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+.ca-filters select { padding:7px 11px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:0.84rem; font-family:inherit; color:var(--text); background:white; }
+
+.ca-sched-card {
+  background:white; border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); cursor:pointer; transition:box-shadow 0.2s, transform 0.2s;
+  overflow:hidden; display:flex; flex-direction:column;
+}
+.ca-sched-card:hover { box-shadow:var(--shadow-lg); transform:translateY(-2px); }
+.ca-sched-card-top { padding:16px 18px 12px; flex:1; }
+.ca-sched-card-top .ca-card-client { font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:2px; }
+.ca-sched-card-top .ca-card-week { font-size:0.8rem; color:var(--text-secondary); margin-bottom:10px; }
+.ca-sched-card-top .ca-card-meta { font-size:0.75rem; color:var(--text-muted); display:flex; gap:12px; }
+.ca-sched-card-bottom {
+  padding:10px 18px; border-top:1px solid var(--border-light);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.ca-company-badge {
+  display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.65rem;
+  font-weight:700; letter-spacing:0.3px; vertical-align:middle; margin-left:6px;
+}
+.ca-company-starken { background:var(--starken-bg); color:var(--starken-dark); }
+.ca-company-alpha { background:var(--alpha-bg); color:var(--alpha-dark); }
+
+/* Status badges */
+.ca-status {
+  display:inline-flex; align-items:center; gap:4px; padding:4px 12px;
+  border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.3px;
+}
+.ca-status-rascunho { background:#dbeafe; color:#1d4ed8; }
+.ca-status-pronto { background:#f5f3ff; color:#7c3aed; }
+.ca-status-enviado { background:#fef3c7; color:#b45309; }
+.ca-status-aprovado { background:#d1fae5; color:#065f46; }
+.ca-status-revisao { background:#ffedd5; color:#c2410c; }
+
+/* ===== CRONOGRAMA V2 — FULLSCREEN EDITOR ===== */
+.ca-modal-overlay {
+  position:fixed; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px);
+  z-index:1100; display:none; flex-direction:column;
+}
+.ca-modal-overlay.active { display:flex; }
+.ca-modal { background:var(--bg); width:100%; height:100%; overflow-y:auto; display:flex; flex-direction:column; }
+.ca-modal-header {
+  position:sticky; top:0; z-index:10; background:white; border-bottom:1px solid var(--border);
+  padding:14px 24px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.ca-modal-header-left { display:flex; align-items:center; gap:12px; }
+.ca-modal-header-title { font-weight:700; font-size:1rem; }
+.ca-modal-header-sub { font-size:0.82rem; color:var(--text-muted); }
+.ca-modal-body { padding:24px; max-width:1200px; margin:0 auto; width:100%; }
+
+/* Post grid inside editor */
+.ca-post-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.ca-post-card-v2 {
+  background:white; border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column;
+  transition:box-shadow 0.15s;
+}
+.ca-post-card-v2:hover { box-shadow:var(--shadow-md); }
+.ca-post-thumb {
+  width:100%; aspect-ratio:1; background:var(--bg); display:flex;
+  align-items:center; justify-content:center; overflow:hidden; position:relative;
+  color:var(--text-muted); font-size:2rem;
+}
+.ca-post-thumb img { width:100%; height:100%; object-fit:cover; }
+.ca-post-info { padding:12px 14px; flex:1; }
+.ca-post-info .ca-post-date { font-size:0.78rem; color:var(--text-secondary); font-weight:600; margin-bottom:4px; }
+.ca-post-info .ca-post-type { margin-bottom:6px; }
+.ca-post-info .ca-post-caption {
+  font-size:0.78rem; color:var(--text-muted); line-height:1.4;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.ca-post-card-actions {
+  padding:8px 14px; border-top:1px solid var(--border-light);
+  display:flex; gap:6px; justify-content:flex-end;
+}
+.ca-post-card-actions button {
+  padding:5px 12px; border-radius:6px; font-size:0.75rem; font-weight:600;
+  cursor:pointer; font-family:inherit; border:1px solid var(--border); background:white; color:var(--text-secondary);
+  transition:all 0.15s;
+}
+.ca-post-card-actions button:hover { background:var(--bg); }
+.ca-post-card-actions .ca-btn-del { border-color:#fecaca; color:#ef4444; }
+.ca-post-card-actions .ca-btn-del:hover { background:#fff5f5; }
+
+/* ===== CRONOGRAMA V2 — DRAWER ===== */
+.ca-drawer-overlay {
+  position:fixed; inset:0; background:rgba(15,23,42,0.4);
+  z-index:1200; display:none;
+}
+.ca-drawer-overlay.active { display:block; }
+.ca-drawer {
+  position:fixed; top:0; right:-440px; width:420px; max-width:90vw;
+  height:100vh; background:white; box-shadow:-4px 0 24px rgba(0,0,0,0.12);
+  z-index:1250; transition:right 0.3s ease; overflow-y:auto;
+  display:flex; flex-direction:column;
+}
+.ca-drawer.open { right:0; }
+.ca-drawer-header {
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.ca-drawer-header h3 { font-size:1rem; }
+.ca-drawer-body { padding:20px; flex:1; display:flex; flex-direction:column; gap:16px; }
+.ca-drawer-footer {
+  padding:14px 20px; border-top:1px solid var(--border);
+  display:flex; justify-content:flex-end; gap:8px;
+}
+.ca-drawer-close {
+  background:none; border:none; font-size:1.3rem; cursor:pointer;
+  color:var(--text-muted); line-height:1;
+}
+.ca-drawer-close:hover { color:var(--text); }
+
+/* ===== CRONOGRAMA V2 — EMPTY ===== */
+.ca-dashboard-empty {
+  text-align:center; padding:60px 20px; color:var(--text-muted);
+}
+.ca-dashboard-empty .ca-empty-icon { font-size:3rem; margin-bottom:12px; }
+
+/* ===== CRONOGRAMA V2 — RESPONSIVE ===== */
+@media (max-width:1024px) { .ca-post-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:768px) {
+  .ca-post-grid { grid-template-columns:1fr; }
+  .ca-dashboard { grid-template-columns:1fr; }
+  .ca-drawer { width:100vw; max-width:100vw; }
+  .ca-modal-header { flex-direction:column; align-items:flex-start; }
+}
+
+/* ===== ASANA TASKS ===== */
+.asana-columns { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.asana-column { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); overflow:hidden; }
+.asana-col-header { padding:12px 16px; font-weight:700; font-size:0.85rem; display:flex; justify-content:space-between; align-items:center; }
+.asana-col-header .count { font-size:0.75rem; font-weight:500; opacity:0.7; }
+.asana-col-header.overdue { background:linear-gradient(135deg,#fef2f2,#fee2e2); color:#991b1b; }
+.asana-col-header.thisweek { background:linear-gradient(135deg,#eff6ff,#dbeafe); color:#1e40af; }
+.asana-col-header.done { background:linear-gradient(135deg,#ecfdf5,#d1fae5); color:#065f46; }
+.asana-col-body { padding:10px; max-height:500px; overflow-y:auto; }
+
+.asana-task-card {
+  padding:12px 14px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  margin-bottom:8px; background:white; transition:all 0.15s;
+}
+.asana-task-card:hover { border-color:var(--text-muted); box-shadow:var(--shadow); }
+.asana-task-card.overdue { border-left:3px solid #ef4444; }
+.asana-task-card .task-name { font-weight:600; font-size:0.85rem; margin-bottom:4px; line-height:1.3; }
+.asana-task-card .task-meta { font-size:0.72rem; color:var(--text-muted); display:flex; gap:10px; flex-wrap:wrap; margin-bottom:6px; }
+.asana-task-card .task-actions { display:flex; gap:6px; }
+.asana-task-card .task-actions button {
+  padding:3px 10px; border-radius:5px; font-size:0.72rem; font-weight:600;
+  cursor:pointer; font-family:inherit; border:1px solid var(--border); background:white; color:var(--text-secondary);
+  transition:all 0.15s;
+}
+.asana-task-card .task-actions button:hover { background:var(--bg); }
+.asana-task-card .task-actions .btn-complete { border-color:#a7f3d0; color:#059669; }
+.asana-task-card .task-actions .btn-complete:hover { background:#ecfdf5; }
+
+.asana-status-bar { display:flex; gap:12px; align-items:center; margin-bottom:16px; padding:12px 16px; background:var(--bg-subtle); border-radius:var(--radius-sm); border:1px solid var(--border); flex-wrap:wrap; }
+.asana-status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.asana-status-dot.connected { background:#10b981; }
+.asana-status-dot.disconnected { background:#ef4444; }
+.asana-connected-info { font-size:0.82rem; color:var(--text-secondary); display:flex; align-items:center; gap:6px; flex:1; }
+
+@media (max-width:1024px) { .asana-columns { grid-template-columns:1fr; } }
+
 /* ===== PRINT WINDOW (Approval PDF) ===== */
 @media print {
   .no-print { display:none !important; }
@@ -558,7 +725,10 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
       <div class="nav-category">Cronogramas</div>
       <button class="sub" onclick="switchTab('sched-weekly')"><span class="icon">&#128197;</span> Semanal</button>
-      <button class="sub" onclick="switchTab('content-approval')"><span class="icon">&#128203;</span> Aprovação</button>
+      <button class="sub" onclick="switchTab('content-approval')"><span class="icon">&#128203;</span> Conteúdo</button>
+
+      <div class="nav-category">Integrações</div>
+      <button class="sub" onclick="switchTab('asana-tasks')"><span class="icon">&#128203;</span> Tarefas (Asana)</button>
 
       <div class="nav-category">Geral</div>
       <button class="sub" onclick="switchTab('clients')"><span class="icon">&#128101;</span> Clientes</button>
@@ -641,19 +811,24 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
       <!-- APROVAÇÃO DE CONTEÚDO -->
       <div id="tab-content-approval" class="tab-content">
-        <div class="ca-bar">
-          <label>Cliente:</label>
-          <select id="caClient" onchange="caOnClientChange()" style="min-width:200px">
-            <option value="">— selecione —</option>
+        <div class="card-header" style="margin-bottom:16px">
+          <div class="card-title">Cronogramas de Conteúdo</div>
+          <button class="btn btn-primary" onclick="caOpenNewSchedModal()">+ Novo Cronograma</button>
+        </div>
+        <div class="ca-filters">
+          <select id="caFilterClient" onchange="caRenderDashboard()">
+            <option value="all">Todos clientes</option>
           </select>
-          <label>Semana:</label>
-          <input type="text" id="caWeekLabel" placeholder="Ex: 3ª Semana de Março" style="width:200px" oninput="caOnWeekChange()">
-          <button class="btn btn-outline" style="font-size:0.82rem;padding:7px 14px" onclick="caAddPost()">+ Post</button>
-          <button class="btn btn-primary" style="font-size:0.82rem;padding:7px 16px" onclick="caOpenPreview()">🖨️ Gerar Aprovação</button>
+          <select id="caFilterStatus" onchange="caRenderDashboard()">
+            <option value="all">Todos status</option>
+            <option value="rascunho">Rascunho</option>
+            <option value="pronto">Pronto</option>
+            <option value="enviado">Enviado</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="revisao">Revisão</option>
+          </select>
         </div>
-        <div id="caPostsContainer">
-          <div class="ca-empty"><div class="ca-empty-icon">📋</div>Selecione um cliente e a semana para começar</div>
-        </div>
+        <div id="caDashboard" class="ca-dashboard"></div>
       </div>
 
       <!-- CLIENTES -->
@@ -684,6 +859,36 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
             </select>
           </div>
           <div class="two-columns" id="clientsColumns"></div>
+        </div>
+      </div>
+
+      <!-- ASANA TASKS -->
+      <div id="tab-asana-tasks" class="tab-content">
+        <div class="asana-status-bar" id="asanaStatusBar">
+          <div class="asana-connected-info">
+            <span class="asana-status-dot disconnected" id="asanaStatusDot"></span>
+            <span id="asanaStatusText">Verificando conexão...</span>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="asanaRefreshTasks()" id="asanaRefreshBtn" disabled>&#128260; Atualizar</button>
+          <button class="btn btn-outline btn-sm" onclick="asanaOpenConfig()">&#9881; Configurar</button>
+        </div>
+        <div class="card-header" style="margin-bottom:16px">
+          <div class="card-title">📋 Tarefas da Equipe</div>
+          <button class="btn btn-primary" onclick="asanaOpenCreateTask()">+ Nova Tarefa</button>
+        </div>
+        <div class="asana-columns" id="asanaColumns">
+          <div class="asana-column">
+            <div class="asana-col-header overdue">🔴 Atrasadas <span class="count" id="asanaOverdueCount">0</span></div>
+            <div class="asana-col-body" id="asanaOverdueCol"></div>
+          </div>
+          <div class="asana-column">
+            <div class="asana-col-header thisweek">📌 Pendentes <span class="count" id="asanaPendingCount">0</span></div>
+            <div class="asana-col-body" id="asanaPendingCol"></div>
+          </div>
+          <div class="asana-column">
+            <div class="asana-col-header done">✅ Concluídas <span class="count" id="asanaDoneCount">0</span></div>
+            <div class="asana-col-body" id="asanaDoneCol"></div>
+          </div>
         </div>
       </div>
 
@@ -854,6 +1059,159 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
     <div class="modal-actions">
       <button class="btn btn-outline" id="clientReportsClearBtn" onclick="clearAllClientReports()" style="color:var(--danger);border-color:var(--danger)">&#128465; Limpar tudo</button>
       <button class="btn btn-outline" onclick="document.getElementById('clientReportsModal').classList.remove('active')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Cronograma -->
+<div class="modal-overlay" id="caNewSchedModal">
+  <div class="modal" style="max-width:420px">
+    <h3>📋 Novo Cronograma</h3>
+    <div class="form-group">
+      <label class="form-label">Cliente</label>
+      <select class="form-input" id="caNewClient"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Semana / Período</label>
+      <input type="text" class="form-input" id="caNewWeek" placeholder="Ex: 3ª Semana de Março">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="caCloseNewSchedModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="caCreateSchedule()">Criar Cronograma</button>
+    </div>
+  </div>
+</div>
+
+<!-- Editor Fullscreen Cronograma -->
+<div class="ca-modal-overlay" id="caEditorModal">
+  <div class="ca-modal">
+    <div class="ca-modal-header">
+      <div class="ca-modal-header-left">
+        <button class="btn btn-outline" onclick="caCloseEditor()" style="padding:6px 14px">← Voltar</button>
+        <div>
+          <div class="ca-modal-header-title" id="caEditorTitle"></div>
+          <div class="ca-modal-header-sub" id="caEditorSubtitle"></div>
+        </div>
+        <span id="caEditorStatusBadge"></span>
+      </div>
+      <div id="caEditorActions" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div class="ca-modal-body">
+      <div id="caEditorPostGrid" class="ca-post-grid"></div>
+      <div style="text-align:center;margin-top:20px">
+        <button class="btn btn-outline" onclick="caAddPostV2()" style="padding:10px 24px">+ Adicionar Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drawer Editar Post -->
+<div class="ca-drawer-overlay" id="caDrawerOverlay" onclick="caCloseDrawer()"></div>
+<div class="ca-drawer" id="caDrawer">
+  <div class="ca-drawer-header">
+    <h3>Editar Post</h3>
+    <button class="ca-drawer-close" onclick="caCloseDrawer()">✕</button>
+  </div>
+  <div class="ca-drawer-body" id="caDrawerBody"></div>
+  <div class="ca-drawer-footer">
+    <button class="btn btn-outline" onclick="caCloseDrawer()">Cancelar</button>
+    <button class="btn btn-primary" onclick="caSaveDrawer()">Salvar</button>
+  </div>
+</div>
+
+<!-- Modal Asana Config -->
+<div class="modal-overlay" id="asanaConfigModal">
+  <div class="modal" style="max-width:520px">
+    <h3>⚙️ Configuração do Asana</h3>
+    <div id="asanaConfigContent">Carregando...</div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" style="margin-right:auto" onclick="trelloOpenMigration()">🔄 Migrar do Trello</button>
+      <button class="btn btn-outline" onclick="document.getElementById('asanaConfigModal').classList.remove('active')">Fechar</button>
+      <button class="btn btn-primary" onclick="asanaSaveConfig()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Criar Tarefa Asana -->
+<div class="modal-overlay" id="asanaCreateTaskModal">
+  <div class="modal" style="max-width:480px">
+    <h3>📋 Nova Tarefa no Asana</h3>
+    <div class="form-group">
+      <label class="form-label">Nome da Tarefa</label>
+      <input type="text" class="form-input" id="asanaTaskName" placeholder="Ex: Relatório Semanal — Pizzaria do Nei">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prazo</label>
+      <input type="date" class="form-input" id="asanaTaskDueDate">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Observações</label>
+      <textarea class="form-input" id="asanaTaskNotes" rows="3" placeholder="Detalhes da tarefa..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="document.getElementById('asanaCreateTaskModal').classList.remove('active')">Cancelar</button>
+      <button class="btn btn-primary" onclick="asanaSubmitCreateTask()">Criar Tarefa</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Migração Trello -->
+<div class="modal-overlay" id="trelloMigrationModal">
+  <div class="modal" style="max-width:580px">
+    <h3>🔄 Migração Trello → Asana</h3>
+    
+    <div id="trelloStep1">
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">
+        Selecione um quadro do Trello para exportar os cards e levá-los para o projeto atual do Asana.
+      </p>
+      <div class="form-group">
+        <label class="form-label">Selecione o Quadro</label>
+        <div style="display:flex;gap:8px">
+          <select class="form-input" id="trelloBoardSelect" style="flex:1"></select>
+          <button class="btn btn-outline" onclick="trelloLoadBoards()">🔄</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="document.getElementById('trelloMigrationModal').classList.remove('active')">Cancelar</button>
+        <button class="btn btn-primary" id="trelloNextBtn" onclick="trelloLoadBoardDetails()" disabled>Próximo: Mapear Listas</button>
+      </div>
+    </div>
+
+    <div id="trelloStep2" style="display:none">
+      <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px">
+        Mapeie as listas do Trello para as seções do projeto Asana.
+      </p>
+      <div id="trelloMappingContainer" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px">
+        Carregando listas...
+      </div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="btn btn-outline" onclick="trelloBackToStep1()">Voltar</button>
+        <button class="btn btn-primary" onclick="trelloExecuteMigration()">Migrar Agora</button>
+      </div>
+    </div>
+
+    <div id="trelloStep3" style="display:none;text-align:center;padding:20px">
+      <div style="font-size:2rem;margin-bottom:12px">⚙️</div>
+      <h4 id="trelloProgressTitle">Migrando...</h4>
+      <p id="trelloProgressSub" style="font-size:0.85rem;color:var(--text-secondary)"></p>
+      <div style="width:100%;background:var(--bg-subtle);height:8px;border-radius:4px;margin-top:15px;overflow:hidden">
+        <div id="trelloProgressBar" style="width:0%;height:100%;background:var(--primary);transition:width 0.3s"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Revisão -->
+<div class="modal-overlay" id="caRevisionModal">
+  <div class="modal" style="max-width:420px">
+    <h3>✏️ Observações da Revisão</h3>
+    <div class="form-group">
+      <label class="form-label">O que o cliente pediu para alterar?</label>
+      <textarea class="form-input" id="caRevisionNotes" rows="4" placeholder="Descreva as alterações solicitadas..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="document.getElementById('caRevisionModal').classList.remove('active')">Cancelar</button>
+      <button class="btn btn-primary" onclick="caConfirmRevision()">Confirmar Revisão</button>
     </div>
   </div>
 </div>
@@ -1207,7 +1565,8 @@ const TAB_TITLES = {
   weekly:        'Relatórios — Semanal',
   monthly:       'Relatórios — Mensal',
   'sched-weekly':      'Cronogramas — Semanal',
-  'content-approval':  'Cronogramas — Aprovação de Conteúdo',
+  'content-approval':  'Cronogramas de Conteúdo',
+  'asana-tasks':       'Tarefas (Asana)',
   clients:             'Gerenciar Clientes',
   history:       'Histórico de Envios'
 };
@@ -1225,6 +1584,7 @@ function switchTab(tabName) {
   document.getElementById('topbarTitle').textContent = TAB_TITLES[tabName] || '';
   document.getElementById('sidebar').classList.remove('open');
   if (tabName === 'content-approval') caInitTab();
+  else if (tabName === 'asana-tasks') asanaInitTab();
   else renderAll();
 }
 
@@ -2215,8 +2575,9 @@ function clearAllClientReports() {
   showToast('Sync limpo');
 }
 
-// ============ CONTENT APPROVAL MODULE ============
-const CA_STORAGE = 'content_approvals_v1';
+// ============ CONTENT APPROVAL MODULE v2 ============
+const CA_STORAGE_V1 = 'content_approvals_v1';
+const CA_STORAGE_V2 = 'content_schedules_v2';
 
 const CA_TYPES = [
   { label: 'CARROSSEL DE FOTOS',      section: 'feed',    cls: 'ca-type-feed'    },
@@ -2228,266 +2589,956 @@ const CA_TYPES = [
   { label: 'ENQUETE',                 section: 'stories', cls: 'ca-type-stories' },
 ];
 
-let caPosts      = [];
-let caClientId   = '';
-let caWeekLabel  = '';
+const CA_STATUS = {
+  rascunho: { icon: '📝', label: 'Rascunho',  cls: 'ca-status-rascunho' },
+  pronto:   { icon: '🟣', label: 'Pronto',    cls: 'ca-status-pronto'   },
+  enviado:  { icon: '📨', label: 'Enviado',   cls: 'ca-status-enviado'  },
+  aprovado: { icon: '✅', label: 'Aprovado',  cls: 'ca-status-aprovado' },
+  revisao:  { icon: '✏️', label: 'Revisão',   cls: 'ca-status-revisao'  },
+};
 
-function getCaAll()          { try { return JSON.parse(localStorage.getItem(CA_STORAGE) || '{}'); } catch(e){ return {}; } }
-function saveCaAll(d)        { localStorage.setItem(CA_STORAGE, JSON.stringify(d)); }
-function caCacheKey()        { return caClientId + '||' + caWeekLabel; }
+// --- Data layer v2 ---
+let _caCurrentSchedId = null;
+let _caCurrentPostId = null;
 
-function caPopulateClients() {
-  const sel = document.getElementById('caClient');
-  if (!sel) return;
-  const current = sel.value;
-  sel.innerHTML = '<option value="">— selecione —</option>';
+function getCaSchedules() { try { return JSON.parse(localStorage.getItem(CA_STORAGE_V2) || '{}'); } catch(e) { return {}; } }
+function saveCaSchedules(all) { localStorage.setItem(CA_STORAGE_V2, JSON.stringify(all)); }
+
+function caMigrateV1toV2() {
+  const v1 = localStorage.getItem(CA_STORAGE_V1);
+  if (!v1) return;
+  try {
+    const old = JSON.parse(v1);
+    const all = getCaSchedules();
+    for (const key of Object.keys(old)) {
+      const parts = key.split('||');
+      if (parts.length !== 2) continue;
+      const [clientId, weekLabel] = parts;
+      const exists = Object.values(all).some(s => s.clientId === clientId && s.weekLabel === weekLabel);
+      if (exists) continue;
+      const id = gid();
+      all[id] = {
+        id, clientId, weekLabel, status: 'rascunho', revisionNotes: '',
+        sentAt: null, approvedAt: null,
+        createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+        posts: (old[key] || []).map((p, i) => ({ ...p, sortOrder: i, clientNote: '' }))
+      };
+    }
+    saveCaSchedules(all);
+    localStorage.removeItem(CA_STORAGE_V1);
+  } catch(e) { console.warn('Migration v1→v2 error:', e); }
+}
+
+function caGetSchedule(id) { return getCaSchedules()[id] || null; }
+
+function caSetSchedule(sched) {
+  sched.updatedAt = new Date().toISOString();
+  const all = getCaSchedules();
+  all[sched.id] = sched;
+  saveCaSchedules(all);
+}
+
+function caDeleteSchedule(id) {
+  if (!confirm('Remover este cronograma?')) return;
+  const all = getCaSchedules();
+  delete all[id];
+  saveCaSchedules(all);
+  caRenderDashboard();
+  showToast('Cronograma removido');
+}
+
+// --- Status flow ---
+function caCanTransition(from, to) {
+  const valid = {
+    rascunho: ['pronto'],
+    pronto: ['enviado', 'rascunho'],
+    enviado: ['aprovado', 'revisao'],
+    revisao: ['pronto'],
+    aprovado: ['rascunho']
+  };
+  return (valid[from] || []).includes(to);
+}
+
+function caSetStatus(schedId, newStatus) {
+  const sched = caGetSchedule(schedId);
+  if (!sched) return;
+  if (newStatus === 'pronto' && (!sched.posts || sched.posts.length === 0)) {
+    showToast('Adicione pelo menos 1 post'); return;
+  }
+  if (!caCanTransition(sched.status, newStatus)) { showToast('Transição inválida'); return; }
+  if (newStatus === 'revisao') {
+    _caCurrentSchedId = schedId;
+    document.getElementById('caRevisionNotes').value = sched.revisionNotes || '';
+    document.getElementById('caRevisionModal').classList.add('active');
+    return;
+  }
+  sched.status = newStatus;
+  if (newStatus === 'enviado') sched.sentAt = new Date().toISOString();
+  if (newStatus === 'aprovado') sched.approvedAt = new Date().toISOString();
+  caSetSchedule(sched);
+  showToast(CA_STATUS[newStatus].icon + ' ' + CA_STATUS[newStatus].label);
+  if (document.getElementById('caEditorModal').classList.contains('active')) {
+    caRenderEditorHeader(sched);
+    caRenderEditorPosts(sched);
+  }
+  caRenderDashboard();
+}
+
+function caConfirmRevision() {
+  const sched = caGetSchedule(_caCurrentSchedId);
+  if (!sched) return;
+  sched.status = 'revisao';
+  sched.revisionNotes = document.getElementById('caRevisionNotes').value.trim();
+  caSetSchedule(sched);
+  document.getElementById('caRevisionModal').classList.remove('active');
+  showToast('✏️ Revisão registrada');
+  if (document.getElementById('caEditorModal').classList.contains('active')) {
+    caRenderEditorHeader(sched);
+  }
+  caRenderDashboard();
+}
+
+// --- Populate filter/selects ---
+function caPopulateClientSelect(selEl) {
+  if (!selEl) return;
+  const current = selEl.value;
+  const isFilter = selEl.id === 'caFilterClient';
+  selEl.innerHTML = isFilter ? '<option value="all">Todos clientes</option>' : '<option value="">— selecione —</option>';
   const sorted = [...data.clients].filter(c => c.active !== false).sort((a,b) => a.company.localeCompare(b.company) || a.name.localeCompare(b.name));
   let lastCo = '';
   sorted.forEach(c => {
     if (c.company !== lastCo) {
       const og = document.createElement('optgroup');
       og.label = c.company === 'Alpha' ? 'Alpha Assessoria' : 'Starken';
-      sel.appendChild(og);
+      selEl.appendChild(og);
       lastCo = c.company;
     }
     const opt = document.createElement('option');
     opt.value = c.id;
     opt.textContent = c.name;
     if (c.id === current) opt.selected = true;
-    sel.lastChild.appendChild(opt);
+    selEl.lastChild.appendChild(opt);
   });
 }
 
-function caOnClientChange() {
-  caClientId = document.getElementById('caClient').value;
-  caWeekLabel = document.getElementById('caWeekLabel').value.trim();
-  caLoadPosts();
-}
-
-function caOnWeekChange() {
-  caWeekLabel = document.getElementById('caWeekLabel').value.trim();
-  if (caClientId) caLoadPosts();
-}
-
-function caLoadPosts() {
-  if (!caClientId || !caWeekLabel) { caPosts = []; caRender(); return; }
-  const all = getCaAll();
-  caPosts = JSON.parse(JSON.stringify(all[caCacheKey()] || []));
-  caRender();
-}
-
-function caAddPost() {
-  if (!caClientId) { showToast('Selecione um cliente primeiro'); return; }
-  if (!caWeekLabel) { showToast('Informe a semana/período'); return; }
-  caPosts.push({ id: gid(), date: '', type: 'CARROSSEL DE FOTOS', section: 'feed', caption: '', imageData: null });
-  caRender();
-  caSave();
-}
-
-function caRemovePost(id) {
-  caPosts = caPosts.filter(p => p.id !== id);
-  caRender();
-  caSave();
-}
-
-function caUpdateField(id, field, val) {
-  const p = caPosts.find(x => x.id === id);
-  if (p) { p[field] = val; caSave(); }
-}
-
-function caUpdateType(id, val) {
-  const p = caPosts.find(x => x.id === id);
-  if (!p) return;
-  p.type = val;
-  const t = CA_TYPES.find(t => t.label === val);
-  p.section = t ? t.section : 'feed';
-  caSave();
-}
-
-function caSelectImage(id) {
-  document.getElementById('caFile_' + id).click();
-}
-
-function caLoadImage(id, event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const p = caPosts.find(x => x.id === id);
-    if (p) { p.imageData = e.target.result; caRender(); caSave(); }
-  };
-  reader.readAsDataURL(file);
-}
-
-function caRemoveImage(id, ev) {
-  ev.stopPropagation();
-  const p = caPosts.find(x => x.id === id);
-  if (p) { p.imageData = null; caRender(); caSave(); }
-}
-
-function caSave() {
-  if (!caClientId || !caWeekLabel) return;
-  const all = getCaAll();
-  all[caCacheKey()] = caPosts;
-  saveCaAll(all);
-}
-
-function caRender() {
-  const container = document.getElementById('caPostsContainer');
+// --- Dashboard ---
+function caRenderDashboard() {
+  const container = document.getElementById('caDashboard');
   if (!container) return;
-  if (!caClientId || !caWeekLabel) {
-    container.innerHTML = '<div class="ca-empty"><div class="ca-empty-icon">📋</div>Selecione um cliente e informe a semana para começar</div>';
+  const all = getCaSchedules();
+  const filterClient = document.getElementById('caFilterClient')?.value || 'all';
+  const filterStatus = document.getElementById('caFilterStatus')?.value || 'all';
+
+  let scheds = Object.values(all)
+    .filter(s => filterClient === 'all' || s.clientId === filterClient)
+    .filter(s => filterStatus === 'all' || s.status === filterStatus)
+    .sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+
+  if (scheds.length === 0) {
+    container.innerHTML = '<div class="ca-dashboard-empty"><div class="ca-empty-icon">📋</div><p><strong>Nenhum cronograma</strong></p><p style="font-size:0.82rem;margin-top:6px">Clique em <strong>+ Novo Cronograma</strong> para começar</p></div>';
     return;
   }
-  if (caPosts.length === 0) {
-    container.innerHTML = '<div class="ca-empty"><div class="ca-empty-icon">➕</div>Nenhum post ainda — clique em <strong>+ Post</strong> para adicionar</div>';
-    return;
-  }
-  container.innerHTML = caPosts.map((p, i) => {
-    const typeInfo = CA_TYPES.find(t => t.label === p.type) || CA_TYPES[0];
-    const typeOpts = CA_TYPES.map(t => `<option value="${t.label}" ${p.type === t.label ? 'selected' : ''}>${t.label}</option>`).join('');
-    const imgBlock = p.imageData
-      ? `<img src="${p.imageData}" class="ca-image-thumb"><br><button onclick="caRemoveImage('${p.id}',event)" style="margin-top:6px;font-size:0.75rem;background:none;border:1px solid #fca5a5;color:#ef4444;border-radius:4px;padding:2px 8px;cursor:pointer">✕ Remover imagem</button>`
-      : `<span>📷 Clique para carregar imagem da arte</span>`;
-    return `
-    <div class="ca-post-card">
-      <div class="ca-num">${i + 1}</div>
-      <div class="ca-fields">
-        <div class="ca-field-row">
-          <div>
-            <span class="ca-label">Data de postagem</span>
-            <input class="ca-input" type="text" placeholder="Ex: 18.03" value="${esc(p.date)}"
-              oninput="caUpdateField('${p.id}','date',this.value)">
-          </div>
-          <div>
-            <span class="ca-label">Tipo de conteúdo</span>
-            <select class="ca-input" onchange="caUpdateType('${p.id}',this.value)">${typeOpts}</select>
-          </div>
+
+  container.innerHTML = scheds.map(s => {
+    const client = data.clients.find(c => c.id === s.clientId);
+    const clientName = client ? client.name : 'Cliente removido';
+    const company = client ? client.company : '';
+    const st = CA_STATUS[s.status] || CA_STATUS.rascunho;
+    const postCount = (s.posts || []).length;
+    const compBadge = company === 'Alpha'
+      ? '<span class="ca-company-badge ca-company-alpha">Alpha</span>'
+      : company === 'Starken' ? '<span class="ca-company-badge ca-company-starken">Starken</span>' : '';
+    const lastDate = s.approvedAt || s.sentAt || s.updatedAt;
+    const lastLabel = s.approvedAt ? 'Aprovado ' : s.sentAt ? 'Enviado ' : 'Atualizado ';
+    const dateStr = lastDate ? lastLabel + new Date(lastDate).toLocaleDateString('pt-BR') : '';
+    return `<div class="ca-sched-card" onclick="caOpenEditor('${s.id}')">
+      <div class="ca-sched-card-top">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <span class="ca-status ${st.cls}">${st.icon} ${st.label}</span>
+          <button onclick="event.stopPropagation();caDeleteSchedule('${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem" title="Remover">🗑️</button>
         </div>
-        <div>
-          <span class="ca-label">Legenda <small style="color:var(--text-muted);font-weight:400">(texto completo do post)</small></span>
-          <textarea class="ca-input" rows="5" placeholder="Cole aqui a legenda completa do post..."
-            oninput="caUpdateField('${p.id}','caption',this.value)">${esc(p.caption)}</textarea>
-        </div>
-        <div>
-          <span class="ca-label">Arte / Criativo <span class="ca-type-badge ${typeInfo.cls}">${typeInfo.section.toUpperCase()}</span></span>
-          <div class="ca-image-area" onclick="caSelectImage('${p.id}')">
-            ${imgBlock}
-            <input type="file" id="caFile_${p.id}" accept="image/*" style="display:none" onchange="caLoadImage('${p.id}',event)">
-          </div>
+        <div class="ca-card-client">${esc(clientName)} ${compBadge}</div>
+        <div class="ca-card-week">${esc(s.weekLabel)}</div>
+        <div class="ca-card-meta">
+          <span>📄 ${postCount} post${postCount !== 1 ? 's' : ''}</span>
+          <span>${dateStr}</span>
         </div>
       </div>
-      <button class="ca-remove-btn" onclick="caRemovePost('${p.id}')" title="Remover post">✕</button>
+      <div class="ca-sched-card-bottom">
+        <span style="font-size:0.75rem;color:var(--text-muted)">${s.revisionNotes ? '💬 ' + esc(s.revisionNotes).substring(0,40) + (s.revisionNotes.length > 40 ? '…' : '') : ''}</span>
+        <span style="font-size:0.75rem;font-weight:600;color:var(--starken)">Abrir →</span>
+      </div>
     </div>`;
   }).join('');
 }
 
-function caOpenPreview() {
-  if (!caClientId || !caWeekLabel) { showToast('Selecione cliente e semana'); return; }
-  if (caPosts.length === 0) { showToast('Adicione ao menos um post'); return; }
-  const client = data.clients.find(c => c.id === caClientId);
-  const clientName = client ? client.name : 'Cliente';
+// --- New Schedule Popup ---
+function caOpenNewSchedModal() {
+  caPopulateClientSelect(document.getElementById('caNewClient'));
+  document.getElementById('caNewWeek').value = '';
+  document.getElementById('caNewSchedModal').classList.add('active');
+}
+function caCloseNewSchedModal() { document.getElementById('caNewSchedModal').classList.remove('active'); }
 
-  // Agrupar por seção
-  const feedPosts    = caPosts.filter(p => p.section === 'feed');
-  const storiesPosts = caPosts.filter(p => p.section === 'stories');
+function caCreateSchedule() {
+  const clientId = document.getElementById('caNewClient').value;
+  const weekLabel = document.getElementById('caNewWeek').value.trim();
+  if (!clientId) { showToast('Selecione um cliente'); return; }
+  if (!weekLabel) { showToast('Informe a semana'); return; }
+  const id = gid();
+  const sched = {
+    id, clientId, weekLabel, status: 'rascunho', revisionNotes: '',
+    sentAt: null, approvedAt: null,
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+    posts: []
+  };
+  caSetSchedule(sched);
+  caCloseNewSchedModal();
+  caOpenEditor(id);
+  showToast('Cronograma criado');
+}
+
+// --- Editor Fullscreen ---
+function caOpenEditor(schedId) {
+  const sched = caGetSchedule(schedId);
+  if (!sched) return;
+  _caCurrentSchedId = schedId;
+  caRenderEditorHeader(sched);
+  caRenderEditorPosts(sched);
+  document.getElementById('caEditorModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function caCloseEditor() {
+  document.getElementById('caEditorModal').classList.remove('active');
+  document.body.style.overflow = '';
+  _caCurrentSchedId = null;
+  caRenderDashboard();
+}
+
+function caRenderEditorHeader(sched) {
+  const client = data.clients.find(c => c.id === sched.clientId);
+  document.getElementById('caEditorTitle').textContent = client ? client.name : 'Cliente';
+  document.getElementById('caEditorSubtitle').textContent = sched.weekLabel;
+  const st = CA_STATUS[sched.status] || CA_STATUS.rascunho;
+  document.getElementById('caEditorStatusBadge').innerHTML = `<span class="ca-status ${st.cls}">${st.icon} ${st.label}</span>`;
+
+  let btns = '';
+  if (sched.status === 'rascunho') {
+    const dis = (sched.posts || []).length === 0 ? ' disabled title="Adicione posts primeiro"' : '';
+    btns += `<button class="btn btn-primary" onclick="caSetStatus('${sched.id}','pronto')"${dis}>🟣 Marcar Pronto</button>`;
+  }
+  if (sched.status === 'pronto') {
+    btns += `<button class="btn btn-outline" onclick="caSetStatus('${sched.id}','rascunho')">← Rascunho</button>`;
+    btns += `<button class="btn btn-primary" onclick="caSetStatus('${sched.id}','enviado')" style="background:var(--warning);border-color:var(--warning)">📨 Enviar</button>`;
+  }
+  if (sched.status === 'enviado') {
+    btns += `<button class="btn btn-primary" onclick="caSetStatus('${sched.id}','aprovado')" style="background:var(--success);border-color:var(--success)">✅ Aprovar</button>`;
+    btns += `<button class="btn btn-outline" onclick="caSetStatus('${sched.id}','revisao')" style="color:var(--warning);border-color:var(--warning)">✏️ Revisão</button>`;
+  }
+  if (sched.status === 'revisao') {
+    btns += `<button class="btn btn-primary" onclick="caSetStatus('${sched.id}','pronto')">🟣 Pronto (revisado)</button>`;
+    if (sched.revisionNotes) btns += `<span style="font-size:0.75rem;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(sched.revisionNotes)}">💬 ${esc(sched.revisionNotes).substring(0,30)}…</span>`;
+  }
+  if (sched.status === 'aprovado') {
+    btns += `<button class="btn btn-outline" onclick="caSetStatus('${sched.id}','rascunho')">♻️ Reabrir</button>`;
+  }
+  btns += `<button class="btn btn-outline" onclick="caOpenPreviewV2('${sched.id}')">🖨️ Gerar PDF</button>`;
+  document.getElementById('caEditorActions').innerHTML = btns;
+}
+
+function caRenderEditorPosts(sched) {
+  const grid = document.getElementById('caEditorPostGrid');
+  if (!sched.posts || sched.posts.length === 0) {
+    grid.innerHTML = '<div class="ca-dashboard-empty" style="grid-column:1/-1"><div class="ca-empty-icon">➕</div><p>Nenhum post — clique em <strong>+ Adicionar Post</strong></p></div>';
+    return;
+  }
+  grid.innerHTML = sched.posts.map((p, i) => {
+    const typeInfo = CA_TYPES.find(t => t.label === p.type) || CA_TYPES[0];
+    const thumbHtml = p.imageData
+      ? `<img src="${p.imageData}">`
+      : '📷';
+    const captionPreview = (p.caption || '').substring(0, 80);
+    return `<div class="ca-post-card-v2">
+      <div class="ca-post-thumb">${thumbHtml}</div>
+      <div class="ca-post-info">
+        <div class="ca-post-date">📅 ${p.date || '—'}</div>
+        <div class="ca-post-type"><span class="ca-type-badge ${typeInfo.cls}">${p.type}</span></div>
+        <div class="ca-post-caption">${esc(captionPreview) || '<em>sem legenda</em>'}</div>
+      </div>
+      <div class="ca-post-card-actions">
+        <button onclick="caOpenDrawer('${sched.id}','${p.id}')">✏️ Editar</button>
+        <button class="ca-btn-del" onclick="caRemovePostV2('${sched.id}','${p.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function caAddPostV2() {
+  const sched = caGetSchedule(_caCurrentSchedId);
+  if (!sched) return;
+  sched.posts = sched.posts || [];
+  sched.posts.push({
+    id: gid(), sortOrder: sched.posts.length, date: '',
+    type: 'CARROSSEL DE FOTOS', section: 'feed',
+    caption: '', imageData: null, clientNote: ''
+  });
+  caSetSchedule(sched);
+  caRenderEditorPosts(sched);
+  caRenderEditorHeader(sched);
+}
+
+function caRemovePostV2(schedId, postId) {
+  const sched = caGetSchedule(schedId);
+  if (!sched) return;
+  sched.posts = (sched.posts || []).filter(p => p.id !== postId);
+  caSetSchedule(sched);
+  caRenderEditorPosts(sched);
+  caRenderEditorHeader(sched);
+}
+
+// --- Drawer ---
+function caOpenDrawer(schedId, postId) {
+  _caCurrentSchedId = schedId;
+  _caCurrentPostId = postId;
+  const sched = caGetSchedule(schedId);
+  const post = (sched?.posts || []).find(p => p.id === postId);
+  if (!post) return;
+
+  const typeOpts = CA_TYPES.map(t => `<option value="${t.label}" ${post.type === t.label ? 'selected' : ''}>${t.label}</option>`).join('');
+  const imgPreview = post.imageData
+    ? `<img src="${post.imageData}" style="max-width:100%;max-height:200px;border-radius:8px;margin-bottom:8px"><br>
+       <button type="button" onclick="document.getElementById('caDrawerImgPreview').innerHTML='📷 Clique para carregar imagem';document.getElementById('caDrawerImgData').value=''" class="btn btn-outline" style="font-size:0.75rem;padding:3px 10px;color:#ef4444;border-color:#fecaca">✕ Remover</button>`
+    : '📷 Clique para carregar imagem';
+
+  document.getElementById('caDrawerBody').innerHTML = `
+    <div>
+      <label class="ca-label">Data de postagem</label>
+      <input class="ca-input" type="text" id="caDrawerDate" placeholder="Ex: 18.03" value="${esc(post.date)}">
+    </div>
+    <div>
+      <label class="ca-label">Tipo de conteúdo</label>
+      <select class="ca-input" id="caDrawerType">${typeOpts}</select>
+    </div>
+    <div>
+      <label class="ca-label">Legenda</label>
+      <textarea class="ca-input" id="caDrawerCaption" rows="6" placeholder="Cole aqui a legenda completa...">${esc(post.caption)}</textarea>
+    </div>
+    <div>
+      <label class="ca-label">Arte / Criativo</label>
+      <div class="ca-image-area" onclick="document.getElementById('caDrawerFileInput').click()" id="caDrawerImgPreview">
+        ${imgPreview}
+      </div>
+      <input type="file" id="caDrawerFileInput" accept="image/*" style="display:none" onchange="caDrawerLoadImage(event)">
+      <input type="hidden" id="caDrawerImgData" value="${post.imageData ? '1' : ''}">
+    </div>
+    <div>
+      <label class="ca-label">Observações do cliente</label>
+      <input class="ca-input" type="text" id="caDrawerNote" placeholder="Ex: Cliente pediu outra foto..." value="${esc(post.clientNote || '')}">
+    </div>`;
+
+  // Store current imageData for save
+  window._caDrawerCurrentImg = post.imageData;
+
+  document.getElementById('caDrawerOverlay').classList.add('active');
+  setTimeout(() => document.getElementById('caDrawer').classList.add('open'), 10);
+}
+
+function caCloseDrawer() {
+  document.getElementById('caDrawer').classList.remove('open');
+  setTimeout(() => document.getElementById('caDrawerOverlay').classList.remove('active'), 300);
+}
+
+function caDrawerLoadImage(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    window._caDrawerCurrentImg = e.target.result;
+    document.getElementById('caDrawerImgData').value = '1';
+    document.getElementById('caDrawerImgPreview').innerHTML = `<img src="${e.target.result}" style="max-width:100%;max-height:200px;border-radius:8px;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function caSaveDrawer() {
+  const sched = caGetSchedule(_caCurrentSchedId);
+  if (!sched) return;
+  const post = (sched.posts || []).find(p => p.id === _caCurrentPostId);
+  if (!post) return;
+
+  post.date = document.getElementById('caDrawerDate').value.trim();
+  post.type = document.getElementById('caDrawerType').value;
+  const t = CA_TYPES.find(t => t.label === post.type);
+  post.section = t ? t.section : 'feed';
+  post.caption = document.getElementById('caDrawerCaption').value;
+  post.clientNote = document.getElementById('caDrawerNote').value.trim();
+  post.imageData = document.getElementById('caDrawerImgData').value ? window._caDrawerCurrentImg : null;
+
+  caSetSchedule(sched);
+  caCloseDrawer();
+  caRenderEditorPosts(sched);
+  showToast('Post salvo');
+}
+
+// --- Preview PDF (adapted from v1) ---
+function caOpenPreviewV2(schedId) {
+  const sched = caGetSchedule(schedId);
+  if (!sched || !sched.posts || sched.posts.length === 0) { showToast('Adicione ao menos um post'); return; }
+  const client = data.clients.find(c => c.id === sched.clientId);
+  const clientName = client ? client.name : 'Cliente';
+  const weekLabel = sched.weekLabel;
+  const posts = sched.posts;
+
+  const feedPosts = posts.filter(p => p.section === 'feed');
+  const storiesPosts = posts.filter(p => p.section === 'stories');
 
   function postSlide(p) {
     const imgHtml = p.imageData
       ? `<img src="${p.imageData}" style="max-width:42%;max-height:340px;object-fit:contain;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.18);">`
       : `<div style="width:38%;height:260px;background:rgba(255,255,255,0.12);border-radius:8px;border:2px dashed rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,0.5);font-size:0.9rem;">[sem imagem]</div>`;
     const captionHtml = (p.caption || '').replace(/\n/g, '<br>');
-    return `
-      <div style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:48px 52px;box-sizing:border-box;">
-        <div style="font-size:0.72rem;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.6);margin-bottom:6px;text-transform:uppercase">${p.section === 'feed' ? 'CONTEÚDO · FEED' : 'CONTEÚDO · STORIES'}</div>
-        <div style="font-size:1.35rem;font-weight:800;color:white;margin-bottom:24px;letter-spacing:0.5px">${p.type} <span style="font-weight:400;font-size:1rem;opacity:0.7">(${p.date || '—'})</span></div>
-        <div style="display:flex;gap:40px;align-items:flex-start;flex:1">
-          <div style="flex-shrink:0;display:flex;align-items:flex-start">${imgHtml}</div>
-          <div style="flex:1;min-width:0">
-            <div style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase">Legenda:</div>
-            <div style="font-size:0.97rem;color:rgba(255,255,255,0.92);line-height:1.75;max-height:320px;overflow:hidden">${captionHtml || '<em style="opacity:0.4">sem legenda</em>'}</div>
-          </div>
+    return `<div style="width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;padding:48px 52px;box-sizing:border-box;">
+      <div style="font-size:0.72rem;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,0.6);margin-bottom:6px;text-transform:uppercase">${p.section === 'feed' ? 'CONTEÚDO · FEED' : 'CONTEÚDO · STORIES'}</div>
+      <div style="font-size:1.35rem;font-weight:800;color:white;margin-bottom:24px;letter-spacing:0.5px">${p.type} <span style="font-weight:400;font-size:1rem;opacity:0.7">(${p.date || '—'})</span></div>
+      <div style="display:flex;gap:40px;align-items:flex-start;flex:1">
+        <div style="flex-shrink:0;display:flex;align-items:flex-start">${imgHtml}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.8rem;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase">Legenda:</div>
+          <div style="font-size:0.97rem;color:rgba(255,255,255,0.92);line-height:1.75;max-height:320px;overflow:hidden">${captionHtml || '<em style="opacity:0.4">sem legenda</em>'}</div>
         </div>
-      </div>`;
+      </div>
+    </div>`;
   }
 
   function sectionDivider(label, sub) {
-    return `
-      <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-        <div style="font-size:2.8rem;font-weight:300;color:white;letter-spacing:2px">${label}</div>
-        ${sub ? `<div style="font-size:1.1rem;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:6px;margin-top:6px;text-transform:uppercase">${sub}</div>` : ''}
-      </div>`;
+    return `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <div style="font-size:2.8rem;font-weight:300;color:white;letter-spacing:2px">${label}</div>
+      ${sub ? `<div style="font-size:1.1rem;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:6px;margin-top:6px;text-transform:uppercase">${sub}</div>` : ''}
+    </div>`;
   }
 
   let slides = [];
-  // Capa
   slides.push(`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:space-between;padding:60px 80px;box-sizing:border-box;">
-    <div>
-      <div style="font-size:1.5rem;font-weight:300;color:rgba(255,255,255,0.8);margin-bottom:8px">Aprovação de</div>
-      <div style="font-size:3rem;font-weight:800;color:white;line-height:1.1">conteúdos</div>
-      <div style="margin-top:20px;font-size:1rem;font-weight:600;color:rgba(255,255,255,0.55);text-decoration:underline;letter-spacing:0.5px">${caWeekLabel}</div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:2rem;font-weight:700;color:white;opacity:0.9">${clientName}</div>
-    </div>
+    <div><div style="font-size:1.5rem;font-weight:300;color:rgba(255,255,255,0.8);margin-bottom:8px">Aprovação de</div>
+    <div style="font-size:3rem;font-weight:800;color:white;line-height:1.1">conteúdos</div>
+    <div style="margin-top:20px;font-size:1rem;font-weight:600;color:rgba(255,255,255,0.55);text-decoration:underline;letter-spacing:0.5px">${weekLabel}</div></div>
+    <div style="text-align:right"><div style="font-size:2rem;font-weight:700;color:white;opacity:0.9">${clientName}</div></div>
   </div>`);
-
-  // Feed
-  if (feedPosts.length > 0) {
-    slides.push(sectionDivider('conteúdo', 'feed'));
-    feedPosts.forEach(p => slides.push(postSlide(p)));
-  }
-  // Stories
-  if (storiesPosts.length > 0) {
-    slides.push(sectionDivider('conteúdo', 'stories'));
-    storiesPosts.forEach(p => slides.push(postSlide(p)));
-  }
-  // Encerramento
-  slides.push(`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-    <div style="font-size:2.5rem;font-weight:300;color:white;text-align:center;line-height:1.5">
-      aguardamos a<br><span style="font-weight:700">aprovação!</span>
-    </div>
-  </div>`);
+  if (feedPosts.length > 0) { slides.push(sectionDivider('conteúdo', 'feed')); feedPosts.forEach(p => slides.push(postSlide(p))); }
+  if (storiesPosts.length > 0) { slides.push(sectionDivider('conteúdo', 'stories')); storiesPosts.forEach(p => slides.push(postSlide(p))); }
+  slides.push(`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"><div style="font-size:2.5rem;font-weight:300;color:white;text-align:center;line-height:1.5">aguardamos a<br><span style="font-weight:700">aprovação!</span></div></div>`);
 
   const BG = '#A9A49A';
-  const slidesHtml = slides.map(content => `
-    <div style="width:297mm;height:210mm;background:${BG};position:relative;overflow:hidden;page-break-after:always;box-sizing:border-box;">
-      ${content}
-    </div>`).join('');
-
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
-    <meta charset="UTF-8">
-    <title>Aprovação de Conteúdo — ${clientName}</title>
-    <style>
-      *{margin:0;padding:0;box-sizing:border-box}
-      body{background:#666;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:white}
-      @media print{
-        @page{size:A4 landscape;margin:0}
-        body{background:none}
-        .no-print{display:none}
-        div[style*="page-break"]{page-break-after:always}
-      }
-      .print-btn{
-        position:fixed;top:16px;right:16px;z-index:999;
-        background:white;color:#333;border:none;padding:10px 20px;
-        border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;
-        box-shadow:0 4px 16px rgba(0,0,0,0.3);
-      }
-      .print-btn:hover{background:#f0f0f0}
-    </style>
-  </head><body>
-    <button class="print-btn no-print" onclick="window.print()">🖨️ Salvar como PDF</button>
-    ${slidesHtml}
-  </body></html>`;
-
+  const slidesHtml = slides.map(c => `<div style="width:297mm;height:210mm;background:${BG};position:relative;overflow:hidden;page-break-after:always;box-sizing:border-box;">${c}</div>`).join('');
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Aprovação de Conteúdo — ${clientName}</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#666;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:white}
+    @media print{@page{size:A4 landscape;margin:0}body{background:none}.no-print{display:none}div[style*="page-break"]{page-break-after:always}}
+    .print-btn{position:fixed;top:16px;right:16px;z-index:999;background:white;color:#333;border:none;padding:10px 20px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3)}.print-btn:hover{background:#f0f0f0}</style>
+  </head><body><button class="print-btn no-print" onclick="window.print()">🖨️ Salvar como PDF</button>${slidesHtml}</body></html>`;
   const w = window.open('', '_blank');
   if (w) { w.document.write(html); w.document.close(); }
   else showToast('Permita pop-ups para abrir a prévia');
 }
 
+// --- Init ---
 function caInitTab() {
-  caPopulateClients();
-  caRender();
+  caMigrateV1toV2();
+  caPopulateClientSelect(document.getElementById('caFilterClient'));
+  caRenderDashboard();
+}
+
+// ============ TRELLO MIGRATION ============
+let _trelloBoards = [];
+let _trelloExportedData = null;
+
+async function trelloOpenMigration() {
+  document.getElementById('asanaConfigModal').classList.remove('active');
+  document.getElementById('trelloMigrationModal').classList.add('active');
+  trelloBackToStep1();
+  if (_trelloBoards.length === 0) {
+    await trelloLoadBoards();
+  }
+}
+
+async function trelloLoadBoards() {
+  const select = document.getElementById('trelloBoardSelect');
+  const nextBtn = document.getElementById('trelloNextBtn');
+  select.innerHTML = '<option value="">Carregando boards...</option>';
+  nextBtn.disabled = true;
+
+  try {
+    const res = await fetch(asanaApiBase() + '/api/trello/export');
+    if (!res.ok) throw new Error('Falha ao carregar boards');
+    const boards = await res.json();
+    _trelloBoards = boards;
+
+    if (boards.length === 0) {
+      select.innerHTML = '<option value="">Nenhum board encontrado</option>';
+    } else {
+      select.innerHTML = '<option value="">-- selecione um board --</option>' + 
+        boards.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+      select.onchange = () => { nextBtn.disabled = !select.value; };
+    }
+  } catch (e) {
+    select.innerHTML = `<option value="">Erro: ${e.message}</option>`;
+  }
+}
+
+async function trelloLoadBoardDetails() {
+  const boardId = document.getElementById('trelloBoardSelect').value;
+  if (!boardId) return;
+
+  const container = document.getElementById('trelloMappingContainer');
+  container.innerHTML = 'Carregando detalhes do board...';
+  document.getElementById('trelloStep1').style.display = 'none';
+  document.getElementById('trelloStep2').style.display = 'block';
+
+  try {
+    const res = await fetch(asanaApiBase() + '/api/trello/export?boardId=' + boardId);
+    if (!res.ok) throw new Error('Falha ao exportar board');
+    const data = await res.json();
+    _trelloExportedData = data;
+
+    // Load Asana sections for the current project
+    const projectGid = (_asanaConfig && _asanaConfig.default_project_gid) || ASANA_DEFAULT_PROJECT;
+    const secRes = await fetch(asanaApiBase() + '/api/asana/sections?project=' + projectGid);
+    const secData = secRes.ok ? await secRes.json() : { data: [] };
+    const asanaSections = secData.data || [];
+
+    let html = '<table style="width:100%;font-size:0.8rem;border-collapse:collapse">';
+    html += '<thead><tr style="border-bottom:1px solid var(--border)"><th align="left" style="padding:8px">Lista Trello</th><th align="left" style="padding:8px">Seção Asana</th></tr></thead><tbody>';
+    
+    data.lists.forEach(list => {
+      html += `<tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:8px font-weight:600">${esc(list.name)}</td>
+        <td style="padding:8px">
+          <select class="form-input trello-map-select" style="padding:4px;font-size:0.75rem" data-trello-list="${list.id}">
+            <option value="">-- ignorar --</option>
+            ${asanaSections.map(s => `<option value="${s.gid}">${esc(s.name)}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch (e) {
+    container.innerHTML = `<div style="color:red">Erro: ${e.message}</div>`;
+  }
+}
+
+function trelloBackToStep1() {
+  document.getElementById('trelloStep1').style.display = 'block';
+  document.getElementById('trelloStep2').style.display = 'none';
+  document.getElementById('trelloStep3').style.display = 'none';
+}
+
+async function trelloExecuteMigration() {
+  if (!_trelloExportedData) return;
+
+  const mapping = {};
+  document.querySelectorAll('.trello-map-select').forEach(sel => {
+    if (sel.value) mapping[sel.getAttribute('data-trello-list')] = sel.value;
+  });
+
+  const cardsToMigrate = _trelloExportedData.cards.filter(c => !!mapping[c.idList]);
+  if (cardsToMigrate.length === 0) {
+    showToast('Nenhuma lista mapeada para migração');
+    return;
+  }
+
+  if (!confirm(`Deseja migrar ${cardsToMigrate.length} cards para o Asana?`)) return;
+
+  document.getElementById('trelloStep2').style.display = 'none';
+  document.getElementById('trelloStep3').style.display = 'block';
+  
+  const progressTitle = document.getElementById('trelloProgressTitle');
+  const progressSub = document.getElementById('trelloProgressSub');
+  const progressBar = document.getElementById('trelloProgressBar');
+
+  const projectGid = (_asanaConfig && _asanaConfig.default_project_gid) || ASANA_DEFAULT_PROJECT;
+
+  try {
+    const res = await fetch(asanaApiBase() + '/api/trello/migrate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        asanaProjectGid: projectGid,
+        cards: cardsToMigrate,
+        listMapping: mapping
+      })
+    });
+
+    if (!res.ok) throw new Error('Erro na API de migração');
+    const result = await res.json();
+
+    progressTitle.textContent = 'Migração Finalizada!';
+    progressSub.textContent = `Sucesso: ${result.success} | Falhas: ${result.failed}`;
+    progressBar.style.width = '100%';
+    progressBar.style.background = '#10b981';
+
+    setTimeout(() => {
+      document.getElementById('trelloMigrationModal').classList.remove('active');
+      asanaRefreshTasks();
+    }, 3000);
+
+  } catch (e) {
+    progressTitle.textContent = 'Erro na Migração';
+    progressSub.textContent = e.message;
+    progressBar.style.background = '#ef4444';
+  }
+}
+
+// ============ ASANA INTEGRATION ============
+const ASANA_CONFIG_KEY = 'asana_config_local';
+const ASANA_DEFAULT_WORKSPACE = '1213720645962721';
+const ASANA_DEFAULT_PROJECT   = '1213723111337618';
+
+let _asanaConnected = false;
+let _asanaConfig = null;
+let _asanaTasks = [];
+let _asanaUser = null;
+let _asanaInitialized = false;
+
+// Base URL for API routes (auto-detect: same origin on Vercel, or localhost dev)
+function asanaApiBase() {
+  return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:3000' : '';
+}
+
+// ---- Connection check ----
+async function asanaCheckConnection() {
+  const dot = document.getElementById('asanaStatusDot');
+  const txt = document.getElementById('asanaStatusText');
+  const btn = document.getElementById('asanaRefreshBtn');
+
+  txt.textContent = 'Verificando conexão...';
+  dot.className = 'asana-status-dot disconnected';
+
+  try {
+    const res = await fetch(asanaApiBase() + '/api/asana/config');
+    if (!res.ok) throw new Error('API offline');
+    const cfg = await res.json();
+
+    if (cfg.connected && cfg.user) {
+      _asanaConnected = true;
+      _asanaUser = cfg.user;
+      _asanaConfig = cfg.config || {};
+      dot.className = 'asana-status-dot connected';
+      txt.textContent = '✅ Conectado como ' + cfg.user.name;
+      btn.disabled = false;
+      return true;
+    } else {
+      dot.className = 'asana-status-dot disconnected';
+      txt.textContent = '❌ ' + (cfg.error || 'Asana não conectado. Configure o ASANA_PAT no Vercel.');
+      btn.disabled = true;
+      return false;
+    }
+  } catch(e) {
+    dot.className = 'asana-status-dot disconnected';
+    txt.textContent = '❌ API não disponível (' + e.message + '). Deploy as API routes ao Vercel.';
+    btn.disabled = true;
+    return false;
+  }
+}
+
+// ---- Fetch tasks ----
+async function asanaFetchTasks() {
+  if (!_asanaConnected) return [];
+  const project = (_asanaConfig && _asanaConfig.default_project_gid) || ASANA_DEFAULT_PROJECT;
+
+  try {
+    // Fetch incomplete tasks
+    const incRes = await fetch(asanaApiBase() + '/api/asana/tasks?project=' + project + '&completed=false');
+    const incData = incRes.ok ? await incRes.json() : { data: [] };
+
+    // Fetch recently completed tasks (all, then filter client-side)
+    const allRes = await fetch(asanaApiBase() + '/api/asana/tasks?project=' + project + '&completed=all');
+    const allData = allRes.ok ? await allRes.json() : { data: [] };
+
+    // Merge: incomplete from first call + completed from second
+    const incomplete = (incData.data || []).filter(t => !t.completed);
+    const completed = (allData.data || []).filter(t => t.completed);
+
+    // Only show completed from last 7 days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentCompleted = completed.filter(t => {
+      if (!t.completed_at) return false;
+      return new Date(t.completed_at) >= sevenDaysAgo;
+    });
+
+    _asanaTasks = [...incomplete, ...recentCompleted];
+    return _asanaTasks;
+  } catch(e) {
+    console.error('Asana fetch error:', e);
+    return [];
+  }
+}
+
+// ---- Render tasks in 3 columns ----
+function asanaRenderTasks() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const endOfWeek = new Date(today);
+  endOfWeek.setDate(endOfWeek.getDate() + (7 - endOfWeek.getDay()));
+
+  const overdue = [];
+  const pending = [];
+  const done = [];
+
+  _asanaTasks.forEach(t => {
+    if (t.completed) {
+      done.push(t);
+    } else if (t.due_on) {
+      const due = new Date(t.due_on + 'T23:59:59');
+      if (due < today) {
+        overdue.push(t);
+      } else {
+        pending.push(t);
+      }
+    } else {
+      pending.push(t);
+    }
+  });
+
+  // Sort
+  overdue.sort((a,b) => new Date(a.due_on || '9999') - new Date(b.due_on || '9999'));
+  pending.sort((a,b) => new Date(a.due_on || '9999') - new Date(b.due_on || '9999'));
+  done.sort((a,b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+
+  document.getElementById('asanaOverdueCount').textContent = overdue.length;
+  document.getElementById('asanaPendingCount').textContent = pending.length;
+  document.getElementById('asanaDoneCount').textContent = done.length;
+
+  document.getElementById('asanaOverdueCol').innerHTML = overdue.length
+    ? overdue.map(t => asanaTaskCardHtml(t, true)).join('')
+    : '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem">🎉 Nenhuma atrasada!</div>';
+
+  document.getElementById('asanaPendingCol').innerHTML = pending.length
+    ? pending.map(t => asanaTaskCardHtml(t, false)).join('')
+    : '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem">Nenhuma tarefa pendente</div>';
+
+  document.getElementById('asanaDoneCol').innerHTML = done.length
+    ? done.map(t => asanaTaskCardDoneHtml(t)).join('')
+    : '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.82rem">Nenhuma concluída recentemente</div>';
+}
+
+function asanaTaskCardHtml(t, isOverdue) {
+  const dueStr = t.due_on ? formatDateBR(t.due_on) : 'Sem prazo';
+  const assigneeName = t.assignee ? t.assignee.name : 'Sem responsável';
+  const overdueCls = isOverdue ? ' overdue' : '';
+  const asanaUrl = 'https://app.asana.com/0/' + ASANA_DEFAULT_PROJECT + '/' + t.gid;
+
+  return '<div class="asana-task-card' + overdueCls + '">'
+    + '<div class="task-name">' + esc(t.name) + '</div>'
+    + '<div class="task-meta">'
+    + '<span>📅 ' + dueStr + '</span>'
+    + '<span>👤 ' + esc(assigneeName) + '</span>'
+    + '</div>'
+    + (t.notes ? '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px;max-height:40px;overflow:hidden">' + esc(t.notes).substring(0, 100) + '</div>' : '')
+    + '<div class="task-actions">'
+    + '<button class="btn-complete" onclick="asanaCompleteTask(\'' + t.gid + '\')">\u2705 Concluir</button>'
+    + '<a href="' + asanaUrl + '" target="_blank" style="padding:3px 10px;border-radius:5px;font-size:0.72rem;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--text-secondary)">Abrir no Asana</a>'
+    + '</div></div>';
+}
+
+function asanaTaskCardDoneHtml(t) {
+  const doneDate = t.completed_at ? formatDateBR(t.completed_at.slice(0,10)) : '';
+  return '<div class="asana-task-card" style="opacity:0.65">'
+    + '<div class="task-name" style="text-decoration:line-through">' + esc(t.name) + '</div>'
+    + '<div class="task-meta"><span>\u2705 ' + doneDate + '</span></div>'
+    + '</div>';
+}
+
+function formatDateBR(isoStr) {
+  if (!isoStr) return '';
+  const parts = isoStr.split('-');
+  if (parts.length < 3) return isoStr;
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+// ---- Refresh ----
+async function asanaRefreshTasks() {
+  const btn = document.getElementById('asanaRefreshBtn');
+  btn.disabled = true;
+  btn.textContent = '🔄 Atualizando...';
+  await asanaFetchTasks();
+  asanaRenderTasks();
+  btn.disabled = false;
+  btn.textContent = '🔄 Atualizar';
+  showToast('Tarefas atualizadas');
+}
+
+// ---- Complete task ----
+async function asanaCompleteTask(taskGid) {
+  if (!confirm('Marcar tarefa como concluída?')) return;
+  try {
+    const res = await fetch(asanaApiBase() + '/api/asana/tasks', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_gid: taskGid, completed: true }),
+    });
+    if (!res.ok) throw new Error('Erro ao atualizar');
+    showToast('\u2705 Tarefa concluída!');
+    // Update local state
+    const t = _asanaTasks.find(x => x.gid === taskGid);
+    if (t) { t.completed = true; t.completed_at = new Date().toISOString(); }
+    asanaRenderTasks();
+  } catch(e) {
+    showToast('\u274c Erro: ' + e.message);
+  }
+}
+
+// ---- Create task ----
+function asanaOpenCreateTask() {
+  if (!_asanaConnected) { showToast('Asana não conectado'); return; }
+  document.getElementById('asanaTaskName').value = '';
+  document.getElementById('asanaTaskDueDate').value = '';
+  document.getElementById('asanaTaskNotes').value = '';
+  document.getElementById('asanaCreateTaskModal').classList.add('active');
+}
+
+// Create task from checklist (pre-filled)
+function asanaCreateFromChecklist(clientName, type, periodLabel, dueDate) {
+  if (!_asanaConnected) { showToast('Asana não conectado. Va em Tarefas > Configurar.'); return; }
+  const typeLabel = type === 'weekly' ? 'Relatório Semanal' : 'Relatório Mensal';
+  document.getElementById('asanaTaskName').value = typeLabel + ' \u2014 ' + clientName + ' (' + periodLabel + ')';
+  document.getElementById('asanaTaskDueDate').value = dueDate || '';
+  document.getElementById('asanaTaskNotes').value = 'Gerar ' + typeLabel.toLowerCase() + ' para ' + clientName + '.\nPeríodo: ' + periodLabel;
+  document.getElementById('asanaCreateTaskModal').classList.add('active');
+}
+
+async function asanaSubmitCreateTask() {
+  const name = document.getElementById('asanaTaskName').value.trim();
+  const due_on = document.getElementById('asanaTaskDueDate').value || null;
+  const notes = document.getElementById('asanaTaskNotes').value.trim();
+
+  if (!name) { showToast('Informe o nome da tarefa'); return; }
+
+  const project = (_asanaConfig && _asanaConfig.default_project_gid) || ASANA_DEFAULT_PROJECT;
+
+  try {
+    const res = await fetch(asanaApiBase() + '/api/asana/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, project, due_on, notes }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Erro ao criar');
+    }
+    const result = await res.json();
+    showToast('\u2705 Tarefa criada no Asana!');
+    document.getElementById('asanaCreateTaskModal').classList.remove('active');
+
+    // Add to local cache and re-render
+    if (result.data) {
+      _asanaTasks.unshift(result.data);
+      asanaRenderTasks();
+    }
+  } catch(e) {
+    showToast('\u274c ' + e.message);
+  }
+}
+
+// ---- Config modal ----
+async function asanaOpenConfig() {
+  const container = document.getElementById('asanaConfigContent');
+  const currentWorkspace = (_asanaConfig && _asanaConfig.workspace_gid) || ASANA_DEFAULT_WORKSPACE;
+  const currentProject = (_asanaConfig && _asanaConfig.default_project_gid) || ASANA_DEFAULT_PROJECT;
+
+  let html = '';
+  html += '<div class="form-group">';
+  html += '<label class="form-label">Status da Conexão</label>';
+  if (_asanaConnected && _asanaUser) {
+    html += '<div style="padding:8px 12px;background:#ecfdf5;border-radius:6px;font-size:0.85rem">\u2705 Conectado como <strong>' + esc(_asanaUser.name) + '</strong></div>';
+  } else {
+    html += '<div style="padding:8px 12px;background:#fef2f2;border-radius:6px;font-size:0.85rem">\u274c Não conectado. Configure ASANA_PAT nas variáveis de ambiente do Vercel.</div>';
+  }
+  html += '</div>';
+
+  html += '<div class="form-group">';
+  html += '<label class="form-label">Workspace GID</label>';
+  html += '<input type="text" class="form-input" id="asanaCfgWorkspace" value="' + esc(currentWorkspace) + '" placeholder="Ex: 1213720645962721">';
+  html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Encontrado na URL do Asana</div>';
+  html += '</div>';
+
+  html += '<div class="form-group">';
+  html += '<label class="form-label">Projeto Padrão GID</label>';
+  html += '<input type="text" class="form-input" id="asanaCfgProject" value="' + esc(currentProject) + '" placeholder="Ex: 1213723111337618">';
+  html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Projeto onde as tarefas serão criadas</div>';
+  html += '</div>';
+
+  // If connected, try to load projects for quick select
+  if (_asanaConnected) {
+    try {
+      const res = await fetch(asanaApiBase() + '/api/asana/projects?workspace=' + currentWorkspace);
+      if (res.ok) {
+        const projData = await res.json();
+        if (projData.data && projData.data.length > 0) {
+          html += '<div class="form-group">';
+          html += '<label class="form-label">Ou selecione um projeto</label>';
+          html += '<select class="form-input" onchange="if(this.value)document.getElementById(\'asanaCfgProject\').value=this.value">';
+          html += '<option value="">\u2014 selecione \u2014</option>';
+          projData.data.forEach(p => {
+            const sel = p.gid === currentProject ? ' selected' : '';
+            html += '<option value="' + p.gid + '"' + sel + '>' + esc(p.name) + '</option>';
+          });
+          html += '</select></div>';
+        }
+      }
+    } catch(e) { /* ignore */ }
+  }
+
+  container.innerHTML = html;
+  document.getElementById('asanaConfigModal').classList.add('active');
+}
+
+function asanaSaveConfig() {
+  const workspace_gid = document.getElementById('asanaCfgWorkspace').value.trim();
+  const default_project_gid = document.getElementById('asanaCfgProject').value.trim();
+
+  const cfg = {
+    workspace_gid,
+    default_project_gid,
+    client_project_map: (_asanaConfig && _asanaConfig.client_project_map) || {},
+  };
+
+  // Save locally
+  localStorage.setItem(ASANA_CONFIG_KEY, JSON.stringify(cfg));
+  _asanaConfig = cfg;
+
+  // Also try to save to server/Supabase
+  fetch(asanaApiBase() + '/api/asana/config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cfg),
+  }).catch(() => {}); // non-blocking
+
+  document.getElementById('asanaConfigModal').classList.remove('active');
+  showToast('Configuração salva');
+  asanaRefreshTasks();
+}
+
+// ---- Init Asana tab ----
+async function asanaInitTab() {
+  // Load local config
+  try {
+    const local = JSON.parse(localStorage.getItem(ASANA_CONFIG_KEY) || '{}');
+    if (local.workspace_gid) _asanaConfig = local;
+  } catch(e) {}
+
+  if (!_asanaInitialized) {
+    const ok = await asanaCheckConnection();
+    _asanaInitialized = true;
+    if (ok) {
+      await asanaFetchTasks();
+      asanaRenderTasks();
+    }
+  } else if (_asanaConnected) {
+    asanaRenderTasks();
+  }
 }
 
 // ============ INIT ============
