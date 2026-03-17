@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Checklist de Relatórios - Starken & Alpha</title>
+<title>Starken Performance</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -537,6 +537,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   .no-print { display:none !important; }
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -545,8 +546,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <h1>Checklist</h1>
-      <span>Starken & Alpha</span>
+      <h1>Starken Performance</h1>
+      <span>Gestão de Relatórios</span>
     </div>
     <nav class="sidebar-nav">
       <button class="active" onclick="switchTab('dashboard')"><span class="icon">&#9632;</span> Dashboard</button>
@@ -569,6 +570,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <button onclick="exportData()">&#128229; Exportar Backup</button>
       <button onclick="document.getElementById('importFile').click()">&#128228; Importar Backup</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      <div id="syncStatus" style="padding:7px 12px;font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.35)">☁️ Nuvem</div>
     </div>
   </aside>
 
@@ -860,6 +862,113 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 // ============ DATA ============
 const STORAGE_KEY = 'checklist_relatorios_v3';
 
+// ============ SUPABASE CONFIG ============
+// ⚠️ Substitua pelos valores do seu projeto em supabase.com → Settings → API
+const SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_z-uy5pBapfR74IIQyag5vA_i6IKJLHB';
+
+let _supabase = null;
+
+function initSupabase() {
+  if (SUPABASE_URL.includes('SEU_PROJETO') || SUPABASE_KEY.includes('sua_anon')) return false;
+  try {
+    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return true;
+  } catch(e) {
+    console.warn('Supabase init error:', e);
+    return false;
+  }
+}
+
+function setSyncStatus(status) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  const map = {
+    idle:    { text: '☁️ Nuvem',      color: 'rgba(255,255,255,0.35)' },
+    syncing: { text: '🔄 Salvando…',  color: '#f59e0b' },
+    ok:      { text: '✅ Sincronizado', color: '#10b981' },
+    error:   { text: '⚠️ Erro sync',   color: '#ef4444' },
+  };
+  const s = map[status] || map.idle;
+  el.textContent = s.text;
+  el.style.color = s.color;
+}
+
+async function syncToSupabase(d) {
+  if (!_supabase) return;
+  setSyncStatus('syncing');
+  try {
+    if (d.clients && d.clients.length > 0) {
+      const rows = d.clients.map((c, i) => ({
+        id: c.id, name: c.name, company: c.company,
+        phone: c.phone || '', custom_period: c.customPeriod || '',
+        segment: c.segment || '', active: c.active !== false,
+        sort_order: i
+      }));
+      const { error } = await _supabase.from('clients').upsert(rows);
+      if (error) throw error;
+    }
+    if (d.reports && d.reports.length > 0) {
+      const rows = d.reports.map(r => ({
+        id: r.id, client_id: r.clientId, type: r.type, period: r.period,
+        status: r.status || 0, sent: r.sent || false,
+        sent_date: r.sentDate || null, notes: r.notes || '',
+        pdf_filename: r.pdfFilename || null,
+        period_start: r.periodStart || null, period_end: r.periodEnd || null,
+        period_note: r.periodNote || '',
+        created_at: r.createdAt || new Date().toISOString()
+      }));
+      const { error } = await _supabase.from('reports').upsert(rows);
+      if (error) throw error;
+    }
+    setSyncStatus('ok');
+    setTimeout(() => setSyncStatus('idle'), 3000);
+  } catch(e) {
+    console.error('Erro Supabase sync:', e);
+    setSyncStatus('error');
+  }
+}
+
+async function deleteFromSupabase(table, id) {
+  if (!_supabase) return;
+  try {
+    await _supabase.from(table).delete().eq('id', id);
+  } catch(e) {
+    console.error('Erro Supabase delete:', e);
+  }
+}
+
+async function loadFromSupabase() {
+  if (!_supabase) return null;
+  try {
+    const [{ data: clients, error: ce }, { data: reports, error: re }] = await Promise.all([
+      _supabase.from('clients').select('*').order('sort_order', { ascending: true }),
+      _supabase.from('reports').select('*')
+    ]);
+    if (ce || re) throw ce || re;
+    if (!clients || clients.length === 0) return null;
+    return {
+      clients: clients.map(c => ({
+        id: c.id, name: c.name, company: c.company,
+        phone: c.phone || '', customPeriod: c.custom_period || '',
+        segment: c.segment || '', active: c.active !== false
+      })),
+      reports: (reports || []).map(r => ({
+        id: r.id, clientId: r.client_id, type: r.type, period: r.period,
+        status: r.status || 0, sent: r.sent || false,
+        sentDate: r.sent_date || null, notes: r.notes || '',
+        pdfFilename: r.pdf_filename || null,
+        periodStart: r.period_start || null, periodEnd: r.period_end || null,
+        periodNote: r.period_note || '',
+        createdAt: r.created_at || new Date().toISOString()
+      }))
+    };
+  } catch(e) {
+    console.error('Erro Supabase load:', e);
+    return null;
+  }
+}
+
 function gid() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
 
 // Todos os clientes conhecidos — usados para seed automático
@@ -939,7 +1048,10 @@ function loadData() {
   return d;
 }
 
-function saveData(d) { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+function saveData(d) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+  syncToSupabase(d); // async, não bloqueia a UI
+}
 let data = loadData();
 
 // ============ PER-COLUMN SEGMENT FILTERS ============
@@ -1712,7 +1824,9 @@ function deleteClient(id) {
   if (!c) return;
   if (!confirm('Remover "' + c.name + '"?')) return;
   data.clients = data.clients.filter(x => x.id !== id);
+  data.reports = data.reports.filter(x => x.clientId !== id);
   saveData(data);
+  deleteFromSupabase('clients', id); // CASCADE deletes reports too
   showToast('Removido');
   renderAll();
 }
@@ -2378,7 +2492,43 @@ function caInitTab() {
 
 // ============ INIT ============
 populateMonthSelects();
-renderAll();
+renderAll(); // render imediato com dados do localStorage
+
+(async () => {
+  if (initSupabase()) {
+    setSyncStatus('syncing');
+    const cloudData = await loadFromSupabase();
+    if (cloudData) {
+      // Aplica migrações
+      cloudData.clients.forEach(c => {
+        if (!c.phone) c.phone = '';
+        if (!c.customPeriod) c.customPeriod = '';
+        if (!c.segment) c.segment = '';
+      });
+      cloudData.reports.forEach(r => {
+        if (typeof r.status === 'undefined') r.status = r.sent ? 2 : 0;
+      });
+      // Seed de novos clientes
+      for (const seed of SEED_CLIENTS) {
+        const idx = cloudData.clients.findIndex(c => c.name.toLowerCase() === seed.name.toLowerCase());
+        if (idx === -1) {
+          cloudData.clients.push({ id: gid(), name: seed.name, company: seed.company, phone: '', customPeriod: '', segment: seed.segment || '', active: true });
+        } else if (!cloudData.clients[idx].segment && seed.segment) {
+          cloudData.clients[idx].segment = seed.segment;
+        }
+      }
+      data = cloudData;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      setSyncStatus('ok');
+      setTimeout(() => setSyncStatus('idle'), 3000);
+      renderAll();
+    } else {
+      // Supabase vazio — envia dados locais para a nuvem
+      setSyncStatus('idle');
+      syncToSupabase(data);
+    }
+  }
+})();
 </script>
 </body>
 </html>
