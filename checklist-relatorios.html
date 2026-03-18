@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Starken Performance</title>
+<title>Starken OS</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -700,23 +700,178 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 @media (max-width:1024px) { .asana-columns { grid-template-columns:1fr; } }
 
 /* ===== PRINT WINDOW (Approval PDF) ===== */
-@media print {
-  .no-print { display:none !important; }
-}
+@media print { .no-print { display:none !important; } }
+
+/* ===== LOGIN ===== */
+.login-wrap { display:flex; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#1e40af,#3b82f6); position:fixed; inset:0; z-index:9999; }
+.login-card { background:#fff; padding:40px; border-radius:12px; width:380px; box-shadow:0 20px 40px rgba(0,0,0,.2); }
+.login-logo { text-align:center; margin-bottom:32px; }
+.login-logo h1 { font-size:26px; color:var(--starken); margin-top:8px; font-weight:800; }
+.login-logo p { color:var(--text-secondary); font-size:13px; margin-top:4px; }
+.login-field-label { display:block; font-weight:600; margin-bottom:6px; font-size:0.85rem; color:#374151; }
+.login-field { width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; font-family:inherit; transition:.2s; }
+.login-field:focus { outline:none; border-color:var(--starken); box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+.login-btn { margin-top:18px; width:100%; padding:11px; background:var(--starken); color:#fff; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer; font-family:inherit; transition:.15s; }
+.login-btn:hover { background:var(--starken-dark); }
+.login-error { color:var(--danger); font-size:12px; margin-top:8px; display:none; }
+.login-error.show { display:block; }
+.hidden { display:none !important; }
+
+/* ===== SPACE SELECTOR ===== */
+.sb-space { padding:10px 12px 8px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sb-space label { font-size:0.62rem; text-transform:uppercase; color:rgba(255,255,255,0.35); letter-spacing:1.2px; display:block; margin-bottom:5px; }
+.sb-space select { width:100%; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:7px 10px; font-size:0.82rem; font-family:inherit; cursor:pointer; }
+.sb-space select option { background:#1e293b; color:#fff; }
+
+/* ===== SIDEBAR USER FOOTER ===== */
+.sb-user { padding:10px 12px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:10px; }
+.sb-avatar { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; color:#fff; flex-shrink:0; }
+.sb-user-name { flex:1; font-size:0.82rem; color:rgba(255,255,255,0.7); }
+.sb-logout { background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; padding:4px; border-radius:4px; font-size:14px; font-family:inherit; }
+.sb-logout:hover { color:#fff; background:rgba(255,255,255,0.1); }
+
+/* ===== GESTÃO DE PROJETOS ===== */
+.gestao-wrap { display:flex; flex-direction:column; }
+.view-header { background:#fff; border-bottom:1px solid var(--border); padding:0 20px; display:flex; align-items:center; flex-wrap:wrap; gap:0; }
+.view-tab { padding:11px 14px; font-size:0.82rem; font-weight:500; color:var(--text-secondary); cursor:pointer; border-bottom:3px solid transparent; display:flex; align-items:center; gap:6px; transition:.15s; white-space:nowrap; }
+.view-tab:hover { color:var(--text); }
+.view-tab.active { color:var(--starken); border-bottom-color:var(--starken); font-weight:600; }
+.view-filters { margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 0; flex-wrap:wrap; }
+.gp-filter-select { padding:5px 8px; border:1px solid var(--border); border-radius:6px; font-size:0.78rem; background:#fff; color:var(--text); cursor:pointer; font-family:inherit; }
+.gp-topbar { padding:10px 20px; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.btn-new-task { background:var(--starken); color:#fff; padding:7px 14px; border-radius:8px; border:none; font-weight:600; cursor:pointer; font-size:0.82rem; display:flex; align-items:center; gap:5px; font-family:inherit; white-space:nowrap; }
+.btn-new-task:hover { background:var(--starken-dark); }
+.gp-search-wrap { position:relative; }
+.gp-search-wrap::before { content:'🔍'; position:absolute; left:8px; top:50%; transform:translateY(-50%); font-size:11px; }
+.gp-search { padding:6px 10px 6px 26px; border:1px solid var(--border); border-radius:8px; font-size:0.78rem; width:200px; background:var(--bg-subtle); font-family:inherit; color:var(--text); }
+.gp-search:focus { outline:none; border-color:var(--starken); }
+.gp-view-pane { display:none; overflow-y:auto; min-height:400px; }
+.gp-view-pane.active { display:block; }
+.list-view { padding:0; }
+.list-header { display:grid; grid-template-columns:1fr 90px 120px 120px 130px 130px 30px; gap:0; padding:8px 16px 8px 48px; border-bottom:1px solid var(--border); background:#fff; position:sticky; top:0; z-index:10; }
+.list-header-col { font-size:0.69rem; font-weight:600; text-transform:uppercase; color:var(--text-muted); letter-spacing:.05em; }
+.status-group { border-bottom:1px solid var(--border-light); }
+.status-group-header { display:flex; align-items:center; gap:10px; padding:9px 16px; cursor:pointer; user-select:none; background:#fff; border-bottom:1px solid var(--border); }
+.status-group-header:hover { background:var(--bg-subtle); }
+.status-toggle { width:16px; height:16px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:10px; transition:.2s; }
+.status-toggle.open { transform:rotate(90deg); }
+.status-dot-sm { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.status-count-badge { font-size:11px; color:var(--text-muted); background:var(--bg-subtle); padding:1px 7px; border-radius:10px; }
+.status-group-body.hidden { display:none; }
+.task-row { display:grid; grid-template-columns:1fr 90px 120px 120px 130px 130px 30px; gap:0; padding:0 16px; border-bottom:1px solid var(--border-light); align-items:stretch; }
+.task-row:hover { background:var(--bg-subtle); }
+.task-row:hover .task-actions { opacity:1; }
+.task-cell { padding:9px 8px; display:flex; align-items:center; font-size:0.82rem; color:var(--text-secondary); }
+.task-name-cell { padding-left:0; gap:8px; }
+.task-expand-btn { width:18px; height:18px; display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:10px; flex-shrink:0; }
+.task-expand-btn.invisible { opacity:0; }
+.task-chk { width:15px; height:15px; border:1.5px solid var(--border); border-radius:50%; flex-shrink:0; cursor:pointer; }
+.task-title-text { flex:1; cursor:pointer; line-height:1.3; }
+.task-title-text:hover { color:var(--starken); }
+.priority-badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.priority-normal { background:#f0fdf4; color:#16a34a; }
+.priority-alta { background:#fef3c7; color:#d97706; }
+.priority-urgente { background:#fef2f2; color:#dc2626; }
+.priority-baixa { background:var(--bg-subtle); color:var(--text-muted); }
+.user-chip { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; flex-shrink:0; }
+.date-cell { font-size:11px; color:var(--text-secondary); }
+.task-actions { opacity:0; display:flex; gap:4px; }
+.task-act-btn { background:none; border:none; color:var(--text-muted); cursor:pointer; padding:2px 4px; border-radius:4px; font-size:11px; }
+.task-act-btn:hover { background:var(--bg-subtle); }
+.add-task-row { display:flex; align-items:center; gap:8px; padding:7px 16px 7px 54px; color:var(--text-muted); cursor:pointer; border-bottom:1px solid var(--border-light); font-size:0.8rem; }
+.add-task-row:hover { background:var(--bg-subtle); color:var(--starken); }
+.kanban-view { display:flex; gap:12px; padding:16px; overflow-x:auto; min-height:400px; }
+.kanban-col { min-width:250px; max-width:250px; background:var(--bg); border-radius:10px; display:flex; flex-direction:column; }
+.kanban-col-hdr { padding:11px 13px; display:flex; align-items:center; gap:7px; }
+.kanban-col-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.kanban-col-title { font-weight:600; font-size:0.8rem; flex:1; }
+.kanban-col-count { font-size:11px; color:var(--text-secondary); background:#fff; padding:1px 6px; border-radius:10px; }
+.kanban-cards { flex:1; padding:0 9px 9px; display:flex; flex-direction:column; gap:7px; }
+.kanban-card { background:#fff; border-radius:8px; padding:11px; box-shadow:var(--shadow); cursor:pointer; border:1px solid var(--border); transition:.15s; }
+.kanban-card:hover { box-shadow:var(--shadow-md); border-color:var(--starken); }
+.kanban-card-type { font-size:10px; font-weight:600; color:var(--text-muted); text-transform:uppercase; margin-bottom:5px; }
+.kanban-card-title { font-size:0.8rem; font-weight:500; line-height:1.4; margin-bottom:7px; }
+.kanban-card-client { font-size:11px; background:var(--bg); color:var(--text-secondary); padding:2px 6px; border-radius:4px; display:inline-block; margin-bottom:7px; }
+.kanban-card-footer { display:flex; align-items:center; gap:6px; }
+.kanban-card-date { font-size:11px; color:var(--text-muted); margin-left:auto; }
+.kanban-add-btn { padding:7px 9px; text-align:center; color:var(--text-muted); cursor:pointer; border:2px dashed var(--border); border-radius:7px; margin:0 9px 9px; font-size:0.8rem; }
+.kanban-add-btn:hover { border-color:var(--starken); color:var(--starken); }
+.calendar-view { padding:16px; }
+.cal-header { display:flex; align-items:center; gap:14px; margin-bottom:16px; }
+.cal-nav { background:none; border:1px solid var(--border); border-radius:6px; padding:5px 11px; cursor:pointer; font-size:0.82rem; font-family:inherit; }
+.cal-month-title { font-size:1.1rem; font-weight:600; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; background:var(--border); border-radius:10px; overflow:hidden; }
+.cal-day-name { background:var(--bg-subtle); padding:7px; text-align:center; font-size:0.69rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; }
+.cal-day { background:#fff; min-height:100px; padding:7px; }
+.cal-day-num { font-size:0.8rem; font-weight:600; color:var(--text-secondary); margin-bottom:4px; }
+.cal-day.other-month .cal-day-num { color:var(--border); }
+.cal-event-chip { font-size:10px; color:#fff; padding:2px 5px; border-radius:3px; margin-bottom:2px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.gp-modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:2000; align-items:center; justify-content:center; }
+.gp-modal-overlay.show { display:flex; }
+.gp-modal { background:#fff; border-radius:12px; width:680px; max-width:95vw; max-height:90vh; overflow-y:auto; box-shadow:0 24px 48px rgba(0,0,0,.2); }
+.gp-modal-hdr { padding:18px 22px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.gp-modal-title { font-size:1.05rem; font-weight:700; }
+.gp-modal-close { background:none; border:none; font-size:20px; color:var(--text-muted); cursor:pointer; border-radius:6px; padding:2px 6px; }
+.gp-modal-close:hover { background:var(--bg-subtle); }
+.gp-modal-body { padding:18px 22px; }
+.gp-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.gp-modal-grid.full { grid-template-columns:1fr; }
+.gp-modal-footer { padding:14px 22px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end; }
+.gp-field-label { display:block; font-weight:600; margin-bottom:5px; color:var(--text-secondary); font-size:0.8rem; }
+.gp-field { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:7px; font-size:0.82rem; font-family:inherit; color:var(--text); background:#fff; }
+.gp-field:focus { outline:none; border-color:var(--starken); box-shadow:0 0 0 2px rgba(59,130,246,.1); }
+.btn-gp-save { background:var(--starken); color:#fff; padding:8px 18px; border-radius:8px; border:none; font-weight:600; cursor:pointer; font-size:0.85rem; font-family:inherit; }
+.btn-gp-save:hover { background:var(--starken-dark); }
+.btn-gp-cancel { background:var(--bg-subtle); color:var(--text-secondary); padding:8px 18px; border-radius:8px; border:1px solid var(--border); font-weight:500; cursor:pointer; font-size:0.85rem; font-family:inherit; }
+.s-a-fazer{background:#f3f4f6;color:#374151}.s-criacao{background:#ede9fe;color:#5b21b6}.s-copy{background:#e0f2fe;color:#0369a1}.s-design{background:#ddd6fe;color:#4c1d95}.s-aprov-design{background:#fce7f3;color:#9d174d}.s-alter-design{background:#fef3c7;color:#92400e}.s-aprov-cliente{background:#d1fae5;color:#065f46}.s-alteracao{background:#ffedd5;color:#9a3412}.s-revisao{background:#fef9c3;color:#854d0e}.s-agendar{background:#cffafe;color:#155e75}.s-agendado{background:#e0f2fe;color:#1e40af}.s-postado{background:#dcfce7;color:#166534}.s-plano-midia{background:#f0fdf4;color:#15803d}.s-aguardando{background:#f1f5f9;color:#475569}.s-standby{background:#f8fafc;color:#64748b}.s-finalizado{background:#f0fdf4;color:#15803d}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
-<button class="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
+<!-- LOGIN -->
+<div id="loginPage" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Starken OS</h1>
+      <p>Gestão &amp; Performance</p>
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="login-field-label">Usuário</label>
+      <select id="loginUser" class="login-field">
+        <option value="">Selecione</option>
+        <option value="Juan">Juan</option>
+        <option value="Henrique">Henrique</option>
+        <option value="Emilly">Emilly</option>
+      </select>
+    </div>
+    <div>
+      <label class="login-field-label">PIN</label>
+      <input type="password" id="loginPin" class="login-field" maxlength="6" placeholder="••••">
+    </div>
+    <button id="loginBtn" class="login-btn">Entrar</button>
+    <div id="loginError" class="login-error">PIN inválido. Tente novamente.</div>
+  </div>
+</div>
 
-<div class="app">
+<button class="menu-toggle hidden" id="menuToggleBtn" onclick="toggleSidebar()">&#9776;</button>
+
+<div class="app hidden" id="mainApp">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-brand">
-      <h1>Starken Performance</h1>
-      <span>Gestão de Relatórios</span>
+      <h1>Starken OS</h1>
+      <span>Sistema Operacional</span>
+    </div>
+    <div class="sb-space">
+      <label>Espaço</label>
+      <select id="gpSpaceSelector">
+        <option value="starken">⭐ Starken</option>
+        <option value="alpha">🌿 Alpha Assessoria</option>
+      </select>
     </div>
     <nav class="sidebar-nav">
+      <div class="nav-category">Negócio</div>
+      <button onclick="switchTab('gestao')"><span class="icon">💼</span> Gestão de Projetos</button>
       <button class="active" onclick="switchTab('dashboard')"><span class="icon">&#9632;</span> Dashboard</button>
 
       <div class="nav-category">Relatórios</div>
@@ -730,9 +885,18 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <div class="nav-category">Integrações</div>
       <button class="sub" onclick="switchTab('asana-tasks')"><span class="icon">&#128203;</span> Tarefas (Asana)</button>
 
+      <div class="nav-category">Meta Ads</div>
+      <button class="sub" onclick="switchTab('meta-config')"><span class="icon">&#9881;</span> Configuração</button>
+      <button class="sub" onclick="switchTab('meta-balance')"><span class="icon">&#128176;</span> Saldo Contas</button>
+      <button class="sub" onclick="switchTab('meta-bi')"><span class="icon">&#128202;</span> BI Campanhas</button>
+      <button class="sub" onclick="switchTab('meta-publish')"><span class="icon">&#128228;</span> Agendamento</button>
+
       <div class="nav-category">Geral</div>
       <button class="sub" onclick="switchTab('clients')"><span class="icon">&#128101;</span> Clientes</button>
       <button class="sub" onclick="switchTab('history')"><span class="icon">&#128203;</span> Histórico</button>
+
+      <div class="nav-category">Agents</div>
+      <button class="sub" onclick="switchTab('ai-squads')"><span class="icon">🤖</span> AI Squads</button>
     </nav>
     <div class="sidebar-footer">
       <button onclick="document.getElementById('syncFile').click()" style="color:#10b981">&#128260; Sincronizar Relatórios</button>
@@ -742,6 +906,11 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
       <div id="syncStatus" style="padding:7px 12px;font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.35)">☁️ Nuvem</div>
     </div>
+    <div class="sb-user">
+      <div class="sb-avatar" id="sbUserAvatar" style="background:#3b82f6">JU</div>
+      <div class="sb-user-name" id="sbUserName">Juan</div>
+      <button class="sb-logout" id="gpLogoutBtn" title="Sair">🚪</button>
+    </div>
   </aside>
 
   <div class="content">
@@ -750,6 +919,58 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
     </div>
 
     <div class="main">
+
+      <!-- GESTÃO DE PROJETOS -->
+      <div id="tab-gestao" class="tab-content">
+        <div class="gestao-wrap">
+          <div class="gp-topbar">
+            <div class="gp-search-wrap"><input class="gp-search" id="gpSearchInput" placeholder="Buscar tarefas..."></div>
+            <button class="btn-new-task" id="gpNewTaskBtn">+ Nova Tarefa</button>
+          </div>
+          <div class="view-header">
+            <div class="view-tab active" data-gp-view="lista">📋 Lista</div>
+            <div class="view-tab" data-gp-view="kanban">📌 Quadro</div>
+            <div class="view-tab" data-gp-view="calendario">📅 Calendário</div>
+            <div class="view-filters">
+              <select class="gp-filter-select" id="gpFilterCliente"><option value="">Todos os Clientes</option></select>
+              <select class="gp-filter-select" id="gpFilterResponsavel">
+                <option value="">Todos Responsáveis</option>
+                <option value="Juan">Juan</option>
+                <option value="Henrique">Henrique</option>
+                <option value="Emilly">Emilly</option>
+              </select>
+              <select class="gp-filter-select" id="gpFilterSemana"><option value="">Todas as Semanas</option></select>
+            </div>
+          </div>
+          <div id="gpViewLista" class="gp-view-pane active">
+            <div class="list-view">
+              <div class="list-header">
+                <div class="list-header-col">Nome</div>
+                <div class="list-header-col">Prioridade</div>
+                <div class="list-header-col">Responsável</div>
+                <div class="list-header-col">Data Postagem</div>
+                <div class="list-header-col">Vencimento</div>
+                <div class="list-header-col">Revisão</div>
+                <div class="list-header-col"></div>
+              </div>
+              <div id="gpListBody"></div>
+            </div>
+          </div>
+          <div id="gpViewKanban" class="gp-view-pane">
+            <div class="kanban-view" id="gpKanbanBoard"></div>
+          </div>
+          <div id="gpViewCalendario" class="gp-view-pane">
+            <div class="calendar-view">
+              <div class="cal-header">
+                <button class="cal-nav" id="gpCalPrev">←</button>
+                <div class="cal-month-title" id="gpCalMonth"></div>
+                <button class="cal-nav" id="gpCalNext">→</button>
+              </div>
+              <div class="cal-grid" id="gpCalGrid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- DASHBOARD -->
       <div id="tab-dashboard" class="tab-content active">
@@ -924,6 +1145,226 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
           <div id="historyEmpty" class="empty-state" style="display:none">
             <div class="empty-icon">&#128203;</div>
             <p><strong>Nenhum registro</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI SQUADS -->
+      <div id="tab-ai-squads" class="tab-content">
+        <div style="padding:20px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">🤖 AI Squads</div></div>
+            <p style="color:var(--text-secondary);font-size:0.85rem;margin-bottom:16px">Os squads de IA rodam via Docker no servidor local. Use os endpoints abaixo para interagir com os agentes.</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+              <div class="stat-card starken"><div class="stat-icon">📝</div><div class="stat-label">Copy Squad</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Gary Halbert · Headlines</div></div>
+              <div class="stat-card alpha"><div class="stat-icon">📊</div><div class="stat-label">Data Squad</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Analytics · Reports</div></div>
+              <div class="stat-card warning"><div class="stat-icon">💰</div><div class="stat-label">Hormozi Squad</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Sales Strategy</div></div>
+              <div class="stat-card success"><div class="stat-icon">🎨</div><div class="stat-label">Brand Squad</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Identity · Design</div></div>
+              <div class="stat-card starken"><div class="stat-icon">📣</div><div class="stat-label">Traffic Squad</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Tráfego Pago</div></div>
+              <div class="stat-card alpha"><div class="stat-icon">🏆</div><div class="stat-label">Advisory Board</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px">Estratégia</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- META ADS: CONFIGURAÇÃO -->
+      <div id="tab-meta-config" class="tab-content">
+        <div style="padding:20px">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">&#9881; Configuração Meta Ads</div>
+              <button class="btn-new-task" onclick="metaConfigDiscover()" style="font-size:0.78rem;padding:6px 14px" id="metaConfigDiscoverBtn">&#128269; Descobrir Ativos</button>
+            </div>
+            <!-- Token Status -->
+            <div id="metaConfigTokenStatus" style="margin-bottom:16px;padding:12px;border-radius:8px;background:var(--bg-secondary);font-size:0.85rem;color:var(--text-secondary)">
+              Clique em "Descobrir Ativos" para verificar a conexão com o Meta Graph API.
+            </div>
+            <!-- Ativos Descobertos -->
+            <div id="metaConfigDiscovered" style="display:none">
+              <!-- Páginas FB + IG -->
+              <h4 style="font-size:0.88rem;margin-bottom:10px;color:var(--text-primary)">&#128206; Páginas do Facebook &amp; Instagram</h4>
+              <div id="metaConfigPages" style="margin-bottom:20px"></div>
+              <!-- Ad Accounts -->
+              <h4 style="font-size:0.88rem;margin-bottom:10px;color:var(--text-primary)">&#128176; Contas de Anúncios</h4>
+              <div id="metaConfigAdAccounts" style="margin-bottom:20px"></div>
+              <!-- Mapeamento -->
+              <div style="background:var(--bg-secondary);border-radius:10px;padding:16px;margin-bottom:16px">
+                <h4 style="font-size:0.88rem;margin-bottom:12px;color:var(--text-primary)">&#127919; Mapeamento de Tenants</h4>
+                <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:12px">Selecione quais ativos pertencem a cada empresa. Use os checkboxes acima para marcar e depois clique em Salvar.</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                  <div>
+                    <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;color:var(--starken-color,#3b82f6)">&#11088; Starken</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary)">
+                      <div>Página FB: <span id="metaConfigStarkenPage" style="font-weight:600">—</span></div>
+                      <div>Instagram: <span id="metaConfigStarkenIg" style="font-weight:600">—</span></div>
+                      <div>Ad Accounts: <span id="metaConfigStarkenAds" style="font-weight:600">—</span></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;color:var(--alpha-color,#10b981)">&#127807; Alpha Assessoria</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary)">
+                      <div>Página FB: <span id="metaConfigAlphaPage" style="font-weight:600">—</span></div>
+                      <div>Instagram: <span id="metaConfigAlphaIg" style="font-weight:600">—</span></div>
+                      <div>Ad Accounts: <span id="metaConfigAlphaAds" style="font-weight:600">—</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button class="btn-new-task" onclick="metaConfigSave()" style="width:100%;padding:10px;font-size:0.88rem" id="metaConfigSaveBtn">&#128190; Salvar Configuração</button>
+              <div id="metaConfigStatus" style="margin-top:10px;font-size:0.82rem;display:none"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- META ADS: SALDO DAS CONTAS -->
+      <div id="tab-meta-balance" class="tab-content">
+        <div style="padding:20px">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">&#128176; Saldo das Contas de Anúncios</div>
+              <button class="btn-new-task" onclick="metaBalanceFetch()" style="font-size:0.78rem;padding:6px 14px">&#128260; Atualizar</button>
+            </div>
+            <div id="metaBalanceAlertBanner" style="display:none;background:var(--danger-bg,#fef2f2);border:1px solid var(--danger,#ef4444);border-radius:8px;padding:12px 16px;margin-bottom:16px;color:var(--danger,#ef4444);font-size:0.85rem;font-weight:600"></div>
+            <div id="metaBalanceGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+              <div class="stat-card" style="opacity:0.5;text-align:center;padding:40px"><span style="font-size:2rem">&#128176;</span><br><span style="font-size:0.85rem;color:var(--text-secondary)">Clique em Atualizar para carregar os saldos</span></div>
+            </div>
+            <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
+              <label style="font-size:0.78rem;color:var(--text-secondary);font-weight:600">Alerta de saldo baixo (R$):</label>
+              <input type="number" id="metaBalanceThreshold" class="form-input" style="width:120px;padding:4px 8px;font-size:0.85rem" value="500" onchange="localStorage.setItem('metaBalanceThreshold',this.value)">
+              <label style="font-size:0.78rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px">
+                <input type="checkbox" id="metaBalanceAutoRefresh" onchange="metaBalanceToggleAutoRefresh(this.checked)"> Auto-refresh (5min)
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- META ADS: BI CAMPANHAS -->
+      <div id="tab-meta-bi" class="tab-content">
+        <div style="padding:20px">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">&#128202; BI de Campanhas</div>
+              <button class="btn-new-task" onclick="metaBiExportJson()" style="font-size:0.78rem;padding:6px 14px">&#128229; Exportar JSON</button>
+            </div>
+            <!-- Filtros -->
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+              <div style="display:flex;gap:4px">
+                <button class="view-tab active" onclick="metaBiSetTenant('starken',this)" data-bi-tenant="starken">Starken</button>
+                <button class="view-tab" onclick="metaBiSetTenant('alpha',this)" data-bi-tenant="alpha">Alpha</button>
+                <button class="view-tab" onclick="metaBiSetTenant('ambos',this)" data-bi-tenant="ambos">Ambos</button>
+              </div>
+              <div style="display:flex;gap:4px">
+                <button class="view-tab active" onclick="metaBiSetPreset('last_7d',this)" data-bi-preset>&#128197; 7 dias</button>
+                <button class="view-tab" onclick="metaBiSetPreset('this_month',this)" data-bi-preset>Este Mês</button>
+                <button class="view-tab" onclick="metaBiSetPreset('last_month',this)" data-bi-preset>Mês Anterior</button>
+                <button class="view-tab" onclick="metaBiSetPreset('custom',this)" data-bi-preset>Personalizado</button>
+              </div>
+              <div id="metaBiCustomDates" style="display:none;gap:8px;align-items:center">
+                <input type="date" id="metaBiDateStart" class="form-input" style="padding:4px 8px;font-size:0.82rem">
+                <span style="color:var(--text-secondary)">até</span>
+                <input type="date" id="metaBiDateEnd" class="form-input" style="padding:4px 8px;font-size:0.82rem">
+              </div>
+              <button class="btn-new-task" onclick="metaBiFetchInsights()" style="font-size:0.78rem;padding:6px 14px">&#128269; Consultar</button>
+            </div>
+            <!-- Summary Stats -->
+            <div id="metaBiSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+              <div class="stat-card"><div class="stat-label">Investimento</div><div class="stat-value" id="metaBiTotalSpend">—</div></div>
+              <div class="stat-card"><div class="stat-label">Impressões</div><div class="stat-value" id="metaBiTotalImpressions">—</div></div>
+              <div class="stat-card"><div class="stat-label">Cliques</div><div class="stat-value" id="metaBiTotalClicks">—</div></div>
+              <div class="stat-card"><div class="stat-label">CPC Médio</div><div class="stat-value" id="metaBiAvgCpc">—</div></div>
+              <div class="stat-card"><div class="stat-label">CPM Médio</div><div class="stat-value" id="metaBiAvgCpm">—</div></div>
+              <div class="stat-card"><div class="stat-label">CTR Médio</div><div class="stat-value" id="metaBiAvgCtr">—</div></div>
+            </div>
+            <!-- Tabela -->
+            <div style="overflow-x:auto">
+              <table id="metaBiTable" style="width:100%;border-collapse:collapse;font-size:0.82rem">
+                <thead>
+                  <tr style="border-bottom:2px solid var(--border);text-align:left">
+                    <th style="padding:10px 8px;cursor:pointer" onclick="metaBiSort('campaign_name')">Campanha &#8597;</th>
+                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('spend')">Investimento &#8597;</th>
+                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('impressions')">Impressões &#8597;</th>
+                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('clicks')">Cliques &#8597;</th>
+                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('cpc')">CPC &#8597;</th>
+                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('cpm')">CPM &#8597;</th>
+                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('ctr')">CTR &#8597;</th>
+                  </tr>
+                </thead>
+                <tbody id="metaBiTableBody">
+                  <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--text-secondary)">Selecione os filtros e clique em Consultar</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- META ADS: AGENDAMENTO -->
+      <div id="tab-meta-publish" class="tab-content">
+        <div style="padding:20px">
+          <div class="card">
+            <div class="card-header"><div class="card-title">&#128228; Agendamento de Publicações</div></div>
+            <!-- Formulário de nova publicação -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+              <div class="form-group">
+                <label class="form-label">Destino</label>
+                <select class="form-input" id="metaPubDestination">
+                  <option value="">Selecione...</option>
+                  <option value="ig_starken">&#128247; Instagram — Starken</option>
+                  <option value="ig_alpha">&#128247; Instagram — Alpha</option>
+                  <option value="fb_starken">&#128308; Facebook — Starken</option>
+                  <option value="fb_alpha">&#128308; Facebook — Alpha</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tipo de Post</label>
+                <select class="form-input" id="metaPubType">
+                  <option value="feed">Feed</option>
+                  <option value="stories">Stories</option>
+                  <option value="reels">Reels</option>
+                  <option value="carousel">Carrossel</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Legenda <span id="metaPubCharCount" style="float:right;font-weight:400;color:var(--text-secondary)">0 / 2.200</span></label>
+              <textarea class="form-input" id="metaPubCaption" rows="4" placeholder="Escreva a legenda do post..." oninput="document.getElementById('metaPubCharCount').textContent=this.value.length+' / 2.200'" maxlength="2200" style="resize:vertical"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mídia</label>
+              <div id="metaPubDropZone" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;color:var(--text-secondary);transition:border-color 0.2s" onclick="document.getElementById('metaPubFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';metaPublishHandleDrop(event)">
+                &#128206; Arraste imagens aqui ou clique para selecionar
+                <input type="file" id="metaPubFileInput" accept="image/*,video/*" multiple style="display:none" onchange="metaPublishHandleFiles(this.files)">
+              </div>
+              <div id="metaPubPreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+              <div class="form-group">
+                <label class="form-label">Quando Publicar</label>
+                <select class="form-input" id="metaPubScheduleMode" onchange="document.getElementById('metaPubDatetimeWrap').style.display=this.value==='schedule'?'block':'none'">
+                  <option value="now">Publicar Agora</option>
+                  <option value="schedule">Agendar</option>
+                </select>
+              </div>
+              <div class="form-group" id="metaPubDatetimeWrap" style="display:none">
+                <label class="form-label">Data e Hora</label>
+                <input type="datetime-local" class="form-input" id="metaPubDatetime">
+              </div>
+            </div>
+            <button class="btn-new-task" onclick="metaPublishSubmit()" style="width:100%;padding:12px;font-size:0.92rem" id="metaPubSubmitBtn">&#128228; Publicar</button>
+            <div id="metaPubStatus" style="margin-top:12px;font-size:0.85rem;display:none"></div>
+          </div>
+
+          <!-- Posts Agendados -->
+          <div class="card" style="margin-top:16px">
+            <div class="card-header">
+              <div class="card-title">&#128197; Posts Agendados</div>
+              <button class="btn-new-task" onclick="metaPublishLoadScheduled()" style="font-size:0.78rem;padding:6px 14px">&#128260; Atualizar</button>
+            </div>
+            <div id="metaPubScheduledList" style="color:var(--text-secondary);font-size:0.85rem;padding:20px;text-align:center">
+              Funcionalidade disponível após primeira publicação agendada
+            </div>
           </div>
         </div>
       </div>
@@ -1596,6 +2037,7 @@ function getCurrentMonthKey() {
 
 // ============ NAVIGATION ============
 const TAB_TITLES = {
+  gestao:        'Gestão de Projetos',
   dashboard:     'Dashboard',
   weekly:        'Relatórios — Semanal',
   monthly:       'Relatórios — Mensal',
@@ -1603,7 +2045,12 @@ const TAB_TITLES = {
   'content-approval':  'Cronogramas de Conteúdo',
   'asana-tasks':       'Tarefas (Asana)',
   clients:             'Gerenciar Clientes',
-  history:       'Histórico de Envios'
+  history:       'Histórico de Envios',
+  'ai-squads':         'AI Squads',
+  'meta-config':       'Configuração Meta',
+  'meta-balance':      'Saldo das Contas',
+  'meta-bi':           'BI de Campanhas',
+  'meta-publish':      'Agendamento de Posts'
 };
 
 function switchTab(tabName) {
@@ -1620,6 +2067,12 @@ function switchTab(tabName) {
   document.getElementById('sidebar').classList.remove('open');
   if (tabName === 'content-approval') caInitTab();
   else if (tabName === 'asana-tasks') asanaInitTab();
+  else if (tabName === 'gestao') { if (typeof Gestao !== 'undefined') { Gestao.populateClientFilter(); Gestao.renderCurrentView(); } }
+  else if (tabName === 'ai-squads') { /* sem init necessário */ }
+  else if (tabName === 'meta-config') metaConfigInit();
+  else if (tabName === 'meta-balance') metaBalanceInit();
+  else if (tabName === 'meta-bi') metaBiInit();
+  else if (tabName === 'meta-publish') metaPublishInit();
   else renderAll();
 }
 
@@ -3714,6 +4167,956 @@ renderAll(); // render imediato com dados do localStorage
     }
   }
 })();
+</script>
+
+<!-- Modal Nova/Editar Tarefa -->
+<div class="gp-modal-overlay" id="gpModalOverlay">
+  <div class="gp-modal">
+    <div class="gp-modal-hdr">
+      <div class="gp-modal-title" id="gpModalTitle">Nova Tarefa</div>
+      <button class="gp-modal-close" id="gpModalClose">&times;</button>
+    </div>
+    <div class="gp-modal-body">
+      <div class="gp-modal-grid">
+        <div style="grid-column:1/-1">
+          <label class="gp-field-label">Título</label>
+          <input type="text" id="gpFtTitle" class="gp-field" placeholder="Ex: Feed 1 - Mortadella - Semana 3">
+        </div>
+        <div>
+          <label class="gp-field-label">Cliente</label>
+          <select id="gpFtCliente" class="gp-field"></select>
+        </div>
+        <div>
+          <label class="gp-field-label">Tipo</label>
+          <select id="gpFtTipo" class="gp-field">
+            <option value="feed">Feed</option><option value="story">Story</option>
+            <option value="reels">Reels</option><option value="carrossel">Carrossel</option>
+            <option value="video">Vídeo</option><option value="trafego">Tráfego</option>
+            <option value="design">Design</option><option value="outro">Outro</option>
+          </select>
+        </div>
+        <div>
+          <label class="gp-field-label">Status</label>
+          <select id="gpFtStatus" class="gp-field">
+            <option value="a_fazer">A FAZER</option>
+            <option value="criacao">CRIAÇÃO DE CONTEÚDO</option>
+            <option value="copy">COPY</option><option value="design">DESIGN</option>
+            <option value="aprov_design">APROVAÇÃO DESIGN</option>
+            <option value="alter_design">ALTERAÇÃO DESIGN</option>
+            <option value="aprov_cliente">APROVAÇÃO CLIENTE</option>
+            <option value="alteracao">ALTERAÇÃO</option><option value="revisao">REVISÃO</option>
+            <option value="agendar">AGENDAR</option><option value="agendado">AGENDADO</option>
+            <option value="postado">POSTADO</option>
+          </select>
+        </div>
+        <div>
+          <label class="gp-field-label">Responsável</label>
+          <select id="gpFtResponsavel" class="gp-field">
+            <option value="Juan">Juan</option><option value="Henrique">Henrique</option><option value="Emilly">Emilly</option>
+          </select>
+        </div>
+        <div>
+          <label class="gp-field-label">Revisão</label>
+          <select id="gpFtRevisao" class="gp-field">
+            <option value="">Nenhum</option><option value="Juan">Juan</option>
+            <option value="Henrique">Henrique</option><option value="Emilly">Emilly</option>
+          </select>
+        </div>
+        <div>
+          <label class="gp-field-label">Prioridade</label>
+          <select id="gpFtPrioridade" class="gp-field">
+            <option value="normal">Normal</option><option value="alta">Alta</option>
+            <option value="urgente">Urgente</option><option value="baixa">Baixa</option>
+          </select>
+        </div>
+        <div>
+          <label class="gp-field-label">Semana</label>
+          <input type="text" id="gpFtSemana" class="gp-field" placeholder="Ex: S3 Março">
+        </div>
+        <div>
+          <label class="gp-field-label">Data de Postagem</label>
+          <input type="date" id="gpFtDataPostagem" class="gp-field">
+        </div>
+        <div>
+          <label class="gp-field-label">Data de Vencimento</label>
+          <input type="date" id="gpFtDataVencimento" class="gp-field">
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="gp-field-label">Legenda / Copy</label>
+        <textarea id="gpFtCaption" class="gp-field" rows="4" placeholder="Digite o texto do post..."></textarea>
+      </div>
+    </div>
+    <div class="gp-modal-footer">
+      <button class="btn-gp-cancel" id="gpModalCancel">Cancelar</button>
+      <button class="btn-gp-save" id="gpModalSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================================================================
+// GESTÃO DE PROJETOS — Login + Módulo completo
+// ================================================================
+const GP_USERS = [
+  { name:'Juan',     pin:'1234', role:'admin',    color:'#3b82f6' },
+  { name:'Henrique', pin:'5678', role:'executor', color:'#8b5cf6' },
+  { name:'Emilly',   pin:'2222', role:'editor',   color:'#f59e0b' }
+];
+
+const GP_STATUSES = [
+  { id:'a_fazer',       label:'A FAZER',              dotColor:'#9ca3af',  cls:'s-a-fazer',       group:'active' },
+  { id:'criacao',       label:'CRIAÇÃO DE CONTEÚDO',  dotColor:'#8b5cf6',  cls:'s-criacao',       group:'active' },
+  { id:'copy',          label:'COPY',                  dotColor:'#0ea5e9',  cls:'s-copy',          group:'active' },
+  { id:'design',        label:'DESIGN',                dotColor:'#7c3aed',  cls:'s-design',        group:'active' },
+  { id:'aprov_design',  label:'APROVAÇÃO DESIGN',      dotColor:'#ec4899',  cls:'s-aprov-design',  group:'active' },
+  { id:'alter_design',  label:'ALTERAÇÃO DESIGN',      dotColor:'#f59e0b',  cls:'s-alter-design',  group:'active' },
+  { id:'aprov_cliente', label:'APROVAÇÃO CLIENTE',     dotColor:'#10b981',  cls:'s-aprov-cliente', group:'active' },
+  { id:'alteracao',     label:'ALTERAÇÃO',             dotColor:'#f97316',  cls:'s-alteracao',     group:'active' },
+  { id:'revisao',       label:'REVISÃO',               dotColor:'#eab308',  cls:'s-revisao',       group:'active' },
+  { id:'agendar',       label:'AGENDAR',               dotColor:'#06b6d4',  cls:'s-agendar',       group:'active' },
+  { id:'agendado',      label:'AGENDADO',              dotColor:'#60a5fa',  cls:'s-agendado',      group:'active' },
+  { id:'postado',       label:'POSTADO',               dotColor:'#22c55e',  cls:'s-postado',       group:'active' },
+  { id:'plano_midia',   label:'PLANO DE MÍDIA',        dotColor:'#4ade80',  cls:'s-plano-midia',   group:'done'   },
+  { id:'aguardando',    label:'AGUARDANDO INFORMAÇÕES',dotColor:'#94a3b8',  cls:'s-aguardando',    group:'done'   },
+  { id:'standby',       label:'STAND-BY',              dotColor:'#cbd5e1',  cls:'s-standby',       group:'done'   },
+  { id:'finalizado',    label:'FINALIZADO',            dotColor:'#86efac',  cls:'s-finalizado',    group:'closed' }
+];
+
+const GP_STARKEN = ['Mortadella Blumenau','Hamburgueria Feio','Rosa Mexicano Blumenau','Rosa Mexicano Brusque','Suprema Pizza','Arena Gourmet','Super X - Garuva','Super X - Guaratuba','Super X - Itapoa','Madrugao - Centro','Madrugao - Garcia','Madrugao - Fortaleza','Restaurante Oca','Aseyori Restaurante','Oklahoma Burger','Pizzaria Super X','Sr Salsicha','The Garrison','Estilo Tulipa','Academia Sao Pedro','New Service','Melhor Visao','JPR Moveis Rusticos'];
+const GP_ALPHA   = ['Mestre do Frango','Patricia Salgados','Pizzaria do Nei','Super Duper','Sorveteria Maciel','WorldBurguer','Salfest','Saporito Pizzaria',"D' Britos",'Fratellis Pizzaria'];
+
+let gpState = {
+  user: null,
+  space: 'starken',
+  view: 'lista',
+  tasks: JSON.parse(localStorage.getItem('gp_tasks') || '[]'),
+  expandedGroups: {},
+  calDate: new Date()
+};
+
+function gpSave()       { localStorage.setItem('gp_tasks', JSON.stringify(gpState.tasks)); }
+function gpClients()    { return gpState.space === 'starken' ? GP_STARKEN : GP_ALPHA; }
+function gpStatus(id)   { return GP_STATUSES.find(s => s.id === id) || GP_STATUSES[0]; }
+function gpColor(name)  { const u = GP_USERS.find(u => u.name === name); return u ? u.color : '#9ca3af'; }
+function gpFmt(d)       { if (!d) return ''; return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}); }
+
+// ── Login ──
+document.getElementById('loginBtn').addEventListener('click', doLogin);
+document.getElementById('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogin() {
+  const name = document.getElementById('loginUser').value;
+  const pin  = document.getElementById('loginPin').value;
+  const user = GP_USERS.find(u => u.name === name && u.pin === pin);
+  if (user) {
+    gpState.user = user;
+    document.getElementById('sbUserAvatar').textContent = user.name.substring(0,2).toUpperCase();
+    document.getElementById('sbUserAvatar').style.background = user.color;
+    document.getElementById('sbUserName').textContent = user.name;
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    document.getElementById('menuToggleBtn').classList.remove('hidden');
+    Gestao.populateClientFilter();
+  } else {
+    document.getElementById('loginError').classList.add('show');
+  }
+}
+
+document.getElementById('gpLogoutBtn').addEventListener('click', () => {
+  gpState.user = null;
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('menuToggleBtn').classList.add('hidden');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPin').value = '';
+  document.getElementById('loginError').classList.remove('show');
+});
+
+// ── Space selector ──
+document.getElementById('gpSpaceSelector').addEventListener('change', e => {
+  gpState.space = e.target.value;
+  Gestao.populateClientFilter();
+  if (document.getElementById('tab-gestao').classList.contains('active')) {
+    Gestao.renderCurrentView();
+  }
+});
+
+// ── Gestão Module ──
+const Gestao = {
+  editingId: null,
+
+  init() {
+    document.querySelectorAll('[data-gp-view]').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('[data-gp-view]').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        gpState.view = tab.dataset.gpView;
+        document.querySelectorAll('.gp-view-pane').forEach(p => p.classList.remove('active'));
+        const el = document.getElementById('gpView' + tab.dataset.gpView.charAt(0).toUpperCase() + tab.dataset.gpView.slice(1));
+        if (el) el.classList.add('active');
+        this.renderCurrentView();
+      });
+    });
+    ['gpFilterCliente','gpFilterResponsavel','gpFilterSemana'].forEach(id => {
+      document.getElementById(id).addEventListener('change', () => this.renderCurrentView());
+    });
+    document.getElementById('gpSearchInput').addEventListener('input', () => this.renderCurrentView());
+    document.getElementById('gpNewTaskBtn').addEventListener('click', () => this.openModal());
+    document.getElementById('gpModalClose').addEventListener('click', () => this.closeModal());
+    document.getElementById('gpModalCancel').addEventListener('click', () => this.closeModal());
+    document.getElementById('gpModalSave').addEventListener('click', () => this.saveTask());
+    document.getElementById('gpCalPrev').addEventListener('click', () => { gpState.calDate.setMonth(gpState.calDate.getMonth()-1); this.renderCalendar(); });
+    document.getElementById('gpCalNext').addEventListener('click', () => { gpState.calDate.setMonth(gpState.calDate.getMonth()+1); this.renderCalendar(); });
+    this.populateClientFilter();
+    this.populateWeekFilter();
+  },
+
+  renderCurrentView() {
+    if (gpState.view === 'lista')      this.renderList();
+    else if (gpState.view === 'kanban')     this.renderKanban();
+    else if (gpState.view === 'calendario') this.renderCalendar();
+  },
+
+  filtered() {
+    const fc = document.getElementById('gpFilterCliente').value;
+    const fr = document.getElementById('gpFilterResponsavel').value;
+    const fs = document.getElementById('gpFilterSemana').value;
+    const fq = (document.getElementById('gpSearchInput').value||'').toLowerCase();
+    return gpState.tasks.filter(t => {
+      if (t.space !== gpState.space) return false;
+      if (fc && t.cliente !== fc) return false;
+      if (fr && t.responsavel !== fr) return false;
+      if (fs && t.semana !== fs) return false;
+      if (fq && !t.title.toLowerCase().includes(fq) && !(t.cliente||'').toLowerCase().includes(fq)) return false;
+      return true;
+    });
+  },
+
+  renderList() {
+    const body = document.getElementById('gpListBody');
+    if (!body) return;
+    body.innerHTML = '';
+    const tasks = this.filtered();
+    GP_STATUSES.forEach(st => {
+      const grp = document.createElement('div');
+      grp.className = 'status-group';
+      const isOpen = gpState.expandedGroups[st.id] !== false;
+      const hdr = document.createElement('div');
+      hdr.className = 'status-group-header';
+      hdr.innerHTML = `<span class="status-toggle ${isOpen?'open':''}">▶</span><span class="status-badge ${st.cls}"><span class="status-dot-sm" style="background:${st.dotColor}"></span>${st.label}</span><span class="status-count-badge">${tasks.filter(t=>t.status===st.id).length}</span>`;
+      const bdy = document.createElement('div');
+      bdy.className = 'status-group-body' + (isOpen ? '' : ' hidden');
+      hdr.addEventListener('click', () => {
+        const open = !bdy.classList.contains('hidden');
+        gpState.expandedGroups[st.id] = !open;
+        bdy.classList.toggle('hidden', open);
+        hdr.querySelector('.status-toggle').classList.toggle('open', !open);
+      });
+      tasks.filter(t => t.status === st.id).forEach(task => {
+        const wrap = document.createElement('div');
+        const row = document.createElement('div');
+        row.className = 'task-row';
+        row.innerHTML = `
+          <div class="task-cell task-name-cell">
+            <span class="task-expand-btn invisible">▶</span>
+            <span class="task-chk"></span>
+            <span class="task-title-text">${esc(task.title)}</span>
+          </div>
+          <div class="task-cell"><span class="priority-badge priority-${task.prioridade||'normal'}">${(task.prioridade||'normal').toUpperCase()}</span></div>
+          <div class="task-cell">${task.responsavel?`<div class="user-chip" style="background:${gpColor(task.responsavel)}">${task.responsavel.substring(0,2).toUpperCase()}</div>`:''}</div>
+          <div class="task-cell date-cell">${gpFmt(task.dataPostagem)}</div>
+          <div class="task-cell date-cell">${gpFmt(task.dataVencimento)}</div>
+          <div class="task-cell">${task.revisao?`<div class="user-chip" style="background:${gpColor(task.revisao)};transform:scale(0.85)">${task.revisao.substring(0,2).toUpperCase()}</div>`:''}</div>
+          <div class="task-cell task-actions">
+            <button class="task-act-btn" data-action="edit">✏️</button>
+            <button class="task-act-btn" data-action="delete">🗑️</button>
+          </div>`;
+        row.querySelector('.task-title-text').addEventListener('click', () => this.openModal(task.id));
+        row.querySelector('[data-action="edit"]').addEventListener('click', () => this.openModal(task.id));
+        row.querySelector('[data-action="delete"]').addEventListener('click', () => {
+          if (confirm('Excluir tarefa?')) { gpState.tasks = gpState.tasks.filter(t => t.id !== task.id); gpSave(); this.renderList(); this.populateWeekFilter(); }
+        });
+        wrap.appendChild(row);
+        bdy.appendChild(wrap);
+      });
+      const addRow = document.createElement('div');
+      addRow.className = 'add-task-row';
+      addRow.innerHTML = '<span>+</span> Adicionar tarefa';
+      addRow.addEventListener('click', () => this.openModal(null, st.id));
+      bdy.appendChild(addRow);
+      grp.appendChild(hdr); grp.appendChild(bdy);
+      body.appendChild(grp);
+    });
+  },
+
+  renderKanban() {
+    const board = document.getElementById('gpKanbanBoard');
+    if (!board) return;
+    board.innerHTML = '';
+    const tasks = this.filtered();
+    GP_STATUSES.filter(s => s.group !== 'closed').forEach(st => {
+      const col = document.createElement('div');
+      col.className = 'kanban-col';
+      const sTasks = tasks.filter(t => t.status === st.id);
+      col.innerHTML = `<div class="kanban-col-hdr"><div class="kanban-col-dot" style="background:${st.dotColor}"></div><div class="kanban-col-title">${st.label}</div><div class="kanban-col-count">${sTasks.length}</div></div><div class="kanban-cards"></div><div class="kanban-add-btn">+ Adicionar</div>`;
+      const cards = col.querySelector('.kanban-cards');
+      sTasks.forEach(task => {
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.innerHTML = `<div class="kanban-card-type">${task.tipo||'feed'}</div><div class="kanban-card-title">${esc(task.title)}</div><div class="kanban-card-client">${esc(task.cliente||'')}</div><div class="kanban-card-footer"><div class="user-chip" style="background:${gpColor(task.responsavel)};transform:scale(0.85)">${(task.responsavel||'?').substring(0,2).toUpperCase()}</div><div class="kanban-card-date">${gpFmt(task.dataPostagem)}</div></div>`;
+        card.addEventListener('click', () => this.openModal(task.id));
+        cards.appendChild(card);
+      });
+      col.querySelector('.kanban-add-btn').addEventListener('click', () => this.openModal(null, st.id));
+      board.appendChild(col);
+    });
+  },
+
+  renderCalendar() {
+    const grid = document.getElementById('gpCalGrid');
+    if (!grid) return;
+    const d = gpState.calDate;
+    const year = d.getFullYear(), month = d.getMonth();
+    document.getElementById('gpCalMonth').textContent = `${d.toLocaleDateString('pt-BR',{month:'long'})} ${year}`;
+    grid.innerHTML = '';
+    ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].forEach(n => { const el = document.createElement('div'); el.className='cal-day-name'; el.textContent=n; grid.appendChild(el); });
+    const firstDay = new Date(year, month, 1).getDay();
+    for (let i = 0; i < firstDay; i++) grid.appendChild(Object.assign(document.createElement('div'), {className:'cal-day other-month'}));
+    const tasks = this.filtered();
+    for (let day = 1; day <= new Date(year, month+1, 0).getDate(); day++) {
+      const el = document.createElement('div'); el.className = 'cal-day';
+      el.innerHTML = `<div class="cal-day-num">${day}</div>`;
+      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      tasks.filter(t => t.dataPostagem === ds).slice(0,3).forEach(t => {
+        const ev = document.createElement('div'); ev.className = 'cal-event-chip'; ev.textContent = t.title; ev.style.background = gpStatus(t.status).dotColor;
+        ev.addEventListener('click', () => this.openModal(t.id)); el.appendChild(ev);
+      });
+      grid.appendChild(el);
+    }
+  },
+
+  populateClientFilter() {
+    const sel = document.getElementById('gpFilterCliente');
+    const mSel = document.getElementById('gpFtCliente');
+    if (!sel || !mSel) return;
+    sel.innerHTML = '<option value="">Todos os Clientes</option>';
+    mSel.innerHTML = '<option value="">Selecione</option>';
+    gpClients().forEach(n => { sel.innerHTML += `<option value="${n}">${n}</option>`; mSel.innerHTML += `<option value="${n}">${n}</option>`; });
+  },
+
+  populateWeekFilter() {
+    const weeks = [...new Set(gpState.tasks.map(t => t.semana).filter(Boolean))].sort();
+    const sel = document.getElementById('gpFilterSemana');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Todas as Semanas</option>';
+    weeks.forEach(w => sel.innerHTML += `<option value="${w}">${w}</option>`);
+  },
+
+  openModal(id = null, defaultStatus = null) {
+    this.editingId = id;
+    if (id) {
+      const t = gpState.tasks.find(x => x.id === id);
+      if (!t) return;
+      document.getElementById('gpModalTitle').textContent = 'Editar Tarefa';
+      document.getElementById('gpFtTitle').value       = t.title;
+      document.getElementById('gpFtCliente').value     = t.cliente || '';
+      document.getElementById('gpFtTipo').value        = t.tipo || 'feed';
+      document.getElementById('gpFtStatus').value      = t.status;
+      document.getElementById('gpFtResponsavel').value = t.responsavel || '';
+      document.getElementById('gpFtRevisao').value     = t.revisao || '';
+      document.getElementById('gpFtPrioridade').value  = t.prioridade || 'normal';
+      document.getElementById('gpFtSemana').value      = t.semana || '';
+      document.getElementById('gpFtDataPostagem').value   = t.dataPostagem || '';
+      document.getElementById('gpFtDataVencimento').value = t.dataVencimento || '';
+      document.getElementById('gpFtCaption').value     = t.caption || '';
+    } else {
+      document.getElementById('gpModalTitle').textContent = 'Nova Tarefa';
+      document.getElementById('gpFtTitle').value = '';
+      document.getElementById('gpFtCaption').value = '';
+      document.getElementById('gpFtStatus').value = defaultStatus || 'a_fazer';
+      document.getElementById('gpFtResponsavel').value = gpState.user ? gpState.user.name : '';
+    }
+    this.populateClientFilter();
+    document.getElementById('gpModalOverlay').classList.add('show');
+  },
+
+  closeModal() { document.getElementById('gpModalOverlay').classList.remove('show'); this.editingId = null; },
+
+  saveTask() {
+    const title = document.getElementById('gpFtTitle').value.trim();
+    if (!title) { alert('Digite um título para a tarefa.'); return; }
+    const t = {
+      id: this.editingId || Date.now().toString(),
+      space: gpState.space, title,
+      cliente: document.getElementById('gpFtCliente').value,
+      tipo:    document.getElementById('gpFtTipo').value,
+      status:  document.getElementById('gpFtStatus').value,
+      responsavel: document.getElementById('gpFtResponsavel').value,
+      revisao:     document.getElementById('gpFtRevisao').value,
+      prioridade:  document.getElementById('gpFtPrioridade').value,
+      semana:      document.getElementById('gpFtSemana').value,
+      dataPostagem:    document.getElementById('gpFtDataPostagem').value,
+      dataVencimento:  document.getElementById('gpFtDataVencimento').value,
+      caption:    document.getElementById('gpFtCaption').value
+    };
+    if (this.editingId) gpState.tasks = gpState.tasks.map(x => x.id === this.editingId ? t : x);
+    else gpState.tasks.push(t);
+    gpSave(); this.closeModal(); this.renderCurrentView(); this.populateWeekFilter();
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => { Gestao.init(); });
+</script>
+
+<!-- ============ META ADS MODULES ============ -->
+<script>
+// ============ META CONFIG ============
+let _metaDiscoveredData = null;
+let _metaMapping = { starken: { pageId: null, pageAccessToken: null, igUserId: null, adAccountIds: [], name: 'Starken Performance' }, alpha: { pageId: null, pageAccessToken: null, igUserId: null, adAccountIds: [], name: 'Alpha Assessoria' } };
+
+function metaConfigInit() {
+  // Carrega config existente
+  fetch(metaApiBase() + '/api/meta/config').then(r => r.json()).then(data => {
+    if (data.configured && data.config?.tenants) {
+      _metaMapping = { ..._metaMapping, ...data.config.tenants };
+      metaConfigUpdateMappingDisplay();
+    }
+  }).catch(() => {});
+}
+
+async function metaConfigDiscover() {
+  const btn = document.getElementById('metaConfigDiscoverBtn');
+  const statusDiv = document.getElementById('metaConfigTokenStatus');
+  btn.disabled = true;
+  btn.textContent = 'Descobrindo...';
+  statusDiv.style.background = 'var(--bg-secondary)';
+  statusDiv.textContent = 'Conectando ao Meta Graph API...';
+
+  try {
+    const res = await fetch(metaApiBase() + '/api/meta/discover');
+    const data = await res.json();
+
+    if (data.error) {
+      statusDiv.style.background = '#fef2f2';
+      statusDiv.innerHTML = '<span style="color:var(--danger)">Erro: ' + data.message + '</span>';
+      btn.disabled = false;
+      btn.textContent = '\u{1F50D} Descobrir Ativos';
+      return;
+    }
+
+    _metaDiscoveredData = data;
+
+    // Token status
+    let tokenHtml = '<span style="color:var(--success,#10b981);font-weight:700">Conectado</span>';
+    if (data.user) tokenHtml += ' — ' + data.user.name;
+    if (data.token_status?.expires_at_date) {
+      const exp = new Date(data.token_status.expires_at_date);
+      const days = Math.ceil((exp - new Date()) / (1000*60*60*24));
+      tokenHtml += ' | Token expira em <b>' + days + ' dias</b> (' + exp.toLocaleDateString('pt-BR') + ')';
+    }
+    if (data.summary) {
+      tokenHtml += '<br><span style="font-size:0.78rem">' + data.summary.total_pages + ' páginas · ' + data.summary.total_ig_accounts + ' contas IG · ' + data.summary.total_ad_accounts + ' contas de anúncios</span>';
+    }
+    statusDiv.style.background = '#f0fdf4';
+    statusDiv.innerHTML = tokenHtml;
+
+    // Renderizar páginas
+    let pagesHtml = '';
+    data.pages.forEach(p => {
+      const igInfo = p.ig_account ? ' — IG: @' + p.ig_account.username : '';
+      const isStarken = _metaMapping.starken?.pageId === p.id;
+      const isAlpha = _metaMapping.alpha?.pageId === p.id;
+      pagesHtml += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
+        + '<div style="flex:1"><b>' + p.name + '</b><span style="font-size:0.75rem;color:var(--text-secondary)">' + igInfo + '</span><br><span style="font-size:0.72rem;color:var(--text-muted)">ID: ' + p.id + '</span></div>'
+        + '<select onchange="metaConfigAssignPage(\'' + p.id + '\',\'' + (p.ig_account?.id||'') + '\',\'' + (p.access_token||'').replace(/'/g,'') + '\',this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.78rem">'
+        + '<option value="">— Nenhum —</option>'
+        + '<option value="starken"' + (isStarken ? ' selected' : '') + '>Starken</option>'
+        + '<option value="alpha"' + (isAlpha ? ' selected' : '') + '>Alpha</option>'
+        + '</select></div>';
+    });
+    document.getElementById('metaConfigPages').innerHTML = pagesHtml || '<p style="color:var(--text-secondary);font-size:0.82rem">Nenhuma página encontrada</p>';
+
+    // Renderizar ad accounts
+    let adsHtml = '';
+    data.ad_accounts.forEach(a => {
+      const statusMap = { 1:'Ativa', 2:'Desativada', 3:'Não Pub.', 7:'Pendente', 9:'Suspensa' };
+      const statusText = statusMap[a.account_status] || 'Status ' + a.account_status;
+      const inStarken = (_metaMapping.starken?.adAccountIds||[]).includes(a.id);
+      const inAlpha = (_metaMapping.alpha?.adAccountIds||[]).includes(a.id);
+      adsHtml += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
+        + '<div style="flex:1"><b>' + (a.name || a.id) + '</b>'
+        + '<span style="font-size:0.72rem;margin-left:8px;padding:2px 6px;border-radius:4px;background:var(--bg-secondary)">' + statusText + '</span>'
+        + (a.business ? '<span style="font-size:0.72rem;color:var(--text-muted);margin-left:6px">' + a.business.name + '</span>' : '')
+        + '<br><span style="font-size:0.72rem;color:var(--text-muted)">' + a.id + '</span></div>'
+        + '<select onchange="metaConfigAssignAd(\'' + a.id + '\',this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.78rem">'
+        + '<option value="">— Nenhum —</option>'
+        + '<option value="starken"' + (inStarken ? ' selected' : '') + '>Starken</option>'
+        + '<option value="alpha"' + (inAlpha ? ' selected' : '') + '>Alpha</option>'
+        + '</select></div>';
+    });
+    document.getElementById('metaConfigAdAccounts').innerHTML = adsHtml || '<p style="color:var(--text-secondary);font-size:0.82rem">Nenhuma conta de anúncios encontrada</p>';
+
+    document.getElementById('metaConfigDiscovered').style.display = 'block';
+    metaConfigUpdateMappingDisplay();
+  } catch (e) {
+    statusDiv.style.background = '#fef2f2';
+    statusDiv.innerHTML = '<span style="color:var(--danger)">Erro de conexão: ' + e.message + '</span>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '\u{1F50D} Descobrir Ativos';
+  }
+}
+
+function metaConfigAssignPage(pageId, igUserId, pageAccessToken, tenant) {
+  // Remove page de ambos os tenants
+  ['starken','alpha'].forEach(t => {
+    if (_metaMapping[t]?.pageId === pageId) {
+      _metaMapping[t].pageId = null;
+      _metaMapping[t].igUserId = null;
+      _metaMapping[t].pageAccessToken = null;
+    }
+  });
+  if (tenant && _metaMapping[tenant]) {
+    _metaMapping[tenant].pageId = pageId;
+    _metaMapping[tenant].igUserId = igUserId || null;
+    _metaMapping[tenant].pageAccessToken = pageAccessToken || null;
+  }
+  metaConfigUpdateMappingDisplay();
+}
+
+function metaConfigAssignAd(adId, tenant) {
+  // Remove ad account de ambos os tenants
+  ['starken','alpha'].forEach(t => {
+    _metaMapping[t].adAccountIds = (_metaMapping[t].adAccountIds||[]).filter(id => id !== adId);
+  });
+  if (tenant && _metaMapping[tenant]) {
+    _metaMapping[tenant].adAccountIds.push(adId);
+  }
+  metaConfigUpdateMappingDisplay();
+}
+
+function metaConfigUpdateMappingDisplay() {
+  const findPage = (id) => _metaDiscoveredData?.pages?.find(p => p.id === id);
+  const findAd = (id) => _metaDiscoveredData?.ad_accounts?.find(a => a.id === id);
+
+  ['starken','alpha'].forEach(t => {
+    const prefix = t === 'starken' ? 'Starken' : 'Alpha';
+    const m = _metaMapping[t] || {};
+    const page = findPage(m.pageId);
+    document.getElementById('metaConfig' + prefix + 'Page').textContent = page ? page.name : '—';
+    document.getElementById('metaConfig' + prefix + 'Ig').textContent = m.igUserId && page?.ig_account ? '@' + page.ig_account.username : '—';
+    const adNames = (m.adAccountIds||[]).map(id => { const a = findAd(id); return a ? (a.name||a.id) : id; });
+    document.getElementById('metaConfig' + prefix + 'Ads').textContent = adNames.length ? adNames.join(', ') : '—';
+  });
+}
+
+async function metaConfigSave() {
+  const btn = document.getElementById('metaConfigSaveBtn');
+  const statusDiv = document.getElementById('metaConfigStatus');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+  statusDiv.style.display = 'block';
+  statusDiv.style.color = 'var(--text-secondary)';
+  statusDiv.textContent = 'Salvando configuração...';
+
+  try {
+    const res = await fetch(metaApiBase() + '/api/meta/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tenants: _metaMapping }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      statusDiv.style.color = 'var(--danger)';
+      statusDiv.textContent = 'Erro: ' + data.message;
+    } else {
+      statusDiv.style.color = 'var(--success,#10b981)';
+      statusDiv.textContent = 'Configuração salva com sucesso!';
+    }
+  } catch (e) {
+    statusDiv.style.color = 'var(--danger)';
+    statusDiv.textContent = 'Erro: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '\u{1F4BE} Salvar Configuração';
+  }
+}
+
+// ============ HELPERS ============
+function metaApiBase() {
+  const loc = window.location;
+  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') return '';
+  return loc.origin;
+}
+
+function metaFormatBRL(value) {
+  const num = parseFloat(value) || 0;
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function metaFormatNumber(value) {
+  return parseInt(value || 0).toLocaleString('pt-BR');
+}
+
+function metaFormatPercent(value) {
+  return (parseFloat(value) || 0).toFixed(2) + '%';
+}
+
+// ============ META BALANCE ============
+let _metaBalanceInterval = null;
+
+function metaBalanceInit() {
+  const saved = localStorage.getItem('metaBalanceThreshold');
+  if (saved) document.getElementById('metaBalanceThreshold').value = saved;
+  metaBalanceFetch();
+}
+
+async function metaBalanceFetch() {
+  const grid = document.getElementById('metaBalanceGrid');
+  grid.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">Carregando saldos...</div>';
+
+  const tenants = ['starken', 'alpha'];
+  const results = [];
+
+  for (const tenant of tenants) {
+    try {
+      const res = await fetch(metaApiBase() + '/api/meta/balance?tenant=' + tenant);
+      const data = await res.json();
+      if (data.error) {
+        results.push({ tenant, tenant_name: tenant === 'starken' ? 'Starken Performance' : 'Alpha Assessoria', error: data.message });
+      } else {
+        results.push(data);
+      }
+    } catch (e) {
+      results.push({ tenant, tenant_name: tenant, error: e.message });
+    }
+  }
+
+  metaBalanceRender(results);
+}
+
+function metaBalanceRender(results) {
+  const grid = document.getElementById('metaBalanceGrid');
+  const threshold = parseFloat(document.getElementById('metaBalanceThreshold').value) || 500;
+  const alerts = [];
+  let html = '';
+
+  results.forEach(r => {
+    const isStarken = r.tenant === 'starken';
+    const accent = isStarken ? 'starken' : 'alpha';
+    const tenantName = r.tenant_name || r.tenant;
+
+    if (r.error) {
+      html += '<div class="stat-card ' + accent + '" style="padding:20px">'
+        + '<div class="stat-label">' + tenantName + '</div>'
+        + '<div style="color:var(--danger);font-size:0.85rem;margin-top:8px">Erro: ' + r.error + '</div>'
+        + '</div>';
+      return;
+    }
+
+    // Renderiza cada ad account do tenant
+    (r.accounts || []).forEach(acc => {
+      if (acc.error) {
+        html += '<div class="stat-card ' + accent + '" style="padding:20px">'
+          + '<div class="stat-label">' + (acc.account_name || acc.ad_account_id) + '</div>'
+          + '<div style="font-size:0.72rem;color:var(--text-muted)">' + tenantName + '</div>'
+          + '<div style="color:var(--danger);font-size:0.85rem;margin-top:8px">Erro: ' + acc.error + '</div>'
+          + '</div>';
+        return;
+      }
+
+      const balance = parseFloat(acc.balance) / 100;
+      const spent = parseFloat(acc.amount_spent) / 100;
+      const statusMap = { 1:'Ativa', 2:'Desativada', 3:'Não Publicada', 7:'Pendente', 8:'Suspensa Temp.', 9:'Suspensa', 100:'Fechada', 101:'Em Análise' };
+      const statusText = statusMap[acc.account_status] || 'Status ' + acc.account_status;
+      const statusColor = acc.account_status === 1 ? 'var(--success,#10b981)' : 'var(--danger,#ef4444)';
+
+      if (balance < threshold) {
+        alerts.push(acc.account_name + ': ' + metaFormatBRL(balance) + ' (limite: ' + metaFormatBRL(threshold) + ')');
+      }
+
+      html += '<div class="stat-card ' + accent + '" style="padding:20px">'
+        + '<div class="stat-label" style="font-size:0.92rem;font-weight:700;margin-bottom:4px">' + (acc.account_name || acc.ad_account_id) + '</div>'
+        + '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px">' + tenantName + '</div>'
+        + '<div style="font-size:1.8rem;font-weight:800;margin-bottom:4px">' + metaFormatBRL(balance) + '</div>'
+        + '<div style="font-size:0.78rem;color:var(--text-secondary)">Saldo disponível</div>'
+        + '<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+        + '<div><div style="font-size:0.72rem;color:var(--text-secondary)">Total Gasto</div><div style="font-weight:700">' + metaFormatBRL(spent) + '</div></div>'
+        + '<div><div style="font-size:0.72rem;color:var(--text-secondary)">Status</div><div style="font-weight:700;color:' + statusColor + '">' + statusText + '</div></div>'
+        + '</div>'
+        + '<div style="margin-top:8px;font-size:0.72rem;color:var(--text-secondary)">Moeda: ' + (acc.currency || 'BRL') + ' · ' + acc.ad_account_id + '</div>'
+        + '</div>';
+    });
+  });
+
+  grid.innerHTML = html || '<div style="text-align:center;padding:30px;color:var(--text-secondary)">Nenhuma conta configurada. Vá em Configuração Meta para mapear as contas.</div>';
+
+  const banner = document.getElementById('metaBalanceAlertBanner');
+  if (alerts.length > 0) {
+    banner.style.display = 'block';
+    banner.innerHTML = '&#9888; Saldo baixo: ' + alerts.join(' | ');
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+function metaBalanceToggleAutoRefresh(enabled) {
+  if (_metaBalanceInterval) { clearInterval(_metaBalanceInterval); _metaBalanceInterval = null; }
+  if (enabled) {
+    _metaBalanceInterval = setInterval(metaBalanceFetch, 5 * 60 * 1000);
+  }
+}
+
+// ============ META BI ============
+let _metaBiState = { tenant: 'starken', preset: 'last_7d', data: [], sortCol: null, sortAsc: true };
+
+function metaBiInit() {
+  // Nada especial na init, filtros já estão prontos no HTML
+}
+
+function metaBiSetTenant(tenant, btn) {
+  _metaBiState.tenant = tenant;
+  document.querySelectorAll('[data-bi-tenant]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function metaBiSetPreset(preset, btn) {
+  _metaBiState.preset = preset;
+  document.querySelectorAll('[data-bi-preset]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById('metaBiCustomDates').style.display = preset === 'custom' ? 'flex' : 'none';
+}
+
+async function metaBiFetchInsights() {
+  const tbody = document.getElementById('metaBiTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text-secondary)">Carregando dados...</td></tr>';
+
+  const tenants = _metaBiState.tenant === 'ambos' ? ['starken', 'alpha'] : [_metaBiState.tenant];
+  let allData = [];
+  let summaryAcc = { total_spend: 0, total_impressions: 0, total_clicks: 0 };
+
+  for (const tenant of tenants) {
+    let url = metaApiBase() + '/api/meta/insights?tenant=' + tenant + '&preset=' + _metaBiState.preset;
+    if (_metaBiState.preset === 'custom') {
+      url += '&date_start=' + document.getElementById('metaBiDateStart').value;
+      url += '&date_end=' + document.getElementById('metaBiDateEnd').value;
+    }
+
+    try {
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.error) {
+        tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--danger)">Erro: ' + json.message + '</td></tr>';
+        return;
+      }
+      const rows = (json.data || []).map(row => ({
+        ...row,
+        tenant: tenant,
+        spend: parseFloat(row.spend || 0),
+        impressions: parseInt(row.impressions || 0),
+        clicks: parseInt(row.clicks || 0),
+        cpc: parseFloat(row.cpc || 0),
+        cpm: parseFloat(row.cpm || 0),
+        ctr: parseFloat(row.ctr || 0),
+      }));
+      allData = allData.concat(rows);
+
+      if (json.summary) {
+        summaryAcc.total_spend += parseFloat(json.summary.total_spend || 0);
+        summaryAcc.total_impressions += parseInt(json.summary.total_impressions || 0);
+        summaryAcc.total_clicks += parseInt(json.summary.total_clicks || 0);
+      }
+    } catch (e) {
+      tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--danger)">Erro: ' + e.message + '</td></tr>';
+      return;
+    }
+  }
+
+  _metaBiState.data = allData;
+
+  // Summary
+  const avgCpc = summaryAcc.total_clicks > 0 ? summaryAcc.total_spend / summaryAcc.total_clicks : 0;
+  const avgCpm = summaryAcc.total_impressions > 0 ? (summaryAcc.total_spend / summaryAcc.total_impressions) * 1000 : 0;
+  const avgCtr = summaryAcc.total_impressions > 0 ? (summaryAcc.total_clicks / summaryAcc.total_impressions) * 100 : 0;
+
+  document.getElementById('metaBiTotalSpend').textContent = metaFormatBRL(summaryAcc.total_spend);
+  document.getElementById('metaBiTotalImpressions').textContent = metaFormatNumber(summaryAcc.total_impressions);
+  document.getElementById('metaBiTotalClicks').textContent = metaFormatNumber(summaryAcc.total_clicks);
+  document.getElementById('metaBiAvgCpc').textContent = metaFormatBRL(avgCpc);
+  document.getElementById('metaBiAvgCpm').textContent = metaFormatBRL(avgCpm);
+  document.getElementById('metaBiAvgCtr').textContent = metaFormatPercent(avgCtr);
+
+  metaBiRenderTable(allData);
+}
+
+function metaBiSort(col) {
+  if (_metaBiState.sortCol === col) {
+    _metaBiState.sortAsc = !_metaBiState.sortAsc;
+  } else {
+    _metaBiState.sortCol = col;
+    _metaBiState.sortAsc = true;
+  }
+  const sorted = [..._metaBiState.data].sort((a, b) => {
+    const va = a[col], vb = b[col];
+    if (typeof va === 'string') return _metaBiState.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return _metaBiState.sortAsc ? va - vb : vb - va;
+  });
+  metaBiRenderTable(sorted);
+}
+
+function metaBiRenderTable(data) {
+  const tbody = document.getElementById('metaBiTableBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text-secondary)">Nenhum dado encontrado para o período</td></tr>';
+    return;
+  }
+  let html = '';
+  data.forEach((row, i) => {
+    const bg = i % 2 === 0 ? '' : 'background:var(--bg-secondary,rgba(0,0,0,0.02))';
+    const label = (_metaBiState.tenant === 'ambos' ? '<span style="font-size:0.7rem;background:var(--bg-secondary);padding:2px 6px;border-radius:4px;margin-left:6px">' + row.tenant + '</span>' : '');
+    html += '<tr style="border-bottom:1px solid var(--border);' + bg + '">'
+      + '<td style="padding:8px">' + (row.campaign_name || '—') + label + '</td>'
+      + '<td style="padding:8px;text-align:right">' + metaFormatBRL(row.spend) + '</td>'
+      + '<td style="padding:8px;text-align:right">' + metaFormatNumber(row.impressions) + '</td>'
+      + '<td style="padding:8px;text-align:right">' + metaFormatNumber(row.clicks) + '</td>'
+      + '<td style="padding:8px;text-align:right">' + metaFormatBRL(row.cpc) + '</td>'
+      + '<td style="padding:8px;text-align:right">' + metaFormatBRL(row.cpm) + '</td>'
+      + '<td style="padding:8px;text-align:right">' + metaFormatPercent(row.ctr) + '</td>'
+      + '</tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function metaBiExportJson() {
+  if (!_metaBiState.data.length) { alert('Consulte os dados primeiro.'); return; }
+  const blob = new Blob([JSON.stringify({ tenant: _metaBiState.tenant, preset: _metaBiState.preset, data: _metaBiState.data, exported_at: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'meta-bi-' + _metaBiState.tenant + '-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ============ META PUBLISH ============
+let _metaPubFiles = [];
+
+function metaPublishInit() {
+  // Init: limpa previews se necessário
+}
+
+function metaPublishHandleDrop(event) {
+  const files = event.dataTransfer.files;
+  metaPublishHandleFiles(files);
+}
+
+function metaPublishHandleFiles(files) {
+  for (let i = 0; i < files.length; i++) {
+    _metaPubFiles.push(files[i]);
+  }
+  metaPublishRenderPreviews();
+}
+
+function metaPublishRenderPreviews() {
+  const container = document.getElementById('metaPubPreviews');
+  container.innerHTML = '';
+  _metaPubFiles.forEach((file, idx) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)';
+    if (file.type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      div.appendChild(img);
+    } else {
+      div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem">&#127909;</div>';
+    }
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '×';
+    removeBtn.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1';
+    removeBtn.onclick = function() { _metaPubFiles.splice(idx, 1); metaPublishRenderPreviews(); };
+    div.appendChild(removeBtn);
+    container.appendChild(div);
+  });
+}
+
+async function metaPublishSubmit() {
+  const dest = document.getElementById('metaPubDestination').value;
+  const type = document.getElementById('metaPubType').value;
+  const caption = document.getElementById('metaPubCaption').value;
+  const mode = document.getElementById('metaPubScheduleMode').value;
+  const datetime = document.getElementById('metaPubDatetime').value;
+  const statusDiv = document.getElementById('metaPubStatus');
+
+  if (!dest) { alert('Selecione um destino.'); return; }
+  if (!caption && !_metaPubFiles.length) { alert('Adicione uma legenda ou mídia.'); return; }
+
+  const [platform, tenant] = dest.split('_');
+  const submitBtn = document.getElementById('metaPubSubmitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Enviando...';
+  statusDiv.style.display = 'block';
+  statusDiv.style.color = 'var(--text-secondary)';
+  statusDiv.textContent = 'Processando publicação...';
+
+  try {
+    // Step 1: Upload media se houver
+    let containerId = null;
+    let photoIds = [];
+
+    if (_metaPubFiles.length > 0) {
+      statusDiv.textContent = 'Fazendo upload da mídia...';
+      // TODO: Implementar upload para Supabase Storage + chamada /api/meta/media
+      // Por enquanto, placeholder
+      statusDiv.style.color = 'var(--warning,#f59e0b)';
+      statusDiv.textContent = 'Upload de mídia será implementado na Fase 4 completa. Testando apenas agendamento de texto.';
+    }
+
+    // Step 2: Publish/Schedule
+    const body = {
+      destination: platform,
+      tenant: tenant,
+      caption: caption,
+      type: type,
+    };
+    if (containerId) body.container_id = containerId;
+    if (photoIds.length) body.photo_ids = photoIds;
+    if (mode === 'schedule' && datetime) {
+      body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+    }
+
+    const res = await fetch(metaApiBase() + '/api/meta/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      statusDiv.style.color = 'var(--danger)';
+      statusDiv.textContent = 'Erro: ' + data.message;
+    } else {
+      statusDiv.style.color = 'var(--success,#10b981)';
+      statusDiv.textContent = (mode === 'schedule' ? 'Post agendado' : 'Post publicado') + ' com sucesso! ID: ' + (data.post_id || data.id);
+      // Limpa form
+      document.getElementById('metaPubCaption').value = '';
+      document.getElementById('metaPubCharCount').textContent = '0 / 2.200';
+      _metaPubFiles = [];
+      metaPublishRenderPreviews();
+    }
+  } catch (e) {
+    statusDiv.style.color = 'var(--danger)';
+    statusDiv.textContent = 'Erro de conexão: ' + e.message;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '\u{1F4E4} Publicar';
+  }
+}
+
+function metaPublishLoadScheduled() {
+  // Placeholder — será implementado quando publish estiver funcional
+  document.getElementById('metaPubScheduledList').textContent = 'Funcionalidade disponível após primeira publicação agendada';
+}
 </script>
 </body>
 </html>
