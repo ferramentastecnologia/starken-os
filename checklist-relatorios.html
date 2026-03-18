@@ -1126,8 +1126,43 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
     <div id="asanaConfigContent">Carregando...</div>
     <div class="modal-actions">
       <button class="btn btn-outline" style="margin-right:auto" onclick="trelloOpenMigration()">🔄 Migrar do Trello</button>
+      <button class="btn btn-outline" style="margin-right:auto" onclick="provisionClientOpen()" title="Cria 3 projetos Asana automaticamente">➕ Provisionar Cliente</button>
       <button class="btn btn-outline" onclick="document.getElementById('asanaConfigModal').classList.remove('active')">Fechar</button>
       <button class="btn btn-primary" onclick="asanaSaveConfig()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Provisionar Cliente -->
+<div class="modal-overlay" id="provisionClientModal">
+  <div class="modal" style="max-width:480px">
+    <h3>➕ Provisionar Novo Cliente</h3>
+    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px">Cria automaticamente 3 projetos no Asana: Conteúdo, Tráfego e Criativos</p>
+
+    <div class="form-group">
+      <label class="form-label">Nome do Cliente</label>
+      <input type="text" class="form-input" id="provisionClientName" placeholder="Ex: Acme Corporation">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email do Cliente</label>
+      <input type="email" class="form-input" id="provisionClientEmail" placeholder="Ex: admin@acme.com">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Workspace GID</label>
+      <input type="text" class="form-input" id="provisionWorkspaceGid" placeholder="Ex: 1213720645962721">
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Padrão: workspace atual da configuração</div>
+    </div>
+
+    <div id="provisionStatus" style="display:none;padding:12px;border-radius:6px;margin-top:16px;font-size:0.85rem">
+      <div id="provisionStatusText"></div>
+      <div style="margin-top:8px" id="provisionStatusDetails"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="provisionClientClose()">Cancelar</button>
+      <button class="btn btn-primary" onclick="provisionClientExecute()" id="provisionClientBtn">Provisionar</button>
     </div>
   </div>
 </div>
@@ -3538,6 +3573,105 @@ async function asanaInitTab() {
     }
   } else if (_asanaConnected) {
     asanaRenderTasks();
+  }
+}
+
+// ============ PROVISION CLIENT ============
+function provisionClientOpen() {
+  // Pré-preencher workspace do config atual
+  if (_asanaConfig && _asanaConfig.workspace_gid) {
+    document.getElementById('provisionWorkspaceGid').value = _asanaConfig.workspace_gid;
+  }
+  document.getElementById('provisionClientName').value = '';
+  document.getElementById('provisionClientEmail').value = '';
+  document.getElementById('provisionStatus').style.display = 'none';
+  document.getElementById('provisionClientBtn').disabled = false;
+  document.getElementById('provisionClientModal').classList.add('active');
+}
+
+function provisionClientClose() {
+  document.getElementById('provisionClientModal').classList.remove('active');
+}
+
+async function provisionClientExecute() {
+  const name = document.getElementById('provisionClientName').value.trim();
+  const email = document.getElementById('provisionClientEmail').value.trim();
+  let workspace = document.getElementById('provisionWorkspaceGid').value.trim();
+
+  // Validação básica
+  if (!name) {
+    showToast('❌ Nome do cliente é obrigatório');
+    return;
+  }
+  if (!email || !email.includes('@')) {
+    showToast('❌ Email inválido');
+    return;
+  }
+
+  // Usar workspace do config se não preenchido
+  if (!workspace && _asanaConfig && _asanaConfig.workspace_gid) {
+    workspace = _asanaConfig.workspace_gid;
+  }
+  if (!workspace) {
+    showToast('❌ Workspace GID é obrigatório');
+    return;
+  }
+
+  // Mostrar status
+  const statusDiv = document.getElementById('provisionStatus');
+  const statusText = document.getElementById('provisionStatusText');
+  const statusDetails = document.getElementById('provisionStatusDetails');
+  const btn = document.getElementById('provisionClientBtn');
+
+  btn.disabled = true;
+  statusDiv.style.display = 'block';
+  statusDiv.style.background = '#fef3c7';
+  statusDiv.style.color = '#92400e';
+  statusText.innerHTML = '⏳ Provisionando cliente...';
+  statusDetails.innerHTML = '';
+
+  try {
+    const response = await fetch(asanaApiBase() + '/api/asana/provision', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_name: name,
+        client_email: email,
+        workspace_gid: workspace,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || 'Erro desconhecido');
+    }
+
+    // Sucesso!
+    statusDiv.style.background = '#ecfdf5';
+    statusDiv.style.color = '#065f46';
+    statusText.innerHTML = '✅ Cliente provisionado com sucesso!';
+
+    let details = `<strong>Cliente:</strong> ${esc(data.client_name)}<br>`;
+    details += `<strong>Projetos criados:</strong><br>`;
+    details += `• Conteúdo<br>• Tráfego<br>• Criativos<br>`;
+    if (data.summary && data.summary.errors && data.summary.errors.length > 0) {
+      details += `<br><strong>Avisos:</strong> ${data.summary.errors.length} projeto(s) com erro`;
+    }
+    statusDetails.innerHTML = details;
+
+    showToast('✅ Cliente provisionado! 3 projetos criados no Asana');
+
+    // Limpar após 2 segundos
+    setTimeout(() => {
+      provisionClientClose();
+    }, 2000);
+  } catch (e) {
+    statusDiv.style.background = '#fef2f2';
+    statusDiv.style.color = '#991b1b';
+    statusText.innerHTML = '❌ Erro ao provisionar';
+    statusDetails.innerHTML = `<strong>Erro:</strong> ${esc(e.message)}`;
+    btn.disabled = false;
   }
 }
 
