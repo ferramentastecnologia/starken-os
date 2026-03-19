@@ -7727,7 +7727,7 @@ async function ctBulkDelete() {
     : 'Excluir ' + count + ' tarefas?\n\n' + names.slice(0, 5).join('\n') + (names.length > 5 ? '\n... e mais ' + (names.length - 5) : '') + '\n\nSubtarefas também serão excluídas.';
   if (!confirm(msg)) return;
   // Delete all in parallel
-  await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('delete_task', { id })));
+  await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('delete_task', { id, user: ctGetUser() })));
   ctSelectedIds.clear();
   ctUpdateSelection();
   ctLoadGroups();
