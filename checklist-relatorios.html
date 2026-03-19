@@ -6215,13 +6215,19 @@ function metaPublishSelectPlatform(platform) {
   const fbBtn = document.getElementById('metaPubPlatFb');
   const igBtn = document.getElementById('metaPubPlatIg');
 
-  platformInput.value = platform;
-  fbBtn.classList.toggle('selected', platform === 'fb');
-  igBtn.classList.toggle('selected', platform === 'ig');
+  // Toggle: click to add/remove platform
+  const btn = platform === 'fb' ? fbBtn : igBtn;
+  btn.classList.toggle('selected');
 
-  // Mostrar/esconder aviso de mídia obrigatória
+  // Build selected platforms string (comma-separated)
+  const selected = [];
+  if (fbBtn.classList.contains('selected')) selected.push('fb');
+  if (igBtn.classList.contains('selected')) selected.push('ig');
+  platformInput.value = selected.join(',');
+
+  // Mostrar aviso de mídia se IG selecionado
   const mediaChk = document.getElementById('metaPubChkMedia');
-  if (mediaChk) mediaChk.style.display = platform === 'ig' ? 'block' : 'none';
+  if (mediaChk) mediaChk.style.display = selected.includes('ig') ? 'block' : 'none';
 
   metaPublishUpdatePreview();
   metaPublishUpdateSteps();
@@ -6324,7 +6330,8 @@ function metaPublishValidateForm() {
   const caption = document.getElementById('metaPubCaption').value;
   const hasMedia = _metaPubFiles.length > 0 || (document.getElementById('metaPubMediaUrl') && document.getElementById('metaPubMediaUrl').value);
   const hasContent = !!caption || hasMedia;
-  const igNeedsMedia = platform === 'ig' && !hasMedia;
+  const plats = platform.split(',').filter(Boolean);
+  const igNeedsMedia = plats.includes('ig') && !hasMedia;
 
   // Checklist visual
   const chkClient = document.getElementById('metaPubChkClient');
@@ -6401,12 +6408,18 @@ function metaPublishUpdatePreview() {
   avatarEl.style.background = c.tenant === 'alpha' ? '#f59e0b' : '#10b981';
   nameEl.textContent = c.name || clientKey;
 
-  if (platform === 'fb') {
+  const plats = platform.split(',').filter(Boolean);
+  if (plats.includes('fb') && plats.includes('ig')) {
+    metaEl.textContent = (c.pageName || 'Facebook') + ' + @' + (c.igUsername || 'instagram');
+    platLabel.textContent = '📄 FB + 📷 IG';
+    platLabel.style.background = 'linear-gradient(135deg, #dbeafe, #fce7f3)';
+    platLabel.style.color = '#6b21a8';
+  } else if (plats.includes('fb')) {
     metaEl.textContent = c.pageName || 'Facebook';
     platLabel.textContent = '📄 Facebook';
     platLabel.style.background = '#dbeafe';
     platLabel.style.color = '#1d4ed8';
-  } else if (platform === 'ig') {
+  } else if (plats.includes('ig')) {
     metaEl.textContent = '@' + (c.igUsername || 'instagram');
     platLabel.textContent = '📷 Instagram';
     platLabel.style.background = '#fce7f3';
@@ -6570,10 +6583,11 @@ async function metaPublishSubmit() {
   const submitText = document.getElementById('metaPubSubmitText');
   const submitIcon = document.getElementById('metaPubSubmitIcon');
 
+  const platforms = platform.split(',').filter(Boolean);
   if (!clientKey) { alert('Selecione um cliente.'); return; }
-  if (!platform) { alert('Selecione a plataforma.'); return; }
+  if (platforms.length === 0) { alert('Selecione ao menos uma plataforma.'); return; }
   if (!caption && !_metaPubFiles.length && !mediaUrl) { alert('Adicione uma legenda ou mídia.'); return; }
-  if (platform === 'ig' && _metaPubFiles.length === 0 && !mediaUrl) {
+  if (platforms.includes('ig') && _metaPubFiles.length === 0 && !mediaUrl) {
     alert('Instagram exige mídia. Adicione imagem/vídeo ou URL de mídia.');
     return;
   }
@@ -6690,63 +6704,73 @@ async function metaPublishSubmit() {
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // ─── ETAPA 2: Publicar/Agendar ───
-    statusDiv.innerHTML = (hasMedia ? '📤 <b>Etapa 2/2:</b> ' : '📤 ') + 'Publicando post...';
-    statusDiv.style.background = '#eff6ff';
-    statusDiv.style.color = '#1d4ed8';
+    // ─── ETAPA 2: Publicar/Agendar (para cada plataforma) ───
+    const results = [];
+    const totalPlats = platforms.length;
+    let platIdx = 0;
 
-    const body = {
-      destination: platform,
-      client: clientKey,
-      caption: caption,
-      type: type,
-      user: gpState.user ? gpState.user.name : 'Sistema',
-    };
-    // FB com imagem: envia image_url para publicar direto via /{page_id}/photos
-    if (platform === 'fb' && resolvedImageUrl) {
-      body.image_url = resolvedImageUrl;
-    }
-    // IG com imagem via URL
-    if (platform === 'ig' && resolvedImageUrl) {
-      body.image_url = resolvedImageUrl;
-    }
-    // IG com container
-    if (containerId) body.container_id = containerId;
-    if (mode === 'schedule' && datetime) {
-      body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+    for (const plat of platforms) {
+      platIdx++;
+      const platLabel = plat === 'fb' ? 'Facebook' : 'Instagram';
+      statusDiv.innerHTML = (hasMedia ? '📤 <b>Etapa 2/2:</b> ' : '📤 ') + 'Publicando em ' + platLabel + (totalPlats > 1 ? ' (' + platIdx + '/' + totalPlats + ')' : '') + '...';
+      statusDiv.style.background = '#eff6ff';
+      statusDiv.style.color = '#1d4ed8';
+
+      const body = {
+        destination: plat,
+        client: clientKey,
+        caption: caption,
+        type: type,
+        user: gpState.user ? gpState.user.name : 'Sistema',
+      };
+      if (plat === 'fb' && resolvedImageUrl) body.image_url = resolvedImageUrl;
+      if (plat === 'ig' && resolvedImageUrl) body.image_url = resolvedImageUrl;
+      if (plat === 'ig' && containerId) body.container_id = containerId;
+      if (mode === 'schedule' && datetime) {
+        body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+      }
+
+      const res = await fetch(metaApiBase() + '/api/meta/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      results.push({ plat, platLabel, data, error: data.error });
+
+      // Histórico para cada plataforma
+      if (!data.error) {
+        _metaPubHistory.unshift({
+          client: data.client || clientName,
+          page: data.page || '',
+          platform: plat,
+          status: data.status,
+          post_id: data.post_id,
+          caption: caption.substring(0, 80) + (caption.length > 80 ? '...' : ''),
+          time: new Date().toLocaleString('pt-BR'),
+          scheduled: mode === 'schedule' ? datetime : null,
+          hasImage: hasMedia,
+        });
+      }
     }
 
-    const res = await fetch(metaApiBase() + '/api/meta/publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
+    // Show combined results
+    const successes = results.filter(r => !r.error);
+    const failures = results.filter(r => r.error);
 
-    if (data.error) {
+    if (failures.length === results.length) {
       statusDiv.style.background = '#fef2f2';
       statusDiv.style.color = '#dc2626';
-      statusDiv.innerHTML = '❌ <b>Erro:</b> ' + data.message;
+      statusDiv.innerHTML = '❌ <b>Erro:</b> ' + failures.map(f => f.platLabel + ': ' + f.data.message).join(' | ');
     } else {
       const isScheduled = mode === 'schedule';
-      const hasImage = hasMedia;
       statusDiv.style.background = '#ecfdf5';
       statusDiv.style.color = '#059669';
+      const platNames = successes.map(s => s.platLabel).join(' + ');
       statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> '
-        + (data.client || clientName) + (hasImage ? ' · 🖼️ Com imagem' : '') + ' · ID: ' + (data.post_id || data.id);
+        + clientName + ' · ' + platNames + (hasMedia ? ' · 🖼️ Com imagem' : '')
+        + (failures.length > 0 ? '<br>⚠️ Falhou em: ' + failures.map(f => f.platLabel).join(', ') : '');
 
-      // Histórico
-      _metaPubHistory.unshift({
-        client: data.client || clientName,
-        page: data.page || '',
-        platform: platform,
-        status: data.status,
-        post_id: data.post_id,
-        caption: caption.substring(0, 80) + (caption.length > 80 ? '...' : ''),
-        time: new Date().toLocaleString('pt-BR'),
-        scheduled: isScheduled ? datetime : null,
-        hasImage: hasImage,
-      });
       try { localStorage.setItem('metaPubHistory', JSON.stringify(_metaPubHistory.slice(0, 50))); } catch(e) {}
       metaPublishRenderHistory();
 
@@ -7677,8 +7701,8 @@ async function ctPublishFromModal() {
 }
 
 function ctSelectPlatform(platform) {
-  document.getElementById('ctPubFb').classList.toggle('selected', platform === 'fb');
-  document.getElementById('ctPubIg').classList.toggle('selected', platform === 'ig');
+  const btn = document.getElementById(platform === 'fb' ? 'ctPubFb' : 'ctPubIg');
+  btn.classList.toggle('selected');
 }
 
 // ─── SELEÇÃO E AÇÕES EM MASSA ───
