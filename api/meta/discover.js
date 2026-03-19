@@ -42,13 +42,47 @@ module.exports = async function handler(req, res) {
       return allData;
     }
 
-    // 1. Páginas do Facebook + IG vinculado (com paginação completa)
+    // 1. Páginas do Facebook + IG vinculado
+    // 1a. Buscar via /me/accounts (páginas diretas do usuário)
     const pagesRaw = await fetchAllPages('/me/accounts', {
       fields: 'name,id,category,access_token,instagram_business_account{id,username,name,profile_picture_url,followers_count}',
       limit: '100',
     });
 
-    const pages = pagesRaw.map(page => ({
+    // 1b. Buscar via Business Manager (páginas de negócios)
+    let businessPages = [];
+    try {
+      const businesses = await fetchAllPages('/me/businesses', { fields: 'id,name', limit: '100' });
+      for (const biz of businesses) {
+        try {
+          const bizPages = await fetchAllPages(`/${biz.id}/owned_pages`, {
+            fields: 'name,id,category,access_token,instagram_business_account{id,username,name,profile_picture_url,followers_count}',
+            limit: '100',
+          });
+          businessPages.push(...bizPages);
+        } catch (e) { /* ignora business sem permissão */ }
+        try {
+          const clientPages = await fetchAllPages(`/${biz.id}/client_pages`, {
+            fields: 'name,id,category,access_token,instagram_business_account{id,username,name,profile_picture_url,followers_count}',
+            limit: '100',
+          });
+          businessPages.push(...clientPages);
+        } catch (e) { /* ignora se não tiver client_pages */ }
+      }
+    } catch (e) { /* sem acesso a businesses */ }
+
+    // Mesclar e remover duplicatas (por ID)
+    const allPagesRaw = [...pagesRaw, ...businessPages];
+    const seenPageIds = new Set();
+    const uniquePages = [];
+    for (const page of allPagesRaw) {
+      if (!seenPageIds.has(page.id)) {
+        seenPageIds.add(page.id);
+        uniquePages.push(page);
+      }
+    }
+
+    const pages = uniquePages.map(page => ({
       id: page.id,
       name: page.name,
       category: page.category,
