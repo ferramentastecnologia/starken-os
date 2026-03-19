@@ -1241,6 +1241,16 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-add-inline button { padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:inherit;font-size:0.78rem;transition:all 0.2s; }
 .ct-add-inline button:hover { background:var(--accent,#3b82f6);color:#fff;border-color:var(--accent,#3b82f6); }
 
+/* Drag & Drop */
+.ct-row[draggable="true"]:hover .ct-drag-handle { opacity:1; }
+.ct-row[draggable="true"] .ct-drag-handle { opacity:0.3;transition:opacity 0.15s; }
+.ct-row.drag-over { border-top:2px solid var(--accent,#3b82f6);margin-top:-2px; }
+.ct-row.dragging { opacity:0.4;background:var(--starken-bg); }
+
+/* Show add-sub button on row hover */
+.ct-row:hover .ct-add-sub-btn { opacity:0.6 !important; }
+.ct-add-sub-btn:hover { opacity:1 !important;color:var(--accent,#3b82f6) !important; }
+
 @media (max-width:900px) {
   .ct-modal { grid-template-columns:1fr;max-width:100%; }
   .ct-modal-sidebar,.ct-modal-activity { display:none; }
@@ -7026,10 +7036,10 @@ function ctRenderList() {
       + '</div>';
 
     if (expanded) {
-      tasks.forEach(task => {
-        // Apply filters
-        if (statusFilter && task.status !== statusFilter) return;
-        if (assigneeFilter && task.assignee !== assigneeFilter) return;
+      // Recursive function to render tasks at any depth
+      function renderTaskRow(task, depth, groupId) {
+        if (statusFilter && task.status !== statusFilter) return '';
+        if (assigneeFilter && task.assignee !== assigneeFilter) return '';
 
         const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
         const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
@@ -7037,11 +7047,17 @@ function ctRenderList() {
         const hasSubtasks = task.subtasks && task.subtasks.length > 0;
         const taskExpanded = ctExpandedTasks[task.id] !== false;
         const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+        const indent = 36 + (depth * 24);
+        const canAddSub = depth < 5;
 
-        html += '<div class="ct-row" style="padding-left:36px">'
+        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" draggable="true" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" style="padding-left:' + indent + 'px" '
+          + 'ondragstart="ctDragStart(event)" ondragover="ctDragOver(event)" ondrop="ctDrop(event)" ondragend="ctDragEnd(event)">'
           + '<div class="ct-name">'
+          + '<span class="ct-drag-handle" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.75rem">⠿</span>'
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
-          + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span></div>'
+          + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
+          + (canAddSub ? '<button onclick="event.stopPropagation();ctShowAddSubtask(\'' + task.id + '\',\'' + groupId + '\')" style="opacity:0;margin-left:6px;border:none;background:none;cursor:pointer;font-size:0.72rem;color:var(--text-muted);transition:opacity 0.15s" class="ct-add-sub-btn" title="Adicionar subtarefa">＋ sub</button>' : '')
+          + '</div>'
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
           + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')">'
           + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
@@ -7051,26 +7067,25 @@ function ctRenderList() {
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')">' + priority.icon + '</div>'
           + '</div>';
 
-        // Subtasks
+        // Render subtasks recursively
         if (hasSubtasks && taskExpanded) {
           task.subtasks.forEach(sub => {
-            if (statusFilter && sub.status !== statusFilter) return;
-            const subStatus = CT_STATUSES.find(s => s.key === sub.status) || CT_STATUSES[0];
-            const subPriority = CT_PRIORITIES.find(p => p.key === sub.priority) || CT_PRIORITIES[2];
-            const subUser = CT_USERS.find(u => u.name === sub.assignee);
-
-            html += '<div class="ct-row subtask">'
-              + '<div class="ct-name"><span style="width:20px"></span><span onclick="ctOpenModal(\'' + sub.id + '\')" style="cursor:pointer">' + sub.name + '</span></div>'
-              + '<div><button class="ct-status" data-status="' + subStatus.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + sub.id + '\')">' + subStatus.label + '</button></div>'
-              + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + sub.id + '\')">'
-              + (subUser ? '<div class="ct-assignee-avatar" style="background:' + subUser.color + '">' + subUser.name.substring(0,2).toUpperCase() + '</div><span>' + subUser.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
-              + '</div>'
-              + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + sub.id + '\',\'' + (sub.due_date||'') + '\')">' + (sub.due_date ? new Date(sub.due_date+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—') + '</div>'
-              + '<div></div>'
-              + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + sub.id + '\')">' + subPriority.icon + '</div>'
-              + '</div>';
+            rowHtml += renderTaskRow(sub, depth + 1, groupId);
           });
         }
+
+        // Inline add subtask (shown when triggered)
+        rowHtml += '<div class="ct-add-inline ct-subtask-input" id="ctAddSub_' + task.id + '" style="display:none;padding-left:' + (indent + 24) + 'px">'
+          + '<input type="text" placeholder="Nome da subtarefa..." onkeydown="if(event.key===\'Enter\')ctAddSubtaskList(\'' + task.id + '\',\'' + groupId + '\')">'
+          + '<button onclick="ctAddSubtaskList(\'' + task.id + '\',\'' + groupId + '\')">Adicionar</button>'
+          + '<button onclick="document.getElementById(\'ctAddSub_' + task.id + '\').style.display=\'none\'" style="color:var(--text-muted)">✕</button>'
+          + '</div>';
+
+        return rowHtml;
+      }
+
+      tasks.forEach(task => {
+        html += renderTaskRow(task, 0, group.id);
       });
 
       // Add task inline
@@ -7628,6 +7643,74 @@ function ctSelectPlatform(platform) {
 }
 
 // ─── LIGHTBOX (visualizar imagem grande) ───
+// ─── DRAG & DROP ───
+let ctDraggedId = null;
+function ctDragStart(e) {
+  ctDraggedId = e.currentTarget.dataset.taskId;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', ctDraggedId);
+}
+function ctDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const row = e.currentTarget;
+  if (row.dataset.taskId !== ctDraggedId) {
+    document.querySelectorAll('.ct-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+    row.classList.add('drag-over');
+  }
+}
+async function ctDrop(e) {
+  e.preventDefault();
+  const targetId = e.currentTarget.dataset.taskId;
+  const targetGroupId = e.currentTarget.dataset.groupId;
+  document.querySelectorAll('.ct-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+  if (!ctDraggedId || ctDraggedId === targetId) return;
+
+  // Find positions - move dragged after target
+  const rows = Array.from(document.querySelectorAll('.ct-row[data-task-id]'));
+  const targetIdx = rows.findIndex(r => r.dataset.taskId === targetId);
+
+  // Reorder via API
+  const updates = [];
+  rows.forEach((r, i) => {
+    if (r.dataset.taskId) updates.push({ id: r.dataset.taskId, position: i });
+  });
+  // Move dragged to after target
+  await ctApi('reorder', { updates: [{ id: ctDraggedId, position: targetIdx + 1 }] });
+  ctLoadGroups();
+}
+function ctDragEnd(e) {
+  ctDraggedId = null;
+  document.querySelectorAll('.ct-row.dragging,.ct-row.drag-over').forEach(r => {
+    r.classList.remove('dragging');
+    r.classList.remove('drag-over');
+  });
+}
+
+// ─── ADD SUBTASK FROM LIST ───
+function ctShowAddSubtask(taskId, groupId) {
+  const el = document.getElementById('ctAddSub_' + taskId);
+  if (el) {
+    el.style.display = 'flex';
+    el.querySelector('input').focus();
+    // Expand parent if collapsed
+    ctExpandedTasks[taskId] = true;
+  }
+}
+
+async function ctAddSubtaskList(parentId, groupId) {
+  const el = document.getElementById('ctAddSub_' + parentId);
+  if (!el) return;
+  const input = el.querySelector('input');
+  const name = input.value.trim();
+  if (!name) return;
+  input.value = '';
+  await ctApi('upsert_task', { group_id: groupId, parent_id: parentId, client_id: ctCurrentClient, name, user: ctGetUser() });
+  ctExpandedTasks[parentId] = true;
+  ctLoadGroups();
+}
+
 // ─── DATE PICKER PARA LISTA (não-modal) ───
 function ctShowDatePickerList(event, taskId, currentDate) {
   event.stopPropagation();

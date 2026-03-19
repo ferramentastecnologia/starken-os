@@ -193,10 +193,16 @@ async function listTasks({ group_id, client_id }) {
     }
   }
 
-  const result = parentTasks.map((t) => ({
-    ...t,
-    subtasks: childMap[t.id] || [],
-  }));
+  // Recursive nesting up to 5 levels
+  function nestSubtasks(task, depth) {
+    const children = childMap[task.id] || [];
+    return {
+      ...task,
+      subtasks: depth < 5 ? children.map(c => nestSubtasks(c, depth + 1)) : children,
+    };
+  }
+
+  const result = parentTasks.map(t => nestSubtasks(t, 0));
 
   return ok(result);
 }
