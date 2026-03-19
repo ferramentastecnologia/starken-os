@@ -3,14 +3,22 @@
  *
  * POST {
  *   destination: "ig" | "fb",
- *   tenant: "starken" | "alpha",
- *   image_url: "https://...",         // URL pública da imagem
+ *   client: "estilo-tulipa",
+ *   image_url: "https://...",              // URL pública da imagem (opção 1)
+ *   source_base64: "data:image/jpeg;...",  // Upload local via base64 (opção 2)
+ *   filename: "post-starken.jpg",          // Nome do arquivo (opção 2)
  *   media_type: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM",
- *   caption: "...",                   // Opcional no container
- *   children: [{ image_url }]        // Apenas para CAROUSEL_ALBUM
+ *   caption: "...",
+ *   children: [{ image_url }]             // Apenas para CAROUSEL_ALBUM
  * }
  *
- * Retorna: container_id (IG) ou photo_id (FB)
+ * Fluxo com base64:
+ *   1. Recebe arquivo em base64 do frontend
+ *   2. Upload para Supabase Storage (bucket: media-uploads)
+ *   3. Gera URL pública
+ *   4. Envia URL para Meta Graph API
+ *
+ * Retorna: container_id (IG) ou photo_id (FB) + public_url
  */
 
 const { graphPost, graphGet } = require('./_lib/graph');
@@ -18,10 +26,129 @@ const { validateTenant } = require('./_lib/tenants');
 
 const POLL_INTERVAL = 5000;
 const POLL_MAX_ATTEMPTS = 12;
+const SUPABASE_BUCKET = 'media-uploads';
 
-async function pollContainerStatus(containerId) {
+// ─── Supabase Storage helpers ───
+
+function getSupabaseHeaders() {
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  return {
+    'apikey': key,
+    'Authorization': `Bearer ${key}`,
+  };
+}
+
+function getSupabaseUrl() {
+  return process.env.SUPABASE_URL || '';
+}
+
+/**
+ * Upload base64 file to Supabase Storage
+ * Returns public URL
+ */
+async function uploadToSupabaseStorage(base64Data, filename) {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) {
+    throw { error: true, code: 'STORAGE_ERROR', message: 'SUPABASE_URL não configurado' };
+  }
+
+  // Parse base64 data URI
+  let buffer, contentType;
+  if (base64Data.startsWith('data:')) {
+    const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) throw { error: true, code: 'INVALID_DATA', message: 'Formato base64 inválido' };
+    contentType = matches[1];
+    buffer = Buffer.from(matches[2], 'base64');
+  } else {
+    // Raw base64 without data URI prefix
+    buffer = Buffer.from(base64Data, 'base64');
+    contentType = 'image/jpeg';
+  }
+
+  // File size check (10MB limit)
+  if (buffer.length > 10 * 1024 * 1024) {
+    throw { error: true, code: 'FILE_TOO_LARGE', message: 'Arquivo excede 10MB' };
+  }
+
+  // Generate unique filename
+  const timestamp = Date.now();
+  const ext = filename ? filename.split('.').pop() : (contentType.includes('png') ? 'png' : 'jpg');
+  const storagePath = `posts/${timestamp}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+  // Upload to Supabase Storage
+  const uploadUrl = `${supabaseUrl}/storage/v1/object/${SUPABASE_BUCKET}/${storagePath}`;
+  const uploadRes = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      ...getSupabaseHeaders(),
+      'Content-Type': contentType,
+      'x-upsert': 'true',
+    },
+    body: buffer,
+  });
+
+  if (!uploadRes.ok) {
+    const errBody = await uploadRes.text();
+    // If bucket doesn't exist, try to create it
+    if (uploadRes.status === 404 || errBody.includes('not found')) {
+      await createBucket();
+      // Retry upload
+      const retryRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: {
+          ...getSupabaseHeaders(),
+          'Content-Type': contentType,
+          'x-upsert': 'true',
+        },
+        body: buffer,
+      });
+      if (!retryRes.ok) {
+        const retryErr = await retryRes.text();
+        throw { error: true, code: 'STORAGE_UPLOAD_ERROR', message: `Upload falhou: ${retryErr}` };
+      }
+    } else {
+      throw { error: true, code: 'STORAGE_UPLOAD_ERROR', message: `Upload falhou (${uploadRes.status}): ${errBody}` };
+    }
+  }
+
+  // Public URL
+  const publicUrl = `${supabaseUrl}/storage/v1/object/public/${SUPABASE_BUCKET}/${storagePath}`;
+  return { publicUrl, storagePath, size: buffer.length };
+}
+
+/**
+ * Create the storage bucket if it doesn't exist
+ */
+async function createBucket() {
+  const supabaseUrl = getSupabaseUrl();
+  const createRes = await fetch(`${supabaseUrl}/storage/v1/bucket`, {
+    method: 'POST',
+    headers: {
+      ...getSupabaseHeaders(),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      id: SUPABASE_BUCKET,
+      name: SUPABASE_BUCKET,
+      public: true,
+      file_size_limit: 10485760, // 10MB
+      allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'],
+    }),
+  });
+  // Ignore "already exists" errors
+  if (!createRes.ok) {
+    const body = await createRes.text();
+    if (!body.includes('already exists')) {
+      console.warn('Bucket creation warning:', body);
+    }
+  }
+}
+
+async function pollContainerStatus(containerId, pageToken) {
   for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
-    const status = await graphGet(`/${containerId}`, { fields: 'status_code' });
+    const params = { fields: 'status_code' };
+    if (pageToken) params.access_token = pageToken;
+    const status = await graphGet(`/${containerId}`, params);
     if (status.status_code === 'FINISHED') return true;
     if (status.status_code === 'ERROR') {
       throw { error: true, code: 'MEDIA_ERROR', message: 'Container de mídia falhou no processamento' };
@@ -44,13 +171,28 @@ module.exports = async function handler(req, res) {
   const tenant = await validateTenant(req, res);
   if (!tenant) return;
 
-  const { destination, image_url, media_type, caption, children } = req.body || {};
+  const { destination, image_url, source_base64, filename, media_type, caption, children } = req.body || {};
 
   if (!destination || !['ig', 'fb'].includes(destination)) {
     return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'destination deve ser "ig" ou "fb"' });
   }
-  if (!image_url && media_type !== 'CAROUSEL_ALBUM') {
-    return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'image_url é obrigatório' });
+
+  // Resolve image URL: either direct URL or upload base64 to Supabase Storage
+  let resolvedImageUrl = image_url;
+  let uploadInfo = null;
+
+  if (!resolvedImageUrl && source_base64) {
+    try {
+      uploadInfo = await uploadToSupabaseStorage(source_base64, filename);
+      resolvedImageUrl = uploadInfo.publicUrl;
+    } catch (err) {
+      if (err.error) return res.status(400).json(err);
+      return res.status(500).json({ error: true, code: 'UPLOAD_ERROR', message: err.message });
+    }
+  }
+
+  if (!resolvedImageUrl && media_type !== 'CAROUSEL_ALBUM') {
+    return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'image_url ou source_base64 é obrigatório' });
   }
 
   try {
@@ -61,7 +203,6 @@ module.exports = async function handler(req, res) {
       }
 
       if (media_type === 'CAROUSEL_ALBUM') {
-        // Criar containers filhos
         if (!children || !children.length) {
           return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'children[] obrigatório para carrossel' });
         }
@@ -74,11 +215,10 @@ module.exports = async function handler(req, res) {
           };
           if (tenant.pageAccessToken) childBody.access_token = tenant.pageAccessToken;
           const childRes = await graphPost(`/${tenant.igUserId}/media`, childBody);
-          await pollContainerStatus(childRes.id);
+          await pollContainerStatus(childRes.id, tenant.pageAccessToken);
           childIds.push(childRes.id);
         }
 
-        // Criar container pai
         const carouselBody = {
           media_type: 'CAROUSEL',
           caption: caption || '',
@@ -86,20 +226,21 @@ module.exports = async function handler(req, res) {
         };
         if (tenant.pageAccessToken) carouselBody.access_token = tenant.pageAccessToken;
         const carouselRes = await graphPost(`/${tenant.igUserId}/media`, carouselBody);
-        await pollContainerStatus(carouselRes.id);
+        await pollContainerStatus(carouselRes.id, tenant.pageAccessToken);
 
         return res.status(201).json({
           container_id: carouselRes.id,
           type: 'CAROUSEL_ALBUM',
           children_count: childIds.length,
           status: 'FINISHED',
+          upload: uploadInfo,
         });
       }
 
       // Single image/video/reel
-      const body = { image_url };
+      const body = { image_url: resolvedImageUrl };
       if (media_type === 'VIDEO' || media_type === 'REELS') {
-        body.video_url = image_url;
+        body.video_url = resolvedImageUrl;
         delete body.image_url;
         body.media_type = media_type === 'REELS' ? 'REELS' : 'VIDEO';
       }
@@ -107,12 +248,13 @@ module.exports = async function handler(req, res) {
       if (tenant.pageAccessToken) body.access_token = tenant.pageAccessToken;
 
       const containerRes = await graphPost(`/${tenant.igUserId}/media`, body);
-      await pollContainerStatus(containerRes.id);
+      await pollContainerStatus(containerRes.id, tenant.pageAccessToken);
 
       return res.status(201).json({
         container_id: containerRes.id,
         type: media_type || 'IMAGE',
         status: 'FINISHED',
+        upload: uploadInfo,
       });
     }
 
@@ -125,9 +267,8 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: true, code: 'MISSING_PAGE_TOKEN', message: `Page Access Token não encontrado para "${tenant.name || tenant.key}". Re-descubra ativos na Configuração Meta.` });
       }
 
-      // Upload foto como não publicada (para depois anexar ao post)
       const photoRes = await graphPost(`/${tenant.pageId}/photos`, {
-        url: image_url,
+        url: resolvedImageUrl,
         published: false,
         caption: caption || '',
         access_token: tenant.pageAccessToken,
@@ -137,6 +278,7 @@ module.exports = async function handler(req, res) {
         photo_id: photoRes.id,
         type: 'PHOTO',
         status: 'UPLOADED',
+        upload: uploadInfo,
       });
     }
   } catch (err) {

@@ -1519,6 +1519,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
                     <div style="font-size:2.5rem;margin-bottom:8px">&#128206;</div>
                     <div style="font-weight:600;margin-bottom:4px">Arraste imagens ou vídeos aqui</div>
                     <div style="font-size:0.78rem;color:var(--text-secondary)">ou clique para selecionar &middot; JPG, PNG, MP4 &middot; Máx 10MB</div>
+                    <div style="font-size:0.7rem;color:#10b981;margin-top:6px;font-weight:600">&#9889; Upload direto — arquivo enviado automaticamente para a Meta</div>
                     <input type="file" id="metaPubFileInput" accept="image/*,video/*" multiple style="display:none" onchange="metaPublishHandleFiles(this.files)">
                   </div>
                   <div id="metaPubPreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
@@ -6037,22 +6038,44 @@ async function metaPublishSubmit() {
 
   try {
     const imageUrl = mediaUrl.trim();
+    const hasLocalFile = _metaPubFiles.length > 0;
+    const hasMedia = !!imageUrl || hasLocalFile;
     let containerId = null;  // IG
     let photoIds = [];       // FB
 
-    // ─── ETAPA 1: Upload de mídia (se houver URL) ───
-    if (imageUrl) {
-      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Enviando mídia para Meta...';
+    // ─── ETAPA 1: Upload de mídia ───
+    if (hasMedia) {
+      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> ' + (hasLocalFile ? 'Enviando arquivo para Supabase Storage...' : 'Enviando mídia para Meta...');
       statusDiv.style.background = '#fffbeb';
       statusDiv.style.color = '#b45309';
 
       const mediaBody = {
         destination: platform,
         client: clientKey,
-        image_url: imageUrl,
         media_type: type === 'reels' ? 'REELS' : (type === 'stories' ? 'VIDEO' : 'IMAGE'),
       };
-      if (platform === 'ig') mediaBody.caption = caption; // IG: caption vai no container
+      if (platform === 'ig') mediaBody.caption = caption;
+
+      // Arquivo local: converte para base64 e envia
+      if (hasLocalFile) {
+        const file = _metaPubFiles[0];
+        statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Convertendo ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)...';
+
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+          reader.readAsDataURL(file);
+        });
+
+        mediaBody.source_base64 = base64;
+        mediaBody.filename = file.name;
+
+        statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Upload de ' + file.name + ' → Supabase → Meta...';
+      } else {
+        // URL pública direta
+        mediaBody.image_url = imageUrl;
+      }
 
       const mediaRes = await fetch(metaApiBase() + '/api/meta/media', {
         method: 'POST',
@@ -6064,24 +6087,23 @@ async function metaPublishSubmit() {
       if (mediaData.error) {
         statusDiv.style.background = '#fef2f2';
         statusDiv.style.color = '#dc2626';
-        statusDiv.innerHTML = '❌ <b>Erro no upload de mídia:</b> ' + mediaData.message;
+        statusDiv.innerHTML = '❌ <b>Erro no upload:</b> ' + mediaData.message;
         return;
       }
 
       if (platform === 'ig') {
         containerId = mediaData.container_id;
-        statusDiv.innerHTML = '✅ Mídia processada · Container: ' + containerId;
+        statusDiv.innerHTML = '✅ Mídia processada' + (mediaData.upload ? ' · Supabase ✓' : '') + ' · Container: ' + containerId;
       } else {
         photoIds.push(mediaData.photo_id);
-        statusDiv.innerHTML = '✅ Foto enviada · ID: ' + mediaData.photo_id;
+        statusDiv.innerHTML = '✅ Foto enviada' + (mediaData.upload ? ' · Supabase ✓' : '') + ' · ID: ' + mediaData.photo_id;
       }
 
-      // Pausa visual para o usuário ver o progresso
       await new Promise(r => setTimeout(r, 500));
     }
 
     // ─── ETAPA 2: Publicar/Agendar o post ───
-    statusDiv.innerHTML = (imageUrl ? '📤 <b>Etapa 2/2:</b> ' : '📤 ') + 'Publicando post...';
+    statusDiv.innerHTML = (hasMedia ? '📤 <b>Etapa 2/2:</b> ' : '📤 ') + 'Publicando post...';
     statusDiv.style.background = '#eff6ff';
     statusDiv.style.color = '#1d4ed8';
 
@@ -6110,7 +6132,7 @@ async function metaPublishSubmit() {
       statusDiv.innerHTML = '❌ <b>Erro:</b> ' + data.message;
     } else {
       const isScheduled = mode === 'schedule';
-      const hasImage = !!imageUrl;
+      const hasImage = hasMedia;
       statusDiv.style.background = '#ecfdf5';
       statusDiv.style.color = '#059669';
       statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> '
