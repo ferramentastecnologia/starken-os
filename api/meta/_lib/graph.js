@@ -142,4 +142,27 @@ async function graphPostForm(path, body = {}) {
   return data;
 }
 
-module.exports = { graphGet, graphPost, graphPostForm, BASE_URL };
+/**
+ * DELETE request to Graph API
+ * Used to delete/cancel posts and scheduled posts
+ */
+async function graphDelete(path, params = {}) {
+  const token = getToken();
+  const query = new URLSearchParams({ access_token: token, ...params });
+  const url = `${BASE_URL}${path}?${query.toString()}`;
+
+  const response = await requestWithRetry(url, {
+    method: 'DELETE',
+    headers: { 'Accept': 'application/json' },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw normalizeError(data, response.status);
+  }
+
+  return data;
+}
+
+module.exports = { graphGet, graphPost, graphPostForm, graphDelete, BASE_URL };

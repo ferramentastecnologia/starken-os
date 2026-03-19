@@ -10,7 +10,7 @@
  *   { destination, client, caption, type, image_url, scheduled_publish_time, user }
  */
 
-const { graphPost, graphPostForm } = require('./_lib/graph');
+const { graphPost, graphPostForm, graphDelete } = require('./_lib/graph');
 const { validateTenant } = require('./_lib/tenants');
 
 // ─── Supabase helpers ───
@@ -57,7 +57,7 @@ async function loadHistory(query) {
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -67,8 +67,49 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ history, count: history.length });
   }
 
+  // ─── DELETE: Cancelar/excluir post do Meta ───
+  if (req.method === 'DELETE') {
+    const { post_id, history_id, client, user } = req.body || {};
+
+    if (!post_id) {
+      return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'post_id é obrigatório' });
+    }
+
+    // Busca o client para pegar o page access token
+    const tenant = await validateTenant(req, res);
+    if (!tenant) return;
+
+    try {
+      // Deleta do Meta Graph API (funciona para publicados e agendados)
+      await graphDelete(`/${post_id}`, {
+        access_token: tenant.pageAccessToken || undefined,
+      });
+
+      // Atualiza status no histórico (Supabase)
+      if (history_id) {
+        const url = SUPABASE_URL();
+        if (url) {
+          await fetch(`${url}/rest/v1/publish_history?id=eq.${history_id}`, {
+            method: 'PATCH',
+            headers: { ...supabaseHeaders(), 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ status: 'DELETED' }),
+          });
+        }
+      }
+
+      return res.status(200).json({
+        ok: true,
+        deleted: post_id,
+        message: 'Post excluído/cancelado com sucesso no Meta',
+      });
+    } catch (err) {
+      if (err.error) return res.status(err.status || 502).json(err);
+      return res.status(500).json({ error: true, code: 'DELETE_ERROR', message: err.message });
+    }
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: true, code: 'METHOD_NOT_ALLOWED', message: 'Use GET ou POST' });
+    return res.status(405).json({ error: true, code: 'METHOD_NOT_ALLOWED', message: 'Use GET, POST ou DELETE' });
   }
 
   const tenant = await validateTenant(req, res);
