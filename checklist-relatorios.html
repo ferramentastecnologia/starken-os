@@ -2066,6 +2066,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
             <button onclick="ctBulkChangeStatus()">📝 Status</button>
             <button onclick="ctBulkChangeAssignee()">👤 Responsável</button>
             <button onclick="ctBulkChangePriority()">🏳️ Prioridade</button>
+            <button onclick="ctBulkSchedule()" style="background:rgba(59,130,246,0.8)">🚀 Agendar</button>
             <button class="ct-ab-delete" onclick="ctBulkDelete()">🗑️ Excluir</button>
             <button onclick="ctClearSelection()" style="font-size:0.75rem;padding:6px 10px">✕</button>
           </div>
@@ -5422,6 +5423,8 @@ function activateSession(user) {
   try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, pin: user.pin })); } catch(e) {}
   // Pré-carrega meta clients para todas as abas
   metaClientsPreload();
+  // Fallback: tenta popular sidebar novamente após 3s (garante que carregou)
+  setTimeout(function() { populateSidebarClients(); restoreSidebarFolders(); }, 3000);
 }
 
 // Pré-carrega clientes Meta no init (sem depender da aba Config)
@@ -7603,7 +7606,9 @@ function ctRenderList() {
           + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
           + '</div>'
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
-          + '<div style="font-size:0.82rem;color:var(--text-secondary);text-align:center">💬</div>'
+          + '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center;display:flex;gap:2px;justify-content:center" title="' + (task.copy_text ? '✓ Copy' : '✗ Sem copy') + '">'
+          + (task.copy_text ? '<span style="color:#10b981">✏️</span>' : '<span style="opacity:0.3">✏️</span>')
+          + '</div>'
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')">' + priority.icon + '</div>'
           + '</div>';
 
@@ -8223,6 +8228,128 @@ function ctClearSelection() {
   const selectAll = document.getElementById('ctSelectAll');
   if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
   ctUpdateSelection();
+}
+
+async function ctBulkSchedule() {
+  if (ctSelectedIds.size === 0) return;
+
+  // Load full data for each selected task
+  const tasks = [];
+  for (const id of ctSelectedIds) {
+    const data = await ctApi('get_task', { id });
+    const task = data.task || data;
+    tasks.push(task);
+  }
+
+  // Validate: each task needs copy_text and at least one creative attachment
+  const ready = [];
+  const notReady = [];
+  tasks.forEach(t => {
+    const hasCopy = t.copy_text && t.copy_text.trim().length > 0;
+    const atts = (t.attachments || []).filter(a => a.category === 'creative' || a.category === 'final');
+    const hasCreative = atts.length > 0;
+    if (hasCopy && hasCreative) {
+      ready.push({ ...t, creativeUrl: atts[0].file_url, allCreativeUrls: atts.map(a => a.file_url) });
+    } else {
+      notReady.push({ name: t.name, hasCopy, hasCreative });
+    }
+  });
+
+  if (notReady.length > 0) {
+    const missing = notReady.map(t => '• ' + t.name + (!t.hasCopy ? ' (sem copy)' : '') + (!t.hasCreative ? ' (sem criativo)' : '')).join('\n');
+    alert('⚠️ ' + notReady.length + ' task(s) não estão prontas para agendar:\n\n' + missing + '\n\nAdicione copy e criativo antes de agendar.');
+    if (ready.length === 0) return;
+  }
+
+  // Show scheduling dialog
+  const platform = prompt('Plataforma?\n\n1 = Facebook\n2 = Instagram\n3 = Facebook + Instagram\n\nDigite 1, 2 ou 3:');
+  if (!platform) return;
+  const platforms = platform === '1' ? ['fb'] : platform === '2' ? ['ig'] : platform === '3' ? ['fb','ig'] : [];
+  if (platforms.length === 0) { alert('Opção inválida'); return; }
+
+  const schedMode = prompt('Modo de publicação?\n\n1 = Publicar agora\n2 = Agendar (escolher data/hora)\n\nDigite 1 ou 2:');
+  if (!schedMode) return;
+
+  let scheduledTime = null;
+  if (schedMode === '2') {
+    const dateStr = prompt('Data e hora do primeiro post (dd/mm/yyyy hh:mm):\n\nOs demais serão agendados com intervalo de 1 hora entre cada.');
+    if (!dateStr) return;
+    const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+    if (!parts) { alert('Formato inválido. Use dd/mm/yyyy hh:mm'); return; }
+    scheduledTime = new Date(parts[3], parts[2]-1, parts[1], parts[4], parts[5]);
+    if (isNaN(scheduledTime.getTime())) { alert('Data inválida'); return; }
+  }
+
+  const platNames = platforms.map(p => p === 'fb' ? 'Facebook' : 'Instagram').join(' + ');
+  const confirmMsg = '🚀 Agendar ' + ready.length + ' posts em ' + platNames + '?\n\n' + ready.map((t, i) => {
+    const time = scheduledTime ? new Date(scheduledTime.getTime() + i * 3600000).toLocaleString('pt-BR') : 'Agora';
+    return (i+1) + '. ' + t.name + ' → ' + time;
+  }).join('\n');
+
+  if (!confirm(confirmMsg)) return;
+
+  // Process each task
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < ready.length; i++) {
+    const task = ready[i];
+    const postTime = scheduledTime ? new Date(scheduledTime.getTime() + i * 3600000) : null;
+
+    for (const plat of platforms) {
+      try {
+        const imageUrls = task.allCreativeUrls;
+
+        if (plat === 'ig' && postTime) {
+          // IG scheduled → queue
+          await fetch(metaApiBase() + '/api/meta/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'queue',
+              client_key: ctCurrentClient,
+              client_name: document.getElementById('ctClientFilter').selectedOptions[0]?.text || ctCurrentClient,
+              platform: 'ig',
+              caption: task.copy_text,
+              image_urls: imageUrls,
+              scheduled_for: postTime.toISOString(),
+              user_name: ctGetUser(),
+            }),
+          });
+        } else {
+          // FB or immediate publish
+          const body = {
+            destination: plat,
+            client: ctCurrentClient,
+            caption: task.copy_text,
+            type: imageUrls.length > 1 ? 'carousel' : 'feed',
+            user: ctGetUser(),
+          };
+          if (imageUrls.length > 1) body.image_urls = imageUrls;
+          else if (imageUrls.length === 1) body.image_url = imageUrls[0];
+          if (plat === 'fb' && postTime) {
+            body.scheduled_publish_time = Math.floor(postTime.getTime() / 1000);
+          }
+          await fetch(metaApiBase() + '/api/meta/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+        }
+        successCount++;
+      } catch (e) {
+        failCount++;
+      }
+    }
+
+    // Update task status to 'agendado' or 'publicado'
+    const newStatus = postTime ? 'agendado' : 'publicado';
+    await ctApi('change_status', { id: task.id, status: newStatus, user: ctGetUser() });
+  }
+
+  alert('✅ ' + successCount + ' publicações processadas!' + (failCount > 0 ? '\n⚠️ ' + failCount + ' falhas.' : ''));
+  ctClearSelection();
+  ctLoadGroups();
 }
 
 async function ctBulkDelete() {
