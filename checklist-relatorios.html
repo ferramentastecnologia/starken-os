@@ -999,14 +999,14 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-assignee-avatar { width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6rem;font-weight:700;flex-shrink:0; }
 
 /* Status dropdown */
-.ct-dropdown { position:absolute;z-index:1000;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.15);padding:6px;min-width:180px;max-height:350px;overflow-y:auto; }
+.ct-dropdown { position:absolute;z-index:100001;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.15);padding:6px;min-width:180px;max-height:350px;overflow-y:auto; }
 .ct-dropdown-item { padding:7px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;display:flex;align-items:center;gap:8px;transition:background 0.15s; }
 .ct-dropdown-item:hover { background:var(--bg-secondary); }
 
 /* ═══ TASK MODAL ═══ */
-.ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:8px;opacity:0;transition:opacity 0.2s; }
+.ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:stretch;justify-content:stretch;padding:0;opacity:0;transition:opacity 0.2s; }
 .ct-modal-overlay.open { opacity:1; }
-.ct-modal { background:#fff;border-radius:14px;width:100%;max-width:1600px;height:96vh;display:grid;grid-template-columns:200px 1fr 260px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.ct-modal { background:#fff;border-radius:0;width:100%;height:100vh;display:grid;grid-template-columns:200px 1fr 260px;overflow:hidden; }
 .ct-modal-sidebar { background:var(--bg-secondary);padding:16px;border-right:1px solid var(--border);overflow-y:auto;font-size:0.82rem; }
 .ct-modal-sidebar .ct-tree-item { padding:6px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s; }
 .ct-modal-sidebar .ct-tree-item:hover { background:var(--border); }
@@ -7160,10 +7160,10 @@ function ctRenderModalAttachments(attachments) {
   const creativesEl = document.getElementById('ctModalCreatives');
 
   refsEl.innerHTML = refs.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhuma referência adicionada</div>' :
-    refs.map(a => '<div class="ct-attachment-card" onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category">REF</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
+    refs.map(a => '<div class="ct-attachment-card" style="position:relative"><button onclick="event.stopPropagation();ctDeleteAttachment(\'' + a.id + '\')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center" title="Remover">✕</button><div onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category">REF</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div></div>').join('');
 
   creativesEl.innerHTML = creatives.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Designer ainda não enviou o criativo</div>' :
-    creatives.map(a => '<div class="ct-attachment-card" onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category" style="background:#10b981">FINAL</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
+    creatives.map(a => '<div class="ct-attachment-card" style="position:relative"><button onclick="event.stopPropagation();ctDeleteAttachment(\'' + a.id + '\')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center" title="Remover">✕</button><div onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category" style="background:#10b981">FINAL</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div></div>').join('');
 }
 
 function ctRenderModalComments(comments) {
@@ -7284,6 +7284,18 @@ async function ctAddSubtask() {
 function ctUploadAttachment(category) {
   const inputId = category === 'reference' ? 'ctFileInputRef' : 'ctFileInputCreative';
   document.getElementById(inputId).click();
+}
+
+async function ctDeleteAttachment(attachmentId) {
+  if (!ctModalTask || !attachmentId) return;
+  if (!confirm('Remover este arquivo?')) return;
+  await ctApi('delete_attachment', { id: attachmentId });
+  // Reload attachments
+  const attData = await ctApi('list_attachments', { task_id: ctModalTask.id });
+  ctRenderModalAttachments(Array.isArray(attData) ? attData : (attData.attachments || []));
+  // Reload activity
+  const actData = await ctApi('list_activity', { task_id: ctModalTask.id });
+  ctRenderModalActivity(Array.isArray(actData) ? actData : (actData.activity || []));
 }
 
 async function ctHandleFileUpload(files, category) {
