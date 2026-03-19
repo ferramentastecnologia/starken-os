@@ -248,6 +248,29 @@ body {
 .sidebar-nav button .icon { font-size: 1rem; width: 20px; text-align: center; }
 .sidebar-nav button.sub { padding-left: 22px; font-size: 0.79rem; }
 
+.sidebar-folder { margin-bottom: 1px; }
+.sidebar-folder-header {
+  width: 100%; text-align: left; background: none; border: none;
+  color: rgba(255,255,255,0.55); padding: 7px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 0.8rem; font-weight: 600;
+  display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-family: inherit;
+}
+.sidebar-folder-header:hover { background: rgba(255,255,255,0.08); color: white; }
+.sidebar-folder-chevron { font-size: 0.6rem; transition: transform 0.2s; width: 12px; text-align: center; }
+.sidebar-folder-chevron.open { transform: rotate(90deg); }
+.sidebar-folder-count { margin-left: auto; font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 400; }
+.sidebar-folder-items { padding-left: 8px; }
+.sidebar-client-btn {
+  width: 100%; text-align: left; background: none; border: none;
+  color: rgba(255,255,255,0.45); padding: 5px 12px 5px 20px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 0.75rem; font-weight: 400;
+  display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-family: inherit;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-client-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
+.sidebar-client-btn.active { background: rgba(255,255,255,0.12); color: white; font-weight: 600; }
+.sidebar-client-btn::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: 0.5; }
+
 .nav-category {
   font-size: 0.63rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
   color: rgba(255,255,255,0.28); padding: 10px 12px 4px; margin-top: 4px;
@@ -1374,8 +1397,6 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       </select>
     </div>
     <nav class="sidebar-nav">
-      <div class="nav-category">Negócio</div>
-      <button onclick="switchTab('gestao')"><span class="icon">💼</span> Gestão de Projetos</button>
       <button class="active" onclick="switchTab('dashboard')"><span class="icon">&#9632;</span> Dashboard</button>
 
       <div class="nav-category">Relatórios</div>
@@ -1386,9 +1407,6 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <button class="sub" onclick="switchTab('sched-weekly')"><span class="icon">&#128197;</span> Semanal</button>
       <button class="sub" onclick="switchTab('content-approval')"><span class="icon">&#128203;</span> Conteúdo</button>
 
-      <div class="nav-category">Integrações</div>
-      <button class="sub" onclick="switchTab('asana-tasks')"><span class="icon">&#128203;</span> Tarefas (Asana)</button>
-
       <div class="nav-category">Meta Ads</div>
       <button class="sub" onclick="switchTab('meta-config')"><span class="icon">&#9881;</span> Configuração</button>
       <button class="sub" onclick="switchTab('meta-balance')"><span class="icon">&#128176;</span> Saldo Contas</button>
@@ -1396,7 +1414,23 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <button class="sub" onclick="switchTab('meta-publish')"><span class="icon">&#128228;</span> Agendamento</button>
 
       <div class="nav-category">Conteúdo</div>
-      <button class="sub" onclick="switchTab('content')"><span class="icon">📋</span> Gestão de Conteúdo</button>
+      <button onclick="switchTab('content')"><span class="icon">📋</span> Gestão de Conteúdo</button>
+      <div class="sidebar-folder" id="sidebarStarken">
+        <button class="sidebar-folder-header" onclick="toggleSidebarFolder('starken')">
+          <span class="sidebar-folder-chevron" id="chevronStarken">▶</span>
+          <span style="color:#3b82f6">⭐</span> Starken Performance
+          <span class="sidebar-folder-count" id="countStarken">25</span>
+        </button>
+        <div class="sidebar-folder-items" id="itemsStarken" style="display:none"></div>
+      </div>
+      <div class="sidebar-folder" id="sidebarAlpha">
+        <button class="sidebar-folder-header" onclick="toggleSidebarFolder('alpha')">
+          <span class="sidebar-folder-chevron" id="chevronAlpha">▶</span>
+          <span style="color:#f59e0b">🔶</span> Alpha Assessoria
+          <span class="sidebar-folder-count" id="countAlpha">10</span>
+        </button>
+        <div class="sidebar-folder-items" id="itemsAlpha" style="display:none"></div>
+      </div>
       <button class="sub" onclick="switchTab('calendario')"><span class="icon">📅</span> Calendário</button>
 
       <div class="nav-category">Geral</div>
@@ -2548,6 +2582,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
 
+  restoreSidebarFolders();
+
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
   let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
@@ -3069,6 +3105,70 @@ function switchTab(tabName) {
 }
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+// ============ SIDEBAR FOLDER NAVIGATION ============
+function populateSidebarClients() {
+  const clients = _metaClients || {};
+  const starkenItems = document.getElementById('itemsStarken');
+  const alphaItems = document.getElementById('itemsAlpha');
+  if (!starkenItems || !alphaItems) return;
+
+  let starkenHtml = '';
+  let alphaHtml = '';
+  let starkenCount = 0;
+  let alphaCount = 0;
+
+  Object.entries(clients).forEach(function([key, c]) {
+    const btn = '<button class="sidebar-client-btn" data-client="' + key + '" onclick="sidebarSelectClient(\'' + key + '\')">' + (c.name || key) + '</button>';
+    if (c.tenant === 'alpha') { alphaHtml += btn; alphaCount++; }
+    else { starkenHtml += btn; starkenCount++; }
+  });
+
+  starkenItems.innerHTML = starkenHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
+  alphaItems.innerHTML = alphaHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
+  document.getElementById('countStarken').textContent = starkenCount;
+  document.getElementById('countAlpha').textContent = alphaCount;
+}
+
+function toggleSidebarFolder(folder) {
+  const capitalized = folder.charAt(0).toUpperCase() + folder.slice(1);
+  const items = document.getElementById('items' + capitalized);
+  const chevron = document.getElementById('chevron' + capitalized);
+  if (!items) return;
+  const isOpen = items.style.display !== 'none';
+  items.style.display = isOpen ? 'none' : 'block';
+  chevron.classList.toggle('open', !isOpen);
+  const state = JSON.parse(localStorage.getItem('sidebarFolders') || '{}');
+  state[folder] = !isOpen;
+  localStorage.setItem('sidebarFolders', JSON.stringify(state));
+}
+
+function sidebarSelectClient(clientKey) {
+  switchTab('content');
+  setTimeout(function() {
+    const select = document.getElementById('ctClientFilter');
+    if (select) {
+      select.value = clientKey;
+      if (typeof ctLoadGroups === 'function') ctLoadGroups();
+    }
+    document.querySelectorAll('.sidebar-client-btn').forEach(function(b) { b.classList.remove('active'); });
+    const activeBtn = document.querySelector('.sidebar-client-btn[data-client="' + clientKey + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+  }, 100);
+}
+
+function restoreSidebarFolders() {
+  const state = JSON.parse(localStorage.getItem('sidebarFolders') || '{}');
+  ['starken', 'alpha'].forEach(function(folder) {
+    if (state[folder]) {
+      const capitalized = folder.charAt(0).toUpperCase() + folder.slice(1);
+      const items = document.getElementById('items' + capitalized);
+      const chevron = document.getElementById('chevron' + capitalized);
+      if (items) items.style.display = 'block';
+      if (chevron) chevron.classList.add('open');
+    }
+  });
+}
 
 // ============ STATUS ============
 const STATUS_LABELS       = ['⏳ Pendente', '📄 Gerado', '✅ Enviado'];
@@ -5335,6 +5435,7 @@ function metaClientsPreload() {
       if (parsed && Object.keys(parsed).length > 0) {
         _metaClients = parsed;
         console.info('Meta clients carregados do localStorage (' + Object.keys(parsed).length + ' clientes)');
+        populateSidebarClients();
       }
     }
   } catch(e) {}
@@ -5344,6 +5445,7 @@ function metaClientsPreload() {
       _metaClients = data.config.clients;
       try { localStorage.setItem(META_CLIENTS_LS_KEY, JSON.stringify(_metaClients)); } catch(e) {}
       console.info('Meta clients atualizados do servidor (' + Object.keys(_metaClients).length + ' clientes)');
+      populateSidebarClients();
     }
   }).catch(() => {});
 }
@@ -5851,6 +5953,7 @@ function metaConfigClientTenantChange(key, value) {
 
 // Renderiza a lista de cards de clientes agrupados por tenant — layout em grid compacto
 function metaConfigRenderClientList() {
+  populateSidebarClients();
   const container = document.getElementById('metaConfigClientList');
   const pages = _metaDiscoveredData?.pages || [];
   const adAccounts = _metaDiscoveredData?.ad_accounts || [];
