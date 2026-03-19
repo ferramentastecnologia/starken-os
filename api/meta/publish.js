@@ -141,6 +141,26 @@ module.exports = async function handler(req, res) {
       const image_urls = req.body.image_urls || [];
       let publishedId;
 
+      // Helper: wait for IG container to be ready (polls status)
+      async function waitForContainer(containerId, maxWait = 30000) {
+        const start = Date.now();
+        while (Date.now() - start < maxWait) {
+          await new Promise(r => setTimeout(r, 2000)); // wait 2s between checks
+          try {
+            const check = await fetch(
+              `https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${igToken || process.env.META_ACCESS_TOKEN}`,
+              { method: 'GET' }
+            );
+            const status = await check.json();
+            if (status.status_code === 'FINISHED') return true;
+            if (status.status_code === 'ERROR') throw new Error('IG container processing failed');
+          } catch (e) {
+            if (e.message.includes('failed')) throw e;
+          }
+        }
+        return true; // try anyway after timeout
+      }
+
       // ─── IG CARROSSEL (múltiplas imagens) ───
       if (image_urls.length > 1) {
         // Step 1: Create individual media containers (is_carousel_item)
@@ -154,6 +174,11 @@ module.exports = async function handler(req, res) {
           childIds.push(itemRes.id);
         }
 
+        // Step 1.5: Wait for all children to be ready
+        for (const cid of childIds) {
+          await waitForContainer(cid);
+        }
+
         // Step 2: Create carousel container
         const carouselRes = await graphPost(`/${tenant.igUserId}/media`, {
           media_type: 'CAROUSEL',
@@ -161,6 +186,9 @@ module.exports = async function handler(req, res) {
           caption: caption || '',
           ...(igToken && { access_token: igToken }),
         });
+
+        // Step 2.5: Wait for carousel to be ready
+        await waitForContainer(carouselRes.id);
 
         // Step 3: Publish carousel
         const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
@@ -171,6 +199,7 @@ module.exports = async function handler(req, res) {
       }
       // ─── IG IMAGEM ÚNICA (via container_id ou image_url) ───
       else if (container_id) {
+        await waitForContainer(container_id);
         const pubBody = { creation_id: container_id };
         if (igToken) pubBody.access_token = igToken;
         const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, pubBody);
@@ -183,6 +212,7 @@ module.exports = async function handler(req, res) {
           caption: caption || '',
           ...(igToken && { access_token: igToken }),
         });
+        await waitForContainer(mediaRes.id);
         const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
           creation_id: mediaRes.id,
           ...(igToken && { access_token: igToken }),
