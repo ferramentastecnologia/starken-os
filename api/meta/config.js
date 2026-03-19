@@ -1,20 +1,27 @@
 /**
- * /api/meta/config — Salvar/carregar mapeamento de tenants
+ * /api/meta/config — Salvar/carregar mapeamento de clientes
  *
- * GET  — Retorna config atual (mapeamento tenant → recursos Meta)
+ * GET  — Retorna config atual (estrutura baseada em clientes)
  * POST — Salva nova config
  *
  * Body POST:
  * {
- *   tenants: {
- *     starken: {
- *       name: "Starken Performance",
+ *   clients: {
+ *     "super-x": {
+ *       name: "Super X",
+ *       tenant: "starken",
  *       pageId: "123",
+ *       pageName: "Super X - Itapoá",
  *       pageAccessToken: "EAA...",
  *       igUserId: "456",
- *       adAccountIds: ["act_789", "act_012"]
- *     },
- *     alpha: { ... }
+ *       igUsername: "@superx_itapoa",
+ *       adAccountId: "act_789",
+ *       adAccountName: "Super X - Conta"
+ *     }
+ *   },
+ *   tenants: {
+ *     starken: { name: "Starken Performance" },
+ *     alpha: { name: "Alpha Assessoria" }
  *   }
  * }
  */
@@ -33,7 +40,7 @@ module.exports = async function handler(req, res) {
       const config = await loadConfig();
       return res.status(200).json({
         configured: !!config,
-        config: config || { tenants: {} },
+        config: config || { clients: {}, tenants: { starken: { name: 'Starken Performance' }, alpha: { name: 'Alpha Assessoria' } } },
       });
     } catch (err) {
       return res.status(500).json({
@@ -46,19 +53,20 @@ module.exports = async function handler(req, res) {
 
   // ─── POST: Salva config ───
   if (req.method === 'POST') {
-    const { tenants } = req.body || {};
+    const { clients, tenants } = req.body || {};
 
-    if (!tenants || typeof tenants !== 'object') {
+    if (!clients || typeof clients !== 'object') {
       return res.status(400).json({
         error: true,
         code: 'MISSING_PARAM',
-        message: 'Body deve conter { tenants: { starken: {...}, alpha: {...} } }',
+        message: 'Body deve conter { clients: { "id-cliente": { name, tenant, pageId, adAccountId, ... } }, tenants: {...} }',
       });
     }
 
     try {
       const config = {
-        tenants,
+        clients,
+        tenants: tenants || { starken: { name: 'Starken Performance' }, alpha: { name: 'Alpha Assessoria' } },
         updated_at: new Date().toISOString(),
       };
 

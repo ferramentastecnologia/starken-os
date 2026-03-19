@@ -1175,43 +1175,23 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
               <div class="card-title">&#9881; Configuração Meta Ads</div>
               <button class="btn-new-task" onclick="metaConfigDiscover()" style="font-size:0.78rem;padding:6px 14px" id="metaConfigDiscoverBtn">&#128269; Descobrir Ativos</button>
             </div>
-            <!-- Token Status -->
+            <!-- Status do Token -->
             <div id="metaConfigTokenStatus" style="margin-bottom:16px;padding:12px;border-radius:8px;background:var(--bg-secondary);font-size:0.85rem;color:var(--text-secondary)">
               Clique em "Descobrir Ativos" para verificar a conexão com o Meta Graph API.
             </div>
-            <!-- Ativos Descobertos -->
-            <div id="metaConfigDiscovered" style="display:none">
-              <!-- Páginas FB + IG -->
-              <h4 style="font-size:0.88rem;margin-bottom:10px;color:var(--text-primary)">&#128206; Páginas do Facebook &amp; Instagram</h4>
-              <div id="metaConfigPages" style="margin-bottom:20px"></div>
-              <!-- Ad Accounts -->
-              <h4 style="font-size:0.88rem;margin-bottom:10px;color:var(--text-primary)">&#128176; Contas de Anúncios</h4>
-              <div id="metaConfigAdAccounts" style="margin-bottom:20px"></div>
-              <!-- Mapeamento -->
-              <div style="background:var(--bg-secondary);border-radius:10px;padding:16px;margin-bottom:16px">
-                <h4 style="font-size:0.88rem;margin-bottom:12px;color:var(--text-primary)">&#127919; Mapeamento de Tenants</h4>
-                <p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:12px">Selecione quais ativos pertencem a cada empresa. Use os checkboxes acima para marcar e depois clique em Salvar.</p>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-                  <div>
-                    <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;color:var(--starken-color,#3b82f6)">&#11088; Starken</div>
-                    <div style="font-size:0.78rem;color:var(--text-secondary)">
-                      <div>Página FB: <span id="metaConfigStarkenPage" style="font-weight:600">—</span></div>
-                      <div>Instagram: <span id="metaConfigStarkenIg" style="font-weight:600">—</span></div>
-                      <div>Ad Accounts: <span id="metaConfigStarkenAds" style="font-weight:600">—</span></div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style="font-weight:700;font-size:0.85rem;margin-bottom:8px;color:var(--alpha-color,#10b981)">&#127807; Alpha Assessoria</div>
-                    <div style="font-size:0.78rem;color:var(--text-secondary)">
-                      <div>Página FB: <span id="metaConfigAlphaPage" style="font-weight:600">—</span></div>
-                      <div>Instagram: <span id="metaConfigAlphaIg" style="font-weight:600">—</span></div>
-                      <div>Ad Accounts: <span id="metaConfigAlphaAds" style="font-weight:600">—</span></div>
-                    </div>
-                  </div>
-                </div>
+            <!-- Área de Clientes (sempre visível após init) -->
+            <div id="metaConfigClientArea">
+              <!-- Botão Criar Cliente (aparece após descobrir ativos) -->
+              <div id="metaConfigAddClientRow" style="display:none;margin-bottom:16px">
+                <button class="btn-new-task" onclick="metaConfigAddClient()" style="font-size:0.82rem;padding:7px 16px">&#10133; Criar Cliente</button>
               </div>
-              <button class="btn-new-task" onclick="metaConfigSave()" style="width:100%;padding:10px;font-size:0.88rem" id="metaConfigSaveBtn">&#128190; Salvar Configuração</button>
-              <div id="metaConfigStatus" style="margin-top:10px;font-size:0.82rem;display:none"></div>
+              <!-- Lista de clientes agrupados por tenant -->
+              <div id="metaConfigClientList" style="margin-bottom:16px"></div>
+              <!-- Botão Salvar -->
+              <div id="metaConfigSaveRow" style="display:none">
+                <button class="btn-new-task" onclick="metaConfigSave()" style="width:100%;padding:10px;font-size:0.88rem" id="metaConfigSaveBtn">&#128190; Salvar Configuração</button>
+                <div id="metaConfigStatus" style="margin-top:10px;font-size:0.82rem;display:none"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -4571,16 +4551,30 @@ document.addEventListener('DOMContentLoaded', () => { Gestao.init(); });
 
 <!-- ============ META ADS MODULES ============ -->
 <script>
-// ============ META CONFIG ============
+// ============ META CONFIG (baseado em clientes) ============
 let _metaDiscoveredData = null;
-let _metaMapping = { starken: { pageId: null, pageAccessToken: null, igUserId: null, adAccountIds: [], name: 'Starken Performance' }, alpha: { pageId: null, pageAccessToken: null, igUserId: null, adAccountIds: [], name: 'Alpha Assessoria' } };
+
+// Mapa de clientes: { "id-slug": { name, tenant, pageId, pageName, pageAccessToken, igUserId, igUsername, adAccountId, adAccountName } }
+let _metaClients = {};
+
+// Tenants disponíveis (fixos)
+const _metaTenants = {
+  starken: { name: 'Starken Performance' },
+  alpha:   { name: 'Alpha Assessoria' },
+};
+
+// Contador para gerar IDs únicos temporários de novos clientes
+let _metaClientSeq = 0;
 
 function metaConfigInit() {
-  // Carrega config existente
+  // Carrega config existente do servidor
   fetch(metaApiBase() + '/api/meta/config').then(r => r.json()).then(data => {
-    if (data.configured && data.config?.tenants) {
-      _metaMapping = { ..._metaMapping, ...data.config.tenants };
-      metaConfigUpdateMappingDisplay();
+    if (data.configured && data.config?.clients) {
+      _metaClients = data.config.clients || {};
+      metaConfigRenderClientList();
+      if (Object.keys(_metaClients).length > 0) {
+        document.getElementById('metaConfigSaveRow').style.display = 'block';
+      }
     }
   }).catch(() => {});
 }
@@ -4607,7 +4601,7 @@ async function metaConfigDiscover() {
 
     _metaDiscoveredData = data;
 
-    // Token status
+    // Exibe status do token
     let tokenHtml = '<span style="color:var(--success,#10b981);font-weight:700">Conectado</span>';
     if (data.user) tokenHtml += ' — ' + data.user.name;
     if (data.token_status?.expires_at_date) {
@@ -4616,49 +4610,18 @@ async function metaConfigDiscover() {
       tokenHtml += ' | Token expira em <b>' + days + ' dias</b> (' + exp.toLocaleDateString('pt-BR') + ')';
     }
     if (data.summary) {
-      tokenHtml += '<br><span style="font-size:0.78rem">' + data.summary.total_pages + ' páginas · ' + data.summary.total_ig_accounts + ' contas IG · ' + data.summary.total_ad_accounts + ' contas de anúncios</span>';
+      tokenHtml += '<br><span style="font-size:0.78rem">'
+        + data.summary.total_pages + ' páginas · '
+        + data.summary.total_ig_accounts + ' contas IG · '
+        + data.summary.total_ad_accounts + ' contas de anúncios descobertos</span>';
     }
     statusDiv.style.background = '#f0fdf4';
     statusDiv.innerHTML = tokenHtml;
 
-    // Renderizar páginas
-    let pagesHtml = '';
-    data.pages.forEach(p => {
-      const igInfo = p.ig_account ? ' — IG: @' + p.ig_account.username : '';
-      const isStarken = _metaMapping.starken?.pageId === p.id;
-      const isAlpha = _metaMapping.alpha?.pageId === p.id;
-      pagesHtml += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
-        + '<div style="flex:1"><b>' + p.name + '</b><span style="font-size:0.75rem;color:var(--text-secondary)">' + igInfo + '</span><br><span style="font-size:0.72rem;color:var(--text-muted)">ID: ' + p.id + '</span></div>'
-        + '<select onchange="metaConfigAssignPage(\'' + p.id + '\',\'' + (p.ig_account?.id||'') + '\',\'' + (p.access_token||'').replace(/'/g,'') + '\',this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.78rem">'
-        + '<option value="">— Nenhum —</option>'
-        + '<option value="starken"' + (isStarken ? ' selected' : '') + '>Starken</option>'
-        + '<option value="alpha"' + (isAlpha ? ' selected' : '') + '>Alpha</option>'
-        + '</select></div>';
-    });
-    document.getElementById('metaConfigPages').innerHTML = pagesHtml || '<p style="color:var(--text-secondary);font-size:0.82rem">Nenhuma página encontrada</p>';
-
-    // Renderizar ad accounts
-    let adsHtml = '';
-    data.ad_accounts.forEach(a => {
-      const statusMap = { 1:'Ativa', 2:'Desativada', 3:'Não Pub.', 7:'Pendente', 9:'Suspensa' };
-      const statusText = statusMap[a.account_status] || 'Status ' + a.account_status;
-      const inStarken = (_metaMapping.starken?.adAccountIds||[]).includes(a.id);
-      const inAlpha = (_metaMapping.alpha?.adAccountIds||[]).includes(a.id);
-      adsHtml += '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">'
-        + '<div style="flex:1"><b>' + (a.name || a.id) + '</b>'
-        + '<span style="font-size:0.72rem;margin-left:8px;padding:2px 6px;border-radius:4px;background:var(--bg-secondary)">' + statusText + '</span>'
-        + (a.business ? '<span style="font-size:0.72rem;color:var(--text-muted);margin-left:6px">' + a.business.name + '</span>' : '')
-        + '<br><span style="font-size:0.72rem;color:var(--text-muted)">' + a.id + '</span></div>'
-        + '<select onchange="metaConfigAssignAd(\'' + a.id + '\',this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);font-size:0.78rem">'
-        + '<option value="">— Nenhum —</option>'
-        + '<option value="starken"' + (inStarken ? ' selected' : '') + '>Starken</option>'
-        + '<option value="alpha"' + (inAlpha ? ' selected' : '') + '>Alpha</option>'
-        + '</select></div>';
-    });
-    document.getElementById('metaConfigAdAccounts').innerHTML = adsHtml || '<p style="color:var(--text-secondary);font-size:0.82rem">Nenhuma conta de anúncios encontrada</p>';
-
-    document.getElementById('metaConfigDiscovered').style.display = 'block';
-    metaConfigUpdateMappingDisplay();
+    // Exibe botão "Criar Cliente" e lista atual de clientes
+    document.getElementById('metaConfigAddClientRow').style.display = 'block';
+    document.getElementById('metaConfigSaveRow').style.display = 'block';
+    metaConfigRenderClientList();
   } catch (e) {
     statusDiv.style.background = '#fef2f2';
     statusDiv.innerHTML = '<span style="color:var(--danger)">Erro de conexão: ' + e.message + '</span>';
@@ -4668,47 +4631,217 @@ async function metaConfigDiscover() {
   }
 }
 
-function metaConfigAssignPage(pageId, igUserId, pageAccessToken, tenant) {
-  // Remove page de ambos os tenants
-  ['starken','alpha'].forEach(t => {
-    if (_metaMapping[t]?.pageId === pageId) {
-      _metaMapping[t].pageId = null;
-      _metaMapping[t].igUserId = null;
-      _metaMapping[t].pageAccessToken = null;
+// Gera um slug a partir do nome do cliente
+function metaConfigSlugify(name) {
+  return name.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || ('cliente-' + (++_metaClientSeq));
+}
+
+// Adiciona um novo cliente vazio à lista
+function metaConfigAddClient() {
+  const tempKey = 'novo-cliente-' + (++_metaClientSeq);
+  _metaClients[tempKey] = {
+    name: '',
+    tenant: 'starken',
+    pageId: '',
+    pageName: '',
+    pageAccessToken: '',
+    igUserId: '',
+    igUsername: '',
+    adAccountId: '',
+    adAccountName: '',
+  };
+  metaConfigRenderClientList();
+  // Foca no campo nome do novo card
+  setTimeout(() => {
+    const input = document.querySelector('[data-client-key="' + tempKey + '"] .mc-name-input');
+    if (input) input.focus();
+  }, 50);
+}
+
+// Remove um cliente da lista
+function metaConfigRemoveClient(key) {
+  delete _metaClients[key];
+  metaConfigRenderClientList();
+}
+
+// Atualiza campo de cliente ao mudar página selecionada
+function metaConfigClientPageChange(key, selectEl) {
+  const pageId = selectEl.value;
+  if (!pageId) {
+    _metaClients[key].pageId = '';
+    _metaClients[key].pageName = '';
+    _metaClients[key].pageAccessToken = '';
+    _metaClients[key].igUserId = '';
+    _metaClients[key].igUsername = '';
+  } else {
+    const page = (_metaDiscoveredData?.pages || []).find(p => p.id === pageId);
+    if (page) {
+      _metaClients[key].pageId = page.id;
+      _metaClients[key].pageName = page.name;
+      _metaClients[key].pageAccessToken = page.access_token || '';
+      _metaClients[key].igUserId = page.ig_account?.id || '';
+      _metaClients[key].igUsername = page.ig_account ? '@' + page.ig_account.username : '';
     }
-  });
-  if (tenant && _metaMapping[tenant]) {
-    _metaMapping[tenant].pageId = pageId;
-    _metaMapping[tenant].igUserId = igUserId || null;
-    _metaMapping[tenant].pageAccessToken = pageAccessToken || null;
   }
-  metaConfigUpdateMappingDisplay();
+  // Atualiza campo IG no card (sem re-renderizar tudo)
+  const card = document.querySelector('[data-client-key="' + key + '"]');
+  if (card) {
+    const igInput = card.querySelector('.mc-ig-input');
+    if (igInput) igInput.value = _metaClients[key].igUsername;
+  }
 }
 
-function metaConfigAssignAd(adId, tenant) {
-  // Remove ad account de ambos os tenants
-  ['starken','alpha'].forEach(t => {
-    _metaMapping[t].adAccountIds = (_metaMapping[t].adAccountIds||[]).filter(id => id !== adId);
-  });
-  if (tenant && _metaMapping[tenant]) {
-    _metaMapping[tenant].adAccountIds.push(adId);
+// Atualiza campo de cliente ao mudar conta de anúncios selecionada
+function metaConfigClientAdChange(key, selectEl) {
+  const adId = selectEl.value;
+  if (!adId) {
+    _metaClients[key].adAccountId = '';
+    _metaClients[key].adAccountName = '';
+  } else {
+    const ad = (_metaDiscoveredData?.ad_accounts || []).find(a => a.id === adId);
+    _metaClients[key].adAccountId = adId;
+    _metaClients[key].adAccountName = ad ? (ad.name || adId) : adId;
   }
-  metaConfigUpdateMappingDisplay();
 }
 
-function metaConfigUpdateMappingDisplay() {
-  const findPage = (id) => _metaDiscoveredData?.pages?.find(p => p.id === id);
-  const findAd = (id) => _metaDiscoveredData?.ad_accounts?.find(a => a.id === id);
+// Atualiza campo nome do cliente no estado
+function metaConfigClientNameChange(key, value) {
+  _metaClients[key].name = value;
+}
 
-  ['starken','alpha'].forEach(t => {
-    const prefix = t === 'starken' ? 'Starken' : 'Alpha';
-    const m = _metaMapping[t] || {};
-    const page = findPage(m.pageId);
-    document.getElementById('metaConfig' + prefix + 'Page').textContent = page ? page.name : '—';
-    document.getElementById('metaConfig' + prefix + 'Ig').textContent = m.igUserId && page?.ig_account ? '@' + page.ig_account.username : '—';
-    const adNames = (m.adAccountIds||[]).map(id => { const a = findAd(id); return a ? (a.name||a.id) : id; });
-    document.getElementById('metaConfig' + prefix + 'Ads').textContent = adNames.length ? adNames.join(', ') : '—';
+// Atualiza tenant do cliente no estado
+function metaConfigClientTenantChange(key, value) {
+  _metaClients[key].tenant = value;
+}
+
+// Renderiza a lista de cards de clientes agrupados por tenant
+function metaConfigRenderClientList() {
+  const container = document.getElementById('metaConfigClientList');
+  const pages = _metaDiscoveredData?.pages || [];
+  const adAccounts = _metaDiscoveredData?.ad_accounts || [];
+
+  // Monta opções de páginas
+  const pageOptions = '<option value="">— Selecionar página —</option>'
+    + pages.map(p => '<option value="' + p.id + '">'
+      + p.name + (p.ig_account ? ' (@' + p.ig_account.username + ')' : '') + '</option>').join('');
+
+  // Monta opções de contas de anúncios
+  const adOptions = '<option value="">— Selecionar conta —</option>'
+    + adAccounts.map(a => '<option value="' + a.id + '">' + (a.name || a.id) + '</option>').join('');
+
+  // Agrupa clientes por tenant
+  const grouped = { starken: [], alpha: [], outros: [] };
+  Object.entries(_metaClients).forEach(([key, c]) => {
+    if (c.tenant === 'starken') grouped.starken.push([key, c]);
+    else if (c.tenant === 'alpha') grouped.alpha.push([key, c]);
+    else grouped.outros.push([key, c]);
   });
+
+  let html = '';
+
+  const tenantSections = [
+    { key: 'starken', label: '&#11088; Starken Performance', color: 'var(--starken-color,#3b82f6)' },
+    { key: 'alpha',   label: '&#127807; Alpha Assessoria',   color: 'var(--alpha-color,#10b981)' },
+  ];
+
+  tenantSections.forEach(({ key: tKey, label, color }) => {
+    const clients = grouped[tKey];
+    if (clients.length === 0 && Object.keys(_metaClients).length > 0) return; // Omite seção vazia se há clientes
+    if (clients.length === 0) return;
+
+    html += '<div style="margin-bottom:24px">'
+      + '<div style="font-weight:700;font-size:0.9rem;margin-bottom:10px;color:' + color + ';border-bottom:1px solid var(--border);padding-bottom:6px">' + label + '</div>';
+
+    clients.forEach(([key, c]) => {
+      const selPage = c.pageId ? ('<option value="' + c.pageId + '" selected>' + (c.pageName || c.pageId) + '</option>') : '';
+      const selAd = c.adAccountId ? ('<option value="' + c.adAccountId + '" selected>' + (c.adAccountName || c.adAccountId) + '</option>') : '';
+
+      // Constrói select de páginas com opção atual selecionada
+      const pageOpts = '<option value="">— Selecionar página —</option>'
+        + pages.map(p => '<option value="' + p.id + '"' + (p.id === c.pageId ? ' selected' : '') + '>'
+          + p.name + (p.ig_account ? ' (@' + p.ig_account.username + ')' : '') + '</option>').join('');
+
+      // Constrói select de ad accounts com opção atual selecionada
+      const adOpts = '<option value="">— Selecionar conta —</option>'
+        + adAccounts.map(a => '<option value="' + a.id + '"' + (a.id === c.adAccountId ? ' selected' : '') + '>'
+          + (a.name || a.id) + '</option>').join('');
+
+      html += '<div data-client-key="' + key + '" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--bg-secondary)">'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+
+        // Nome do cliente
+        + '<div>'
+        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Nome do Cliente</label>'
+        + '<input class="form-input mc-name-input" type="text" value="' + (c.name||'').replace(/"/g,'&quot;') + '" placeholder="Ex: Super X - Itapoá"'
+        + ' oninput="metaConfigClientNameChange(\'' + key + '\',this.value)"'
+        + ' style="width:100%;padding:6px 10px;font-size:0.82rem">'
+        + '</div>'
+
+        // Grupo (tenant)
+        + '<div>'
+        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Grupo</label>'
+        + '<select class="form-input" onchange="metaConfigClientTenantChange(\'' + key + '\',this.value);metaConfigRenderClientList()"'
+        + ' style="width:100%;padding:6px 10px;font-size:0.82rem">'
+        + '<option value="starken"' + (c.tenant === 'starken' ? ' selected' : '') + '>Starken</option>'
+        + '<option value="alpha"' + (c.tenant === 'alpha' ? ' selected' : '') + '>Alpha</option>'
+        + '</select>'
+        + '</div>'
+
+        // Página Facebook
+        + '<div>'
+        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Página Facebook</label>'
+        + (pages.length > 0
+          ? '<select class="form-input" onchange="metaConfigClientPageChange(\'' + key + '\',this)" style="width:100%;padding:6px 10px;font-size:0.82rem">' + pageOpts + '</select>'
+          : '<input class="form-input" type="text" value="' + (c.pageId||'') + '" placeholder="ID da página" oninput="_metaClients[\'' + key + '\'].pageId=this.value" style="width:100%;padding:6px 10px;font-size:0.82rem">'
+        )
+        + '</div>'
+
+        // Instagram (preenchido automaticamente)
+        + '<div>'
+        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Instagram</label>'
+        + '<input class="form-input mc-ig-input" type="text" value="' + (c.igUsername||'') + '" placeholder="Preenchido automaticamente" readonly'
+        + ' style="width:100%;padding:6px 10px;font-size:0.82rem;opacity:0.7;cursor:default">'
+        + '</div>'
+
+        // Conta de Anúncios
+        + '<div style="grid-column:span 2">'
+        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Conta de Anúncios</label>'
+        + (adAccounts.length > 0
+          ? '<select class="form-input" onchange="metaConfigClientAdChange(\'' + key + '\',this)" style="width:100%;padding:6px 10px;font-size:0.82rem">' + adOpts + '</select>'
+          : '<input class="form-input" type="text" value="' + (c.adAccountId||'') + '" placeholder="act_000000000" oninput="_metaClients[\'' + key + '\'].adAccountId=this.value" style="width:100%;padding:6px 10px;font-size:0.82rem">'
+        )
+        + '</div>'
+
+        + '</div>'
+        // Botão remover
+        + '<div style="text-align:right">'
+        + '<button onclick="metaConfigRemoveClient(\'' + key + '\')" style="background:none;border:1px solid var(--danger,#ef4444);color:var(--danger,#ef4444);border-radius:6px;padding:4px 12px;font-size:0.75rem;cursor:pointer">&#128465; Remover cliente</button>'
+        + '</div>'
+        + '</div>';
+    });
+
+    html += '</div>';
+  });
+
+  // Mensagem quando não há clientes
+  if (Object.keys(_metaClients).length === 0) {
+    html = '<div style="text-align:center;padding:30px;color:var(--text-secondary);font-size:0.85rem">'
+      + 'Nenhum cliente cadastrado. Clique em "Criar Cliente" para começar.'
+      + '</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// Normaliza chave do cliente antes de salvar (remove caracteres inválidos)
+function metaConfigNormalizeKey(name) {
+  return name.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || ('cliente-' + Date.now());
 }
 
 async function metaConfigSave() {
@@ -4720,11 +4853,29 @@ async function metaConfigSave() {
   statusDiv.style.color = 'var(--text-secondary)';
   statusDiv.textContent = 'Salvando configuração...';
 
+  // Lê valores atuais dos inputs antes de salvar (para capturar edições sem blur)
+  document.querySelectorAll('[data-client-key]').forEach(card => {
+    const key = card.dataset.clientKey;
+    if (!_metaClients[key]) return;
+    const nameInput = card.querySelector('.mc-name-input');
+    if (nameInput) _metaClients[key].name = nameInput.value;
+  });
+
+  // Renomeia chaves temporárias para slugs baseados no nome
+  const normalizedClients = {};
+  Object.entries(_metaClients).forEach(([key, c]) => {
+    const newKey = (c.name && !key.startsWith('novo-cliente-'))
+      ? key
+      : (c.name ? metaConfigNormalizeKey(c.name) : key);
+    normalizedClients[newKey] = c;
+  });
+  _metaClients = normalizedClients;
+
   try {
     const res = await fetch(metaApiBase() + '/api/meta/config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenants: _metaMapping }),
+      body: JSON.stringify({ clients: _metaClients, tenants: _metaTenants }),
     });
     const data = await res.json();
     if (data.error) {
@@ -4733,6 +4884,7 @@ async function metaConfigSave() {
     } else {
       statusDiv.style.color = 'var(--success,#10b981)';
       statusDiv.textContent = 'Configuração salva com sucesso!';
+      metaConfigRenderClientList();
     }
   } catch (e) {
     statusDiv.style.color = 'var(--danger)';

@@ -1,11 +1,13 @@
 /**
- * _lib/tenants.js — Configuração multi-tenant dinâmica
+ * _lib/tenants.js — Configuração multi-tenant dinâmica (baseada em clientes)
  *
- * O mapeamento tenant → recursos Meta é salvo no Supabase (tabela meta_config)
- * ou passado diretamente via query params.
+ * O mapeamento cliente → recursos Meta é salvo no Supabase (tabela meta_config).
+ * Cada cliente possui um tenant (starken | alpha) e seus próprios ativos Meta.
  *
- * Não depende mais de env vars por tenant — o token do app/portfólio
- * já tem acesso a todas as páginas, contas IG e ad accounts.
+ * Funções principais:
+ * - getTenant(tenantKey)    — Agrega todos os clientes de um tenant
+ * - getClient(clientKey)   — Retorna config de um cliente específico
+ * - validateTenant(req,res) — Valida param "tenant" e retorna dados agregados
  *
  * Env vars necessárias: apenas META_ACCESS_TOKEN
  */
@@ -20,7 +22,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
 /**
  * Carrega config de mapeamento do Supabase
- * Tabela: meta_config (id='default', config=JSON com mapeamento)
+ * Tabela: meta_config (id='default', config=JSON com estrutura de clientes)
  */
 async function loadConfig() {
   const now = Date.now();
@@ -84,65 +86,207 @@ async function saveConfig(config) {
     throw { error: true, code: 'SAVE_FAILED', message: 'Falha ao salvar config: ' + err };
   }
 
-  // Atualiza cache
+  // Invalida cache para forçar recarga na próxima chamada
   _configCache = config;
   _configCacheTime = Date.now();
   return config;
 }
 
 /**
- * Retorna config de um tenant específico
- * @param {string} tenantKey - 'starken' ou 'alpha'
- * @returns {{ key, name, adAccountId, pageId, igUserId, pageAccessToken }}
+ * Retorna config de um cliente específico
+ * @param {string} clientKey - chave do cliente (ex: 'super-x')
+ * @returns {{ key, name, tenant, adAccountId, adAccountIds, pageId, igUserId, igUsername, pageAccessToken, pageName }}
  */
-async function getTenant(tenantKey) {
+async function getClient(clientKey) {
   const config = await loadConfig();
 
-  if (!config || !config.tenants || !config.tenants[tenantKey]) {
+  if (!config || !config.clients || !config.clients[clientKey]) {
     throw {
       error: true,
-      code: 'TENANT_NOT_CONFIGURED',
-      message: `Tenant "${tenantKey}" ainda não foi configurado. Use a tela de Configuração Meta para mapear as contas.`,
+      code: 'CLIENT_NOT_CONFIGURED',
+      message: `Cliente "${clientKey}" não encontrado. Use a tela de Configuração Meta para cadastrar clientes.`,
     };
   }
 
-  const t = config.tenants[tenantKey];
+  const c = config.clients[clientKey];
   return {
-    key: tenantKey,
-    name: t.name || tenantKey,
-    adAccountIds: t.adAccountIds || [],
-    pageId: t.pageId || null,
-    pageAccessToken: t.pageAccessToken || null,
-    igUserId: t.igUserId || null,
+    key: clientKey,
+    name: c.name || clientKey,
+    tenant: c.tenant || null,
+    adAccountId: c.adAccountId || null,
+    // Mantém compatibilidade com endpoints que esperam adAccountIds (array)
+    adAccountIds: c.adAccountId ? [c.adAccountId] : [],
+    pageId: c.pageId || null,
+    pageName: c.pageName || null,
+    pageAccessToken: c.pageAccessToken || null,
+    igUserId: c.igUserId || null,
+    igUsername: c.igUsername || null,
   };
 }
 
 /**
- * Lista todos os tenants configurados
+ * Agrega todos os clientes de um tenant em um único objeto de tenant
+ * Mantém compatibilidade total com balance.js e insights.js que usam adAccountIds[]
+ *
+ * @param {string} tenantKey - 'starken' ou 'alpha'
+ * @returns {{ key, name, adAccountIds, clients, pageId, igUserId, pageAccessToken }}
  */
-async function listTenants() {
+async function getTenant(tenantKey) {
   const config = await loadConfig();
-  if (!config || !config.tenants) return [];
 
-  return Object.entries(config.tenants).map(([key, t]) => ({
+  if (!config) {
+    throw {
+      error: true,
+      code: 'NOT_CONFIGURED',
+      message: 'Nenhuma configuração encontrada. Use a tela de Configuração Meta para cadastrar clientes.',
+    };
+  }
+
+  // Suporta config legada (estrutura antiga com tenants diretos)
+  if (!config.clients && config.tenants && config.tenants[tenantKey]) {
+    const t = config.tenants[tenantKey];
+    return {
+      key: tenantKey,
+      name: t.name || tenantKey,
+      adAccountIds: t.adAccountIds || [],
+      pageId: t.pageId || null,
+      pageAccessToken: t.pageAccessToken || null,
+      igUserId: t.igUserId || null,
+      clients: [],
+    };
+  }
+
+  // Nova estrutura baseada em clientes
+  const clients = config.clients || {};
+  const tenantMeta = (config.tenants && config.tenants[tenantKey]) || {};
+
+  // Filtra clientes do tenant solicitado
+  const tenantClients = Object.entries(clients)
+    .filter(([, c]) => c.tenant === tenantKey)
+    .map(([key, c]) => ({
+      key,
+      name: c.name || key,
+      adAccountId: c.adAccountId || null,
+      adAccountIds: c.adAccountId ? [c.adAccountId] : [],
+      pageId: c.pageId || null,
+      pageName: c.pageName || null,
+      pageAccessToken: c.pageAccessToken || null,
+      igUserId: c.igUserId || null,
+      igUsername: c.igUsername || null,
+    }));
+
+  if (tenantClients.length === 0 && !tenantMeta.name) {
+    throw {
+      error: true,
+      code: 'TENANT_NOT_CONFIGURED',
+      message: `Tenant "${tenantKey}" não possui clientes configurados. Use a tela de Configuração Meta para cadastrar clientes.`,
+    };
+  }
+
+  // Agrega todas as ad accounts do tenant (removendo duplicatas)
+  const allAdAccountIds = [...new Set(
+    tenantClients
+      .map(c => c.adAccountId)
+      .filter(Boolean)
+  )];
+
+  // Usa a página do primeiro cliente do tenant como referência (para endpoints que precisam de uma única página)
+  const primaryClient = tenantClients[0] || {};
+
+  return {
+    key: tenantKey,
+    name: tenantMeta.name || tenantKey,
+    adAccountIds: allAdAccountIds,
+    clients: tenantClients,
+    // Campos de página do cliente primário (compatibilidade com media.js e publish.js)
+    pageId: primaryClient.pageId || null,
+    pageAccessToken: primaryClient.pageAccessToken || null,
+    igUserId: primaryClient.igUserId || null,
+  };
+}
+
+/**
+ * Lista todos os clientes configurados
+ */
+async function listClients() {
+  const config = await loadConfig();
+  if (!config || !config.clients) return [];
+
+  return Object.entries(config.clients).map(([key, c]) => ({
     key,
-    name: t.name || key,
-    adAccountIds: t.adAccountIds || [],
-    pageId: t.pageId || null,
-    igUserId: t.igUserId || null,
+    name: c.name || key,
+    tenant: c.tenant || null,
+    adAccountId: c.adAccountId || null,
+    adAccountIds: c.adAccountId ? [c.adAccountId] : [],
+    pageId: c.pageId || null,
+    pageName: c.pageName || null,
+    pageAccessToken: c.pageAccessToken || null,
+    igUserId: c.igUserId || null,
+    igUsername: c.igUsername || null,
   }));
 }
 
 /**
- * Valida que o parâmetro tenant foi fornecido e é válido
+ * Lista todos os tenants configurados (compatibilidade com código legado)
+ */
+async function listTenants() {
+  const config = await loadConfig();
+  if (!config) return [];
+
+  // Suporte à estrutura legada
+  if (!config.clients && config.tenants) {
+    return Object.entries(config.tenants).map(([key, t]) => ({
+      key,
+      name: t.name || key,
+      adAccountIds: t.adAccountIds || [],
+      pageId: t.pageId || null,
+      igUserId: t.igUserId || null,
+    }));
+  }
+
+  // Nova estrutura: agrega por tenant
+  const tenants = config.tenants || {};
+  const clients = config.clients || {};
+
+  return Object.keys(tenants).map(tenantKey => {
+    const tenantClients = Object.entries(clients)
+      .filter(([, c]) => c.tenant === tenantKey)
+      .map(([key, c]) => ({ key, ...c }));
+
+    const adAccountIds = [...new Set(
+      tenantClients.map(c => c.adAccountId).filter(Boolean)
+    )];
+
+    const primary = tenantClients[0] || {};
+    return {
+      key: tenantKey,
+      name: tenants[tenantKey].name || tenantKey,
+      adAccountIds,
+      pageId: primary.pageId || null,
+      igUserId: primary.igUserId || null,
+    };
+  });
+}
+
+/**
+ * Valida que o parâmetro tenant (ou client) foi fornecido e é válido.
+ * Suporta:
+ *   ?tenant=starken  → retorna dados agregados do tenant
+ *   ?client=super-x  → retorna dados do cliente específico
  */
 async function validateTenant(req, res) {
   const tenantKey = req.query?.tenant || req.body?.tenant;
-  if (!tenantKey) {
-    res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'Parâmetro "tenant" é obrigatório' });
+  const clientKey = req.query?.client || req.body?.client;
+
+  if (!tenantKey && !clientKey) {
+    res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'Parâmetro "tenant" ou "client" é obrigatório' });
     return null;
   }
+
   try {
+    if (clientKey) {
+      return await getClient(clientKey);
+    }
     return await getTenant(tenantKey);
   } catch (err) {
     res.status(400).json(err);
@@ -150,4 +294,4 @@ async function validateTenant(req, res) {
   }
 }
 
-module.exports = { getTenant, listTenants, validateTenant, loadConfig, saveConfig };
+module.exports = { getTenant, getClient, listTenants, listClients, validateTenant, loadConfig, saveConfig };
