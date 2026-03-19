@@ -1004,15 +1004,15 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-dropdown-item:hover { background:var(--bg-secondary); }
 
 /* ═══ TASK MODAL ═══ */
-.ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity 0.2s; }
+.ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:8px;opacity:0;transition:opacity 0.2s; }
 .ct-modal-overlay.open { opacity:1; }
-.ct-modal { background:#fff;border-radius:14px;width:100%;max-width:1400px;height:92vh;display:grid;grid-template-columns:220px 1fr 280px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
-.ct-modal-sidebar { background:var(--bg-secondary);padding:16px;border-right:1px solid var(--border);overflow-y:auto;font-size:0.82rem;height:92vh; }
+.ct-modal { background:#fff;border-radius:14px;width:100%;max-width:1600px;height:96vh;display:grid;grid-template-columns:200px 1fr 260px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.ct-modal-sidebar { background:var(--bg-secondary);padding:16px;border-right:1px solid var(--border);overflow-y:auto;font-size:0.82rem; }
 .ct-modal-sidebar .ct-tree-item { padding:6px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s; }
 .ct-modal-sidebar .ct-tree-item:hover { background:var(--border); }
 .ct-modal-sidebar .ct-tree-item.active { background:var(--accent,#3b82f6);color:#fff;font-weight:600; }
-.ct-modal-main { padding:24px 28px;overflow-y:auto;height:92vh; }
-.ct-modal-activity { background:var(--bg-secondary);padding:16px;border-left:1px solid var(--border);overflow-y:auto;font-size:0.78rem;height:92vh; }
+.ct-modal-main { padding:24px 28px;overflow-y:auto; }
+.ct-modal-activity { background:var(--bg-secondary);padding:16px;border-left:1px solid var(--border);overflow-y:auto;font-size:0.78rem; }
 /* Lightbox para visualizar imagens */
 .ct-lightbox { position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:40px; }
 .ct-lightbox img { max-width:95%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.5); }
@@ -1050,6 +1050,25 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-activity-time { font-size:0.68rem;color:var(--text-secondary);margin-top:2px; }
 
 /* Publish section in modal */
+/* Date Picker Custom */
+.ct-datepicker { position:fixed;z-index:100000;background:#fff;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.2);width:420px;display:grid;grid-template-columns:160px 1fr;overflow:hidden;font-size:0.85rem; }
+.ct-datepicker-shortcuts { background:var(--bg-secondary);padding:8px 0;border-right:1px solid var(--border); }
+.ct-datepicker-shortcuts button { display:flex;justify-content:space-between;align-items:center;width:100%;padding:8px 14px;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:0.82rem;color:var(--text-primary);transition:background 0.15s; }
+.ct-datepicker-shortcuts button:hover { background:var(--border); }
+.ct-datepicker-shortcuts button .dp-hint { font-size:0.72rem;color:var(--text-secondary); }
+.ct-datepicker-cal { padding:12px; }
+.ct-datepicker-cal-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700;font-size:0.85rem; }
+.ct-datepicker-cal-header button { background:none;border:none;cursor:pointer;font-size:1rem;padding:4px 8px;border-radius:6px; }
+.ct-datepicker-cal-header button:hover { background:var(--border); }
+.ct-datepicker-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center; }
+.ct-datepicker-grid .dp-day-head { font-size:0.68rem;font-weight:700;color:var(--text-secondary);padding:4px 0; }
+.ct-datepicker-grid .dp-day { padding:6px 2px;border-radius:6px;cursor:pointer;font-size:0.8rem;transition:all 0.15s; }
+.ct-datepicker-grid .dp-day:hover { background:#e0f2fe; }
+.ct-datepicker-grid .dp-day.today { font-weight:700;color:#3b82f6; }
+.ct-datepicker-grid .dp-day.selected { background:#3b82f6;color:#fff;font-weight:700; }
+.ct-datepicker-grid .dp-day.other-month { color:#d1d5db; }
+.ct-datepicker-time { display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border); }
+.ct-datepicker-time input { width:50px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;text-align:center; }
 .ct-publish-section { background:#eff6ff;border:2px solid #bfdbfe;border-radius:10px;padding:16px;margin-top:16px; }
 .ct-publish-section.scheduling { background:#fffbeb;border-color:#fde68a; }
 
@@ -1793,9 +1812,12 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
                   <span>Não atribuído</span>
                 </div>
               </div>
-              <div class="ct-modal-meta-item">
+              <div class="ct-modal-meta-item" style="position:relative">
                 <label>Data</label>
-                <input type="date" id="ctModalDueDate" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem" onchange="ctSaveTaskField('due_date',this.value)">
+                <button id="ctModalDueDateBtn" onclick="ctShowDatePicker(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;min-width:120px">
+                  📅 <span id="ctModalDueDateLabel">Sem data</span>
+                </button>
+                <input type="hidden" id="ctModalDueDate">
               </div>
               <div class="ct-modal-meta-item">
                 <label>Prioridade</label>
@@ -7031,6 +7053,12 @@ async function ctOpenModal(taskId) {
   document.getElementById('ctModalCopyCount').textContent = (task.copy_text || '').length;
   document.getElementById('ctModalDescription').value = task.description || '';
   document.getElementById('ctModalDueDate').value = task.due_date || '';
+  if (task.due_date) {
+    const dd = new Date(task.due_date + 'T00:00:00');
+    document.getElementById('ctModalDueDateLabel').textContent = dd.getDate() + '/' + (dd.getMonth()+1) + '/' + dd.getFullYear();
+  } else {
+    document.getElementById('ctModalDueDateLabel').textContent = 'Sem data';
+  }
 
   // Status
   const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
@@ -7380,6 +7408,147 @@ function ctSelectPlatform(platform) {
 }
 
 // ─── LIGHTBOX (visualizar imagem grande) ───
+// ─── DATE PICKER CUSTOMIZADO ───
+let ctDatePickerEl = null;
+function ctShowDatePicker(event) {
+  event.stopPropagation();
+  if (ctDatePickerEl) { ctDatePickerEl.remove(); ctDatePickerEl = null; return; }
+
+  const rect = event.currentTarget.getBoundingClientRect();
+  const picker = document.createElement('div');
+  picker.className = 'ct-datepicker';
+
+  // Position
+  let top = rect.bottom + 6;
+  let left = rect.left;
+  if (left + 420 > window.innerWidth) left = window.innerWidth - 430;
+  if (top + 380 > window.innerHeight) top = rect.top - 386;
+  picker.style.top = top + 'px';
+  picker.style.left = left + 'px';
+
+  const now = new Date();
+  let viewMonth = now.getMonth();
+  let viewYear = now.getFullYear();
+  const currentVal = document.getElementById('ctModalDueDate').value;
+  if (currentVal) {
+    const cv = new Date(currentVal);
+    if (!isNaN(cv)) { viewMonth = cv.getMonth(); viewYear = cv.getFullYear(); }
+  }
+
+  function getDateStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d; }
+  function nextWeekday(day) { const d = new Date(); while (d.getDay() !== day) d.setDate(d.getDate() + 1); return d; }
+  function formatLabel(d) {
+    const days = ['dom','seg','ter','qua','qui','sex','sáb'];
+    return days[d.getDay()] + ', ' + d.getDate() + '/' + (d.getMonth()+1);
+  }
+
+  const shortcuts = [
+    { label: 'Hoje', hint: formatLabel(now), date: now },
+    { label: 'Mais tarde', hint: '17:25', date: (() => { const d = new Date(); d.setHours(17,25,0,0); return d; })() },
+    { label: 'Amanhã', hint: formatLabel(addDays(1)), date: addDays(1) },
+    { label: 'Este final de semana', hint: formatLabel(nextWeekday(6)), date: nextWeekday(6) },
+    { label: 'Semana que vem', hint: formatLabel(addDays(7)), date: addDays(7) },
+    { label: '2 semanas', hint: formatLabel(addDays(14)), date: addDays(14) },
+    { label: '4 semanas', hint: formatLabel(addDays(28)), date: addDays(28) },
+  ];
+
+  function selectDate(d) {
+    const str = getDateStr(d);
+    document.getElementById('ctModalDueDate').value = str;
+    document.getElementById('ctModalDueDateLabel').textContent = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    ctSaveTaskField('due_date', str);
+    closePicker();
+  }
+
+  function closePicker() { if (ctDatePickerEl) { ctDatePickerEl.remove(); ctDatePickerEl = null; } }
+
+  function renderCalendar() {
+    const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const calDiv = picker.querySelector('.ct-datepicker-cal');
+    if (!calDiv) return;
+
+    let html = '<div class="ct-datepicker-cal-header">';
+    html += '<button onclick="event.stopPropagation();ctDatePickerNav(-1)">‹</button>';
+    html += '<span>' + months[viewMonth] + ' ' + viewYear + '</span>';
+    html += '<button onclick="event.stopPropagation();ctDatePickerNav(1)">›</button></div>';
+    html += '<div class="ct-datepicker-grid">';
+    ['2ª','3ª','4ª','5ª','6ª','sá','do'].forEach(d => html += '<div class="dp-day-head">' + d + '</div>');
+
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    let startDay = firstDay.getDay() - 1; // Monday = 0
+    if (startDay < 0) startDay = 6;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+    const todayStr = getDateStr(now);
+    const selStr = document.getElementById('ctModalDueDate').value;
+
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = daysInPrev - i;
+      html += '<div class="dp-day other-month" onclick="event.stopPropagation();ctDatePickerSelectDay(' + (viewMonth-1) + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      let cls = 'dp-day';
+      if (ds === todayStr) cls += ' today';
+      if (ds === selStr) cls += ' selected';
+      html += '<div class="' + cls + '" onclick="event.stopPropagation();ctDatePickerSelectDay(' + viewMonth + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    const total = startDay + daysInMonth;
+    const remaining = (7 - (total % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      html += '<div class="dp-day other-month" onclick="event.stopPropagation();ctDatePickerSelectDay(' + (viewMonth+1) + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    html += '</div>';
+    // Clear button
+    html += '<div style="margin-top:8px;text-align:center"><button onclick="event.stopPropagation();ctDatePickerClear()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;font-size:0.78rem">🗑️ Remover data</button></div>';
+    calDiv.innerHTML = html;
+  }
+
+  // Build shortcuts HTML
+  let shortcutsHtml = '<div class="ct-datepicker-shortcuts">';
+  shortcuts.forEach((s, i) => {
+    shortcutsHtml += '<button onclick="event.stopPropagation();ctDatePickerShortcut(' + i + ')">' + s.label + '<span class="dp-hint">' + s.hint + '</span></button>';
+  });
+  shortcutsHtml += '</div><div class="ct-datepicker-cal"></div>';
+  picker.innerHTML = shortcutsHtml;
+
+  document.body.appendChild(picker);
+  ctDatePickerEl = picker;
+  renderCalendar();
+
+  // Global functions for the picker
+  window.ctDatePickerNav = function(dir) {
+    viewMonth += dir;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    renderCalendar();
+  };
+  window.ctDatePickerSelectDay = function(m, d, y) {
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    selectDate(new Date(y, m, d));
+  };
+  window.ctDatePickerShortcut = function(i) { selectDate(shortcuts[i].date); };
+  window.ctDatePickerClear = function() {
+    document.getElementById('ctModalDueDate').value = '';
+    document.getElementById('ctModalDueDateLabel').textContent = 'Sem data';
+    ctSaveTaskField('due_date', null);
+    closePicker();
+  };
+
+  // Close on outside click
+  setTimeout(() => {
+    const closeHandler = function(e) {
+      if (ctDatePickerEl && !ctDatePickerEl.contains(e.target)) {
+        closePicker();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    document.addEventListener('click', closeHandler);
+  }, 10);
+}
+
 function ctOpenLightbox(url) {
   if (!url) return;
   const overlay = document.createElement('div');
