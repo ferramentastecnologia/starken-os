@@ -3,7 +3,8 @@
  *
  * POST {
  *   destination: "ig" | "fb",
- *   tenant: "starken" | "alpha",
+ *   tenant: "starken" | "alpha",   // OU
+ *   client: "estilo-tulipa",       // cliente específico
  *   caption: "Texto do post...",
  *   type: "feed" | "stories" | "reels",
  *   container_id: "17889234...",           // IG: do /api/meta/media
@@ -40,55 +41,52 @@ module.exports = async function handler(req, res) {
     // ─── INSTAGRAM ───
     if (destination === 'ig') {
       if (!tenant.igUserId) {
-        return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: `IG User ID não configurado para "${tenant.key}"` });
-      }
-
-      if (scheduled_publish_time) {
-        // Para agendar no IG, o scheduled_publish_time vai no container creation
-        // Se o container já foi criado sem schedule, precisamos criar novo com schedule
-        if (!container_id && !caption) {
-          return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'container_id ou caption obrigatório para IG' });
-        }
-
-        // Publicar container existente (imediato, pois o schedule foi no container)
-        if (container_id) {
-          const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
-            creation_id: container_id,
-          });
-          return res.status(201).json({
-            post_id: pubRes.id,
-            status: 'PUBLISHED',
-          });
-        }
-      }
-
-      // Publicação imediata com container
-      if (container_id) {
-        const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
-          creation_id: container_id,
-        });
-        return res.status(201).json({
-          post_id: pubRes.id,
-          status: 'PUBLISHED',
+        return res.status(400).json({
+          error: true, code: 'MISSING_PARAM',
+          message: `IG User ID não configurado para "${tenant.name || tenant.key}". Configure na tela de Configuração Meta.`,
         });
       }
 
-      return res.status(400).json({
-        error: true,
-        code: 'MISSING_PARAM',
-        message: 'container_id obrigatório para publicação IG. Use /api/meta/media primeiro.',
+      if (!container_id) {
+        return res.status(400).json({
+          error: true, code: 'MISSING_PARAM',
+          message: 'container_id obrigatório para publicação IG. Use /api/meta/media primeiro para criar o container de mídia.',
+        });
+      }
+
+      // Publicar container (imediato)
+      const pubBody = { creation_id: container_id };
+      // Usa page access token do cliente se disponível
+      if (tenant.pageAccessToken) {
+        pubBody.access_token = tenant.pageAccessToken;
+      }
+
+      const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, pubBody);
+      return res.status(201).json({
+        post_id: pubRes.id,
+        status: 'PUBLISHED',
+        client: tenant.name || tenant.key,
       });
     }
 
     // ─── FACEBOOK ───
     if (destination === 'fb') {
       if (!tenant.pageId) {
-        return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: `Page ID não configurado para "${tenant.key}"` });
+        return res.status(400).json({
+          error: true, code: 'MISSING_PARAM',
+          message: `Page ID não configurado para "${tenant.name || tenant.key}". Configure na tela de Configuração Meta.`,
+        });
       }
 
       const postBody = {
         message: caption || '',
       };
+
+      // CRÍTICO: Usa page access token do cliente para postar na página
+      // A Graph API exige token de página para /{page_id}/feed
+      if (tenant.pageAccessToken) {
+        postBody.access_token = tenant.pageAccessToken;
+      }
 
       // Anexar fotos se houver
       if (photo_ids && photo_ids.length > 0) {
@@ -108,6 +106,8 @@ module.exports = async function handler(req, res) {
       return res.status(201).json({
         post_id: postRes.id,
         status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',
+        client: tenant.name || tenant.key,
+        page: tenant.pageName || tenant.pageId,
         scheduled_for: scheduled_publish_time
           ? new Date(scheduled_publish_time * 1000).toISOString()
           : null,

@@ -895,6 +895,55 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   background: var(--bg-subtle); border-radius: 10px;
   border: 2px dashed var(--border);
 }
+
+/* ═══ PUBLICAÇÃO - Estilos aprimorados ═══ */
+.meta-pub-step {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700;
+  background: var(--bg-secondary); color: var(--text-secondary);
+  border: 2px solid var(--border); transition: all 0.3s;
+}
+.meta-pub-step.active { background: var(--accent,#3b82f6); color: #fff; border-color: var(--accent,#3b82f6); }
+.meta-pub-step.done { background: #10b981; color: #fff; border-color: #10b981; }
+.meta-pub-plat-btn {
+  flex: 1; padding: 10px 8px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--border); background: var(--bg-secondary);
+  color: var(--text-secondary); text-align: center;
+  transition: all 0.2s; font-family: inherit;
+}
+.meta-pub-plat-btn:not(:disabled):hover { border-color: var(--accent,#3b82f6); background: #eff6ff; }
+.meta-pub-plat-btn.selected { border-color: var(--accent,#3b82f6); background: #eff6ff; color: var(--text-primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.meta-pub-plat-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.meta-pub-dropzone {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 30px; text-align: center; cursor: pointer;
+  color: var(--text-secondary); transition: all 0.2s;
+  background: var(--bg-secondary);
+}
+.meta-pub-dropzone:hover { border-color: var(--accent,#3b82f6); background: #eff6ff; }
+.meta-pub-dropzone.dragover { border-color: var(--accent,#3b82f6); background: #dbeafe; transform: scale(1.01); }
+.meta-pub-submit-btn {
+  width: 100%; padding: 14px; font-size: 0.95rem;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 10px; font-weight: 700; transition: all 0.2s;
+}
+.meta-pub-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.meta-pub-check {
+  padding: 6px 0; color: var(--text-secondary);
+  transition: color 0.2s;
+}
+.meta-pub-check.ok { color: #10b981; font-weight: 600; }
+.meta-pub-filter-btn {
+  padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-secondary); cursor: pointer;
+  font-size: 0.75rem; font-family: inherit; transition: all 0.2s;
+}
+.meta-pub-filter-btn:hover { background: var(--bg-secondary); }
+.meta-pub-filter-btn.active { background: var(--accent,#3b82f6); color: #fff; border-color: var(--accent,#3b82f6); }
+@media (max-width: 900px) {
+  #tab-meta-publish .card:first-child { grid-template-columns: 1fr !important; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -1354,67 +1403,170 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <!-- META ADS: AGENDAMENTO -->
       <div id="tab-meta-publish" class="tab-content">
         <div style="padding:20px">
-          <div class="card">
-            <div class="card-header"><div class="card-title">&#128228; Agendamento de Publicações</div></div>
-            <!-- Formulário de nova publicação -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-              <div class="form-group">
-                <label class="form-label">Destino</label>
-                <select class="form-input" id="metaPubDestination">
-                  <option value="">Selecione...</option>
-                  <option value="ig_starken">&#128247; Instagram — Starken</option>
-                  <option value="ig_alpha">&#128247; Instagram — Alpha</option>
-                  <option value="fb_starken">&#128308; Facebook — Starken</option>
-                  <option value="fb_alpha">&#128308; Facebook — Alpha</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Tipo de Post</label>
-                <select class="form-input" id="metaPubType">
-                  <option value="feed">Feed</option>
-                  <option value="stories">Stories</option>
-                  <option value="reels">Reels</option>
-                  <option value="carousel">Carrossel</option>
-                </select>
+          <!-- Layout 2 colunas: Form + Preview -->
+          <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start">
+
+            <!-- COLUNA ESQUERDA: Formulário -->
+            <div>
+              <div class="card">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+                  <div class="card-title">&#128228; Publicar Post</div>
+                  <div id="metaPubStepIndicator" style="display:flex;gap:6px;align-items:center">
+                    <span class="meta-pub-step active" id="metaPubStep1">1</span>
+                    <span style="color:var(--text-secondary);font-size:0.7rem">&#8594;</span>
+                    <span class="meta-pub-step" id="metaPubStep2">2</span>
+                    <span style="color:var(--text-secondary);font-size:0.7rem">&#8594;</span>
+                    <span class="meta-pub-step" id="metaPubStep3">3</span>
+                  </div>
+                </div>
+
+                <!-- Linha 1: Cliente + Plataforma -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+                  <div class="form-group">
+                    <label class="form-label">&#128100; Cliente</label>
+                    <select class="form-input" id="metaPubClient" onchange="metaPublishClientChange()" style="font-weight:600">
+                      <option value="">Selecione um cliente...</option>
+                    </select>
+                    <div id="metaPubClientInfo" style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px"></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">&#127760; Plataforma</label>
+                    <div id="metaPubPlatformBtns" style="display:flex;gap:8px;margin-top:4px">
+                      <button class="meta-pub-plat-btn" id="metaPubPlatFb" onclick="metaPublishSelectPlatform('fb')" disabled title="Facebook">
+                        <span style="font-size:1.3rem">&#128308;</span><br><span style="font-size:0.72rem">Facebook</span>
+                      </button>
+                      <button class="meta-pub-plat-btn" id="metaPubPlatIg" onclick="metaPublishSelectPlatform('ig')" disabled title="Instagram">
+                        <span style="font-size:1.3rem">&#128247;</span><br><span style="font-size:0.72rem">Instagram</span>
+                      </button>
+                    </div>
+                    <input type="hidden" id="metaPubPlatform" value="">
+                  </div>
+                </div>
+
+                <!-- Linha 2: Tipo + Agendamento -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+                  <div class="form-group">
+                    <label class="form-label">&#128196; Tipo de Post</label>
+                    <select class="form-input" id="metaPubType" onchange="metaPublishUpdatePreview()">
+                      <option value="feed">&#128248; Feed</option>
+                      <option value="stories">&#128247; Stories</option>
+                      <option value="reels">&#127916; Reels</option>
+                      <option value="carousel">&#127922; Carrossel</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">&#128338; Quando Publicar</label>
+                    <select class="form-input" id="metaPubScheduleMode" onchange="metaPublishScheduleChange()">
+                      <option value="now">&#9889; Publicar Agora</option>
+                      <option value="schedule">&#128197; Agendar</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group" id="metaPubDatetimeWrap" style="display:none;margin-bottom:16px">
+                  <label class="form-label">&#128197; Data e Hora do Agendamento</label>
+                  <input type="datetime-local" class="form-input" id="metaPubDatetime" style="font-weight:600">
+                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">&#9888;&#65039; Meta exige no mínimo 10 minutos no futuro e máximo 75 dias</div>
+                </div>
+
+                <!-- Legenda com contador visual -->
+                <div class="form-group" style="margin-bottom:16px">
+                  <label class="form-label">&#9999;&#65039; Legenda</label>
+                  <textarea class="form-input" id="metaPubCaption" rows="5" placeholder="Escreva a legenda do post...&#10;&#10;Dicas:&#10;- Use hashtags no final&#10;- Emojis aumentam engajamento&#10;- Primeira linha chama atenção no feed" oninput="metaPublishCaptionInput()" maxlength="2200" style="resize:vertical;line-height:1.6"></textarea>
+                  <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.75rem">
+                    <div id="metaPubCaptionTips" style="color:var(--text-secondary)"></div>
+                    <div id="metaPubCharCount" style="font-weight:600;color:var(--text-secondary)">0 / 2.200</div>
+                  </div>
+                  <div id="metaPubCharBar" style="height:3px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden">
+                    <div id="metaPubCharBarFill" style="height:100%;width:0%;background:var(--success,#10b981);transition:width 0.3s,background 0.3s;border-radius:2px"></div>
+                  </div>
+                </div>
+
+                <!-- Mídia com upload visual aprimorado -->
+                <div class="form-group" style="margin-bottom:16px">
+                  <label class="form-label">&#128206; Mídia <span id="metaPubMediaCount" style="font-weight:400;color:var(--text-secondary)"></span></label>
+                  <div id="metaPubDropZone" class="meta-pub-dropzone" onclick="document.getElementById('metaPubFileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');metaPublishHandleDrop(event)">
+                    <div style="font-size:2.5rem;margin-bottom:8px">&#128206;</div>
+                    <div style="font-weight:600;margin-bottom:4px">Arraste imagens ou vídeos aqui</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary)">ou clique para selecionar &middot; JPG, PNG, MP4 &middot; Máx 10MB</div>
+                    <input type="file" id="metaPubFileInput" accept="image/*,video/*" multiple style="display:none" onchange="metaPublishHandleFiles(this.files)">
+                  </div>
+                  <div id="metaPubPreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
+                </div>
+
+                <!-- URL da Mídia (alternativa para IG) -->
+                <div class="form-group" id="metaPubMediaUrlWrap" style="margin-bottom:16px">
+                  <label class="form-label">&#128279; URL da Mídia (alternativa)</label>
+                  <input type="url" class="form-input" id="metaPubMediaUrl" placeholder="https://exemplo.com/imagem.jpg" oninput="metaPublishUpdatePreview()">
+                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">Cole a URL pública da imagem/vídeo. A Meta exige URL acessível publicamente.</div>
+                </div>
+
+                <!-- Botão de publicação -->
+                <button class="btn-new-task meta-pub-submit-btn" onclick="metaPublishSubmit()" id="metaPubSubmitBtn" disabled>
+                  <span id="metaPubSubmitIcon">&#128228;</span>
+                  <span id="metaPubSubmitText">Selecione cliente e plataforma</span>
+                </button>
+                <div id="metaPubStatus" style="margin-top:12px;font-size:0.85rem;display:none;padding:10px;border-radius:8px"></div>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Legenda <span id="metaPubCharCount" style="float:right;font-weight:400;color:var(--text-secondary)">0 / 2.200</span></label>
-              <textarea class="form-input" id="metaPubCaption" rows="4" placeholder="Escreva a legenda do post..." oninput="document.getElementById('metaPubCharCount').textContent=this.value.length+' / 2.200'" maxlength="2200" style="resize:vertical"></textarea>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Mídia</label>
-              <div id="metaPubDropZone" style="border:2px dashed var(--border);border-radius:10px;padding:30px;text-align:center;cursor:pointer;color:var(--text-secondary);transition:border-color 0.2s" onclick="document.getElementById('metaPubFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='var(--accent)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="event.preventDefault();this.style.borderColor='var(--border)';metaPublishHandleDrop(event)">
-                &#128206; Arraste imagens aqui ou clique para selecionar
-                <input type="file" id="metaPubFileInput" accept="image/*,video/*" multiple style="display:none" onchange="metaPublishHandleFiles(this.files)">
+
+            <!-- COLUNA DIREITA: Preview Live -->
+            <div style="position:sticky;top:20px">
+              <div class="card" id="metaPubPreviewCard">
+                <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+                  <div class="card-title">&#128065; Preview</div>
+                  <div id="metaPubPreviewPlatLabel" style="font-size:0.72rem;padding:3px 10px;border-radius:12px;background:var(--bg-secondary);color:var(--text-secondary);font-weight:600">—</div>
+                </div>
+                <div id="metaPubPreview" style="padding:16px">
+                  <!-- Header do post (avatar + nome) -->
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+                    <div style="width:42px;height:42px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1rem" id="metaPubPreviewAvatar">?</div>
+                    <div style="flex:1">
+                      <div style="font-weight:700;font-size:0.9rem" id="metaPubPreviewName">Selecione um cliente</div>
+                      <div style="font-size:0.72rem;color:var(--text-secondary)" id="metaPubPreviewMeta">—</div>
+                    </div>
+                    <div style="font-size:0.65rem;color:var(--text-secondary)" id="metaPubPreviewTime">Agora</div>
+                  </div>
+                  <!-- Mídia preview -->
+                  <div id="metaPubPreviewMedia" style="margin-bottom:12px;border-radius:8px;overflow:hidden;background:var(--bg-secondary);min-height:60px;display:flex;align-items:center;justify-content:center">
+                    <div style="color:var(--text-secondary);font-size:0.82rem;padding:20px;text-align:center">Adicione mídia para preview</div>
+                  </div>
+                  <!-- Ações fake -->
+                  <div style="display:flex;gap:16px;padding:8px 0;margin-bottom:8px;border-bottom:1px solid var(--border)">
+                    <span style="font-size:1.1rem;cursor:default" title="Curtir">&#10084;&#65039;</span>
+                    <span style="font-size:1.1rem;cursor:default" title="Comentar">&#128172;</span>
+                    <span style="font-size:1.1rem;cursor:default" title="Compartilhar">&#128228;</span>
+                    <span style="font-size:1.1rem;cursor:default;margin-left:auto" title="Salvar">&#128278;</span>
+                  </div>
+                  <!-- Legenda preview -->
+                  <div id="metaPubPreviewCaption" style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:200px;overflow-y:auto">A legenda aparecerá aqui...</div>
+                </div>
               </div>
-              <div id="metaPubPreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-              <div class="form-group">
-                <label class="form-label">Quando Publicar</label>
-                <select class="form-input" id="metaPubScheduleMode" onchange="document.getElementById('metaPubDatetimeWrap').style.display=this.value==='schedule'?'block':'none'">
-                  <option value="now">Publicar Agora</option>
-                  <option value="schedule">Agendar</option>
-                </select>
-              </div>
-              <div class="form-group" id="metaPubDatetimeWrap" style="display:none">
-                <label class="form-label">Data e Hora</label>
-                <input type="datetime-local" class="form-input" id="metaPubDatetime">
+
+              <!-- Card de Validação -->
+              <div class="card" style="margin-top:12px" id="metaPubValidationCard">
+                <div class="card-header"><div class="card-title" style="font-size:0.85rem">&#9989; Checklist de Publicação</div></div>
+                <div id="metaPubChecklist" style="padding:12px;font-size:0.82rem">
+                  <div class="meta-pub-check" id="metaPubChkClient">&#9744; Cliente selecionado</div>
+                  <div class="meta-pub-check" id="metaPubChkPlatform">&#9744; Plataforma escolhida</div>
+                  <div class="meta-pub-check" id="metaPubChkContent">&#9744; Legenda ou mídia adicionada</div>
+                  <div class="meta-pub-check" id="metaPubChkMedia" style="display:none">&#9744; Mídia obrigatória (Instagram)</div>
+                </div>
               </div>
             </div>
-            <button class="btn-new-task" onclick="metaPublishSubmit()" style="width:100%;padding:12px;font-size:0.92rem" id="metaPubSubmitBtn">&#128228; Publicar</button>
-            <div id="metaPubStatus" style="margin-top:12px;font-size:0.85rem;display:none"></div>
           </div>
 
-          <!-- Posts Agendados -->
-          <div class="card" style="margin-top:16px">
-            <div class="card-header">
-              <div class="card-title">&#128197; Posts Agendados</div>
-              <button class="btn-new-task" onclick="metaPublishLoadScheduled()" style="font-size:0.78rem;padding:6px 14px">&#128260; Atualizar</button>
+          <!-- Histórico Aprimorado -->
+          <div class="card" style="margin-top:20px">
+            <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
+              <div class="card-title">&#128197; Histórico de Publicações</div>
+              <div style="display:flex;gap:8px">
+                <button class="meta-pub-filter-btn active" onclick="metaPublishFilterHistory('all',this)">Todos</button>
+                <button class="meta-pub-filter-btn" onclick="metaPublishFilterHistory('PUBLISHED',this)">Publicados</button>
+                <button class="meta-pub-filter-btn" onclick="metaPublishFilterHistory('SCHEDULED',this)">Agendados</button>
+              </div>
             </div>
-            <div id="metaPubScheduledList" style="color:var(--text-secondary);font-size:0.85rem;padding:20px;text-align:center">
-              Funcionalidade disponível após primeira publicação agendada
+            <div id="metaPubHistory" style="color:var(--text-secondary);font-size:0.85rem;padding:20px;text-align:center">
+              Nenhuma publicação realizada nesta sessão
             </div>
           </div>
         </div>
@@ -1756,6 +1908,11 @@ let _supabase = null;
 
 function initSupabase() {
   if (SUPABASE_URL.includes('SEU_PROJETO') || SUPABASE_KEY.includes('sua_anon')) return false;
+  // Valida formato da chave anon (deve começar com eyJ)
+  if (!SUPABASE_KEY.startsWith('eyJ')) {
+    console.info('Supabase: chave anon inválida (checklist sync desativado). Meta Config usa API serverless separada.');
+    return false;
+  }
   try {
     _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     return true;
@@ -4637,18 +4794,55 @@ const _metaTenants = {
 // Contador para gerar IDs únicos temporários de novos clientes
 let _metaClientSeq = 0;
 
+const META_CLIENTS_LS_KEY = 'metaClientsBackup';
+
+// Salva seleções no localStorage automaticamente
+function metaConfigAutoSave() {
+  try {
+    localStorage.setItem(META_CLIENTS_LS_KEY, JSON.stringify(_metaClients));
+  } catch(e) {}
+}
+
+// Restaura seleções do localStorage
+function metaConfigRestoreFromLocal() {
+  try {
+    const saved = localStorage.getItem(META_CLIENTS_LS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && Object.keys(parsed).length > 0) return parsed;
+    }
+  } catch(e) {}
+  return null;
+}
+
 function metaConfigInit() {
-  // Carrega config existente do servidor
+  // 1. Tenta carregar do servidor (Supabase)
   fetch(metaApiBase() + '/api/meta/config').then(r => r.json()).then(data => {
-    if (data.configured && data.config?.clients) {
-      _metaClients = data.config.clients || {};
+    if (data.configured && data.config?.clients && Object.keys(data.config.clients).length > 0) {
+      _metaClients = data.config.clients;
+      metaConfigAutoSave(); // sincroniza localStorage com servidor
+    } else {
+      // 2. Fallback: restaura do localStorage
+      const local = metaConfigRestoreFromLocal();
+      if (local) _metaClients = local;
+    }
+    metaConfigRenderClientList();
+    if (Object.keys(_metaClients).length > 0) {
+      document.getElementById('metaConfigAddClientRow').style.display = 'block';
+      document.getElementById('metaConfigSaveRow').style.display = 'block';
+    }
+  }).catch(() => {
+    // Servidor indisponível: restaura do localStorage
+    const local = metaConfigRestoreFromLocal();
+    if (local) {
+      _metaClients = local;
       metaConfigRenderClientList();
       if (Object.keys(_metaClients).length > 0) {
         document.getElementById('metaConfigAddClientRow').style.display = 'block';
         document.getElementById('metaConfigSaveRow').style.display = 'block';
       }
     }
-  }).catch(() => {});
+  });
 }
 
 async function metaConfigDiscover() {
@@ -4693,6 +4887,7 @@ async function metaConfigDiscover() {
     // Se não há clientes cadastrados, pré-carrega a partir da lista SEED_CLIENTS
     if (Object.keys(_metaClients).length === 0) {
       metaConfigSeedFromKnownClients();
+      metaConfigAutoSave();
     }
 
     // Exibe botão "Criar Cliente" e lista atual de clientes
@@ -4751,6 +4946,7 @@ function metaConfigAddClient() {
     adAccountId: '',
     adAccountName: '',
   };
+  metaConfigAutoSave();
   metaConfigRenderClientList();
   // Foca no campo nome do novo card
   setTimeout(() => {
@@ -4762,6 +4958,7 @@ function metaConfigAddClient() {
 // Remove um cliente da lista
 function metaConfigRemoveClient(key) {
   delete _metaClients[key];
+  metaConfigAutoSave();
   metaConfigRenderClientList();
 }
 
@@ -4784,6 +4981,7 @@ function metaConfigClientPageChange(key, selectEl) {
       _metaClients[key].igUsername = page.ig_account ? '@' + page.ig_account.username : '';
     }
   }
+  metaConfigAutoSave();
   // Atualiza campo IG no card (sem re-renderizar tudo)
   const card = document.querySelector('[data-client-key="' + key + '"]');
   if (card) {
@@ -4803,16 +5001,19 @@ function metaConfigClientAdChange(key, selectEl) {
     _metaClients[key].adAccountId = adId;
     _metaClients[key].adAccountName = ad ? (ad.name || adId) : adId;
   }
+  metaConfigAutoSave();
 }
 
 // Atualiza campo nome do cliente no estado
 function metaConfigClientNameChange(key, value) {
   _metaClients[key].name = value;
+  metaConfigAutoSave();
 }
 
 // Atualiza tenant do cliente no estado
 function metaConfigClientTenantChange(key, value) {
   _metaClients[key].tenant = value;
+  metaConfigAutoSave();
 }
 
 // Renderiza a lista de cards de clientes agrupados por tenant — layout em grid compacto
@@ -4975,6 +5176,7 @@ async function metaConfigSave() {
     } else {
       statusDiv.style.color = 'var(--success,#10b981)';
       statusDiv.textContent = 'Configuração salva com sucesso!';
+      metaConfigAutoSave();
       metaConfigRenderClientList();
     }
   } catch (e) {
@@ -5243,21 +5445,379 @@ function metaBiExportJson() {
 
 // ============ META PUBLISH ============
 let _metaPubFiles = [];
+let _metaPubHistory = [];
+let _metaPubHistoryFilter = 'all';
 
 function metaPublishInit() {
-  // Init: limpa previews se necessário
+  metaPublishLoadClients();
+  metaPublishValidateForm();
+  // Carrega histórico do localStorage
+  try {
+    const saved = localStorage.getItem('metaPubHistory');
+    if (saved) { _metaPubHistory = JSON.parse(saved); metaPublishRenderHistory(); }
+  } catch(e) {}
+}
+
+// ─── Carrega clientes configurados no dropdown ───
+function metaPublishLoadClients() {
+  const select = document.getElementById('metaPubClient');
+  let clients = _metaClients;
+  if (!clients || Object.keys(clients).length === 0) {
+    try {
+      const saved = localStorage.getItem(META_CLIENTS_LS_KEY);
+      if (saved) clients = JSON.parse(saved);
+    } catch(e) {}
+  }
+  if (!clients || Object.keys(clients).length === 0) {
+    select.innerHTML = '<option value="">Nenhum cliente configurado — vá em Configuração Meta</option>';
+    return;
+  }
+
+  let html = '<option value="">Selecione um cliente...</option>';
+  const starken = [], alpha = [];
+  Object.entries(clients).forEach(([key, c]) => {
+    const item = { key, name: c.name || key, tenant: c.tenant, pageId: c.pageId, igUserId: c.igUserId, pageName: c.pageName, igUsername: c.igUsername, adAccountId: c.adAccountId };
+    if (c.tenant === 'alpha') alpha.push(item);
+    else starken.push(item);
+  });
+
+  // Ordena alfabeticamente
+  starken.sort((a, b) => a.name.localeCompare(b.name));
+  alpha.sort((a, b) => a.name.localeCompare(b.name));
+
+  if (starken.length) {
+    html += '<optgroup label="🟢 Starken Performance (' + starken.length + ')">';
+    starken.forEach(c => {
+      const icons = [];
+      if (c.pageId) icons.push('FB');
+      if (c.igUserId) icons.push('IG');
+      const badge = icons.length ? ' [' + icons.join('+') + ']' : ' [não config.]';
+      html += '<option value="' + c.key + '">' + c.name + badge + '</option>';
+    });
+    html += '</optgroup>';
+  }
+  if (alpha.length) {
+    html += '<optgroup label="🟡 Alpha Assessoria (' + alpha.length + ')">';
+    alpha.forEach(c => {
+      const icons = [];
+      if (c.pageId) icons.push('FB');
+      if (c.igUserId) icons.push('IG');
+      const badge = icons.length ? ' [' + icons.join('+') + ']' : ' [não config.]';
+      html += '<option value="' + c.key + '">' + c.name + badge + '</option>';
+    });
+    html += '</optgroup>';
+  }
+  select.innerHTML = html;
+}
+
+// ─── Quando cliente muda ───
+function metaPublishClientChange() {
+  const clientKey = document.getElementById('metaPubClient').value;
+  const platformInput = document.getElementById('metaPubPlatform');
+  const infoDiv = document.getElementById('metaPubClientInfo');
+  const fbBtn = document.getElementById('metaPubPlatFb');
+  const igBtn = document.getElementById('metaPubPlatIg');
+
+  // Reset plataforma
+  platformInput.value = '';
+  fbBtn.classList.remove('selected');
+  igBtn.classList.remove('selected');
+  fbBtn.disabled = true;
+  igBtn.disabled = true;
+
+  if (!clientKey) {
+    infoDiv.innerHTML = '';
+    metaPublishUpdatePreview();
+    metaPublishValidateForm();
+    return;
+  }
+
+  const clients = _metaClients || {};
+  const c = clients[clientKey];
+  if (!c) { metaPublishValidateForm(); return; }
+
+  const hasFb = !!c.pageId;
+  const hasIg = !!c.igUserId;
+
+  fbBtn.disabled = !hasFb;
+  igBtn.disabled = !hasIg;
+
+  // Info line
+  if (!hasFb && !hasIg) {
+    infoDiv.innerHTML = '<span style="color:#ef4444">⚠️ Nenhuma página/IG configurada — <a href="#" onclick="switchTab(\'meta-config\');return false" style="color:#3b82f6">Configurar</a></span>';
+  } else {
+    const parts = [];
+    if (hasFb) parts.push('📄 ' + (c.pageName || 'Página FB'));
+    if (hasIg) parts.push('📷 @' + (c.igUsername || 'IG'));
+    if (c.adAccountId) parts.push('💰 Ads OK');
+    infoDiv.innerHTML = '<span style="color:#10b981">' + parts.join(' · ') + '</span>';
+  }
+
+  // Auto-seleciona se só tem uma
+  if (hasFb && !hasIg) metaPublishSelectPlatform('fb');
+  else if (hasIg && !hasFb) metaPublishSelectPlatform('ig');
+
+  metaPublishUpdatePreview();
+  metaPublishUpdateSteps();
+  metaPublishValidateForm();
+}
+
+// ─── Seleciona plataforma (botões visuais) ───
+function metaPublishSelectPlatform(platform) {
+  const platformInput = document.getElementById('metaPubPlatform');
+  const fbBtn = document.getElementById('metaPubPlatFb');
+  const igBtn = document.getElementById('metaPubPlatIg');
+
+  platformInput.value = platform;
+  fbBtn.classList.toggle('selected', platform === 'fb');
+  igBtn.classList.toggle('selected', platform === 'ig');
+
+  // Mostrar/esconder aviso de mídia obrigatória
+  const mediaChk = document.getElementById('metaPubChkMedia');
+  if (mediaChk) mediaChk.style.display = platform === 'ig' ? 'block' : 'none';
+
+  metaPublishUpdatePreview();
+  metaPublishUpdateSteps();
+  metaPublishValidateForm();
+}
+
+// ─── Agendamento change ───
+function metaPublishScheduleChange() {
+  const mode = document.getElementById('metaPubScheduleMode').value;
+  document.getElementById('metaPubDatetimeWrap').style.display = mode === 'schedule' ? 'block' : 'none';
+  if (mode === 'schedule') {
+    // Pré-preenche com amanhã 10h
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const dtInput = document.getElementById('metaPubDatetime');
+    if (!dtInput.value) {
+      dtInput.value = tomorrow.toISOString().slice(0, 16);
+    }
+  }
+  metaPublishUpdatePreview();
+}
+
+// ─── Caption input com inteligência ───
+function metaPublishCaptionInput() {
+  const caption = document.getElementById('metaPubCaption').value;
+  const len = caption.length;
+  const countEl = document.getElementById('metaPubCharCount');
+  const barFill = document.getElementById('metaPubCharBarFill');
+  const tipsEl = document.getElementById('metaPubCaptionTips');
+
+  countEl.textContent = len + ' / 2.200';
+  const pct = (len / 2200) * 100;
+  barFill.style.width = pct + '%';
+
+  if (pct > 90) { barFill.style.background = '#ef4444'; countEl.style.color = '#ef4444'; }
+  else if (pct > 70) { barFill.style.background = '#f59e0b'; countEl.style.color = '#f59e0b'; }
+  else { barFill.style.background = '#10b981'; countEl.style.color = 'var(--text-secondary)'; }
+
+  // Dicas inteligentes
+  const tips = [];
+  if (len > 0 && !caption.includes('#')) tips.push('💡 Adicione hashtags');
+  if (len > 300) tips.push('📏 Texto longo — IG trunca após ~125 chars');
+  const platform = document.getElementById('metaPubPlatform').value;
+  if (platform === 'ig' && len > 0 && !caption.match(/[\u{1F300}-\u{1FAD6}]/u)) tips.push('😊 Emojis ajudam no engajamento');
+  tipsEl.innerHTML = tips.join(' · ');
+
+  metaPublishUpdatePreview();
+  metaPublishUpdateSteps();
+  metaPublishValidateForm();
+}
+
+// ─── Steps indicator ───
+function metaPublishUpdateSteps() {
+  const clientKey = document.getElementById('metaPubClient').value;
+  const platform = document.getElementById('metaPubPlatform').value;
+  const caption = document.getElementById('metaPubCaption').value;
+
+  const s1 = document.getElementById('metaPubStep1');
+  const s2 = document.getElementById('metaPubStep2');
+  const s3 = document.getElementById('metaPubStep3');
+
+  s1.className = 'meta-pub-step' + (clientKey ? ' done' : ' active');
+  s2.className = 'meta-pub-step' + (platform ? ' done' : (clientKey ? ' active' : ''));
+  s3.className = 'meta-pub-step' + ((caption || _metaPubFiles.length) ? ' done' : (platform ? ' active' : ''));
+}
+
+// ─── Validação visual (checklist + botão) ───
+function metaPublishValidateForm() {
+  const clientKey = document.getElementById('metaPubClient').value;
+  const platform = document.getElementById('metaPubPlatform').value;
+  const caption = document.getElementById('metaPubCaption').value;
+  const hasMedia = _metaPubFiles.length > 0 || (document.getElementById('metaPubMediaUrl') && document.getElementById('metaPubMediaUrl').value);
+  const hasContent = !!caption || hasMedia;
+  const igNeedsMedia = platform === 'ig' && !hasMedia;
+
+  // Checklist visual
+  const chkClient = document.getElementById('metaPubChkClient');
+  const chkPlatform = document.getElementById('metaPubChkPlatform');
+  const chkContent = document.getElementById('metaPubChkContent');
+  const chkMedia = document.getElementById('metaPubChkMedia');
+
+  if (chkClient) {
+    chkClient.className = 'meta-pub-check' + (clientKey ? ' ok' : '');
+    chkClient.innerHTML = (clientKey ? '☑' : '☐') + ' Cliente selecionado';
+  }
+  if (chkPlatform) {
+    chkPlatform.className = 'meta-pub-check' + (platform ? ' ok' : '');
+    chkPlatform.innerHTML = (platform ? '☑' : '☐') + ' Plataforma escolhida';
+  }
+  if (chkContent) {
+    chkContent.className = 'meta-pub-check' + (hasContent ? ' ok' : '');
+    chkContent.innerHTML = (hasContent ? '☑' : '☐') + ' Legenda ou mídia adicionada';
+  }
+  if (chkMedia) {
+    chkMedia.className = 'meta-pub-check' + (!igNeedsMedia ? ' ok' : '');
+    chkMedia.innerHTML = (!igNeedsMedia ? '☑' : '☐') + ' Mídia obrigatória (Instagram)';
+  }
+
+  // Botão submit
+  const btn = document.getElementById('metaPubSubmitBtn');
+  const icon = document.getElementById('metaPubSubmitIcon');
+  const text = document.getElementById('metaPubSubmitText');
+  const mode = document.getElementById('metaPubScheduleMode').value;
+  const isValid = clientKey && platform && hasContent && !igNeedsMedia;
+
+  btn.disabled = !isValid;
+  if (!clientKey) { text.textContent = 'Selecione cliente e plataforma'; icon.innerHTML = '&#128228;'; }
+  else if (!platform) { text.textContent = 'Escolha a plataforma'; icon.innerHTML = '&#127760;'; }
+  else if (!hasContent) { text.textContent = 'Adicione legenda ou mídia'; icon.innerHTML = '✏️'; }
+  else if (igNeedsMedia) { text.textContent = 'Instagram exige mídia'; icon.innerHTML = '📷'; }
+  else if (mode === 'schedule') { text.textContent = 'Agendar Publicação'; icon.innerHTML = '📅'; }
+  else { text.textContent = 'Publicar Agora'; icon.innerHTML = '🚀'; }
+}
+
+// ─── Preview do post ───
+function metaPublishUpdatePreview() {
+  const clientKey = document.getElementById('metaPubClient').value;
+  const platform = document.getElementById('metaPubPlatform').value;
+  const caption = document.getElementById('metaPubCaption').value;
+  const mode = document.getElementById('metaPubScheduleMode').value;
+  const mediaUrl = document.getElementById('metaPubMediaUrl') ? document.getElementById('metaPubMediaUrl').value : '';
+
+  const clients = _metaClients || {};
+  const c = clientKey ? clients[clientKey] : null;
+
+  const nameEl = document.getElementById('metaPubPreviewName');
+  const metaEl = document.getElementById('metaPubPreviewMeta');
+  const avatarEl = document.getElementById('metaPubPreviewAvatar');
+  const captionEl = document.getElementById('metaPubPreviewCaption');
+  const mediaEl = document.getElementById('metaPubPreviewMedia');
+  const platLabel = document.getElementById('metaPubPreviewPlatLabel');
+  const timeEl = document.getElementById('metaPubPreviewTime');
+
+  if (!c) {
+    nameEl.textContent = 'Selecione um cliente';
+    metaEl.textContent = '—';
+    avatarEl.textContent = '?';
+    avatarEl.style.background = 'var(--accent)';
+    captionEl.textContent = 'A legenda aparecerá aqui...';
+    captionEl.style.color = 'var(--text-secondary)';
+    mediaEl.innerHTML = '<div style="color:var(--text-secondary);font-size:0.82rem;padding:20px;text-align:center">Adicione mídia para preview</div>';
+    platLabel.textContent = '—';
+    return;
+  }
+
+  const initial = (c.name || '?').charAt(0).toUpperCase();
+  avatarEl.textContent = initial;
+  avatarEl.style.background = c.tenant === 'alpha' ? '#f59e0b' : '#10b981';
+  nameEl.textContent = c.name || clientKey;
+
+  if (platform === 'fb') {
+    metaEl.textContent = c.pageName || 'Facebook';
+    platLabel.textContent = '📄 Facebook';
+    platLabel.style.background = '#dbeafe';
+    platLabel.style.color = '#1d4ed8';
+  } else if (platform === 'ig') {
+    metaEl.textContent = '@' + (c.igUsername || 'instagram');
+    platLabel.textContent = '📷 Instagram';
+    platLabel.style.background = '#fce7f3';
+    platLabel.style.color = '#be185d';
+  } else {
+    metaEl.textContent = 'Selecione a plataforma';
+    platLabel.textContent = '—';
+    platLabel.style.background = 'var(--bg-secondary)';
+    platLabel.style.color = 'var(--text-secondary)';
+  }
+
+  // Time
+  if (mode === 'schedule') {
+    const dt = document.getElementById('metaPubDatetime').value;
+    timeEl.textContent = dt ? new Date(dt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Agendado';
+  } else {
+    timeEl.textContent = 'Agora';
+  }
+
+  // Caption com formatação
+  if (caption) {
+    // Destaca hashtags em azul
+    const formatted = caption.replace(/(#\w+)/g, '<span style="color:#3b82f6;font-weight:600">$1</span>');
+    captionEl.innerHTML = '<span style="font-weight:600">' + (c.name || '') + '</span> ' + formatted;
+    captionEl.style.color = 'var(--text-primary)';
+  } else {
+    captionEl.textContent = 'A legenda aparecerá aqui...';
+    captionEl.style.color = 'var(--text-secondary)';
+  }
+
+  // Preview de mídia
+  if (_metaPubFiles.length > 0) {
+    mediaEl.innerHTML = '';
+    if (_metaPubFiles.length === 1) {
+      const file = _metaPubFiles[0];
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.style.cssText = 'width:100%;max-height:280px;object-fit:cover';
+        mediaEl.appendChild(img);
+      } else {
+        mediaEl.innerHTML = '<div style="padding:40px;text-align:center;font-size:2rem">🎬</div>';
+      }
+    } else {
+      // Multi-image grid
+      mediaEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:8px;overflow:hidden';
+      _metaPubFiles.slice(0, 4).forEach((file, idx) => {
+        if (file.type.startsWith('image/')) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(file);
+          img.style.cssText = 'width:100%;height:140px;object-fit:cover';
+          if (idx === 0 && _metaPubFiles.length === 3) img.style.gridRow = 'span 2';
+          mediaEl.appendChild(img);
+        }
+      });
+      if (_metaPubFiles.length > 4) {
+        const more = document.createElement('div');
+        more.style.cssText = 'position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 10px;border-radius:16px;font-size:0.78rem;font-weight:600';
+        more.textContent = '+' + (_metaPubFiles.length - 4) + ' mais';
+        mediaEl.style.position = 'relative';
+        mediaEl.appendChild(more);
+      }
+    }
+  } else if (mediaUrl) {
+    mediaEl.innerHTML = '<img src="' + mediaUrl + '" style="width:100%;max-height:280px;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=padding:20px;text-align:center;color:#ef4444>URL inválida ou inacessível</div>\'">';
+  } else {
+    mediaEl.innerHTML = '<div style="color:var(--text-secondary);font-size:0.82rem;padding:20px;text-align:center">Adicione mídia para preview</div>';
+    mediaEl.style.cssText = 'margin-bottom:12px;border-radius:8px;overflow:hidden;background:var(--bg-secondary);min-height:60px;display:flex;align-items:center;justify-content:center';
+  }
 }
 
 function metaPublishHandleDrop(event) {
-  const files = event.dataTransfer.files;
-  metaPublishHandleFiles(files);
+  metaPublishHandleFiles(event.dataTransfer.files);
 }
 
 function metaPublishHandleFiles(files) {
   for (let i = 0; i < files.length; i++) {
-    _metaPubFiles.push(files[i]);
+    const f = files[i];
+    if (f.size > 10 * 1024 * 1024) { alert(f.name + ' excede 10MB. Tamanho máximo permitido é 10MB.'); continue; }
+    _metaPubFiles.push(f);
   }
+  const countEl = document.getElementById('metaPubMediaCount');
+  if (countEl) countEl.textContent = _metaPubFiles.length ? '(' + _metaPubFiles.length + ' arquivo' + (_metaPubFiles.length > 1 ? 's' : '') + ')' : '';
   metaPublishRenderPreviews();
+  metaPublishUpdatePreview();
+  metaPublishValidateForm();
 }
 
 function metaPublishRenderPreviews() {
@@ -5265,65 +5825,87 @@ function metaPublishRenderPreviews() {
   container.innerHTML = '';
   _metaPubFiles.forEach((file, idx) => {
     const div = document.createElement('div');
-    div.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--border)';
+    div.style.cssText = 'position:relative;width:80px;height:80px;border-radius:10px;overflow:hidden;border:2px solid var(--border);transition:transform 0.2s';
+    div.onmouseenter = function() { this.style.transform = 'scale(1.05)'; };
+    div.onmouseleave = function() { this.style.transform = 'scale(1)'; };
     if (file.type.startsWith('image/')) {
       const img = document.createElement('img');
       img.src = URL.createObjectURL(file);
       img.style.cssText = 'width:100%;height:100%;object-fit:cover';
       div.appendChild(img);
     } else {
-      div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem">&#127909;</div>';
+      div.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem;background:var(--bg-secondary)">🎬</div>';
     }
     const removeBtn = document.createElement('button');
-    removeBtn.textContent = '×';
-    removeBtn.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1';
-    removeBtn.onclick = function() { _metaPubFiles.splice(idx, 1); metaPublishRenderPreviews(); };
+    removeBtn.textContent = '\u00d7';
+    removeBtn.style.cssText = 'position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:1;transition:background 0.2s';
+    removeBtn.onmouseenter = function() { this.style.background = '#ef4444'; };
+    removeBtn.onmouseleave = function() { this.style.background = 'rgba(0,0,0,0.7)'; };
+    removeBtn.onclick = function() {
+      _metaPubFiles.splice(idx, 1);
+      const countEl = document.getElementById('metaPubMediaCount');
+      if (countEl) countEl.textContent = _metaPubFiles.length ? '(' + _metaPubFiles.length + ' arquivo' + (_metaPubFiles.length > 1 ? 's' : '') + ')' : '';
+      metaPublishRenderPreviews();
+      metaPublishUpdatePreview();
+      metaPublishValidateForm();
+    };
     div.appendChild(removeBtn);
+    // Badge de ordem
+    const badge = document.createElement('div');
+    badge.style.cssText = 'position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,0.7);color:#fff;border-radius:4px;font-size:0.6rem;padding:1px 5px;font-weight:700';
+    badge.textContent = (idx + 1);
+    div.appendChild(badge);
     container.appendChild(div);
   });
 }
 
+// ─── Submit com feedback visual ───
 async function metaPublishSubmit() {
-  const dest = document.getElementById('metaPubDestination').value;
+  const clientKey = document.getElementById('metaPubClient').value;
+  const platform = document.getElementById('metaPubPlatform').value;
   const type = document.getElementById('metaPubType').value;
   const caption = document.getElementById('metaPubCaption').value;
   const mode = document.getElementById('metaPubScheduleMode').value;
   const datetime = document.getElementById('metaPubDatetime').value;
+  const mediaUrl = document.getElementById('metaPubMediaUrl') ? document.getElementById('metaPubMediaUrl').value : '';
   const statusDiv = document.getElementById('metaPubStatus');
-
-  if (!dest) { alert('Selecione um destino.'); return; }
-  if (!caption && !_metaPubFiles.length) { alert('Adicione uma legenda ou mídia.'); return; }
-
-  const [platform, tenant] = dest.split('_');
   const submitBtn = document.getElementById('metaPubSubmitBtn');
+  const submitText = document.getElementById('metaPubSubmitText');
+  const submitIcon = document.getElementById('metaPubSubmitIcon');
+
+  if (!clientKey) { alert('Selecione um cliente.'); return; }
+  if (!platform) { alert('Selecione a plataforma.'); return; }
+  if (!caption && !_metaPubFiles.length && !mediaUrl) { alert('Adicione uma legenda ou mídia.'); return; }
+  if (platform === 'ig' && _metaPubFiles.length === 0 && !mediaUrl) {
+    alert('Instagram exige mídia. Adicione imagem/vídeo ou URL de mídia.');
+    return;
+  }
+  if (mode === 'schedule' && datetime) {
+    const schedTime = new Date(datetime);
+    const minFuture = new Date(Date.now() + 10 * 60 * 1000);
+    if (schedTime < minFuture) { alert('Agendamento deve ser no mínimo 10 minutos no futuro.'); return; }
+  }
+
+  const clients = _metaClients || {};
+  const client = clients[clientKey];
+  const clientName = client ? client.name : clientKey;
+
   submitBtn.disabled = true;
-  submitBtn.textContent = 'Enviando...';
+  submitIcon.innerHTML = '⏳';
+  submitText.textContent = 'Publicando em ' + clientName + '...';
   statusDiv.style.display = 'block';
-  statusDiv.style.color = 'var(--text-secondary)';
-  statusDiv.textContent = 'Processando publicação...';
+  statusDiv.style.background = '#eff6ff';
+  statusDiv.style.color = '#1d4ed8';
+  statusDiv.innerHTML = '⏳ Enviando para Meta Graph API...';
 
   try {
-    // Step 1: Upload media se houver
-    let containerId = null;
-    let photoIds = [];
-
-    if (_metaPubFiles.length > 0) {
-      statusDiv.textContent = 'Fazendo upload da mídia...';
-      // TODO: Implementar upload para Supabase Storage + chamada /api/meta/media
-      // Por enquanto, placeholder
-      statusDiv.style.color = 'var(--warning,#f59e0b)';
-      statusDiv.textContent = 'Upload de mídia será implementado na Fase 4 completa. Testando apenas agendamento de texto.';
-    }
-
-    // Step 2: Publish/Schedule
     const body = {
       destination: platform,
-      tenant: tenant,
+      client: clientKey,
       caption: caption,
       type: type,
     };
-    if (containerId) body.container_id = containerId;
-    if (photoIds.length) body.photo_ids = photoIds;
+    if (mediaUrl) body.media_url = mediaUrl;
     if (mode === 'schedule' && datetime) {
       body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
     }
@@ -5336,29 +5918,91 @@ async function metaPublishSubmit() {
     const data = await res.json();
 
     if (data.error) {
-      statusDiv.style.color = 'var(--danger)';
-      statusDiv.textContent = 'Erro: ' + data.message;
+      statusDiv.style.background = '#fef2f2';
+      statusDiv.style.color = '#dc2626';
+      statusDiv.innerHTML = '❌ <b>Erro:</b> ' + data.message;
     } else {
-      statusDiv.style.color = 'var(--success,#10b981)';
-      statusDiv.textContent = (mode === 'schedule' ? 'Post agendado' : 'Post publicado') + ' com sucesso! ID: ' + (data.post_id || data.id);
+      const isScheduled = mode === 'schedule';
+      statusDiv.style.background = '#ecfdf5';
+      statusDiv.style.color = '#059669';
+      statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> ' + (data.client || clientName) + ' · ID: ' + (data.post_id || data.id);
+
+      // Histórico
+      _metaPubHistory.unshift({
+        client: data.client || clientName,
+        page: data.page || '',
+        platform: platform,
+        status: data.status,
+        post_id: data.post_id,
+        caption: caption.substring(0, 80) + (caption.length > 80 ? '...' : ''),
+        time: new Date().toLocaleString('pt-BR'),
+        scheduled: isScheduled ? datetime : null,
+      });
+      try { localStorage.setItem('metaPubHistory', JSON.stringify(_metaPubHistory.slice(0, 50))); } catch(e) {}
+      metaPublishRenderHistory();
+
       // Limpa form
       document.getElementById('metaPubCaption').value = '';
       document.getElementById('metaPubCharCount').textContent = '0 / 2.200';
+      document.getElementById('metaPubCharBarFill').style.width = '0%';
+      if (document.getElementById('metaPubMediaUrl')) document.getElementById('metaPubMediaUrl').value = '';
+      if (document.getElementById('metaPubCaptionTips')) document.getElementById('metaPubCaptionTips').innerHTML = '';
       _metaPubFiles = [];
       metaPublishRenderPreviews();
+      metaPublishUpdatePreview();
     }
   } catch (e) {
-    statusDiv.style.color = 'var(--danger)';
-    statusDiv.textContent = 'Erro de conexão: ' + e.message;
+    statusDiv.style.background = '#fef2f2';
+    statusDiv.style.color = '#dc2626';
+    statusDiv.innerHTML = '❌ <b>Erro de conexão:</b> ' + e.message;
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = '\u{1F4E4} Publicar';
+    metaPublishValidateForm();
   }
 }
 
-function metaPublishLoadScheduled() {
-  // Placeholder — será implementado quando publish estiver funcional
-  document.getElementById('metaPubScheduledList').textContent = 'Funcionalidade disponível após primeira publicação agendada';
+// ─── Filtro do histórico ───
+function metaPublishFilterHistory(filter, btn) {
+  _metaPubHistoryFilter = filter;
+  document.querySelectorAll('.meta-pub-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  metaPublishRenderHistory();
+}
+
+// ─── Render histórico aprimorado ───
+function metaPublishRenderHistory() {
+  const container = document.getElementById('metaPubHistory');
+  const filtered = _metaPubHistoryFilter === 'all' ? _metaPubHistory : _metaPubHistory.filter(h => h.status === _metaPubHistoryFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">'
+      + '<div style="font-size:2rem;margin-bottom:8px">📭</div>'
+      + (_metaPubHistory.length === 0 ? 'Nenhuma publicação realizada nesta sessão' : 'Nenhuma publicação com filtro "' + _metaPubHistoryFilter + '"')
+      + '</div>';
+    return;
+  }
+
+  let html = '<div style="padding:8px">';
+  filtered.forEach((h, idx) => {
+    const platIcon = h.platform === 'ig' ? '📷' : '📄';
+    const platName = h.platform === 'ig' ? 'Instagram' : 'Facebook';
+    const statusBg = h.status === 'PUBLISHED' ? '#ecfdf5' : '#fffbeb';
+    const statusColor = h.status === 'PUBLISHED' ? '#059669' : '#b45309';
+    const statusIcon = h.status === 'PUBLISHED' ? '✅' : '📅';
+
+    html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;background:' + statusBg + ';border:1px solid ' + (h.status === 'PUBLISHED' ? '#a7f3d0' : '#fde68a') + '">'
+      + '<div style="font-size:1.3rem">' + statusIcon + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="font-weight:700;font-size:0.85rem">' + h.client + ' <span style="font-weight:400;color:var(--text-secondary)">· ' + platIcon + ' ' + platName + '</span></div>'
+      + '<div style="font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + h.caption + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;flex-shrink:0">'
+      + '<div style="font-size:0.72rem;font-weight:700;color:' + statusColor + '">' + h.status + '</div>'
+      + '<div style="font-size:0.68rem;color:var(--text-secondary)">' + h.time + '</div>'
+      + '</div></div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
 }
 </script>
 </body>
