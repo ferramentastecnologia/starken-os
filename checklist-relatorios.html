@@ -8126,69 +8126,103 @@ async function ctHandleFileUpload(files, category) {
 async function ctPublishFromModal() {
   if (!ctModalTask) return;
 
-  const platform = document.getElementById('ctPubFb').classList.contains('selected') ? 'fb' :
-                    document.getElementById('ctPubIg').classList.contains('selected') ? 'ig' : null;
-  if (!platform) { alert('Selecione a plataforma (Facebook ou Instagram)'); return; }
+  // Multi-platform support
+  const platforms = [];
+  if (document.getElementById('ctPubFb').classList.contains('selected')) platforms.push('fb');
+  if (document.getElementById('ctPubIg').classList.contains('selected')) platforms.push('ig');
+  if (platforms.length === 0) { alert('Selecione a plataforma (Facebook e/ou Instagram)'); return; }
 
   const copy = ctModalTask.copy_text || '';
   if (!copy) { alert('Preencha a Copy do Post antes de publicar'); return; }
 
   const mode = document.getElementById('ctPubMode').value;
   const datetime = document.getElementById('ctPubDatetime').value;
+  const isSchedule = mode === 'schedule' && datetime;
 
   const statusDiv = document.getElementById('ctPubStatus');
   statusDiv.style.display = 'block';
   statusDiv.innerHTML = '⏳ Publicando...';
   statusDiv.style.color = '#1d4ed8';
 
-  // Find creative attachment for image_url
+  // Find ALL creative attachments (for carousel support)
   const data = await ctApi('list_attachments', { task_id: ctModalTask.id });
   const attachments = Array.isArray(data) ? data : (data.attachments || []);
-  const creative = attachments.find(a => a.category === 'creative' || a.category === 'final');
+  const creatives = attachments.filter(a => a.category === 'creative' || a.category === 'final');
+  const imageUrls = creatives.map(a => a.file_url);
 
-  const body = {
-    destination: platform,
-    client: ctCurrentClient,
-    caption: copy,
-    type: 'feed',
-    user: ctGetUser(),
-  };
+  const clientName = document.getElementById('ctClientFilter').selectedOptions[0]?.text || ctCurrentClient;
+  let successCount = 0;
+  let results = [];
 
-  if (creative) body.image_url = creative.file_url;
-  if (mode === 'schedule' && datetime) {
-    body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+  for (const plat of platforms) {
+    const platLabel = plat === 'fb' ? 'Facebook' : 'Instagram';
+    statusDiv.innerHTML = '⏳ Publicando em ' + platLabel + '...';
+
+    // IG + Agendamento → fila
+    if (plat === 'ig' && isSchedule) {
+      try {
+        const qRes = await fetch(ctApiBase() + '/api/meta/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'queue',
+            client_key: ctCurrentClient,
+            client_name: clientName,
+            platform: 'ig',
+            caption: copy,
+            image_urls: imageUrls,
+            scheduled_for: new Date(datetime).toISOString(),
+            user_name: ctGetUser(),
+          }),
+        });
+        const qData = await qRes.json();
+        results.push({ plat: platLabel, ok: !qData.error, msg: qData.error ? qData.message : 'Agendado' });
+        if (!qData.error) successCount++;
+      } catch(e) { results.push({ plat: platLabel, ok: false, msg: e.message }); }
+      continue;
+    }
+
+    // FB or immediate publish
+    const body = {
+      destination: plat,
+      client: ctCurrentClient,
+      caption: copy,
+      type: imageUrls.length > 1 ? 'carousel' : 'feed',
+      user: ctGetUser(),
+    };
+    if (imageUrls.length > 1) body.image_urls = imageUrls;
+    else if (imageUrls.length === 1) body.image_url = imageUrls[0];
+    if (plat === 'fb' && isSchedule) {
+      body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+    }
+
+    try {
+      const res = await fetch(ctApiBase() + '/api/meta/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const result = await res.json();
+      results.push({ plat: platLabel, ok: !result.error, msg: result.error ? result.message : (isSchedule ? 'Agendado' : 'Publicado'), postId: result.post_id });
+      if (!result.error) successCount++;
+    } catch (e) {
+      results.push({ plat: platLabel, ok: false, msg: e.message });
+    }
   }
 
-  try {
-    const res = await fetch(ctApiBase() + '/api/meta/publish', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const result = await res.json();
-
-    if (result.error) {
-      statusDiv.innerHTML = '❌ ' + result.message;
-      statusDiv.style.color = '#dc2626';
-    } else {
-      const isScheduled = mode === 'schedule';
-      statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!';
-      statusDiv.style.color = '#059669';
-
-      // Auto-update status
-      const newStatus = isScheduled ? 'agendado' : 'publicado';
-      await ctChangeModalStatus(newStatus);
-
-      // Save meta post id
-      await ctApi('upsert_task', {
-        id: ctModalTask.id,
-        meta_post_id: result.post_id,
-        publish_config: body,
-        user: ctGetUser(),
-      });
+  // Show combined results
+  if (successCount > 0) {
+    const platNames = results.filter(r => r.ok).map(r => r.plat).join(' + ');
+    statusDiv.innerHTML = (isSchedule ? '📅' : '✅') + ' <b>' + platNames + '</b> — ' + (isSchedule ? 'Agendado' : 'Publicado') + ' com sucesso!';
+    statusDiv.style.color = '#059669';
+    if (results.some(r => !r.ok)) {
+      statusDiv.innerHTML += '<br>⚠️ Falhou: ' + results.filter(r => !r.ok).map(r => r.plat + ': ' + r.msg).join(', ');
     }
-  } catch (e) {
-    statusDiv.innerHTML = '❌ Erro: ' + e.message;
+    // Auto-update task status
+    const newStatus = isSchedule ? 'agendado' : 'publicado';
+    await ctChangeModalStatus(newStatus);
+  } else {
+    statusDiv.innerHTML = '❌ Erro: ' + results.map(r => r.plat + ': ' + r.msg).join(' | ');
     statusDiv.style.color = '#dc2626';
   }
 }
