@@ -1248,6 +1248,16 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-row.drag-over-center { background:rgba(59,130,246,0.08) !important;outline:2px dashed var(--accent,#3b82f6);outline-offset:-2px;border-radius:6px; }
 .ct-row.dragging { opacity:0.4;background:var(--starken-bg); }
 
+/* Selection action bar */
+.ct-action-bar { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text,#0f172a);color:#fff;padding:10px 20px;border-radius:12px;display:none;align-items:center;gap:16px;z-index:9998;box-shadow:0 8px 30px rgba(0,0,0,0.3);font-size:0.85rem;animation:ctSlideUp 0.2s ease; }
+.ct-action-bar.show { display:flex; }
+@keyframes ctSlideUp { from { transform:translateX(-50%) translateY(20px);opacity:0; } to { transform:translateX(-50%) translateY(0);opacity:1; } }
+.ct-action-bar button { background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.82rem;display:flex;align-items:center;gap:5px;transition:background 0.15s; }
+.ct-action-bar button:hover { background:rgba(255,255,255,0.25); }
+.ct-action-bar .ct-ab-delete { background:rgba(239,68,68,0.8); }
+.ct-action-bar .ct-ab-delete:hover { background:#ef4444; }
+.ct-action-bar .ct-ab-count { font-weight:700;font-size:0.92rem;margin-right:4px; }
+
 /* Show add-sub button on row hover */
 .ct-row:hover .ct-add-sub-btn { opacity:0.6 !important; }
 .ct-add-sub-btn:hover { opacity:1 !important;color:var(--accent,#3b82f6) !important; }
@@ -1947,7 +1957,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
           <!-- Task List -->
           <div class="ct-list" id="ctList">
             <div class="ct-header-row">
-              <div>Nome</div>
+              <div><input type="checkbox" id="ctSelectAll" onclick="ctToggleSelectAll()" style="margin-right:6px;cursor:pointer;accent-color:var(--accent,#3b82f6)">Nome</div>
               <div>Status</div>
               <div>Responsável</div>
               <div>Data</div>
@@ -1960,6 +1970,16 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
                 Selecione um cliente para ver as tarefas
               </div>
             </div>
+          </div>
+
+          <!-- Floating Action Bar -->
+          <div class="ct-action-bar" id="ctActionBar">
+            <span class="ct-ab-count" id="ctSelCount">0</span> <span>selecionadas</span>
+            <button onclick="ctBulkChangeStatus()">📝 Status</button>
+            <button onclick="ctBulkChangeAssignee()">👤 Responsável</button>
+            <button onclick="ctBulkChangePriority()">🏳️ Prioridade</button>
+            <button class="ct-ab-delete" onclick="ctBulkDelete()">🗑️ Excluir</button>
+            <button onclick="ctClearSelection()" style="font-size:0.75rem;padding:6px 10px">✕</button>
           </div>
         </div>
       </div>
@@ -7057,8 +7077,9 @@ function ctRenderList() {
         const indent = 36 + (depth * 24);
         const canAddSub = depth < 5;
 
-        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" style="padding-left:' + indent + 'px">'
+        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" data-task-name="' + (task.name||'').replace(/"/g,'&quot;') + '" style="padding-left:' + indent + 'px">'
           + '<div class="ct-name">'
+          + '<input type="checkbox" class="ct-select-check" data-id="' + task.id + '" onclick="event.stopPropagation();ctUpdateSelection()" style="margin-right:4px;cursor:pointer;accent-color:var(--accent,#3b82f6)">'
           + '<span class="ct-drag-handle" draggable="true" ondragstart="ctDragStart(event)" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.85rem;user-select:none">⠿</span>'
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
           + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
@@ -7659,7 +7680,140 @@ function ctSelectPlatform(platform) {
   document.getElementById('ctPubIg').classList.toggle('selected', platform === 'ig');
 }
 
-// ─── LIGHTBOX (visualizar imagem grande) ───
+// ─── SELEÇÃO E AÇÕES EM MASSA ───
+let ctSelectedIds = new Set();
+
+function ctUpdateSelection() {
+  ctSelectedIds.clear();
+  document.querySelectorAll('.ct-select-check:checked').forEach(cb => ctSelectedIds.add(cb.dataset.id));
+  const bar = document.getElementById('ctActionBar');
+  const count = ctSelectedIds.size;
+  document.getElementById('ctSelCount').textContent = count;
+  bar.classList.toggle('show', count > 0);
+  // Update select all checkbox
+  const total = document.querySelectorAll('.ct-select-check').length;
+  const selectAll = document.getElementById('ctSelectAll');
+  if (selectAll) {
+    selectAll.checked = count > 0 && count === total;
+    selectAll.indeterminate = count > 0 && count < total;
+  }
+}
+
+function ctToggleSelectAll() {
+  const selectAll = document.getElementById('ctSelectAll');
+  document.querySelectorAll('.ct-select-check').forEach(cb => { cb.checked = selectAll.checked; });
+  ctUpdateSelection();
+}
+
+function ctClearSelection() {
+  document.querySelectorAll('.ct-select-check').forEach(cb => { cb.checked = false; });
+  const selectAll = document.getElementById('ctSelectAll');
+  if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
+  ctUpdateSelection();
+}
+
+async function ctBulkDelete() {
+  const count = ctSelectedIds.size;
+  if (count === 0) return;
+  // Build names for confirmation
+  const names = [];
+  ctSelectedIds.forEach(id => {
+    const row = document.querySelector('.ct-row[data-task-id="' + id + '"]');
+    if (row) names.push(row.dataset.taskName || 'Task');
+  });
+  const msg = count === 1
+    ? 'Excluir "' + names[0] + '"? Subtarefas também serão excluídas.'
+    : 'Excluir ' + count + ' tarefas?\n\n' + names.slice(0, 5).join('\n') + (names.length > 5 ? '\n... e mais ' + (names.length - 5) : '') + '\n\nSubtarefas também serão excluídas.';
+  if (!confirm(msg)) return;
+  // Delete all in parallel
+  await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('delete_task', { id })));
+  ctSelectedIds.clear();
+  ctUpdateSelection();
+  ctLoadGroups();
+}
+
+async function ctBulkChangeStatus() {
+  if (ctSelectedIds.size === 0) return;
+  // Show status picker
+  const fakeEvent = { stopPropagation: () => {}, currentTarget: document.getElementById('ctActionBar').querySelector('button') };
+  ctCloseDropdowns();
+  const rect = fakeEvent.currentTarget.getBoundingClientRect();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.bottom = '70px';
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.position = 'fixed';
+  CT_STATUSES.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'ct-dropdown-item';
+    item.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></span>' + s.label;
+    item.onclick = async () => {
+      ctCloseDropdowns();
+      await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('change_status', { id, status: s.key, user: ctGetUser() })));
+      ctClearSelection();
+      ctLoadGroups();
+    };
+    dropdown.appendChild(item);
+  });
+  document.body.appendChild(dropdown);
+  ctActiveDropdown = dropdown;
+  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+}
+
+async function ctBulkChangeAssignee() {
+  if (ctSelectedIds.size === 0) return;
+  const buttons = document.getElementById('ctActionBar').querySelectorAll('button');
+  const rect = buttons[1].getBoundingClientRect();
+  ctCloseDropdowns();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.bottom = '70px';
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.position = 'fixed';
+  CT_USERS.forEach(u => {
+    const item = document.createElement('div');
+    item.className = 'ct-dropdown-item';
+    item.innerHTML = '<div class="ct-assignee-avatar" style="background:' + u.color + '">' + u.name.substring(0,2).toUpperCase() + '</div>' + u.name;
+    item.onclick = async () => {
+      ctCloseDropdowns();
+      await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('upsert_task', { id, assignee: u.name, user: ctGetUser() })));
+      ctClearSelection();
+      ctLoadGroups();
+    };
+    dropdown.appendChild(item);
+  });
+  document.body.appendChild(dropdown);
+  ctActiveDropdown = dropdown;
+  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+}
+
+async function ctBulkChangePriority() {
+  if (ctSelectedIds.size === 0) return;
+  const buttons = document.getElementById('ctActionBar').querySelectorAll('button');
+  const rect = buttons[2].getBoundingClientRect();
+  ctCloseDropdowns();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.bottom = '70px';
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.position = 'fixed';
+  CT_PRIORITIES.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'ct-dropdown-item';
+    item.innerHTML = p.icon + ' ' + p.label;
+    item.onclick = async () => {
+      ctCloseDropdowns();
+      await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('upsert_task', { id, priority: p.key, user: ctGetUser() })));
+      ctClearSelection();
+      ctLoadGroups();
+    };
+    dropdown.appendChild(item);
+  });
+  document.body.appendChild(dropdown);
+  ctActiveDropdown = dropdown;
+  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+}
+
 // ─── DRAG & DROP ───
 let ctDraggedId = null;
 let ctDraggedParent = null;
