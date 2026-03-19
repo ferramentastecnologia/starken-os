@@ -7173,7 +7173,8 @@ function ctCloseDropdowns() {
 function ctShowStatusDropdown(event, taskId) {
   event.stopPropagation();
   ctCloseDropdowns();
-  const rect = event.currentTarget.getBoundingClientRect();
+  const triggerBtn = event.currentTarget; // capture before async
+  const rect = triggerBtn.getBoundingClientRect();
   const dropdown = document.createElement('div');
   dropdown.className = 'ct-dropdown';
   dropdown.style.top = (rect.bottom + 4) + 'px';
@@ -7187,15 +7188,13 @@ function ctShowStatusDropdown(event, taskId) {
     item.onclick = async (e) => {
       e.stopPropagation();
       // Optimistic: update button instantly
-      const btn = event.currentTarget;
-      btn.textContent = s.label;
-      btn.style.background = s.bg || '';
-      btn.style.color = s.color || '';
+      triggerBtn.textContent = s.label;
+      triggerBtn.style.background = s.bg || '';
+      triggerBtn.style.color = s.color || '';
       ctCloseDropdowns();
       if (taskId === 'modal') {
         await ctChangeModalStatus(s.key);
       } else {
-        // Fire API in background, reload after
         ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() }).then(() => ctLoadGroups());
       }
     };
@@ -7256,7 +7255,8 @@ function ctShowAssigneeDropdown(event, taskId) {
 function ctShowPriorityDropdown(event, taskId) {
   event.stopPropagation();
   ctCloseDropdowns();
-  const rect = event.currentTarget.getBoundingClientRect();
+  const triggerEl = event.currentTarget; // capture before async
+  const rect = triggerEl.getBoundingClientRect();
   const dropdown = document.createElement('div');
   dropdown.className = 'ct-dropdown';
   dropdown.style.top = (rect.bottom + 4) + 'px';
@@ -7270,7 +7270,7 @@ function ctShowPriorityDropdown(event, taskId) {
     item.onclick = async (e) => {
       e.stopPropagation();
       // Optimistic: update icon instantly
-      event.currentTarget.innerHTML = p.icon;
+      triggerEl.innerHTML = p.icon;
       ctCloseDropdowns();
       if (taskId === 'modal') {
         await ctSaveTaskField('priority', p.key);
