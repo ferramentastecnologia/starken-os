@@ -15,7 +15,7 @@
  * Retorna: post_id, status (PUBLISHED | SCHEDULED)
  */
 
-const { graphPost } = require('./_lib/graph');
+const { graphPost, graphPostForm } = require('./_lib/graph');
 const { validateTenant } = require('./_lib/tenants');
 
 module.exports = async function handler(req, res) {
@@ -88,35 +88,56 @@ module.exports = async function handler(req, res) {
 
       const { image_url } = req.body || {};
 
-      // ─── ESTRATÉGIA 1: Post com imagem → publica direto via /{page_id}/photos ───
+      // ─── COM IMAGEM ───
       if (image_url) {
-        const photoBody = {
-          url: image_url,
-          caption: caption || '',
-          access_token: tenant.pageAccessToken,
-        };
 
-        // Agendamento com imagem
-        if (scheduled_publish_time) {
-          photoBody.scheduled_publish_time = scheduled_publish_time;
-          photoBody.published = false;
+        // PUBLICAR AGORA com imagem → POST direto em /{page_id}/photos
+        if (!scheduled_publish_time) {
+          const photoRes = await graphPost(`/${tenant.pageId}/photos`, {
+            url: image_url,
+            caption: caption || '',
+            access_token: tenant.pageAccessToken,
+          });
+
+          return res.status(201).json({
+            post_id: photoRes.id || photoRes.post_id,
+            status: 'PUBLISHED',
+            has_image: true,
+            client: tenant.name || tenant.key,
+            page: tenant.pageName || tenant.pageId,
+          });
         }
 
-        const photoRes = await graphPost(`/${tenant.pageId}/photos`, photoBody);
+        // AGENDAR com imagem → 2 passos:
+        // 1. Upload foto não publicada
+        const uploadRes = await graphPost(`/${tenant.pageId}/photos`, {
+          url: image_url,
+          published: false,
+          access_token: tenant.pageAccessToken,
+        });
+        const photoId = uploadRes.id;
+
+        // 2. Agendar via /{page_id}/feed com attached_media (form-urlencoded)
+        const schedRes = await graphPostForm(`/${tenant.pageId}/feed`, {
+          message: caption || '',
+          'attached_media[0]': JSON.stringify({ media_fbid: photoId }),
+          scheduled_publish_time: scheduled_publish_time,
+          published: 'false',
+          access_token: tenant.pageAccessToken,
+        });
 
         return res.status(201).json({
-          post_id: photoRes.id || photoRes.post_id,
-          status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',
+          post_id: schedRes.id,
+          status: 'SCHEDULED',
           has_image: true,
+          photo_id: photoId,
           client: tenant.name || tenant.key,
           page: tenant.pageName || tenant.pageId,
-          scheduled_for: scheduled_publish_time
-            ? new Date(scheduled_publish_time * 1000).toISOString()
-            : null,
+          scheduled_for: new Date(scheduled_publish_time * 1000).toISOString(),
         });
       }
 
-      // ─── ESTRATÉGIA 2: Post só texto → publica via /{page_id}/feed ───
+      // ─── SEM IMAGEM (texto) ───
       const postBody = {
         message: caption || '',
         access_token: tenant.pageAccessToken,

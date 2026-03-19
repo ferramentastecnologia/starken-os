@@ -6237,11 +6237,23 @@ function metaPublishRenderHistory() {
     const statusColor = h.status === 'PUBLISHED' ? '#059669' : '#b45309';
     const statusIcon = h.status === 'PUBLISHED' ? '✅' : '📅';
 
+    // Formata data de agendamento
+    let schedInfo = '';
+    if (h.scheduled && h.status === 'SCHEDULED') {
+      const schedDate = new Date(h.scheduled);
+      schedInfo = '<div style="font-size:0.7rem;color:#b45309;font-weight:600;margin-top:2px">📅 Agendado para: '
+        + schedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+        + ' às ' + schedDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        + '</div>';
+    }
+
     html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;background:' + statusBg + ';border:1px solid ' + (h.status === 'PUBLISHED' ? '#a7f3d0' : '#fde68a') + '">'
       + '<div style="font-size:1.3rem">' + statusIcon + '</div>'
       + '<div style="flex:1;min-width:0">'
-      + '<div style="font-weight:700;font-size:0.85rem">' + h.client + ' <span style="font-weight:400;color:var(--text-secondary)">· ' + platIcon + ' ' + platName + '</span></div>'
+      + '<div style="font-weight:700;font-size:0.85rem">' + h.client + ' <span style="font-weight:400;color:var(--text-secondary)">· ' + platIcon + ' ' + platName
+      + (h.hasImage ? ' · 🖼️' : '') + '</span></div>'
       + '<div style="font-size:0.78rem;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + h.caption + '</div>'
+      + schedInfo
       + '</div>'
       + '<div style="text-align:right;flex-shrink:0">'
       + '<div style="font-size:0.72rem;font-weight:700;color:' + statusColor + '">' + h.status + '</div>'

@@ -108,4 +108,38 @@ async function graphPost(path, body = {}) {
   return data;
 }
 
-module.exports = { graphGet, graphPost, BASE_URL };
+/**
+ * POST request using application/x-www-form-urlencoded
+ * Necessário para attached_media e outros params que Meta não aceita em JSON
+ */
+async function graphPostForm(path, body = {}) {
+  const token = getToken();
+  const url = `${BASE_URL}${path}`;
+
+  const params = new URLSearchParams();
+  params.append('access_token', token);
+  for (const [key, value] of Object.entries(body)) {
+    if (value !== undefined && value !== null) {
+      params.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
+    }
+  }
+
+  const response = await requestWithRetry(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: params.toString(),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw normalizeError(data, response.status);
+  }
+
+  return data;
+}
+
+module.exports = { graphGet, graphPost, graphPostForm, BASE_URL };
