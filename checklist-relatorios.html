@@ -4549,21 +4549,70 @@ function doLogin() {
   const pin  = document.getElementById('loginPin').value;
   const user = GP_USERS.find(u => u.name === name && u.pin === pin);
   if (user) {
-    gpState.user = user;
-    document.getElementById('sbUserAvatar').textContent = user.name.substring(0,2).toUpperCase();
-    document.getElementById('sbUserAvatar').style.background = user.color;
-    document.getElementById('sbUserName').textContent = user.name;
-    document.getElementById('loginPage').classList.add('hidden');
-    document.getElementById('mainApp').classList.remove('hidden');
-    document.getElementById('menuToggleBtn').classList.remove('hidden');
-    Gestao.populateClientFilter();
+    activateSession(user);
   } else {
     document.getElementById('loginError').classList.add('show');
   }
 }
 
+// Ativa sessão (login ou restore)
+function activateSession(user) {
+  gpState.user = user;
+  document.getElementById('sbUserAvatar').textContent = user.name.substring(0,2).toUpperCase();
+  document.getElementById('sbUserAvatar').style.background = user.color;
+  document.getElementById('sbUserName').textContent = user.name;
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('menuToggleBtn').classList.remove('hidden');
+  Gestao.populateClientFilter();
+  // Persiste sessão
+  try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, pin: user.pin })); } catch(e) {}
+  // Pré-carrega meta clients para todas as abas
+  metaClientsPreload();
+}
+
+// Pré-carrega clientes Meta no init (sem depender da aba Config)
+function metaClientsPreload() {
+  if (_metaClients && Object.keys(_metaClients).length > 0) return; // Já carregado
+  // 1. Tenta localStorage primeiro (instantâneo)
+  try {
+    const local = localStorage.getItem(META_CLIENTS_LS_KEY);
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (parsed && Object.keys(parsed).length > 0) {
+        _metaClients = parsed;
+        console.info('Meta clients carregados do localStorage (' + Object.keys(parsed).length + ' clientes)');
+      }
+    }
+  } catch(e) {}
+  // 2. Busca do servidor (Supabase) em background
+  fetch(metaApiBase() + '/api/meta/config').then(r => r.json()).then(data => {
+    if (data.configured && data.config?.clients && Object.keys(data.config.clients).length > 0) {
+      _metaClients = data.config.clients;
+      try { localStorage.setItem(META_CLIENTS_LS_KEY, JSON.stringify(_metaClients)); } catch(e) {}
+      console.info('Meta clients atualizados do servidor (' + Object.keys(_metaClients).length + ' clientes)');
+    }
+  }).catch(() => {});
+}
+
+// Auto-restore sessão no carregamento
+(function restoreSession() {
+  try {
+    const saved = localStorage.getItem('starkenSession');
+    if (saved) {
+      const { name, pin } = JSON.parse(saved);
+      const user = GP_USERS.find(u => u.name === name && u.pin === pin);
+      if (user) {
+        activateSession(user);
+        return;
+      }
+    }
+  } catch(e) {}
+})();
+
 document.getElementById('gpLogoutBtn').addEventListener('click', () => {
   gpState.user = null;
+  try { localStorage.removeItem('starkenSession'); } catch(e) {}
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('menuToggleBtn').classList.add('hidden');
