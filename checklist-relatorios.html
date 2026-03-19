@@ -1253,6 +1253,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-action-bar { position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--text,#0f172a);color:#fff;padding:10px 20px;border-radius:12px;display:none;align-items:center;gap:16px;z-index:9998;box-shadow:0 8px 30px rgba(0,0,0,0.3);font-size:0.85rem;animation:ctSlideUp 0.2s ease; }
 .ct-action-bar.show { display:flex; }
 @keyframes ctSlideUp { from { transform:translateX(-50%) translateY(20px);opacity:0; } to { transform:translateX(-50%) translateY(0);opacity:1; } }
+@keyframes alertSlideIn { from { transform:translateX(100px);opacity:0; } to { transform:translateX(0);opacity:1; } }
 .ct-action-bar button { background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.82rem;display:flex;align-items:center;gap:5px;transition:background 0.15s; }
 .ct-action-bar button:hover { background:rgba(255,255,255,0.25); }
 .ct-action-bar .ct-ab-delete { background:rgba(239,68,68,0.8); }
@@ -2791,21 +2792,127 @@ document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
 
-  // ─── PUBLISH QUEUE PROCESSOR (polling every 2 min) ───
-  // Processa fila de agendamentos IG enquanto o sistema estiver aberto
+  // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
+  let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
+
+  async function processQueueAndCheckAlerts() {
+    try {
+      // 1. Processa fila
+      const cronRes = await fetch(metaApiBase() + '/api/meta/publish?cron=process');
+      const cronData = await cronRes.json();
+
+      // 2. Verifica alertas — busca FAILED e QUEUED atrasados
+      const histRes = await fetch(metaApiBase() + '/api/meta/publish?limit=20');
+      const histData = await histRes.json();
+      const items = histData.history || [];
+
+      const alerts = [];
+      const now = new Date();
+
+      items.forEach(h => {
+        const key = h.id || h.post_id;
+        if (_alertsShown[key]) return; // Já mostrou
+
+        // FAILED posts
+        if (h.status === 'FAILED') {
+          alerts.push({
+            type: 'error',
+            icon: '❌',
+            title: 'Publicação falhou',
+            message: (h.client_name || 'Cliente') + ' · ' + (h.platform === 'ig' ? 'Instagram' : 'Facebook'),
+            key: key,
+          });
+        }
+
+        // QUEUED posts que passaram da hora (atrasados > 5 min)
+        if (h.status === 'SCHEDULED' && h.scheduled_for) {
+          const scheduledTime = new Date(h.scheduled_for);
+          const delayMs = now - scheduledTime;
+          if (delayMs > 5 * 60 * 1000) { // > 5 min atrasado
+            alerts.push({
+              type: 'warning',
+              icon: '⚠️',
+              title: 'Agendamento atrasado',
+              message: (h.client_name || 'Cliente') + ' · Deveria ter publicado ' + Math.round(delayMs / 60000) + ' min atrás',
+              key: key,
+            });
+          }
+        }
+      });
+
+      // Mostra alertas
+      if (alerts.length > 0) {
+        showAlertNotifications(alerts);
+      }
+
+      // Atualiza badge
+      updateAlertBadge(alerts.length);
+
+      // Se o cron publicou algo, atualiza a lista
+      if (cronData.processed > 0 && typeof metaPublishLoadHistory === 'function') {
+        metaPublishLoadHistory();
+      }
+    } catch (e) { /* silently fail */ }
+  }
+
+  function showAlertNotifications(alerts) {
+    alerts.forEach((alert, i) => {
+      // Marca como mostrado
+      _alertsShown[alert.key] = true;
+
+      // Cria toast notification
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;top:' + (20 + i * 80) + 'px;right:20px;z-index:99999;background:' + (alert.type === 'error' ? '#fef2f2' : '#fffbeb') + ';border:1px solid ' + (alert.type === 'error' ? '#fecaca' : '#fde68a') + ';border-left:4px solid ' + (alert.type === 'error' ? '#ef4444' : '#f59e0b') + ';border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:360px;font-family:inherit;animation:alertSlideIn 0.3s ease;cursor:pointer';
+      toast.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:2px">' + alert.icon + ' ' + alert.title + '</div><div style="font-size:0.78rem;color:var(--text-secondary)">' + alert.message + '</div>';
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1rem;cursor:pointer;color:var(--text-muted)';
+      closeBtn.onclick = function(e) { e.stopPropagation(); toast.remove(); };
+      toast.appendChild(closeBtn);
+
+      toast.onclick = function() {
+        // Navega para agendamento
+        if (typeof switchTab === 'function') switchTab('meta-publish');
+        toast.remove();
+      };
+
+      document.body.appendChild(toast);
+
+      // Auto-remove após 15s
+      setTimeout(() => { if (toast.parentElement) toast.remove(); }, 15000);
+    });
+
+    // Salva alertas mostrados
+    try { localStorage.setItem('starken_alerts_shown', JSON.stringify(_alertsShown)); } catch(e) {}
+  }
+
+  function updateAlertBadge(count) {
+    let badge = document.getElementById('alertBadge');
+    if (count > 0) {
+      if (!badge) {
+        // Cria badge no sidebar do Agendamento
+        const agendBtn = document.querySelector('button[onclick*="meta-publish"]');
+        if (agendBtn) {
+          badge = document.createElement('span');
+          badge.id = 'alertBadge';
+          badge.style.cssText = 'background:#ef4444;color:#fff;border-radius:50%;font-size:0.6rem;font-weight:700;padding:1px 5px;margin-left:auto';
+          agendBtn.appendChild(badge);
+        }
+      }
+      if (badge) badge.textContent = count;
+    } else if (badge) {
+      badge.remove();
+    }
+  }
+
   function startQueueProcessor() {
     if (_queueInterval) return;
-    // Primeira execução após 30s (dar tempo de carregar)
-    setTimeout(() => {
-      fetch(metaApiBase() + '/api/meta/publish?cron=process').catch(() => {});
-    }, 30000);
-    // Depois a cada 2 minutos
-    _queueInterval = setInterval(() => {
-      fetch(metaApiBase() + '/api/meta/publish?cron=process').catch(() => {});
-    }, 120000);
+    setTimeout(() => processQueueAndCheckAlerts(), 30000);
+    _queueInterval = setInterval(() => processQueueAndCheckAlerts(), 120000);
   }
-  // Inicia após login
+
   const checkLogin = setInterval(() => {
     if (typeof gpState !== 'undefined' && gpState.user) {
       clearInterval(checkLogin);
