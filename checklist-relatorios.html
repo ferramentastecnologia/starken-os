@@ -6040,42 +6040,77 @@ async function metaPublishSubmit() {
     const imageUrl = mediaUrl.trim();
     const hasLocalFile = _metaPubFiles.length > 0;
     const hasMedia = !!imageUrl || hasLocalFile;
+    let resolvedImageUrl = imageUrl || null;
     let containerId = null;  // IG
-    let photoIds = [];       // FB
 
-    // ─── ETAPA 1: Upload de mídia ───
-    if (hasMedia) {
-      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> ' + (hasLocalFile ? 'Enviando arquivo para Supabase Storage...' : 'Enviando mídia para Meta...');
+    // ─── ETAPA 1: Upload de arquivo local → Supabase Storage ───
+    if (hasLocalFile) {
+      const file = _metaPubFiles[0];
+      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Enviando ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB) → Supabase...';
+      statusDiv.style.background = '#fffbeb';
+      statusDiv.style.color = '#b45309';
+
+      // Converte para base64
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+        reader.readAsDataURL(file);
+      });
+
+      // Upload para Supabase Storage via media endpoint
+      const uploadBody = {
+        destination: platform,
+        client: clientKey,
+        source_base64: base64,
+        filename: file.name,
+        media_type: 'IMAGE',
+      };
+      // Para IG: media.js cria o container direto (com caption)
+      if (platform === 'ig') {
+        uploadBody.caption = caption;
+      }
+
+      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Upload → Supabase Storage → ' + (platform === 'ig' ? 'Instagram container...' : 'URL pública...');
+
+      const uploadRes = await fetch(metaApiBase() + '/api/meta/media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(uploadBody),
+      });
+      const uploadData = await uploadRes.json();
+
+      if (uploadData.error) {
+        statusDiv.style.background = '#fef2f2';
+        statusDiv.style.color = '#dc2626';
+        statusDiv.innerHTML = '❌ <b>Erro no upload:</b> ' + uploadData.message;
+        return;
+      }
+
+      if (platform === 'ig') {
+        containerId = uploadData.container_id;
+        statusDiv.innerHTML = '✅ Upload Supabase ✓ · IG Container: ' + containerId;
+      } else {
+        // FB: pegamos a URL do Supabase para publicar direto via /{page_id}/photos
+        resolvedImageUrl = uploadData.upload ? uploadData.upload.publicUrl : null;
+        statusDiv.innerHTML = '✅ Upload Supabase ✓ · Imagem pronta';
+      }
+
+      await new Promise(r => setTimeout(r, 500));
+    }
+    // URL pública direta (sem upload local) para IG precisa do media endpoint
+    else if (imageUrl && platform === 'ig') {
+      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Criando container Instagram...';
       statusDiv.style.background = '#fffbeb';
       statusDiv.style.color = '#b45309';
 
       const mediaBody = {
-        destination: platform,
+        destination: 'ig',
         client: clientKey,
-        media_type: type === 'reels' ? 'REELS' : (type === 'stories' ? 'VIDEO' : 'IMAGE'),
+        image_url: imageUrl,
+        media_type: type === 'reels' ? 'REELS' : 'IMAGE',
+        caption: caption,
       };
-      if (platform === 'ig') mediaBody.caption = caption;
-
-      // Arquivo local: converte para base64 e envia
-      if (hasLocalFile) {
-        const file = _metaPubFiles[0];
-        statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Convertendo ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)...';
-
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-          reader.readAsDataURL(file);
-        });
-
-        mediaBody.source_base64 = base64;
-        mediaBody.filename = file.name;
-
-        statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Upload de ' + file.name + ' → Supabase → Meta...';
-      } else {
-        // URL pública direta
-        mediaBody.image_url = imageUrl;
-      }
 
       const mediaRes = await fetch(metaApiBase() + '/api/meta/media', {
         method: 'POST',
@@ -6087,22 +6122,16 @@ async function metaPublishSubmit() {
       if (mediaData.error) {
         statusDiv.style.background = '#fef2f2';
         statusDiv.style.color = '#dc2626';
-        statusDiv.innerHTML = '❌ <b>Erro no upload:</b> ' + mediaData.message;
+        statusDiv.innerHTML = '❌ <b>Erro IG container:</b> ' + mediaData.message;
         return;
       }
 
-      if (platform === 'ig') {
-        containerId = mediaData.container_id;
-        statusDiv.innerHTML = '✅ Mídia processada' + (mediaData.upload ? ' · Supabase ✓' : '') + ' · Container: ' + containerId;
-      } else {
-        photoIds.push(mediaData.photo_id);
-        statusDiv.innerHTML = '✅ Foto enviada' + (mediaData.upload ? ' · Supabase ✓' : '') + ' · ID: ' + mediaData.photo_id;
-      }
-
+      containerId = mediaData.container_id;
+      statusDiv.innerHTML = '✅ Container IG criado: ' + containerId;
       await new Promise(r => setTimeout(r, 500));
     }
 
-    // ─── ETAPA 2: Publicar/Agendar o post ───
+    // ─── ETAPA 2: Publicar/Agendar ───
     statusDiv.innerHTML = (hasMedia ? '📤 <b>Etapa 2/2:</b> ' : '📤 ') + 'Publicando post...';
     statusDiv.style.background = '#eff6ff';
     statusDiv.style.color = '#1d4ed8';
@@ -6113,8 +6142,12 @@ async function metaPublishSubmit() {
       caption: caption,
       type: type,
     };
+    // FB com imagem: envia image_url para publicar direto via /{page_id}/photos
+    if (platform === 'fb' && resolvedImageUrl) {
+      body.image_url = resolvedImageUrl;
+    }
+    // IG com container
     if (containerId) body.container_id = containerId;
-    if (photoIds.length) body.photo_ids = photoIds;
     if (mode === 'schedule' && datetime) {
       body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
     }

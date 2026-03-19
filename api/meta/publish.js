@@ -78,32 +78,50 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // CRÍTICO: A Graph API EXIGE Page Access Token para /{page_id}/feed
-      // O User Token NÃO tem permissão para publicar — só o Page Token funciona
       if (!tenant.pageAccessToken) {
         return res.status(400).json({
           error: true, code: 'MISSING_PAGE_TOKEN',
           message: `Page Access Token não encontrado para "${tenant.name || tenant.key}". `
-            + `Vá em Configuração Meta → clique "Descobrir Ativos" → selecione novamente a página do cliente → Salvar. `
-            + `O token de página é capturado automaticamente durante a descoberta.`,
+            + `Vá em Configuração Meta → clique "Descobrir Ativos" → selecione novamente a página do cliente → Salvar.`,
         });
       }
 
+      const { image_url } = req.body || {};
+
+      // ─── ESTRATÉGIA 1: Post com imagem → publica direto via /{page_id}/photos ───
+      if (image_url) {
+        const photoBody = {
+          url: image_url,
+          caption: caption || '',
+          access_token: tenant.pageAccessToken,
+        };
+
+        // Agendamento com imagem
+        if (scheduled_publish_time) {
+          photoBody.scheduled_publish_time = scheduled_publish_time;
+          photoBody.published = false;
+        }
+
+        const photoRes = await graphPost(`/${tenant.pageId}/photos`, photoBody);
+
+        return res.status(201).json({
+          post_id: photoRes.id || photoRes.post_id,
+          status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',
+          has_image: true,
+          client: tenant.name || tenant.key,
+          page: tenant.pageName || tenant.pageId,
+          scheduled_for: scheduled_publish_time
+            ? new Date(scheduled_publish_time * 1000).toISOString()
+            : null,
+        });
+      }
+
+      // ─── ESTRATÉGIA 2: Post só texto → publica via /{page_id}/feed ───
       const postBody = {
         message: caption || '',
+        access_token: tenant.pageAccessToken,
       };
 
-      // Usa page access token do cliente (obrigatório para /{page_id}/feed)
-      postBody.access_token = tenant.pageAccessToken;
-
-      // Anexar fotos se houver
-      if (photo_ids && photo_ids.length > 0) {
-        photo_ids.forEach((pid, i) => {
-          postBody[`attached_media[${i}]`] = JSON.stringify({ media_fbid: pid });
-        });
-      }
-
-      // Agendamento
       if (scheduled_publish_time) {
         postBody.scheduled_publish_time = scheduled_publish_time;
         postBody.published = false;
@@ -114,6 +132,7 @@ module.exports = async function handler(req, res) {
       return res.status(201).json({
         post_id: postRes.id,
         status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',
+        has_image: false,
         client: tenant.name || tenant.key,
         page: tenant.pageName || tenant.pageId,
         scheduled_for: scheduled_publish_time
