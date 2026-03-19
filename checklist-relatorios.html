@@ -953,6 +953,114 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 @media (max-width: 900px) {
   #tab-meta-publish .card:first-child { grid-template-columns: 1fr !important; }
 }
+
+/* ═══ GESTÃO DE CONTEÚDO ═══ */
+.ct-toolbar { display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap; }
+.ct-toolbar select { padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--bg-secondary); }
+.ct-add-btn { padding:8px 16px;border-radius:8px;border:none;background:var(--accent,#3b82f6);color:#fff;cursor:pointer;font-family:inherit;font-weight:600;font-size:0.82rem;transition:opacity 0.2s; }
+.ct-add-btn:hover { opacity:0.85; }
+
+/* List */
+.ct-list { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
+.ct-header-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 120px 80px 80px;gap:0;background:var(--bg-secondary);padding:10px 16px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;border-bottom:1px solid var(--border); }
+.ct-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 120px 80px 80px;gap:0;padding:8px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;align-items:center;transition:background 0.15s;cursor:pointer; }
+.ct-row:hover { background:var(--bg-secondary); }
+.ct-row.group { background:var(--bg-secondary);font-weight:700;font-size:0.88rem; }
+.ct-row.subtask { padding-left:56px;font-size:0.82rem;color:var(--text-secondary); }
+.ct-row .ct-name { display:flex;align-items:center;gap:8px;min-width:0; }
+.ct-row .ct-name span { white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.ct-chevron { cursor:pointer;transition:transform 0.2s;font-size:0.7rem;flex-shrink:0;width:20px;text-align:center; }
+.ct-chevron.open { transform:rotate(90deg); }
+
+/* Status badges */
+.ct-status { padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;cursor:pointer;border:none;font-family:inherit;text-align:center;white-space:nowrap;transition:opacity 0.2s; }
+.ct-status:hover { opacity:0.8; }
+.ct-status[data-status="a-fazer"] { background:#f3f4f6;color:#374151; }
+.ct-status[data-status="em-andamento"] { background:#dbeafe;color:#1d4ed8; }
+.ct-status[data-status="criacao-conteudo"] { background:#ede9fe;color:#6d28d9; }
+.ct-status[data-status="design"] { background:#dbeafe;color:#2563eb; }
+.ct-status[data-status="aprovacao-design"] { background:#fef2f2;color:#dc2626; }
+.ct-status[data-status="alteracao-design"] { background:#fef2f2;color:#b91c1c; }
+.ct-status[data-status="aprovacao"] { background:#ecfdf5;color:#059669; }
+.ct-status[data-status="alteracao"] { background:#fffbeb;color:#b45309; }
+.ct-status[data-status="revisao"] { background:#fef2f2;color:#dc2626; }
+.ct-status[data-status="aguardando"] { background:#f0fdfa;color:#0d9488; }
+.ct-status[data-status="standby"] { background:#f0fdfa;color:#0f766e; }
+.ct-status[data-status="aprovado"] { background:#ecfdf5;color:#047857; }
+.ct-status[data-status="agendar"] { background:#fffbeb;color:#92400e; }
+.ct-status[data-status="agendado"] { background:#dbeafe;color:#1e40af; }
+.ct-status[data-status="publicado"] { background:#ecfdf5;color:#065f46;font-weight:700; }
+
+/* Priority flags */
+.ct-priority { font-size:0.9rem;cursor:pointer; }
+
+/* Assignee */
+.ct-assignee { display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer; }
+.ct-assignee-avatar { width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.6rem;font-weight:700;flex-shrink:0; }
+
+/* Status dropdown */
+.ct-dropdown { position:absolute;z-index:1000;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.15);padding:6px;min-width:180px;max-height:350px;overflow-y:auto; }
+.ct-dropdown-item { padding:7px 12px;border-radius:6px;cursor:pointer;font-size:0.82rem;display:flex;align-items:center;gap:8px;transition:background 0.15s; }
+.ct-dropdown-item:hover { background:var(--bg-secondary); }
+
+/* ═══ TASK MODAL ═══ */
+.ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity 0.2s; }
+.ct-modal-overlay.open { opacity:1; }
+.ct-modal { background:#fff;border-radius:14px;width:100%;max-width:1100px;max-height:90vh;display:grid;grid-template-columns:220px 1fr 260px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.ct-modal-sidebar { background:var(--bg-secondary);padding:16px;border-right:1px solid var(--border);overflow-y:auto;font-size:0.82rem; }
+.ct-modal-sidebar .ct-tree-item { padding:6px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s; }
+.ct-modal-sidebar .ct-tree-item:hover { background:var(--border); }
+.ct-modal-sidebar .ct-tree-item.active { background:var(--accent,#3b82f6);color:#fff;font-weight:600; }
+.ct-modal-main { padding:24px;overflow-y:auto; }
+.ct-modal-activity { background:var(--bg-secondary);padding:16px;border-left:1px solid var(--border);overflow-y:auto;font-size:0.78rem; }
+.ct-modal-close { position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-secondary);z-index:1; }
+.ct-modal-title { font-size:1.3rem;font-weight:700;margin-bottom:16px;outline:none;border:none;width:100%;padding:4px 0;border-bottom:2px solid transparent;transition:border-color 0.2s; }
+.ct-modal-title:focus { border-bottom-color:var(--accent,#3b82f6); }
+.ct-modal-meta { display:flex;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border); }
+.ct-modal-meta-item { display:flex;flex-direction:column;gap:4px; }
+.ct-modal-meta-item label { font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px; }
+.ct-modal-section { margin-bottom:20px; }
+.ct-modal-section-title { font-size:0.82rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;color:var(--text-primary); }
+.ct-modal-textarea { width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;resize:vertical;min-height:80px;line-height:1.5;transition:border-color 0.2s; }
+.ct-modal-textarea:focus { outline:none;border-color:var(--accent,#3b82f6); }
+.ct-modal-textarea.copy-area { background:#fffbeb;border-color:#fde68a;min-height:100px; }
+
+/* Attachments */
+.ct-attachment-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px; }
+.ct-attachment-card { border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;transition:box-shadow 0.2s; }
+.ct-attachment-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+.ct-attachment-card img { width:100%;height:90px;object-fit:cover; }
+.ct-attachment-card .ct-att-name { padding:4px 8px;font-size:0.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg-secondary); }
+.ct-attachment-card .ct-att-category { position:absolute;top:4px;left:4px;padding:2px 6px;border-radius:4px;font-size:0.6rem;font-weight:700;background:rgba(0,0,0,0.7);color:#fff; }
+
+/* Comments */
+.ct-comment { padding:10px;border-bottom:1px solid var(--border); }
+.ct-comment-header { display:flex;justify-content:space-between;margin-bottom:4px; }
+.ct-comment-author { font-weight:700;font-size:0.82rem; }
+.ct-comment-time { font-size:0.7rem;color:var(--text-secondary); }
+.ct-comment-body { font-size:0.85rem;line-height:1.5;white-space:pre-wrap; }
+
+/* Activity */
+.ct-activity-item { padding:8px 0;border-bottom:1px solid var(--border);font-size:0.78rem; }
+.ct-activity-actor { font-weight:600; }
+.ct-activity-time { font-size:0.68rem;color:var(--text-secondary);margin-top:2px; }
+
+/* Publish section in modal */
+.ct-publish-section { background:#eff6ff;border:2px solid #bfdbfe;border-radius:10px;padding:16px;margin-top:16px; }
+.ct-publish-section.scheduling { background:#fffbeb;border-color:#fde68a; }
+
+/* Add task inline */
+.ct-add-inline { padding:6px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px; }
+.ct-add-inline input { border:none;outline:none;font-family:inherit;font-size:0.85rem;flex:1;padding:4px 0;background:transparent; }
+.ct-add-inline button { padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:transparent;cursor:pointer;font-family:inherit;font-size:0.78rem;transition:all 0.2s; }
+.ct-add-inline button:hover { background:var(--accent,#3b82f6);color:#fff;border-color:var(--accent,#3b82f6); }
+
+@media (max-width:900px) {
+  .ct-modal { grid-template-columns:1fr;max-width:100%; }
+  .ct-modal-sidebar,.ct-modal-activity { display:none; }
+  .ct-header-row,.ct-row { grid-template-columns:1fr 120px 100px; }
+  .ct-row .ct-col-date,.ct-row .ct-col-comments,.ct-row .ct-col-priority { display:none; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -1019,6 +1127,9 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <button class="sub" onclick="switchTab('meta-balance')"><span class="icon">&#128176;</span> Saldo Contas</button>
       <button class="sub" onclick="switchTab('meta-bi')"><span class="icon">&#128202;</span> BI Campanhas</button>
       <button class="sub" onclick="switchTab('meta-publish')"><span class="icon">&#128228;</span> Agendamento</button>
+
+      <div class="nav-category">Conteúdo</div>
+      <button class="sub" onclick="switchTab('content')"><span class="icon">📋</span> Gestão de Conteúdo</button>
 
       <div class="nav-category">Geral</div>
       <button class="sub" onclick="switchTab('clients')"><span class="icon">&#128101;</span> Clientes</button>
@@ -1603,6 +1714,175 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
             <div id="metaPubHistory" style="color:var(--text-secondary);font-size:0.85rem;padding:20px;text-align:center">
               Nenhuma publicação realizada nesta sessão
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ GESTÃO DE CONTEÚDO ═══ -->
+      <div id="tab-content" class="tab-content">
+        <div style="padding:20px">
+          <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px">📋 Gestão de Conteúdo</h2>
+
+          <!-- Toolbar -->
+          <div class="ct-toolbar">
+            <select id="ctClientFilter" onchange="ctLoadGroups()">
+              <option value="">Selecione o cliente...</option>
+            </select>
+            <button class="ct-add-btn" onclick="ctAddGroup()" id="ctAddGroupBtn" style="display:none">+ Novo Grupo</button>
+            <div style="flex:1"></div>
+            <select id="ctStatusFilter" onchange="ctRenderList()">
+              <option value="">Todos os status</option>
+            </select>
+            <select id="ctAssigneeFilter" onchange="ctRenderList()">
+              <option value="">Todos</option>
+              <option value="Juan">Juan</option>
+              <option value="Henrique">Henrique</option>
+              <option value="Emily">Emily</option>
+            </select>
+          </div>
+
+          <!-- Task List -->
+          <div class="ct-list" id="ctList">
+            <div class="ct-header-row">
+              <div>Nome</div>
+              <div>Status</div>
+              <div>Responsável</div>
+              <div>Data</div>
+              <div>💬</div>
+              <div>Prioridade</div>
+            </div>
+            <div id="ctListBody">
+              <div style="text-align:center;padding:40px;color:var(--text-secondary)">
+                <div style="font-size:2rem;margin-bottom:8px">📋</div>
+                Selecione um cliente para ver as tarefas
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task Modal -->
+      <div class="ct-modal-overlay" id="ctModalOverlay" onclick="if(event.target===this)ctCloseModal()">
+        <div class="ct-modal" style="position:relative">
+          <button class="ct-modal-close" onclick="ctCloseModal()">&times;</button>
+
+          <!-- Left Sidebar: Tree -->
+          <div class="ct-modal-sidebar">
+            <div style="font-weight:700;font-size:0.85rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📁 Navegação</div>
+            <div id="ctModalTree"></div>
+          </div>
+
+          <!-- Main Content -->
+          <div class="ct-modal-main">
+            <input type="text" class="ct-modal-title" id="ctModalTitle" placeholder="Nome da tarefa..." onchange="ctSaveTaskField('name',this.value)">
+
+            <!-- Meta: Status, Assignee, Date, Priority -->
+            <div class="ct-modal-meta">
+              <div class="ct-modal-meta-item">
+                <label>Status</label>
+                <button class="ct-status" id="ctModalStatus" onclick="ctShowStatusDropdown(event,'modal')">A Fazer</button>
+              </div>
+              <div class="ct-modal-meta-item">
+                <label>Responsável</label>
+                <div class="ct-assignee" id="ctModalAssignee" onclick="ctShowAssigneeDropdown(event,'modal')">
+                  <div class="ct-assignee-avatar" style="background:#6b7280">?</div>
+                  <span>Não atribuído</span>
+                </div>
+              </div>
+              <div class="ct-modal-meta-item">
+                <label>Data</label>
+                <input type="date" id="ctModalDueDate" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem" onchange="ctSaveTaskField('due_date',this.value)">
+              </div>
+              <div class="ct-modal-meta-item">
+                <label>Prioridade</label>
+                <div class="ct-priority" id="ctModalPriority" onclick="ctShowPriorityDropdown(event,'modal')">🏳️</div>
+              </div>
+            </div>
+
+            <!-- Briefing -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">📋 Briefing / Direcionamento</div>
+              <textarea class="ct-modal-textarea" id="ctModalBriefing" placeholder="Instruções para o designer, referências, direcionamento criativo..." onchange="ctSaveTaskField('briefing',this.value)"></textarea>
+            </div>
+
+            <!-- References (attachments with category=reference) -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">🖼️ Referências Visuais <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px" onclick="ctUploadAttachment('reference')">+ Adicionar</button></div>
+              <div class="ct-attachment-grid" id="ctModalReferences"></div>
+              <input type="file" id="ctFileInputRef" accept="image/*" multiple style="display:none" onchange="ctHandleFileUpload(this.files,'reference')">
+            </div>
+
+            <!-- Creative Final -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">🎨 Criativo Final <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctUploadAttachment('creative')">+ Upload Criativo</button></div>
+              <div class="ct-attachment-grid" id="ctModalCreatives"></div>
+              <input type="file" id="ctFileInputCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFileUpload(this.files,'creative')">
+            </div>
+
+            <!-- Copy Text -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">✏️ Copy do Post</div>
+              <textarea class="ct-modal-textarea copy-area" id="ctModalCopy" placeholder="Texto/legenda que será publicado nas redes sociais..." onchange="ctSaveTaskField('copy_text',this.value)"></textarea>
+              <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctModalCopyCount">0</span> / 2.200 caracteres</div>
+            </div>
+
+            <!-- Description / Notes -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">📝 Descrição / Notas</div>
+              <textarea class="ct-modal-textarea" id="ctModalDescription" placeholder="Informações gerais, notas internas, instruções adicionais..." onchange="ctSaveTaskField('description',this.value)"></textarea>
+            </div>
+
+            <!-- Subtasks -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">📌 Subtarefas <span id="ctModalSubtaskCount" style="font-weight:400;color:var(--text-secondary)"></span></div>
+              <div id="ctModalSubtasks"></div>
+              <div class="ct-add-inline" style="border:1px solid var(--border);border-radius:8px;margin-top:8px">
+                <input type="text" id="ctModalNewSubtask" placeholder="Adicionar subtarefa..." onkeydown="if(event.key==='Enter')ctAddSubtask()">
+                <button onclick="ctAddSubtask()">+ Adicionar</button>
+              </div>
+            </div>
+
+            <!-- Publish Section (shown when status = agendar or aprovado) -->
+            <div class="ct-publish-section" id="ctModalPublish" style="display:none">
+              <div class="ct-modal-section-title">🚀 Publicação / Agendamento</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px">
+                <div>
+                  <label style="font-size:0.72rem;font-weight:700;display:block;margin-bottom:4px">Plataforma</label>
+                  <div style="display:flex;gap:8px">
+                    <button class="meta-pub-plat-btn" id="ctPubFb" onclick="ctSelectPlatform('fb')" style="flex:1;padding:8px">📄 Facebook</button>
+                    <button class="meta-pub-plat-btn" id="ctPubIg" onclick="ctSelectPlatform('ig')" style="flex:1;padding:8px">📷 Instagram</button>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size:0.72rem;font-weight:700;display:block;margin-bottom:4px">Quando</label>
+                  <select id="ctPubMode" class="form-input" style="font-size:0.85rem" onchange="document.getElementById('ctPubDateWrap').style.display=this.value==='schedule'?'block':'none'">
+                    <option value="now">⚡ Publicar Agora</option>
+                    <option value="schedule">📅 Agendar</option>
+                  </select>
+                  <div id="ctPubDateWrap" style="display:none;margin-top:8px">
+                    <input type="datetime-local" id="ctPubDatetime" class="form-input" style="font-size:0.85rem">
+                  </div>
+                </div>
+              </div>
+              <div id="ctPubStatus" style="margin-top:12px;font-size:0.85rem;display:none"></div>
+              <button class="ct-add-btn" style="width:100%;margin-top:12px;padding:12px;font-size:0.92rem" id="ctPubSubmitBtn" onclick="ctPublishFromModal()">🚀 Publicar</button>
+            </div>
+
+            <!-- Comments -->
+            <div class="ct-modal-section" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+              <div class="ct-modal-section-title">💬 Comentários <span id="ctModalCommentCount" style="font-weight:400;color:var(--text-secondary)"></span></div>
+              <div id="ctModalComments"></div>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <input type="text" id="ctModalNewComment" placeholder="Escreva um comentário..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem" onkeydown="if(event.key==='Enter')ctAddComment()">
+                <button class="ct-add-btn" onclick="ctAddComment()">Enviar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Sidebar: Activity -->
+          <div class="ct-modal-activity">
+            <div style="font-weight:700;font-size:0.85rem;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📊 Atividade</div>
+            <div id="ctModalActivity"></div>
           </div>
         </div>
       </div>
@@ -2316,6 +2596,7 @@ function switchTab(tabName) {
   else if (tabName === 'meta-balance') metaBalanceInit();
   else if (tabName === 'meta-bi') metaBiInit();
   else if (tabName === 'meta-publish') metaPublishInit();
+  else if (tabName === 'content') ctInit();
   else renderAll();
 }
 
@@ -6368,6 +6649,730 @@ async function metaPublishDeletePost(idx, postId, historyId, clientKey) {
     statusDiv.style.color = '#dc2626';
     statusDiv.innerHTML = '❌ Erro de conexão: ' + e.message;
   }
+}
+
+// ═══════════════════════════════════════════════════════
+// GESTÃO DE CONTEÚDO MODULE
+// ═══════════════════════════════════════════════════════
+
+const CT_STATUSES = [
+  { key: 'a-fazer', label: 'A Fazer', color: '#374151', bg: '#f3f4f6' },
+  { key: 'em-andamento', label: 'Em Andamento', color: '#1d4ed8', bg: '#dbeafe' },
+  { key: 'criacao-conteudo', label: 'Criação de Conteúdo', color: '#6d28d9', bg: '#ede9fe' },
+  { key: 'design', label: 'Design', color: '#2563eb', bg: '#dbeafe' },
+  { key: 'aprovacao-design', label: 'Aprovação Design', color: '#dc2626', bg: '#fef2f2' },
+  { key: 'alteracao-design', label: 'Alteração Design', color: '#b91c1c', bg: '#fef2f2' },
+  { key: 'aprovacao', label: 'Aprovação', color: '#059669', bg: '#ecfdf5' },
+  { key: 'alteracao', label: 'Alteração', color: '#b45309', bg: '#fffbeb' },
+  { key: 'revisao', label: 'Revisão', color: '#dc2626', bg: '#fef2f2' },
+  { key: 'aguardando', label: 'Aguardando Info', color: '#0d9488', bg: '#f0fdfa' },
+  { key: 'standby', label: 'Stand-by', color: '#0f766e', bg: '#f0fdfa' },
+  { key: 'aprovado', label: 'Aprovado', color: '#047857', bg: '#ecfdf5' },
+  { key: 'agendar', label: 'Agendar', color: '#92400e', bg: '#fffbeb' },
+  { key: 'agendado', label: 'Agendado', color: '#1e40af', bg: '#dbeafe' },
+  { key: 'publicado', label: 'Publicado', color: '#065f46', bg: '#ecfdf5' },
+];
+
+const CT_PRIORITIES = [
+  { key: 'urgente', label: 'Urgente', icon: '🚩', color: '#dc2626' },
+  { key: 'alta', label: 'Alta', icon: '🔴', color: '#f59e0b' },
+  { key: 'normal', label: 'Normal', icon: '🔵', color: '#3b82f6' },
+  { key: 'baixa', label: 'Baixa', icon: '⚪', color: '#6b7280' },
+];
+
+const CT_USERS = [
+  { name: 'Juan', color: '#3b82f6' },
+  { name: 'Henrique', color: '#10b981' },
+  { name: 'Emily', color: '#f59e0b' },
+];
+
+let ctGroups = [];
+let ctCurrentClient = '';
+let ctModalTask = null;
+let ctExpandedGroups = {};
+let ctExpandedTasks = {};
+
+function ctApiBase() { return metaApiBase(); }
+
+async function ctApi(action, params = {}) {
+  const res = await fetch(ctApiBase() + '/api/content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...params }),
+  });
+  return res.json();
+}
+
+function ctGetUser() {
+  return gpState.user ? gpState.user.name : 'Sistema';
+}
+
+// ─── INIT ───
+function ctInit() {
+  ctLoadClientDropdown();
+  ctLoadStatusFilter();
+}
+
+function ctLoadClientDropdown() {
+  const select = document.getElementById('ctClientFilter');
+  let clients = _metaClients;
+  if (!clients || Object.keys(clients).length === 0) {
+    try { clients = JSON.parse(localStorage.getItem(META_CLIENTS_LS_KEY) || '{}'); } catch(e) {}
+  }
+  let html = '<option value="">Selecione o cliente...</option>';
+  const starken = [], alpha = [];
+  Object.entries(clients || {}).forEach(([key, c]) => {
+    if (c.tenant === 'alpha') alpha.push({ key, name: c.name || key });
+    else starken.push({ key, name: c.name || key });
+  });
+  starken.sort((a,b) => a.name.localeCompare(b.name));
+  alpha.sort((a,b) => a.name.localeCompare(b.name));
+  if (starken.length) {
+    html += '<optgroup label="🟢 Starken">';
+    starken.forEach(c => html += '<option value="' + c.key + '">' + c.name + '</option>');
+    html += '</optgroup>';
+  }
+  if (alpha.length) {
+    html += '<optgroup label="🟡 Alpha">';
+    alpha.forEach(c => html += '<option value="' + c.key + '">' + c.name + '</option>');
+    html += '</optgroup>';
+  }
+  select.innerHTML = html;
+}
+
+function ctLoadStatusFilter() {
+  const select = document.getElementById('ctStatusFilter');
+  let html = '<option value="">Todos os status</option>';
+  CT_STATUSES.forEach(s => {
+    html += '<option value="' + s.key + '">' + s.label + '</option>';
+  });
+  select.innerHTML = html;
+}
+
+// ─── LOAD GROUPS + TASKS ───
+async function ctLoadGroups() {
+  const clientId = document.getElementById('ctClientFilter').value;
+  ctCurrentClient = clientId;
+  const addBtn = document.getElementById('ctAddGroupBtn');
+
+  if (!clientId) {
+    addBtn.style.display = 'none';
+    document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px">📋</div>Selecione um cliente para ver as tarefas</div>';
+    return;
+  }
+  addBtn.style.display = '';
+  document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">⏳ Carregando...</div>';
+
+  const data = await ctApi('list_groups', { client_id: clientId });
+  if (data.error) {
+    document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:30px;color:#dc2626">❌ ' + data.error + '</div>';
+    return;
+  }
+
+  const groups = Array.isArray(data) ? data : (data.groups || []);
+
+  // Load tasks for each group
+  for (const g of groups) {
+    const taskData = await ctApi('list_tasks', { group_id: g.id });
+    g.tasks = Array.isArray(taskData) ? taskData : (taskData.tasks || []);
+  }
+
+  ctGroups = groups;
+  ctRenderList();
+}
+
+// ─── RENDER LIST ───
+function ctRenderList() {
+  const body = document.getElementById('ctListBody');
+  const statusFilter = document.getElementById('ctStatusFilter').value;
+  const assigneeFilter = document.getElementById('ctAssigneeFilter').value;
+
+  if (ctGroups.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px">📭</div>Nenhum grupo criado. Clique em "+ Novo Grupo" para começar.</div>';
+    return;
+  }
+
+  let html = '';
+  ctGroups.forEach(group => {
+    const expanded = ctExpandedGroups[group.id] !== false;
+    const tasks = group.tasks || [];
+    const taskCount = tasks.length;
+
+    // Group row
+    html += '<div class="ct-row group" onclick="ctToggleGroup(\'' + group.id + '\')">'
+      + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span>📁 ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span></span></div>'
+      + '<div></div><div></div><div></div><div></div><div></div>'
+      + '</div>';
+
+    if (expanded) {
+      tasks.forEach(task => {
+        // Apply filters
+        if (statusFilter && task.status !== statusFilter) return;
+        if (assigneeFilter && task.assignee !== assigneeFilter) return;
+
+        const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
+        const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
+        const user = CT_USERS.find(u => u.name === task.assignee);
+        const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+        const taskExpanded = ctExpandedTasks[task.id] !== false;
+        const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+
+        html += '<div class="ct-row" style="padding-left:36px">'
+          + '<div class="ct-name">'
+          + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
+          + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span></div>'
+          + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
+          + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')">'
+          + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
+          + '</div>'
+          + '<div style="font-size:0.82rem;color:var(--text-secondary)">' + dueStr + '</div>'
+          + '<div style="font-size:0.82rem;color:var(--text-secondary);text-align:center">💬</div>'
+          + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')">' + priority.icon + '</div>'
+          + '</div>';
+
+        // Subtasks
+        if (hasSubtasks && taskExpanded) {
+          task.subtasks.forEach(sub => {
+            if (statusFilter && sub.status !== statusFilter) return;
+            const subStatus = CT_STATUSES.find(s => s.key === sub.status) || CT_STATUSES[0];
+            const subPriority = CT_PRIORITIES.find(p => p.key === sub.priority) || CT_PRIORITIES[2];
+            const subUser = CT_USERS.find(u => u.name === sub.assignee);
+
+            html += '<div class="ct-row subtask">'
+              + '<div class="ct-name"><span style="width:20px"></span><span onclick="ctOpenModal(\'' + sub.id + '\')" style="cursor:pointer">' + sub.name + '</span></div>'
+              + '<div><button class="ct-status" data-status="' + subStatus.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + sub.id + '\')">' + subStatus.label + '</button></div>'
+              + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + sub.id + '\')">'
+              + (subUser ? '<div class="ct-assignee-avatar" style="background:' + subUser.color + '">' + subUser.name.substring(0,2).toUpperCase() + '</div><span>' + subUser.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
+              + '</div>'
+              + '<div style="font-size:0.82rem;color:var(--text-secondary)">' + (sub.due_date ? new Date(sub.due_date+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—') + '</div>'
+              + '<div></div>'
+              + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + sub.id + '\')">' + subPriority.icon + '</div>'
+              + '</div>';
+          });
+        }
+      });
+
+      // Add task inline
+      html += '<div class="ct-add-inline" style="padding-left:36px">'
+        + '<input type="text" id="ctNewTask_' + group.id + '" placeholder="+ Adicionar tarefa..." onkeydown="if(event.key===\'Enter\')ctAddTask(\'' + group.id + '\')">'
+        + '<button onclick="ctAddTask(\'' + group.id + '\')">Adicionar</button>'
+        + '</div>';
+    }
+  });
+
+  body.innerHTML = html;
+}
+
+// ─── TOGGLE EXPAND ───
+function ctToggleGroup(groupId) {
+  ctExpandedGroups[groupId] = ctExpandedGroups[groupId] === false ? true : false;
+  ctRenderList();
+}
+
+function ctToggleTask(taskId) {
+  ctExpandedTasks[taskId] = ctExpandedTasks[taskId] === false ? true : false;
+  ctRenderList();
+}
+
+// ─── ADD GROUP ───
+async function ctAddGroup() {
+  const name = prompt('Nome do grupo (ex: Conteúdo Março):');
+  if (!name) return;
+  await ctApi('upsert_group', { client_id: ctCurrentClient, name, user: ctGetUser() });
+  ctLoadGroups();
+}
+
+// ─── ADD TASK ───
+async function ctAddTask(groupId) {
+  const input = document.getElementById('ctNewTask_' + groupId);
+  const name = input.value.trim();
+  if (!name) return;
+  input.value = '';
+  await ctApi('upsert_task', { group_id: groupId, client_id: ctCurrentClient, name, user: ctGetUser() });
+  ctLoadGroups();
+}
+
+// ─── DROPDOWNS (Status, Assignee, Priority) ───
+let ctActiveDropdown = null;
+
+function ctCloseDropdowns() {
+  if (ctActiveDropdown) { ctActiveDropdown.remove(); ctActiveDropdown = null; }
+  document.removeEventListener('click', ctCloseDropdowns);
+}
+
+function ctShowStatusDropdown(event, taskId) {
+  event.stopPropagation();
+  ctCloseDropdowns();
+  const rect = event.currentTarget.getBoundingClientRect();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.top = (rect.bottom + 4) + 'px';
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.position = 'fixed';
+
+  CT_STATUSES.forEach(s => {
+    const item = document.createElement('div');
+    item.className = 'ct-dropdown-item';
+    item.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></span>' + s.label;
+    item.onclick = async (e) => {
+      e.stopPropagation();
+      ctCloseDropdowns();
+      if (taskId === 'modal') {
+        await ctChangeModalStatus(s.key);
+      } else {
+        await ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() });
+        ctLoadGroups();
+      }
+    };
+    dropdown.appendChild(item);
+  });
+
+  document.body.appendChild(dropdown);
+  ctActiveDropdown = dropdown;
+  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+}
+
+function ctShowAssigneeDropdown(event, taskId) {
+  event.stopPropagation();
+  ctCloseDropdowns();
+  const rect = event.currentTarget.getBoundingClientRect();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.top = (rect.bottom + 4) + 'px';
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.position = 'fixed';
+
+  // Unassign option
+  const unassign = document.createElement('div');
+  unassign.className = 'ct-dropdown-item';
+  unassign.innerHTML = '<span style="color:var(--text-secondary)">— Não atribuído</span>';
+  unassign.onclick = async (e) => {
+    e.stopPropagation();
+    ctCloseDropdowns();
+    if (taskId === 'modal') {
+      await ctSaveTaskField('assignee', null);
+    } else {
+      await ctApi('upsert_task', { id: taskId, assignee: null, user: ctGetUser() });
+      ctLoadGroups();
+    }
+  };
+  dropdown.appendChild(unassign);
+
+  CT_USERS.forEach(u => {
+    const item = document.createElement('div');
+    item.className = 'ct-dropdown-item';
+    item.innerHTML = '<div class="ct-assignee-avatar" style="background:' + u.color + '">' + u.name.substring(0,2).toUpperCase() + '</div>' + u.name;
+    item.onclick = async (e) => {
+      e.stopPropagation();
+      ctCloseDropdowns();
+      if (taskId === 'modal') {
+        await ctSaveTaskField('assignee', u.name);
+      } else {
+        await ctApi('upsert_task', { id: taskId, assignee: u.name, user: ctGetUser() });
+        ctLoadGroups();
+      }
+    };
+    dropdown.appendChild(item);
+  });
+
+  document.body.appendChild(dropdown);
+  ctActiveDropdown = dropdown;
+  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+}
+
+function ctShowPriorityDropdown(event, taskId) {
+  event.stopPropagation();
+  ctCloseDropdowns();
+  const rect = event.currentTarget.getBoundingClientRect();
+  const dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.top = (rect.bottom + 4) + 'px';
+  dropdown.style.left = rect.left + 'px';
+  dropdown.style.position = 'fixed';
+
+  CT_PRIORITIES.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'ct-dropdown-item';
+    item.innerHTML = p.icon + ' ' + p.label;
+    item.onclick = async (e) => {
+      e.stopPropagation();
+      ctCloseDropdowns();
+      if (taskId === 'modal') {
+        await ctSaveTaskField('priority', p.key);
+      } else {
+        await ctApi('upsert_task', { id: taskId, priority: p.key, user: ctGetUser() });
+        ctLoadGroups();
+      }
+    };
+    dropdown.appendChild(item);
+  });
+
+  document.body.appendChild(dropdown);
+  ctActiveDropdown = dropdown;
+  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+}
+
+// ─── MODAL ───
+async function ctOpenModal(taskId) {
+  const data = await ctApi('get_task', { id: taskId });
+  if (data.error) { alert('Erro: ' + data.error); return; }
+
+  ctModalTask = data.task || data;
+  const task = ctModalTask;
+
+  // Populate fields
+  document.getElementById('ctModalTitle').value = task.name || '';
+  document.getElementById('ctModalBriefing').value = task.briefing || '';
+  document.getElementById('ctModalCopy').value = task.copy_text || '';
+  document.getElementById('ctModalCopyCount').textContent = (task.copy_text || '').length;
+  document.getElementById('ctModalDescription').value = task.description || '';
+  document.getElementById('ctModalDueDate').value = task.due_date || '';
+
+  // Status
+  const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
+  const statusBtn = document.getElementById('ctModalStatus');
+  statusBtn.textContent = status.label;
+  statusBtn.dataset.status = status.key;
+  statusBtn.style.background = status.bg;
+  statusBtn.style.color = status.color;
+
+  // Assignee
+  const user = CT_USERS.find(u => u.name === task.assignee);
+  const assigneeEl = document.getElementById('ctModalAssignee');
+  if (user) {
+    assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>';
+  } else {
+    assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
+  }
+
+  // Priority
+  const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
+  document.getElementById('ctModalPriority').innerHTML = priority.icon + ' ' + priority.label;
+
+  // Publish section
+  const showPublish = ['aprovado', 'agendar'].includes(task.status);
+  document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
+
+  // Load attachments
+  ctRenderModalAttachments(data.attachments || []);
+
+  // Load comments
+  ctRenderModalComments(data.comments || []);
+
+  // Load activity
+  ctRenderModalActivity(data.activity || []);
+
+  // Load subtasks
+  ctRenderModalSubtasks(task.subtasks || []);
+
+  // Load tree
+  ctRenderModalTree();
+
+  // Copy counter
+  document.getElementById('ctModalCopy').oninput = function() {
+    document.getElementById('ctModalCopyCount').textContent = this.value.length;
+  };
+
+  // Show modal
+  const overlay = document.getElementById('ctModalOverlay');
+  overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('open'), 10);
+}
+
+function ctCloseModal() {
+  const overlay = document.getElementById('ctModalOverlay');
+  overlay.classList.remove('open');
+  setTimeout(() => { overlay.style.display = 'none'; ctModalTask = null; }, 200);
+  ctLoadGroups(); // Refresh list
+}
+
+async function ctSaveTaskField(field, value) {
+  if (!ctModalTask) return;
+  ctModalTask[field] = value;
+  await ctApi('upsert_task', { id: ctModalTask.id, [field]: value, user: ctGetUser() });
+
+  // If status changed, handle special cases
+  if (field === 'status') {
+    const showPublish = ['aprovado', 'agendar'].includes(value);
+    document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
+  }
+}
+
+async function ctChangeModalStatus(newStatus) {
+  if (!ctModalTask) return;
+  await ctApi('change_status', { id: ctModalTask.id, status: newStatus, user: ctGetUser() });
+  ctModalTask.status = newStatus;
+
+  const status = CT_STATUSES.find(s => s.key === newStatus) || CT_STATUSES[0];
+  const statusBtn = document.getElementById('ctModalStatus');
+  statusBtn.textContent = status.label;
+  statusBtn.dataset.status = status.key;
+  statusBtn.style.background = status.bg;
+  statusBtn.style.color = status.color;
+
+  // Show publish section when status is aprovado or agendar
+  const showPublish = ['aprovado', 'agendar'].includes(newStatus);
+  document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
+
+  // Reload activity
+  const actData = await ctApi('list_activity', { task_id: ctModalTask.id });
+  ctRenderModalActivity(Array.isArray(actData) ? actData : (actData.activity || []));
+}
+
+// ─── MODAL RENDERERS ───
+function ctRenderModalAttachments(attachments) {
+  const refs = attachments.filter(a => a.category === 'reference');
+  const creatives = attachments.filter(a => a.category === 'creative' || a.category === 'final');
+
+  const refsEl = document.getElementById('ctModalReferences');
+  const creativesEl = document.getElementById('ctModalCreatives');
+
+  refsEl.innerHTML = refs.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhuma referência adicionada</div>' :
+    refs.map(a => '<div class="ct-attachment-card"><span class="ct-att-category">REF</span><img src="' + a.file_url + '" onerror="this.src=\'\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
+
+  creativesEl.innerHTML = creatives.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Designer ainda não enviou o criativo</div>' :
+    creatives.map(a => '<div class="ct-attachment-card"><span class="ct-att-category" style="background:#10b981">FINAL</span><img src="' + a.file_url + '" onerror="this.src=\'\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
+}
+
+function ctRenderModalComments(comments) {
+  const el = document.getElementById('ctModalComments');
+  document.getElementById('ctModalCommentCount').textContent = comments.length ? '(' + comments.length + ')' : '';
+
+  if (comments.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhum comentário ainda</div>';
+    return;
+  }
+
+  el.innerHTML = comments.map(c => {
+    const user = CT_USERS.find(u => u.name === c.author);
+    const time = new Date(c.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return '<div class="ct-comment"><div class="ct-comment-header"><span class="ct-comment-author">' + (user ? '<span style="color:' + user.color + '">●</span> ' : '') + c.author + '</span><span class="ct-comment-time">' + time + '</span></div><div class="ct-comment-body">' + c.body + '</div></div>';
+  }).join('');
+}
+
+function ctRenderModalActivity(activity) {
+  const el = document.getElementById('ctModalActivity');
+  if (!activity || activity.length === 0) {
+    el.innerHTML = '<div style="color:var(--text-secondary);font-size:0.78rem">Nenhuma atividade</div>';
+    return;
+  }
+
+  el.innerHTML = activity.map(a => {
+    const time = new Date(a.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    let desc = a.action;
+    if (a.action === 'status_change' && a.details) {
+      const d = typeof a.details === 'string' ? JSON.parse(a.details) : a.details;
+      const oldS = CT_STATUSES.find(s => s.key === d.old_status);
+      const newS = CT_STATUSES.find(s => s.key === d.new_status);
+      desc = '<span style="color:' + (oldS ? oldS.color : '#666') + '">' + (oldS ? oldS.label : d.old_status) + '</span> → <span style="color:' + (newS ? newS.color : '#666') + '">' + (newS ? newS.label : d.new_status) + '</span>';
+    } else if (a.action === 'task_created') desc = '📋 Tarefa criada';
+    else if (a.action === 'comment_added') desc = '💬 Comentário adicionado';
+    else if (a.action === 'attachment_added') desc = '📎 Arquivo anexado';
+
+    return '<div class="ct-activity-item"><span class="ct-activity-actor">' + a.actor + '</span> ' + desc + '<div class="ct-activity-time">' + time + '</div></div>';
+  }).join('');
+}
+
+function ctRenderModalSubtasks(subtasks) {
+  const el = document.getElementById('ctModalSubtasks');
+  document.getElementById('ctModalSubtaskCount').textContent = subtasks.length ? '(' + subtasks.length + ')' : '';
+
+  if (subtasks.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = subtasks.map(s => {
+    const status = CT_STATUSES.find(st => st.key === s.status) || CT_STATUSES[0];
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'
+      + '<button class="ct-status" data-status="' + status.key + '" style="font-size:0.7rem;padding:2px 8px" onclick="ctShowStatusDropdown(event,\'' + s.id + '\')">' + status.label + '</button>'
+      + '<span onclick="ctOpenModal(\'' + s.id + '\')" style="cursor:pointer;flex:1;font-size:0.85rem">' + s.name + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+function ctRenderModalTree() {
+  const el = document.getElementById('ctModalTree');
+  if (!ctModalTask) { el.innerHTML = ''; return; }
+
+  let html = '';
+  ctGroups.forEach(g => {
+    html += '<div style="font-weight:600;font-size:0.78rem;padding:4px 10px;color:var(--text-secondary);margin-top:8px">📁 ' + g.name + '</div>';
+    (g.tasks || []).forEach(t => {
+      const isActive = t.id === ctModalTask.id;
+      html += '<div class="ct-tree-item' + (isActive ? ' active' : '') + '" onclick="ctOpenModal(\'' + t.id + '\')" style="padding-left:20px">' + t.name + '</div>';
+      (t.subtasks || []).forEach(s => {
+        const isActiveSub = s.id === ctModalTask.id;
+        html += '<div class="ct-tree-item' + (isActiveSub ? ' active' : '') + '" onclick="ctOpenModal(\'' + s.id + '\')" style="padding-left:36px;font-size:0.78rem">' + s.name + '</div>';
+      });
+    });
+  });
+  el.innerHTML = html;
+}
+
+// ─── COMMENTS ───
+async function ctAddComment() {
+  if (!ctModalTask) return;
+  const input = document.getElementById('ctModalNewComment');
+  const body = input.value.trim();
+  if (!body) return;
+  input.value = '';
+
+  await ctApi('add_comment', { task_id: ctModalTask.id, body, user: ctGetUser() });
+
+  // Reload comments and activity
+  const data = await ctApi('get_task', { id: ctModalTask.id });
+  ctRenderModalComments(data.comments || []);
+  ctRenderModalActivity(data.activity || []);
+}
+
+// ─── SUBTASKS ───
+async function ctAddSubtask() {
+  if (!ctModalTask) return;
+  const input = document.getElementById('ctModalNewSubtask');
+  const name = input.value.trim();
+  if (!name) return;
+  input.value = '';
+
+  await ctApi('upsert_task', {
+    group_id: ctModalTask.group_id,
+    parent_id: ctModalTask.id,
+    client_id: ctCurrentClient,
+    name,
+    user: ctGetUser(),
+  });
+
+  // Reload task
+  const data = await ctApi('get_task', { id: ctModalTask.id });
+  ctModalTask = data.task || data;
+  ctRenderModalSubtasks(ctModalTask.subtasks || []);
+}
+
+// ─── ATTACHMENTS ───
+function ctUploadAttachment(category) {
+  const inputId = category === 'reference' ? 'ctFileInputRef' : 'ctFileInputCreative';
+  document.getElementById(inputId).click();
+}
+
+async function ctHandleFileUpload(files, category) {
+  if (!ctModalTask || !files.length) return;
+
+  for (const file of files) {
+    // Convert to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsDataURL(file);
+    });
+
+    // Upload to Supabase Storage via media endpoint
+    const uploadRes = await fetch(ctApiBase() + '/api/meta/media', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        destination: 'fb',
+        client: ctCurrentClient,
+        source_base64: base64,
+        filename: file.name,
+        media_type: 'IMAGE',
+      }),
+    });
+    const uploadData = await uploadRes.json();
+
+    if (uploadData.upload && uploadData.upload.publicUrl) {
+      await ctApi('add_attachment', {
+        task_id: ctModalTask.id,
+        file_name: file.name,
+        file_url: uploadData.upload.publicUrl,
+        file_type: file.type,
+        file_size: file.size,
+        category: category,
+        user: ctGetUser(),
+      });
+    }
+  }
+
+  // Reload attachments
+  const data = await ctApi('get_task', { id: ctModalTask.id });
+  ctRenderModalAttachments(data.attachments || []);
+  ctRenderModalActivity(data.activity || []);
+}
+
+// ─── PUBLISH FROM MODAL ───
+async function ctPublishFromModal() {
+  if (!ctModalTask) return;
+
+  const platform = document.getElementById('ctPubFb').classList.contains('selected') ? 'fb' :
+                    document.getElementById('ctPubIg').classList.contains('selected') ? 'ig' : null;
+  if (!platform) { alert('Selecione a plataforma (Facebook ou Instagram)'); return; }
+
+  const copy = ctModalTask.copy_text || '';
+  if (!copy) { alert('Preencha a Copy do Post antes de publicar'); return; }
+
+  const mode = document.getElementById('ctPubMode').value;
+  const datetime = document.getElementById('ctPubDatetime').value;
+
+  const statusDiv = document.getElementById('ctPubStatus');
+  statusDiv.style.display = 'block';
+  statusDiv.innerHTML = '⏳ Publicando...';
+  statusDiv.style.color = '#1d4ed8';
+
+  // Find creative attachment for image_url
+  const data = await ctApi('list_attachments', { task_id: ctModalTask.id });
+  const attachments = Array.isArray(data) ? data : (data.attachments || []);
+  const creative = attachments.find(a => a.category === 'creative' || a.category === 'final');
+
+  const body = {
+    destination: platform,
+    client: ctCurrentClient,
+    caption: copy,
+    type: 'feed',
+    user: ctGetUser(),
+  };
+
+  if (creative) body.image_url = creative.file_url;
+  if (mode === 'schedule' && datetime) {
+    body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+  }
+
+  try {
+    const res = await fetch(ctApiBase() + '/api/meta/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const result = await res.json();
+
+    if (result.error) {
+      statusDiv.innerHTML = '❌ ' + result.message;
+      statusDiv.style.color = '#dc2626';
+    } else {
+      const isScheduled = mode === 'schedule';
+      statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!';
+      statusDiv.style.color = '#059669';
+
+      // Auto-update status
+      const newStatus = isScheduled ? 'agendado' : 'publicado';
+      await ctChangeModalStatus(newStatus);
+
+      // Save meta post id
+      await ctApi('upsert_task', {
+        id: ctModalTask.id,
+        meta_post_id: result.post_id,
+        publish_config: body,
+        user: ctGetUser(),
+      });
+    }
+  } catch (e) {
+    statusDiv.innerHTML = '❌ Erro: ' + e.message;
+    statusDiv.style.color = '#dc2626';
+  }
+}
+
+function ctSelectPlatform(platform) {
+  document.getElementById('ctPubFb').classList.toggle('selected', platform === 'fb');
+  document.getElementById('ctPubIg').classList.toggle('selected', platform === 'ig');
 }
 </script>
 </body>

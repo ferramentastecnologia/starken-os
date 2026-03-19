@@ -1,0 +1,509 @@
+// =============================================================================
+// Content Management API - Multiplexed Vercel Serverless Function
+// Single POST endpoint with action-based routing
+// =============================================================================
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
+
+const HEADERS = {
+  apikey: SUPABASE_KEY,
+  Authorization: `Bearer ${SUPABASE_KEY}`,
+  'Content-Type': 'application/json',
+};
+
+const HEADERS_RETURN = {
+  ...HEADERS,
+  Prefer: 'return=representation',
+};
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function ok(data) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
+}
+
+function fail(message, status = 400) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
+}
+
+async function supaSelect(table, query = '') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { headers: HEADERS });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`SELECT ${table} failed: ${err}`);
+  }
+  return res.json();
+}
+
+async function supaInsert(table, record) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: HEADERS_RETURN,
+    body: JSON.stringify(record),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`INSERT ${table} failed: ${err}`);
+  }
+  return res.json();
+}
+
+async function supaUpdate(table, id, updates) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: HEADERS_RETURN,
+    body: JSON.stringify(updates),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`UPDATE ${table} failed: ${err}`);
+  }
+  return res.json();
+}
+
+async function supaDelete(table, id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: HEADERS,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`DELETE ${table} failed: ${err}`);
+  }
+}
+
+async function logActivity(task_id, actor, action, details = null) {
+  await supaInsert('content_activity', {
+    task_id,
+    actor,
+    action,
+    details: details ? JSON.stringify(details) : null,
+    created_at: new Date().toISOString(),
+  });
+}
+
+// =============================================================================
+// Group Actions
+// =============================================================================
+
+async function listGroups({ client_id }) {
+  if (!client_id) return fail('client_id is required');
+
+  const groups = await supaSelect(
+    'content_groups',
+    `select=*&client_id=eq.${client_id}&archived=eq.false&order=position.asc`
+  );
+
+  const tasks = await supaSelect(
+    'content_tasks',
+    `select=id,group_id&client_id=eq.${client_id}`
+  );
+
+  const countMap = {};
+  for (const t of tasks) {
+    countMap[t.group_id] = (countMap[t.group_id] || 0) + 1;
+  }
+
+  const result = groups.map((g) => ({
+    ...g,
+    task_count: countMap[g.id] || 0,
+  }));
+
+  return ok(result);
+}
+
+async function upsertGroup({ id, client_id, name, position, user }) {
+  if (!client_id || !name) return fail('client_id and name are required');
+  if (!user) return fail('user is required');
+
+  const now = new Date().toISOString();
+
+  if (id) {
+    const data = await supaUpdate('content_groups', id, {
+      name,
+      ...(position !== undefined && { position }),
+      updated_at: now,
+    });
+    return ok(data);
+  }
+
+  const data = await supaInsert('content_groups', {
+    client_id,
+    name,
+    position: position ?? 0,
+    created_by: user,
+    created_at: now,
+    updated_at: now,
+    archived: false,
+  });
+  return ok(data);
+}
+
+async function deleteGroup({ id, user }) {
+  if (!id) return fail('id is required');
+  if (!user) return fail('user is required');
+
+  const data = await supaUpdate('content_groups', id, {
+    archived: true,
+    updated_at: new Date().toISOString(),
+  });
+  return ok(data);
+}
+
+// =============================================================================
+// Task Actions
+// =============================================================================
+
+async function listTasks({ group_id, client_id }) {
+  if (!group_id && !client_id) return fail('group_id or client_id is required');
+
+  const filter = group_id
+    ? `group_id=eq.${group_id}`
+    : `client_id=eq.${client_id}`;
+
+  const tasks = await supaSelect(
+    'content_tasks',
+    `select=*&${filter}&order=position.asc`
+  );
+
+  const parentTasks = [];
+  const childMap = {};
+
+  for (const t of tasks) {
+    if (t.parent_id) {
+      if (!childMap[t.parent_id]) childMap[t.parent_id] = [];
+      childMap[t.parent_id].push(t);
+    } else {
+      parentTasks.push(t);
+    }
+  }
+
+  const result = parentTasks.map((t) => ({
+    ...t,
+    subtasks: childMap[t.id] || [],
+  }));
+
+  return ok(result);
+}
+
+async function getTask({ id }) {
+  if (!id) return fail('id is required');
+
+  const [tasks, comments, attachments, activity] = await Promise.all([
+    supaSelect('content_tasks', `select=*&id=eq.${id}`),
+    supaSelect('content_comments', `select=*&task_id=eq.${id}&order=created_at.desc`),
+    supaSelect('content_attachments', `select=*&task_id=eq.${id}&order=created_at.desc`),
+    supaSelect('content_activity', `select=*&task_id=eq.${id}&order=created_at.desc&limit=50`),
+  ]);
+
+  if (!tasks.length) return fail('Task not found', 404);
+
+  return ok({
+    ...tasks[0],
+    comments,
+    attachments,
+    activity,
+  });
+}
+
+async function upsertTask(params) {
+  const {
+    id, group_id, parent_id, client_id, name, description,
+    briefing, copy_text, status, assignee, priority,
+    due_date, position, publish_config, user,
+  } = params;
+
+  if (!user) return fail('user is required');
+  const now = new Date().toISOString();
+
+  if (id) {
+    // Fetch current task for activity logging
+    const existing = await supaSelect('content_tasks', `select=status&id=eq.${id}`);
+    const oldStatus = existing.length ? existing[0].status : null;
+
+    const updates = {
+      ...(group_id !== undefined && { group_id }),
+      ...(parent_id !== undefined && { parent_id }),
+      ...(name !== undefined && { name }),
+      ...(description !== undefined && { description }),
+      ...(briefing !== undefined && { briefing }),
+      ...(copy_text !== undefined && { copy_text }),
+      ...(status !== undefined && { status }),
+      ...(assignee !== undefined && { assignee }),
+      ...(priority !== undefined && { priority }),
+      ...(due_date !== undefined && { due_date }),
+      ...(position !== undefined && { position }),
+      ...(publish_config !== undefined && { publish_config }),
+      updated_at: now,
+    };
+
+    const data = await supaUpdate('content_tasks', id, updates);
+
+    if (status !== undefined && status !== oldStatus) {
+      await logActivity(id, user, 'status_changed', {
+        old_status: oldStatus,
+        new_status: status,
+      });
+    }
+
+    return ok(data);
+  }
+
+  if (!group_id || !client_id || !name) {
+    return fail('group_id, client_id, and name are required for new tasks');
+  }
+
+  const record = {
+    group_id,
+    parent_id: parent_id || null,
+    client_id,
+    name,
+    description: description || null,
+    briefing: briefing || null,
+    copy_text: copy_text || null,
+    status: status || 'backlog',
+    assignee: assignee || null,
+    priority: priority || 'medium',
+    due_date: due_date || null,
+    position: position ?? 0,
+    publish_config: publish_config || null,
+    created_by: user,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const data = await supaInsert('content_tasks', record);
+
+  if (data.length) {
+    await logActivity(data[0].id, user, 'task_created', { name });
+  }
+
+  return ok(data);
+}
+
+async function deleteTask({ id, user }) {
+  if (!id) return fail('id is required');
+  if (!user) return fail('user is required');
+
+  await supaDelete('content_tasks', id);
+  return ok({ deleted: true });
+}
+
+async function changeStatus({ id, status, user }) {
+  if (!id || !status) return fail('id and status are required');
+  if (!user) return fail('user is required');
+
+  const existing = await supaSelect('content_tasks', `select=status&id=eq.${id}`);
+  if (!existing.length) return fail('Task not found', 404);
+
+  const oldStatus = existing[0].status;
+
+  const data = await supaUpdate('content_tasks', id, {
+    status,
+    updated_at: new Date().toISOString(),
+  });
+
+  await logActivity(id, user, 'status_changed', {
+    old_status: oldStatus,
+    new_status: status,
+  });
+
+  return ok(data);
+}
+
+async function reorder({ items, user }) {
+  if (!items || !Array.isArray(items)) return fail('items array is required');
+  if (!user) return fail('user is required');
+
+  const results = await Promise.all(
+    items.map(({ id, position }) =>
+      supaUpdate('content_tasks', id, { position, updated_at: new Date().toISOString() })
+    )
+  );
+
+  return ok({ updated: results.length });
+}
+
+// =============================================================================
+// Comment Actions
+// =============================================================================
+
+async function addComment({ task_id, body, user }) {
+  if (!task_id || !body) return fail('task_id and body are required');
+  if (!user) return fail('user is required');
+
+  const data = await supaInsert('content_comments', {
+    task_id,
+    author: user,
+    body,
+    created_at: new Date().toISOString(),
+  });
+
+  await logActivity(task_id, user, 'comment_added', {
+    preview: body.substring(0, 100),
+  });
+
+  return ok(data);
+}
+
+async function listComments({ task_id }) {
+  if (!task_id) return fail('task_id is required');
+
+  const data = await supaSelect(
+    'content_comments',
+    `select=*&task_id=eq.${task_id}&order=created_at.desc`
+  );
+  return ok(data);
+}
+
+// =============================================================================
+// Attachment Actions
+// =============================================================================
+
+async function addAttachment({ task_id, file_name, file_url, file_type, file_size, category, user }) {
+  if (!task_id || !file_name || !file_url) {
+    return fail('task_id, file_name, and file_url are required');
+  }
+  if (!user) return fail('user is required');
+
+  const data = await supaInsert('content_attachments', {
+    task_id,
+    file_name,
+    file_url,
+    file_type: file_type || null,
+    file_size: file_size || null,
+    category: category || null,
+    uploaded_by: user,
+    created_at: new Date().toISOString(),
+  });
+
+  await logActivity(task_id, user, 'attachment_added', {
+    file_name,
+    category: category || null,
+  });
+
+  return ok(data);
+}
+
+async function deleteAttachment({ id, user }) {
+  if (!id) return fail('id is required');
+  if (!user) return fail('user is required');
+
+  await supaDelete('content_attachments', id);
+  return ok({ deleted: true });
+}
+
+async function listAttachments({ task_id }) {
+  if (!task_id) return fail('task_id is required');
+
+  const data = await supaSelect(
+    'content_attachments',
+    `select=*&task_id=eq.${task_id}&order=created_at.desc`
+  );
+  return ok(data);
+}
+
+// =============================================================================
+// Activity Actions
+// =============================================================================
+
+async function listActivity({ task_id, limit }) {
+  if (!task_id) return fail('task_id is required');
+
+  const cap = Math.min(limit || 50, 200);
+  const data = await supaSelect(
+    'content_activity',
+    `select=*&task_id=eq.${task_id}&order=created_at.desc&limit=${cap}`
+  );
+
+  const parsed = data.map((row) => ({
+    ...row,
+    details: typeof row.details === 'string' ? JSON.parse(row.details) : row.details,
+  }));
+
+  return ok(parsed);
+}
+
+// =============================================================================
+// Action Router
+// =============================================================================
+
+const ACTIONS = {
+  // Groups
+  list_groups: listGroups,
+  upsert_group: upsertGroup,
+  delete_group: deleteGroup,
+  // Tasks
+  list_tasks: listTasks,
+  get_task: getTask,
+  upsert_task: upsertTask,
+  delete_task: deleteTask,
+  change_status: changeStatus,
+  reorder,
+  // Comments
+  add_comment: addComment,
+  list_comments: listComments,
+  // Attachments
+  add_attachment: addAttachment,
+  delete_attachment: deleteAttachment,
+  list_attachments: listAttachments,
+  // Activity
+  list_activity: listActivity,
+};
+
+// =============================================================================
+// Main Handler
+// =============================================================================
+
+module.exports = async function handler(req, res) {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.status(204).end();
+
+  let action, params;
+
+  if (req.method === 'GET') {
+    const q = req.query || {};
+    action = q.action;
+    params = { ...q };
+    delete params.action;
+  } else if (req.method === 'POST') {
+    const body = req.body || {};
+    action = body.action;
+    params = { ...body };
+    delete params.action;
+  } else {
+    return res.status(405).json({ error: 'Use GET ou POST' });
+  }
+
+  if (!action) return res.status(400).json({ error: 'Campo "action" obrigatório' });
+
+  const handler_fn = ACTIONS[action];
+  if (!handler_fn) return res.status(400).json({ error: `Action desconhecida: ${action}` });
+
+  try {
+    const response = await handler_fn(params);
+    // Response is a Web Response object — extract body and status
+    const body = await response.json();
+    return res.status(response.status).json(body);
+  } catch (err) {
+    return res.status(500).json({ error: err.message || 'Erro interno' });
+  }
+};
