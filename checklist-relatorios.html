@@ -7077,10 +7077,11 @@ function ctRenderList() {
         const indent = 36 + (depth * 24);
         const canAddSub = depth < 5;
 
-        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" data-task-name="' + (task.name||'').replace(/"/g,'&quot;') + '" style="padding-left:' + indent + 'px">'
+        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" data-task-name="' + (task.name||'').replace(/"/g,'&quot;') + '" style="padding-left:36px">'
           + '<div class="ct-name">'
-          + '<input type="checkbox" class="ct-select-check" data-id="' + task.id + '" onclick="event.stopPropagation();ctUpdateSelection()" style="margin-right:4px;cursor:pointer;accent-color:var(--accent,#3b82f6)">'
-          + '<span class="ct-drag-handle" draggable="true" ondragstart="ctDragStart(event)" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.85rem;user-select:none">⠿</span>'
+          + '<input type="checkbox" class="ct-select-check" data-id="' + task.id + '" onclick="event.stopPropagation();ctUpdateSelection()" style="margin-right:4px;cursor:pointer;accent-color:var(--accent,#3b82f6);flex-shrink:0">'
+          + '<span class="ct-drag-handle" draggable="true" ondragstart="ctDragStart(event)" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.85rem;user-select:none;flex-shrink:0">⠿</span>'
+          + (depth > 0 ? '<span style="width:' + (depth * 24) + 'px;flex-shrink:0"></span>' : '')
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
           + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
           + (canAddSub ? '<button onclick="event.stopPropagation();ctShowAddSubtask(\'' + task.id + '\',\'' + groupId + '\')" style="opacity:0;margin-left:6px;border:none;background:none;cursor:pointer;font-size:0.72rem;color:var(--text-muted);transition:opacity 0.15s" class="ct-add-sub-btn" title="Adicionar subtarefa">＋ sub</button>' : '')
