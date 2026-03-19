@@ -6260,8 +6260,21 @@ function metaPublishSelectAspect(ratio, btn) {
 function metaPublishScheduleChange() {
   const mode = document.getElementById('metaPubScheduleMode').value;
   document.getElementById('metaPubDatetimeWrap').style.display = mode === 'schedule' ? 'block' : 'none';
+
+  // Aviso: IG não suporta agendamento via API
+  const platform = document.getElementById('metaPubPlatform').value || '';
+  const plats = platform.split(',').filter(Boolean);
+  const igWarn = document.getElementById('metaPubIgScheduleWarn');
+  if (igWarn) igWarn.remove();
+  if (mode === 'schedule' && plats.includes('ig') && !plats.includes('fb')) {
+    const warn = document.createElement('div');
+    warn.id = 'metaPubIgScheduleWarn';
+    warn.style.cssText = 'background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;font-size:0.78rem;color:#92400e;margin-top:8px';
+    warn.innerHTML = '⚠️ <b>Instagram não suporta agendamento via API.</b> O post será publicado agora e aparecerá imediatamente no feed.';
+    document.getElementById('metaPubDatetimeWrap').parentElement.appendChild(warn);
+  }
+
   if (mode === 'schedule') {
-    // Pré-preenche com amanhã 10h
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);

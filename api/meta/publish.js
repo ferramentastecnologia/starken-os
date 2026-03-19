@@ -86,12 +86,20 @@ module.exports = async function handler(req, res) {
         } catch (e) { /* usa token global */ }
       }
 
-      // Deleta do Meta Graph API (funciona para publicados e agendados)
-      const deleteParams = {};
-      if (pageToken) deleteParams.access_token = pageToken;
-      await graphDelete(`/${post_id}`, deleteParams);
+      // Tenta deletar do Meta Graph API
+      let metaDeleted = false;
+      let metaError = null;
+      try {
+        const deleteParams = {};
+        if (pageToken) deleteParams.access_token = pageToken;
+        await graphDelete(`/${post_id}`, deleteParams);
+        metaDeleted = true;
+      } catch (delErr) {
+        // IG posts geralmente não podem ser deletados via API
+        metaError = delErr.message || 'Não foi possível excluir do Meta';
+      }
 
-      // Atualiza status no histórico (Supabase)
+      // Atualiza status no histórico (Supabase) independente do resultado Meta
       if (history_id) {
         const url = SUPABASE_URL();
         if (url) {
@@ -106,7 +114,10 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({
         ok: true,
         deleted: post_id,
-        message: 'Post excluído/cancelado com sucesso no Meta',
+        meta_deleted: metaDeleted,
+        message: metaDeleted
+          ? 'Post excluído/cancelado com sucesso no Meta'
+          : 'Removido do histórico. ' + (metaError || 'Exclua manualmente no Meta Business Suite para posts do Instagram.'),
       });
     } catch (err) {
       if (err.error) return res.status(err.status || 502).json(err);
