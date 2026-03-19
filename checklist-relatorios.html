@@ -1244,7 +1244,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 /* Drag & Drop */
 .ct-row[draggable="true"]:hover .ct-drag-handle { opacity:1; }
 .ct-row[draggable="true"] .ct-drag-handle { opacity:0.3;transition:opacity 0.15s; }
-.ct-row.drag-over { border-top:2px solid var(--accent,#3b82f6);margin-top:-2px; }
+.ct-row.drag-over-top { border-top:2px solid var(--accent,#3b82f6) !important;margin-top:-2px; }
+.ct-row.drag-over-center { background:rgba(59,130,246,0.08) !important;outline:2px dashed var(--accent,#3b82f6);outline-offset:-2px;border-radius:6px; }
 .ct-row.dragging { opacity:0.4;background:var(--starken-bg); }
 
 /* Show add-sub button on row hover */
@@ -7056,8 +7057,8 @@ function ctRenderList() {
         const indent = 36 + (depth * 24);
         const canAddSub = depth < 5;
 
-        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" draggable="true" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" style="padding-left:' + indent + 'px" '
-          + 'ondragstart="ctDragStart(event)" ondragover="ctDragOver(event)" ondrop="ctDrop(event)" ondragend="ctDragEnd(event)">'
+        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" draggable="true" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" style="padding-left:' + indent + 'px" '
+          + 'ondragstart="ctDragStart(event)" ondragover="ctDragOver(event)" ondragleave="ctDragLeave(event)" ondrop="ctDrop(event)" ondragend="ctDragEnd(event)">'
           + '<div class="ct-name">'
           + '<span class="ct-drag-handle" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.75rem">⠿</span>'
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
@@ -7655,46 +7656,107 @@ function ctSelectPlatform(platform) {
 // ─── LIGHTBOX (visualizar imagem grande) ───
 // ─── DRAG & DROP ───
 let ctDraggedId = null;
+let ctDraggedParent = null;
+let ctDraggedGroup = null;
+
 function ctDragStart(e) {
   ctDraggedId = e.currentTarget.dataset.taskId;
+  ctDraggedParent = e.currentTarget.dataset.parentId || null;
+  ctDraggedGroup = e.currentTarget.dataset.groupId;
   e.currentTarget.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', ctDraggedId);
 }
+
 function ctDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   const row = e.currentTarget;
-  if (row.dataset.taskId !== ctDraggedId) {
-    document.querySelectorAll('.ct-row.drag-over').forEach(r => r.classList.remove('drag-over'));
-    row.classList.add('drag-over');
+  if (row.dataset.taskId === ctDraggedId) return;
+
+  document.querySelectorAll('.ct-row.drag-over-top,.ct-row.drag-over-center').forEach(r => {
+    r.classList.remove('drag-over-top');
+    r.classList.remove('drag-over-center');
+  });
+
+  // Detect drop zone: top 30% = insert before, middle 40% = make subtask, bottom 30% = insert after
+  const rect = row.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const pct = y / rect.height;
+
+  if (pct < 0.35) {
+    row.classList.add('drag-over-top');
+  } else if (pct > 0.65) {
+    // Will insert after - show on next row or bottom border
+    row.classList.add('drag-over-top');
+    row.style.borderBottomColor = 'var(--accent,#3b82f6)';
+  } else {
+    // Make subtask of this task
+    const targetDepth = parseInt(row.dataset.depth || '0');
+    if (targetDepth < 5) {
+      row.classList.add('drag-over-center');
+    }
   }
 }
+
+function ctDragLeave(e) {
+  const row = e.currentTarget;
+  row.classList.remove('drag-over-top');
+  row.classList.remove('drag-over-center');
+  row.style.borderBottomColor = '';
+}
+
 async function ctDrop(e) {
   e.preventDefault();
-  const targetId = e.currentTarget.dataset.taskId;
-  const targetGroupId = e.currentTarget.dataset.groupId;
-  document.querySelectorAll('.ct-row.drag-over').forEach(r => r.classList.remove('drag-over'));
+  const row = e.currentTarget;
+  const targetId = row.dataset.taskId;
+  const targetGroupId = row.dataset.groupId;
+  const targetDepth = parseInt(row.dataset.depth || '0');
+  const targetParent = row.dataset.parentId || null;
+
+  document.querySelectorAll('.ct-row.drag-over-top,.ct-row.drag-over-center').forEach(r => {
+    r.classList.remove('drag-over-top');
+    r.classList.remove('drag-over-center');
+    r.style.borderBottomColor = '';
+  });
+
   if (!ctDraggedId || ctDraggedId === targetId) return;
 
-  // Find positions - move dragged after target
-  const rows = Array.from(document.querySelectorAll('.ct-row[data-task-id]'));
-  const targetIdx = rows.findIndex(r => r.dataset.taskId === targetId);
+  // Detect drop zone
+  const rect = row.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const pct = y / rect.height;
 
-  // Reorder via API
-  const updates = [];
-  rows.forEach((r, i) => {
-    if (r.dataset.taskId) updates.push({ id: r.dataset.taskId, position: i });
-  });
-  // Move dragged to after target
-  await ctApi('reorder', { updates: [{ id: ctDraggedId, position: targetIdx + 1 }] });
+  if (pct >= 0.35 && pct <= 0.65 && targetDepth < 5) {
+    // Make dragged a SUBTASK of target
+    await ctApi('upsert_task', { id: ctDraggedId, parent_id: targetId, user: ctGetUser() });
+    ctExpandedTasks[targetId] = true;
+  } else {
+    // Reorder: move dragged to same level as target (before or after)
+    // Get target's position and parent
+    const newParent = targetParent;
+    const siblings = Array.from(document.querySelectorAll('.ct-row[data-parent-id="' + (newParent || '') + '"][data-group-id="' + targetGroupId + '"]'));
+    const targetIdx = siblings.findIndex(r => r.dataset.taskId === targetId);
+    const newPos = pct < 0.35 ? targetIdx : targetIdx + 1;
+
+    // Update parent and position
+    const updates = { id: ctDraggedId, parent_id: newParent || null, position: newPos, user: ctGetUser() };
+    if (targetGroupId !== ctDraggedGroup) updates.group_id = targetGroupId;
+    await ctApi('upsert_task', updates);
+  }
+
   ctLoadGroups();
 }
+
 function ctDragEnd(e) {
   ctDraggedId = null;
-  document.querySelectorAll('.ct-row.dragging,.ct-row.drag-over').forEach(r => {
+  ctDraggedParent = null;
+  ctDraggedGroup = null;
+  document.querySelectorAll('.ct-row.dragging,.ct-row.drag-over-top,.ct-row.drag-over-center').forEach(r => {
     r.classList.remove('dragging');
-    r.classList.remove('drag-over');
+    r.classList.remove('drag-over-top');
+    r.classList.remove('drag-over-center');
+    r.style.borderBottomColor = '';
   });
 }
 
