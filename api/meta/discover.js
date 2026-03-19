@@ -22,13 +22,33 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // 1. Páginas do Facebook + IG vinculado
-    const pagesData = await graphGet('/me/accounts', {
+    // Helper: buscar todas as páginas seguindo paginação
+    async function fetchAllPages(path, params) {
+      const allData = [];
+      let url = path;
+      let queryParams = { ...params };
+      let hasNext = true;
+
+      while (hasNext) {
+        const result = await graphGet(url, queryParams);
+        if (result.data) allData.push(...result.data);
+
+        if (result.paging && result.paging.cursors && result.paging.cursors.after) {
+          queryParams = { ...params, after: result.paging.cursors.after };
+        } else {
+          hasNext = false;
+        }
+      }
+      return allData;
+    }
+
+    // 1. Páginas do Facebook + IG vinculado (com paginação completa)
+    const pagesRaw = await fetchAllPages('/me/accounts', {
       fields: 'name,id,category,access_token,instagram_business_account{id,username,name,profile_picture_url,followers_count}',
       limit: '100',
     });
 
-    const pages = (pagesData.data || []).map(page => ({
+    const pages = pagesRaw.map(page => ({
       id: page.id,
       name: page.name,
       category: page.category,
@@ -36,13 +56,13 @@ module.exports = async function handler(req, res) {
       ig_account: page.instagram_business_account || null,
     }));
 
-    // 2. Contas de anúncios
-    const adAccountsData = await graphGet('/me/adaccounts', {
+    // 2. Contas de anúncios (com paginação completa)
+    const adAccountsRaw = await fetchAllPages('/me/adaccounts', {
       fields: 'name,account_id,id,account_status,currency,balance,amount_spent,business{id,name}',
       limit: '100',
     });
 
-    const adAccounts = (adAccountsData.data || []).map(acc => ({
+    const adAccounts = adAccountsRaw.map(acc => ({
       id: acc.id,
       account_id: acc.account_id,
       name: acc.name,
