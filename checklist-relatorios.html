@@ -824,6 +824,77 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .btn-gp-save:hover { background:var(--starken-dark); }
 .btn-gp-cancel { background:var(--bg-subtle); color:var(--text-secondary); padding:8px 18px; border-radius:8px; border:1px solid var(--border); font-weight:500; cursor:pointer; font-size:0.85rem; font-family:inherit; }
 .s-a-fazer{background:#f3f4f6;color:#374151}.s-criacao{background:#ede9fe;color:#5b21b6}.s-copy{background:#e0f2fe;color:#0369a1}.s-design{background:#ddd6fe;color:#4c1d95}.s-aprov-design{background:#fce7f3;color:#9d174d}.s-alter-design{background:#fef3c7;color:#92400e}.s-aprov-cliente{background:#d1fae5;color:#065f46}.s-alteracao{background:#ffedd5;color:#9a3412}.s-revisao{background:#fef9c3;color:#854d0e}.s-agendar{background:#cffafe;color:#155e75}.s-agendado{background:#e0f2fe;color:#1e40af}.s-postado{background:#dcfce7;color:#166534}.s-plano-midia{background:#f0fdf4;color:#15803d}.s-aguardando{background:#f1f5f9;color:#475569}.s-standby{background:#f8fafc;color:#64748b}.s-finalizado{background:#f0fdf4;color:#15803d}
+
+/* ===== META CONFIG: GRID DE CLIENTES ===== */
+.meta-client-section { margin-bottom: 24px; }
+.meta-client-section-header {
+  font-weight: 700; font-size: 0.88rem;
+  padding: 8px 12px; border-radius: 8px;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+}
+.meta-client-section-header.starken { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.meta-client-section-header.alpha   { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.meta-client-section-header .mc-count {
+  margin-left: auto; font-weight: 500; font-size: 0.78rem; opacity: 0.75;
+}
+.meta-client-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.meta-client-card {
+  border: 2px solid;
+  border-radius: 10px;
+  padding: 0;
+  background: white;
+  position: relative;
+  font-size: 13px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.meta-client-card.starken { border-color: #10b981; }
+.meta-client-card.starken .meta-client-header { background: #ecfdf5; color: #059669; border-bottom: 1px solid #a7f3d0; }
+.meta-client-card.alpha   { border-color: #f59e0b; }
+.meta-client-card.alpha   .meta-client-header { background: #fffbeb; color: #b45309; border-bottom: 1px solid #fde68a; }
+.meta-client-header {
+  padding: 8px 10px 8px 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.meta-client-header .mc-client-name {
+  font-weight: 700; font-size: 0.82rem; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.meta-client-header .mc-grupo-badge {
+  font-size: 0.65rem; font-weight: 700; padding: 2px 6px;
+  border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.85;
+}
+.meta-client-card.starken .mc-grupo-badge { background: #d1fae5; color: #065f46; }
+.meta-client-card.alpha   .mc-grupo-badge { background: #fef3c7; color: #92400e; }
+.mc-remove-btn {
+  background: none; border: none; cursor: pointer;
+  color: #ef4444; font-size: 1rem; padding: 2px 4px;
+  border-radius: 4px; line-height: 1; flex-shrink: 0;
+  transition: background 0.15s;
+}
+.mc-remove-btn:hover { background: #fee2e2; }
+.meta-client-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.mc-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mc-field { display: flex; flex-direction: column; gap: 3px; }
+.mc-field.full { grid-column: 1 / -1; }
+.mc-field label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.mc-field select, .mc-field input {
+  padding: 5px 8px; font-size: 0.78rem; border: 1px solid var(--border);
+  border-radius: 6px; background: var(--bg-subtle); color: var(--text);
+  font-family: inherit; width: 100%;
+}
+.mc-field select:focus, .mc-field input:focus { outline: none; border-color: var(--starken); }
+.mc-field input[readonly] { opacity: 0.6; cursor: default; background: var(--border-light); }
+.meta-client-empty {
+  text-align: center; padding: 30px 20px;
+  color: var(--text-secondary); font-size: 0.85rem;
+  background: var(--bg-subtle); border-radius: 10px;
+  border: 2px dashed var(--border);
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -4573,6 +4644,7 @@ function metaConfigInit() {
       _metaClients = data.config.clients || {};
       metaConfigRenderClientList();
       if (Object.keys(_metaClients).length > 0) {
+        document.getElementById('metaConfigAddClientRow').style.display = 'block';
         document.getElementById('metaConfigSaveRow').style.display = 'block';
       }
     }
@@ -4618,6 +4690,11 @@ async function metaConfigDiscover() {
     statusDiv.style.background = '#f0fdf4';
     statusDiv.innerHTML = tokenHtml;
 
+    // Se não há clientes cadastrados, pré-carrega a partir da lista SEED_CLIENTS
+    if (Object.keys(_metaClients).length === 0) {
+      metaConfigSeedFromKnownClients();
+    }
+
     // Exibe botão "Criar Cliente" e lista atual de clientes
     document.getElementById('metaConfigAddClientRow').style.display = 'block';
     document.getElementById('metaConfigSaveRow').style.display = 'block';
@@ -4637,6 +4714,27 @@ function metaConfigSlugify(name) {
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || ('cliente-' + (++_metaClientSeq));
+}
+
+// Pré-popula _metaClients a partir do SEED_CLIENTS global (clientes conhecidos)
+function metaConfigSeedFromKnownClients() {
+  if (typeof SEED_CLIENTS === 'undefined') return;
+  SEED_CLIENTS.forEach(function(seed) {
+    const tenant = (seed.company || '').toLowerCase() === 'alpha' ? 'alpha' : 'starken';
+    const key = metaConfigSlugify(seed.name);
+    if (_metaClients[key]) return; // Não sobrescreve cliente já existente
+    _metaClients[key] = {
+      name: seed.name,
+      tenant: tenant,
+      pageId: '',
+      pageName: '',
+      pageAccessToken: '',
+      igUserId: '',
+      igUsername: '',
+      adAccountId: '',
+      adAccountName: '',
+    };
+  });
 }
 
 // Adiciona um novo cliente vazio à lista
@@ -4717,121 +4815,114 @@ function metaConfigClientTenantChange(key, value) {
   _metaClients[key].tenant = value;
 }
 
-// Renderiza a lista de cards de clientes agrupados por tenant
+// Renderiza a lista de cards de clientes agrupados por tenant — layout em grid compacto
 function metaConfigRenderClientList() {
   const container = document.getElementById('metaConfigClientList');
   const pages = _metaDiscoveredData?.pages || [];
   const adAccounts = _metaDiscoveredData?.ad_accounts || [];
 
-  // Monta opções de páginas
-  const pageOptions = '<option value="">— Selecionar página —</option>'
-    + pages.map(p => '<option value="' + p.id + '">'
-      + p.name + (p.ig_account ? ' (@' + p.ig_account.username + ')' : '') + '</option>').join('');
-
-  // Monta opções de contas de anúncios
-  const adOptions = '<option value="">— Selecionar conta —</option>'
-    + adAccounts.map(a => '<option value="' + a.id + '">' + (a.name || a.id) + '</option>').join('');
-
   // Agrupa clientes por tenant
-  const grouped = { starken: [], alpha: [], outros: [] };
+  const grouped = { starken: [], alpha: [] };
   Object.entries(_metaClients).forEach(([key, c]) => {
-    if (c.tenant === 'starken') grouped.starken.push([key, c]);
-    else if (c.tenant === 'alpha') grouped.alpha.push([key, c]);
-    else grouped.outros.push([key, c]);
-  });
-
-  let html = '';
-
-  const tenantSections = [
-    { key: 'starken', label: '&#11088; Starken Performance', color: 'var(--starken-color,#3b82f6)' },
-    { key: 'alpha',   label: '&#127807; Alpha Assessoria',   color: 'var(--alpha-color,#10b981)' },
-  ];
-
-  tenantSections.forEach(({ key: tKey, label, color }) => {
-    const clients = grouped[tKey];
-    if (clients.length === 0 && Object.keys(_metaClients).length > 0) return; // Omite seção vazia se há clientes
-    if (clients.length === 0) return;
-
-    html += '<div style="margin-bottom:24px">'
-      + '<div style="font-weight:700;font-size:0.9rem;margin-bottom:10px;color:' + color + ';border-bottom:1px solid var(--border);padding-bottom:6px">' + label + '</div>';
-
-    clients.forEach(([key, c]) => {
-      const selPage = c.pageId ? ('<option value="' + c.pageId + '" selected>' + (c.pageName || c.pageId) + '</option>') : '';
-      const selAd = c.adAccountId ? ('<option value="' + c.adAccountId + '" selected>' + (c.adAccountName || c.adAccountId) + '</option>') : '';
-
-      // Constrói select de páginas com opção atual selecionada
-      const pageOpts = '<option value="">— Selecionar página —</option>'
-        + pages.map(p => '<option value="' + p.id + '"' + (p.id === c.pageId ? ' selected' : '') + '>'
-          + p.name + (p.ig_account ? ' (@' + p.ig_account.username + ')' : '') + '</option>').join('');
-
-      // Constrói select de ad accounts com opção atual selecionada
-      const adOpts = '<option value="">— Selecionar conta —</option>'
-        + adAccounts.map(a => '<option value="' + a.id + '"' + (a.id === c.adAccountId ? ' selected' : '') + '>'
-          + (a.name || a.id) + '</option>').join('');
-
-      html += '<div data-client-key="' + key + '" style="border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;background:var(--bg-secondary)">'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
-
-        // Nome do cliente
-        + '<div>'
-        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Nome do Cliente</label>'
-        + '<input class="form-input mc-name-input" type="text" value="' + (c.name||'').replace(/"/g,'&quot;') + '" placeholder="Ex: Super X - Itapoá"'
-        + ' oninput="metaConfigClientNameChange(\'' + key + '\',this.value)"'
-        + ' style="width:100%;padding:6px 10px;font-size:0.82rem">'
-        + '</div>'
-
-        // Grupo (tenant)
-        + '<div>'
-        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Grupo</label>'
-        + '<select class="form-input" onchange="metaConfigClientTenantChange(\'' + key + '\',this.value);metaConfigRenderClientList()"'
-        + ' style="width:100%;padding:6px 10px;font-size:0.82rem">'
-        + '<option value="starken"' + (c.tenant === 'starken' ? ' selected' : '') + '>Starken</option>'
-        + '<option value="alpha"' + (c.tenant === 'alpha' ? ' selected' : '') + '>Alpha</option>'
-        + '</select>'
-        + '</div>'
-
-        // Página Facebook
-        + '<div>'
-        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Página Facebook</label>'
-        + (pages.length > 0
-          ? '<select class="form-input" onchange="metaConfigClientPageChange(\'' + key + '\',this)" style="width:100%;padding:6px 10px;font-size:0.82rem">' + pageOpts + '</select>'
-          : '<input class="form-input" type="text" value="' + (c.pageId||'') + '" placeholder="ID da página" oninput="_metaClients[\'' + key + '\'].pageId=this.value" style="width:100%;padding:6px 10px;font-size:0.82rem">'
-        )
-        + '</div>'
-
-        // Instagram (preenchido automaticamente)
-        + '<div>'
-        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Instagram</label>'
-        + '<input class="form-input mc-ig-input" type="text" value="' + (c.igUsername||'') + '" placeholder="Preenchido automaticamente" readonly'
-        + ' style="width:100%;padding:6px 10px;font-size:0.82rem;opacity:0.7;cursor:default">'
-        + '</div>'
-
-        // Conta de Anúncios
-        + '<div style="grid-column:span 2">'
-        + '<label style="font-size:0.75rem;color:var(--text-secondary);display:block;margin-bottom:4px">Conta de Anúncios</label>'
-        + (adAccounts.length > 0
-          ? '<select class="form-input" onchange="metaConfigClientAdChange(\'' + key + '\',this)" style="width:100%;padding:6px 10px;font-size:0.82rem">' + adOpts + '</select>'
-          : '<input class="form-input" type="text" value="' + (c.adAccountId||'') + '" placeholder="act_000000000" oninput="_metaClients[\'' + key + '\'].adAccountId=this.value" style="width:100%;padding:6px 10px;font-size:0.82rem">'
-        )
-        + '</div>'
-
-        + '</div>'
-        // Botão remover
-        + '<div style="text-align:right">'
-        + '<button onclick="metaConfigRemoveClient(\'' + key + '\')" style="background:none;border:1px solid var(--danger,#ef4444);color:var(--danger,#ef4444);border-radius:6px;padding:4px 12px;font-size:0.75rem;cursor:pointer">&#128465; Remover cliente</button>'
-        + '</div>'
-        + '</div>';
-    });
-
-    html += '</div>';
+    if (c.tenant === 'alpha') grouped.alpha.push([key, c]);
+    else grouped.starken.push([key, c]);
   });
 
   // Mensagem quando não há clientes
   if (Object.keys(_metaClients).length === 0) {
-    html = '<div style="text-align:center;padding:30px;color:var(--text-secondary);font-size:0.85rem">'
-      + 'Nenhum cliente cadastrado. Clique em "Criar Cliente" para começar.'
+    container.innerHTML = '<div class="meta-client-empty">'
+      + 'Nenhum cliente cadastrado. Clique em "Criar Cliente" para adicionar, ou em "Descobrir Ativos" para pré-carregar a lista completa.'
+      + '</div>';
+    return;
+  }
+
+  const tenantSections = [
+    { key: 'starken', label: '&#11088; Starken Performance', badge: 'Starken' },
+    { key: 'alpha',   label: '&#127807; Alpha Assessoria',   badge: 'Alpha'   },
+  ];
+
+  // Função auxiliar que gera o HTML de um card individual
+  function renderCard(key, c) {
+    const tenant = c.tenant === 'alpha' ? 'alpha' : 'starken';
+    const badgeLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
+    const clientNameSafe = (c.name || '').replace(/"/g, '&quot;');
+
+    // Opções de páginas Facebook
+    const pageOpts = '<option value="">— Selecionar página —</option>'
+      + pages.map(p => '<option value="' + p.id + '"' + (p.id === c.pageId ? ' selected' : '') + '>'
+        + p.name + (p.ig_account ? ' (@' + p.ig_account.username + ')' : '') + '</option>').join('');
+
+    // Opções de contas de anúncios
+    const adOpts = '<option value="">— Selecionar conta —</option>'
+      + adAccounts.map(a => '<option value="' + a.id + '"' + (a.id === c.adAccountId ? ' selected' : '') + '>'
+        + (a.name || a.id) + '</option>').join('');
+
+    const displayName = c.name || 'Novo Cliente';
+
+    return '<div class="meta-client-card ' + tenant + '" data-client-key="' + key + '">'
+      // Cabeçalho compacto com nome, badge e botão remover
+      + '<div class="meta-client-header">'
+      + '<span class="mc-client-name" title="' + clientNameSafe + '">' + (c.name ? c.name.replace(/</g,'&lt;') : '<em style="opacity:.5">Novo Cliente</em>') + '</span>'
+      + '<span class="mc-grupo-badge">' + badgeLabel + '</span>'
+      + '<button class="mc-remove-btn" title="Remover cliente" onclick="metaConfigRemoveClient(\'' + key + '\')">&#10005;</button>'
+      + '</div>'
+      // Corpo com campos compactos
+      + '<div class="meta-client-body">'
+      // Linha 1: Nome + Grupo
+      + '<div class="mc-field-row">'
+      + '<div class="mc-field full">'
+      + '<label>Nome do Cliente</label>'
+      + '<input class="mc-name-input" type="text" value="' + clientNameSafe + '" placeholder="Ex: Super X - Itapoá"'
+      + ' oninput="metaConfigClientNameChange(\'' + key + '\',this.value);this.closest(\'.meta-client-card\').querySelector(\'.mc-client-name\').textContent=this.value||\'Novo Cliente\'">'
+      + '</div>'
+      + '</div>'
+      // Linha 2: Página Facebook + Instagram
+      + '<div class="mc-field-row">'
+      + '<div class="mc-field">'
+      + '<label>Pg. Facebook</label>'
+      + (pages.length > 0
+        ? '<select onchange="metaConfigClientPageChange(\'' + key + '\',this)">' + pageOpts + '</select>'
+        : '<input type="text" value="' + (c.pageId || '') + '" placeholder="ID da página" oninput="_metaClients[\'' + key + '\'].pageId=this.value">'
+      )
+      + '</div>'
+      + '<div class="mc-field">'
+      + '<label>Instagram</label>'
+      + '<input class="mc-ig-input" type="text" value="' + (c.igUsername || '') + '" placeholder="Automático" readonly>'
+      + '</div>'
+      + '</div>'
+      // Linha 3: Conta de Anúncios (largura total)
+      + '<div class="mc-field-row">'
+      + '<div class="mc-field full">'
+      + '<label>Conta de Anúncios</label>'
+      + (adAccounts.length > 0
+        ? '<select onchange="metaConfigClientAdChange(\'' + key + '\',this)">' + adOpts + '</select>'
+        : '<input type="text" value="' + (c.adAccountId || '') + '" placeholder="act_000000000" oninput="_metaClients[\'' + key + '\'].adAccountId=this.value">'
+      )
+      + '</div>'
+      + '</div>'
+      + '</div>'
       + '</div>';
   }
+
+  let html = '';
+
+  tenantSections.forEach(({ key: tKey, label }) => {
+    const clients = grouped[tKey];
+    if (clients.length === 0) return;
+
+    html += '<div class="meta-client-section">'
+      + '<div class="meta-client-section-header ' + tKey + '">'
+      + label
+      + '<span class="mc-count">' + clients.length + ' cliente' + (clients.length !== 1 ? 's' : '') + '</span>'
+      + '</div>'
+      + '<div class="meta-client-grid">';
+
+    clients.forEach(([key, c]) => {
+      html += renderCard(key, c);
+    });
+
+    html += '</div></div>';
+  });
 
   container.innerHTML = html;
 }
