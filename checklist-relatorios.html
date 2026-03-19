@@ -1269,6 +1269,297 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   .ct-header-row,.ct-row { grid-template-columns:1fr 120px 100px; }
   .ct-row .ct-col-date,.ct-row .ct-col-comments,.ct-row .ct-col-priority { display:none; }
 }
+
+/* ═══ CALENDÁRIO DE POSTS ═══ */
+/* All rules scoped to #tab-calendario to avoid conflicts with Gestao de Projetos cal-* classes */
+#tab-calendario .cal-wrap { padding: 20px; }
+#tab-calendario .cal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+#tab-calendario .cal-toolbar h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text);
+}
+#tab-calendario .cal-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+#tab-calendario .cal-toolbar select {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  outline: none;
+}
+#tab-calendario .cal-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  box-shadow: var(--shadow);
+}
+#tab-calendario .cal-nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  line-height: 1;
+}
+#tab-calendario .cal-nav-btn:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+#tab-calendario .cal-nav-month {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 150px;
+  text-align: center;
+}
+#tab-calendario .cal-today-btn {
+  background: var(--starken-bg);
+  color: var(--starken);
+  border: 1px solid var(--starken-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#tab-calendario .cal-today-btn:hover { background: var(--starken); color: #fff; }
+#tab-calendario .cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 2px;
+}
+#tab-calendario .cal-weekday-label {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 6px 0;
+}
+#tab-calendario .cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+#tab-calendario .cal-day {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  min-height: 90px;
+  padding: 5px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  overflow: hidden;
+  position: relative;
+}
+#tab-calendario .cal-day:hover {
+  border-color: var(--starken);
+  box-shadow: var(--shadow-md);
+}
+#tab-calendario .cal-day.other-month {
+  background: var(--bg-subtle);
+  opacity: 0.45;
+}
+#tab-calendario .cal-day.today {
+  border-color: var(--starken);
+  border-width: 2px;
+  background: var(--starken-bg);
+}
+#tab-calendario .cal-day.selected {
+  border-color: var(--purple);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.12);
+}
+#tab-calendario .cal-day-num {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#tab-calendario .cal-day.today .cal-day-num { color: var(--starken); }
+#tab-calendario .cal-day-num .today-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--starken);
+}
+#tab-calendario .cal-posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#tab-calendario .cal-post {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 4px;
+  padding: 2px 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-left: 3px solid transparent;
+  background: var(--bg-subtle);
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  color: var(--text);
+}
+#tab-calendario .cal-post:hover { opacity: 0.8; transform: translateX(1px); }
+#tab-calendario .cal-post.published { border-left-color: #10b981; background: #ecfdf5; color: #065f46; }
+#tab-calendario .cal-post.scheduled { border-left-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+#tab-calendario .cal-post.failed    { border-left-color: #ef4444; background: #fef2f2; color: #991b1b; }
+#tab-calendario .cal-post.queued    { border-left-color: #f59e0b; background: #fffbeb; color: #92400e; }
+[data-theme="dark"] #tab-calendario .cal-post.published { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+[data-theme="dark"] #tab-calendario .cal-post.scheduled { background: rgba(59,130,246,0.15); color: #93c5fd; }
+[data-theme="dark"] #tab-calendario .cal-post.failed    { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+[data-theme="dark"] #tab-calendario .cal-post.queued    { background: rgba(245,158,11,0.15); color: #fcd34d; }
+[data-theme="warm"] #tab-calendario .cal-post.published { background: #e6f7ee; }
+[data-theme="warm"] #tab-calendario .cal-post.scheduled { background: #e6effe; }
+[data-theme="warm"] #tab-calendario .cal-post.failed    { background: #fdf2f2; }
+[data-theme="warm"] #tab-calendario .cal-post.queued    { background: #fffaeb; }
+#tab-calendario .cal-post-time { font-size: 0.65rem; opacity: 0.75; flex-shrink: 0; }
+#tab-calendario .cal-post-icon { flex-shrink: 0; font-size: 0.72rem; }
+#tab-calendario .cal-post-client {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+#tab-calendario .cal-more {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  padding: 1px 4px;
+  text-align: right;
+  cursor: pointer;
+}
+#tab-calendario .cal-more:hover { color: var(--starken); }
+/* Detail panel */
+#tab-calendario .cal-detail-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-top: 16px;
+  box-shadow: var(--shadow-md);
+}
+#tab-calendario .cal-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#tab-calendario .cal-detail-title { font-size: 1rem; font-weight: 700; color: var(--text); }
+#tab-calendario .cal-detail-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+#tab-calendario .cal-detail-close:hover { background: var(--bg); color: var(--text); }
+#tab-calendario .cal-detail-list { display: flex; flex-direction: column; gap: 10px; }
+#tab-calendario .cal-detail-item {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+#tab-calendario .cal-detail-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+#tab-calendario .cal-detail-badge.published { background: #ecfdf5; color: #065f46; }
+#tab-calendario .cal-detail-badge.scheduled { background: #eff6ff; color: #1e40af; }
+#tab-calendario .cal-detail-badge.failed    { background: #fef2f2; color: #991b1b; }
+#tab-calendario .cal-detail-badge.queued    { background: #fffbeb; color: #92400e; }
+[data-theme="dark"] #tab-calendario .cal-detail-badge.published { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+[data-theme="dark"] #tab-calendario .cal-detail-badge.scheduled { background: rgba(59,130,246,0.2); color: #93c5fd; }
+[data-theme="dark"] #tab-calendario .cal-detail-badge.failed    { background: rgba(239,68,68,0.2);  color: #fca5a5; }
+[data-theme="dark"] #tab-calendario .cal-detail-badge.queued    { background: rgba(245,158,11,0.2); color: #fcd34d; }
+#tab-calendario .cal-detail-info { flex: 1; min-width: 0; }
+#tab-calendario .cal-detail-client { font-weight: 700; font-size: 0.85rem; color: var(--text); margin-bottom: 3px; }
+#tab-calendario .cal-detail-time   { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 5px; }
+#tab-calendario .cal-detail-caption {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+#tab-calendario .cal-empty-day {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 20px 0;
+}
+#tab-calendario .cal-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+@media (max-width: 768px) {
+  #tab-calendario .cal-day { min-height: 60px; padding: 3px; }
+  #tab-calendario .cal-weekday-label { font-size: 0.65rem; padding: 4px 0; }
+  #tab-calendario .cal-post-client { display: none; }
+  #tab-calendario .cal-post-time { font-size: 0.6rem; }
+  #tab-calendario .cal-toolbar { gap: 8px; }
+  #tab-calendario .cal-nav-month { min-width: 110px; font-size: 0.8rem; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -1338,6 +1629,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
       <div class="nav-category">Conteúdo</div>
       <button class="sub" onclick="switchTab('content')"><span class="icon">📋</span> Gestão de Conteúdo</button>
+      <button class="sub" onclick="switchTab('calendario')"><span class="icon">📅</span> Calendário</button>
 
       <div class="nav-category">Geral</div>
       <button class="sub" onclick="switchTab('clients')"><span class="icon">&#128101;</span> Clientes</button>
@@ -2111,6 +2403,49 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   </div>
 </div>
 
+<!-- ═══ CALENDÁRIO DE POSTS ═══ -->
+<div id="tab-calendario" class="tab-content">
+  <div class="cal-wrap">
+    <!-- Toolbar -->
+    <div class="cal-toolbar">
+      <h2>📅 Calendário de Posts</h2>
+      <div class="cal-toolbar-right">
+        <select id="calClientFilter" onchange="calFilterClient()">
+          <option value="">Todos os clientes</option>
+        </select>
+        <button class="cal-today-btn" onclick="calGoToday()">Hoje</button>
+        <div class="cal-nav">
+          <button class="cal-nav-btn" onclick="calNavigate(-1)" title="Mês anterior">&#8249;</button>
+          <span class="cal-nav-month" id="calNavMonth">—</span>
+          <button class="cal-nav-btn" onclick="calNavigate(1)" title="Próximo mês">&#8250;</button>
+        </div>
+      </div>
+    </div>
+    <!-- Weekday headers -->
+    <div class="cal-weekdays">
+      <div class="cal-weekday-label">Seg</div>
+      <div class="cal-weekday-label">Ter</div>
+      <div class="cal-weekday-label">Qua</div>
+      <div class="cal-weekday-label">Qui</div>
+      <div class="cal-weekday-label">Sex</div>
+      <div class="cal-weekday-label">Sáb</div>
+      <div class="cal-weekday-label">Dom</div>
+    </div>
+    <!-- Calendar grid -->
+    <div class="cal-grid" id="calGrid">
+      <div class="cal-loading">Carregando posts...</div>
+    </div>
+    <!-- Detail panel -->
+    <div class="cal-detail-panel" id="calDetailPanel" style="display:none">
+      <div class="cal-detail-header">
+        <div class="cal-detail-title" id="calDetailTitle">—</div>
+        <button class="cal-detail-close" onclick="document.getElementById('calDetailPanel').style.display='none'">&times;</button>
+      </div>
+      <div class="cal-detail-list" id="calDetailList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Cliente -->
 <div class="modal-overlay" id="clientModal">
   <div class="modal">
@@ -2841,7 +3176,8 @@ const TAB_TITLES = {
   'meta-config':       'Configuração Meta',
   'meta-balance':      'Saldo das Contas',
   'meta-bi':           'BI de Campanhas',
-  'meta-publish':      'Agendamento de Posts'
+  'meta-publish':      'Agendamento de Posts',
+  'calendario':        'Calendário de Posts'
 };
 
 function switchTab(tabName) {
@@ -2865,6 +3201,7 @@ function switchTab(tabName) {
   else if (tabName === 'meta-bi') metaBiInit();
   else if (tabName === 'meta-publish') metaPublishInit();
   else if (tabName === 'content') ctInit();
+  else if (tabName === 'calendario') calInit();
   else renderAll();
 }
 
@@ -8419,6 +8756,279 @@ function ctOpenLightbox(url) {
   const handler = function(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); } };
   document.addEventListener('keydown', handler);
 }
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDARIO DE POSTS MODULE
+// ═══════════════════════════════════════════════════════════════
+(function() {
+  'use strict';
+
+  // Module state
+  var _calDate      = new Date();   // currently displayed month
+  var _calAllPosts  = [];           // all posts loaded from API
+  var _calFiltered  = [];           // posts after client filter
+  var _calSelected  = null;         // selected day ISO string YYYY-MM-DD
+  var _calLoaded    = false;
+
+  var MONTH_NAMES = [
+    'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
+  ];
+  var DAY_NAMES_LONG = [
+    'Domingo','Segunda-feira','Terça-feira','Quarta-feira',
+    'Quinta-feira','Sexta-feira','Sábado'
+  ];
+
+  // ─── Public entry point ───────────────────────────────────────
+  window.calInit = function() {
+    if (!_calLoaded) {
+      calLoadData();
+    } else {
+      calRender();
+    }
+  };
+
+  window.calNavigate = function(dir) {
+    _calDate = new Date(_calDate.getFullYear(), _calDate.getMonth() + dir, 1);
+    calRender();
+  };
+
+  window.calGoToday = function() {
+    _calDate = new Date();
+    _calDate.setDate(1);
+    calRender();
+    document.getElementById('calDetailPanel').style.display = 'none';
+    _calSelected = null;
+  };
+
+  window.calFilterClient = function() {
+    var val = document.getElementById('calClientFilter').value;
+    _calFiltered = val
+      ? _calAllPosts.filter(function(p) { return p.client_key === val || p.client_name === val; })
+      : _calAllPosts.slice();
+    calRender();
+    if (_calSelected) calShowDayDetail(_calSelected);
+  };
+
+  window.calShowDayDetail = function(isoDate) {
+    _calSelected = isoDate;
+    // Update selected visual (scoped to our calendar grid only)
+    var grid = document.getElementById('calGrid');
+    if (grid) {
+      grid.querySelectorAll('.cal-day').forEach(function(el) {
+        el.classList.remove('selected');
+        if (el.dataset.date === isoDate) el.classList.add('selected');
+      });
+    }
+
+    var dayPosts = calPostsForDay(isoDate);
+    var panel    = document.getElementById('calDetailPanel');
+    var titleEl  = document.getElementById('calDetailTitle');
+    var listEl   = document.getElementById('calDetailList');
+
+    // Format title
+    var d = new Date(isoDate + 'T12:00:00');
+    var dayName = DAY_NAMES_LONG[d.getDay()];
+    titleEl.textContent = '\uD83D\uDCC5 ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
+
+    if (dayPosts.length === 0) {
+      listEl.innerHTML = '<div class="cal-empty-day">Nenhum post neste dia.</div>';
+    } else {
+      listEl.innerHTML = dayPosts.map(function(p) {
+        var status    = (p.status || 'UNKNOWN').toLowerCase();
+        var platform  = (p.platform || '').toLowerCase();
+        var icon      = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF7' : '\uD83D\uDCC4';
+        var timeStr   = calFormatTime(p.scheduled_for || p.created_at);
+        var caption   = (p.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var hasImage  = p.has_image ? ' \uD83D\uDDBC\uFE0F' : '';
+        return '<div class="cal-detail-item">'
+          + '<div><div class="cal-detail-badge ' + status + '">' + icon + ' ' + calStatusLabel(p.status) + '</div></div>'
+          + '<div class="cal-detail-info">'
+          +   '<div class="cal-detail-client">' + (p.client_name || 'Cliente') + hasImage + '</div>'
+          +   '<div class="cal-detail-time">' + timeStr + ' \u00B7 ' + (p.platform || '') + '</div>'
+          +   (caption ? '<div class="cal-detail-caption">' + caption + '</div>' : '')
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  // ─── Data loading ─────────────────────────────────────────────
+  function calLoadData() {
+    var grid = document.getElementById('calGrid');
+    if (grid) grid.innerHTML = '<div class="cal-loading">\u23F3 Carregando posts...</div>';
+
+    fetch(metaApiBase() + '/api/meta/publish?limit=200')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        _calAllPosts = (data.history || []).filter(function(h) {
+          return h.scheduled_for || h.created_at;
+        });
+        _calLoaded = true;
+        calPopulateClientFilter();
+        window.calFilterClient();
+      })
+      .catch(function(err) {
+        console.error('Calendar load error:', err);
+        if (grid) grid.innerHTML = '<div class="cal-loading" style="color:var(--danger)">\u26A0\uFE0F Erro ao carregar posts. Verifique a conexão.</div>';
+      });
+  }
+
+  function calPopulateClientFilter() {
+    var sel = document.getElementById('calClientFilter');
+    if (!sel) return;
+
+    // Collect unique clients
+    var seen = {};
+    var clients = [];
+    _calAllPosts.forEach(function(p) {
+      var key  = p.client_key  || p.client_name || '';
+      var name = p.client_name || key;
+      if (key && !seen[key]) {
+        seen[key] = true;
+        clients.push({ key: key, name: name });
+      }
+    });
+    clients.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+    var html = '<option value="">Todos os clientes</option>';
+    clients.forEach(function(c) {
+      html += '<option value="' + c.key + '">' + c.name + '</option>';
+    });
+    sel.innerHTML = html;
+  }
+
+  // ─── Rendering ────────────────────────────────────────────────
+  function calRender() {
+    var year  = _calDate.getFullYear();
+    var month = _calDate.getMonth();
+
+    // Update header label
+    var label = document.getElementById('calNavMonth');
+    if (label) label.textContent = MONTH_NAMES[month] + ' ' + year;
+
+    var grid = document.getElementById('calGrid');
+    if (!grid) return;
+
+    // First day of month — adjust so week starts on Monday (0=Mon..6=Sun)
+    var firstDay  = new Date(year, month, 1);
+    var lastDay   = new Date(year, month + 1, 0);
+    var startDow  = firstDay.getDay(); // 0=Sun..6=Sat
+    // Convert to Mon-based: Mon=0, ..., Sun=6
+    var startOffset = (startDow + 6) % 7;
+
+    var today = new Date();
+    today.setHours(0,0,0,0);
+
+    var html = '';
+    var totalCells = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
+
+    for (var i = 0; i < totalCells; i++) {
+      var dayNum = i - startOffset + 1;
+      var isCurrentMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
+
+      var cellDate = new Date(year, month, dayNum);
+      var isoDate  = calToIso(cellDate);
+      var isToday  = cellDate.getTime() === today.getTime() && isCurrentMonth;
+      var isSelected = _calSelected === isoDate;
+
+      var cls = 'cal-day';
+      if (!isCurrentMonth) cls += ' other-month';
+      if (isToday) cls += ' today';
+      if (isSelected) cls += ' selected';
+
+      var dayPosts = isCurrentMonth ? calPostsForDay(isoDate) : [];
+      var maxVisible = 3;
+      var visible  = dayPosts.slice(0, maxVisible);
+      var overflow = dayPosts.length - maxVisible;
+
+      var postsHtml = visible.map(function(p) {
+        return calRenderPostCard(p);
+      }).join('');
+
+      var overflowHtml = overflow > 0
+        ? '<div class="cal-more" onclick="event.stopPropagation();calShowDayDetail(\'' + isoDate + '\')">+' + overflow + ' mais</div>'
+        : '';
+
+      var todayDot = isToday ? '<span class="today-dot"></span>' : '';
+
+      html += '<div class="' + cls + '" data-date="' + isoDate + '"'
+        + ' onclick="calShowDayDetail(\'' + isoDate + '\')">'
+        + '<div class="cal-day-num">' + (isCurrentMonth ? dayNum : '') + todayDot + '</div>'
+        + '<div class="cal-posts-list">' + postsHtml + '</div>'
+        + overflowHtml
+        + '</div>';
+    }
+
+    grid.innerHTML = html;
+  }
+
+  function calRenderPostCard(p) {
+    var status   = (p.status || 'UNKNOWN').toLowerCase();
+    var platform = (p.platform || '').toLowerCase();
+    var icon     = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF7' : '\uD83D\uDCC4';
+    var timeStr  = calFormatTimeShort(p.scheduled_for || p.created_at);
+    var client   = (p.client_name || '').substring(0, 14);
+    var isoDate  = calToIso(new Date((p.scheduled_for || p.created_at || '').replace(' ','T')));
+
+    return '<div class="cal-post ' + status + '" onclick="event.stopPropagation();calShowDayDetail(\'' + isoDate + '\')" title="' + (p.client_name || '') + '">'
+      + '<span class="cal-post-time">' + timeStr + '</span>'
+      + '<span class="cal-post-icon">' + icon + '</span>'
+      + '<span class="cal-post-client">' + client + '</span>'
+      + '</div>';
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────
+  function calPostsForDay(isoDate) {
+    return _calFiltered.filter(function(p) {
+      var raw = p.scheduled_for || p.created_at || '';
+      if (!raw) return false;
+      return calToIso(new Date(raw.replace(' ','T'))) === isoDate;
+    }).sort(function(a, b) {
+      var ta = new Date((a.scheduled_for || a.created_at || '').replace(' ','T')).getTime();
+      var tb = new Date((b.scheduled_for || b.created_at || '').replace(' ','T')).getTime();
+      return ta - tb;
+    });
+  }
+
+  function calToIso(d) {
+    if (!d || isNaN(d.getTime())) return '';
+    var y  = d.getFullYear();
+    var m  = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return y + '-' + m + '-' + dd;
+  }
+
+  function calFormatTime(raw) {
+    if (!raw) return '—';
+    try {
+      var d = new Date(raw.replace(' ','T'));
+      return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    } catch(e) { return raw; }
+  }
+
+  function calFormatTimeShort(raw) {
+    if (!raw) return '';
+    try {
+      var d = new Date(raw.replace(' ','T'));
+      return d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    } catch(e) { return ''; }
+  }
+
+  function calStatusLabel(status) {
+    switch ((status || '').toUpperCase()) {
+      case 'PUBLISHED': return 'Publicado';
+      case 'SCHEDULED': return 'Agendado';
+      case 'FAILED':    return 'Falhou';
+      case 'QUEUED':    return 'Na fila';
+      default:          return status || 'Desconhecido';
+    }
+  }
+
+})(); // end CALENDARIO MODULE
 </script>
 </body>
 </html>
