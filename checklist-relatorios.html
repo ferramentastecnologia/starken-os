@@ -2455,6 +2455,28 @@ function setTheme(theme) {
 document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
+
+  // ─── PUBLISH QUEUE PROCESSOR (polling every 2 min) ───
+  // Processa fila de agendamentos IG enquanto o sistema estiver aberto
+  let _queueInterval = null;
+  function startQueueProcessor() {
+    if (_queueInterval) return;
+    // Primeira execução após 30s (dar tempo de carregar)
+    setTimeout(() => {
+      fetch(metaApiBase() + '/api/meta/publish?cron=process').catch(() => {});
+    }, 30000);
+    // Depois a cada 2 minutos
+    _queueInterval = setInterval(() => {
+      fetch(metaApiBase() + '/api/meta/publish?cron=process').catch(() => {});
+    }, 120000);
+  }
+  // Inicia após login
+  const checkLogin = setInterval(() => {
+    if (typeof gpState !== 'undefined' && gpState.user) {
+      clearInterval(checkLogin);
+      startQueueProcessor();
+    }
+  }, 2000);
 });
 
 // ============ DATA ============
