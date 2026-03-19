@@ -6942,6 +6942,8 @@ function ctGetUser() {
 function ctInit() {
   ctLoadClientDropdown();
   ctLoadStatusFilter();
+  // Prewarm: fire a lightweight request to wake up the serverless function
+  fetch(ctApiBase() + '/api/content', { method: 'OPTIONS' }).catch(() => {});
 }
 
 function ctLoadClientDropdown() {
@@ -6992,7 +6994,11 @@ async function ctLoadGroups() {
     return;
   }
   addBtn.style.display = '';
-  document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">⏳ Carregando...</div>';
+
+  // Show loading only on first load (not on refreshes)
+  if (ctGroups.length === 0) {
+    document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">⏳ Carregando...</div>';
+  }
 
   const data = await ctApi('list_groups', { client_id: clientId });
   if (data.error) {
@@ -7002,11 +7008,11 @@ async function ctLoadGroups() {
 
   const groups = Array.isArray(data) ? data : (data.groups || []);
 
-  // Load tasks for each group
-  for (const g of groups) {
+  // Load tasks for ALL groups in PARALLEL (not sequential!)
+  await Promise.all(groups.map(async (g) => {
     const taskData = await ctApi('list_tasks', { group_id: g.id });
     g.tasks = Array.isArray(taskData) ? taskData : (taskData.tasks || []);
-  }
+  }));
 
   ctGroups = groups;
   ctRenderList();
@@ -7152,12 +7158,17 @@ function ctShowStatusDropdown(event, taskId) {
     item.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></span>' + s.label;
     item.onclick = async (e) => {
       e.stopPropagation();
+      // Optimistic: update button instantly
+      const btn = event.currentTarget;
+      btn.textContent = s.label;
+      btn.style.background = s.bg || '';
+      btn.style.color = s.color || '';
       ctCloseDropdowns();
       if (taskId === 'modal') {
         await ctChangeModalStatus(s.key);
       } else {
-        await ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() });
-        ctLoadGroups();
+        // Fire API in background, reload after
+        ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() }).then(() => ctLoadGroups());
       }
     };
     dropdown.appendChild(item);
@@ -7188,8 +7199,7 @@ function ctShowAssigneeDropdown(event, taskId) {
     if (taskId === 'modal') {
       await ctSaveTaskField('assignee', null);
     } else {
-      await ctApi('upsert_task', { id: taskId, assignee: null, user: ctGetUser() });
-      ctLoadGroups();
+      ctApi('upsert_task', { id: taskId, assignee: null, user: ctGetUser() }).then(() => ctLoadGroups());
     }
   };
   dropdown.appendChild(unassign);
@@ -7204,8 +7214,7 @@ function ctShowAssigneeDropdown(event, taskId) {
       if (taskId === 'modal') {
         await ctSaveTaskField('assignee', u.name);
       } else {
-        await ctApi('upsert_task', { id: taskId, assignee: u.name, user: ctGetUser() });
-        ctLoadGroups();
+        ctApi('upsert_task', { id: taskId, assignee: u.name, user: ctGetUser() }).then(() => ctLoadGroups());
       }
     };
     dropdown.appendChild(item);
@@ -7232,12 +7241,13 @@ function ctShowPriorityDropdown(event, taskId) {
     item.innerHTML = p.icon + ' ' + p.label;
     item.onclick = async (e) => {
       e.stopPropagation();
+      // Optimistic: update icon instantly
+      event.currentTarget.innerHTML = p.icon;
       ctCloseDropdowns();
       if (taskId === 'modal') {
         await ctSaveTaskField('priority', p.key);
       } else {
-        await ctApi('upsert_task', { id: taskId, priority: p.key, user: ctGetUser() });
-        ctLoadGroups();
+        ctApi('upsert_task', { id: taskId, priority: p.key, user: ctGetUser() }).then(() => ctLoadGroups());
       }
     };
     dropdown.appendChild(item);
