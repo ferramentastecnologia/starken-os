@@ -16,3 +16,16 @@ __pycache__/
 
 # Pastas de clientes (PDFs ficam locais)
 ASSESSORIA/CLIENTES/
+
+# Env JSON (credenciais Asana/Trello/Supabase)
+env*.json
+.env.example
+
+# Node
+node_modules/
+
+# Docker
+.dockerignore
+
+# Docs sensíveis
+*.docx

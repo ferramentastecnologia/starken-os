@@ -1,0 +1,528 @@
+# =============================================================================
+# STARKEN AGENT ECOSYSTEM - Master Docker Compose Orchestrator
+# =============================================================================
+# Usage:
+#   Core only:             docker compose up
+#   Web frontend:          docker compose --profile web up
+#   ASSESSORIA stack:      docker compose --profile assessoria up
+#   All squads:            docker compose --profile squads up
+#   GSD only:              docker compose --profile gsd up
+#   AIOX only:             docker compose --profile aiox up
+#   Everything:            docker compose --profile assessoria --profile squads --profile web --profile gsd --profile aiox up
+#
+# Quick squad test (after 'docker compose --profile squads up'):
+#   curl -X POST http://localhost/squad/copy-squad/run \
+#     -H "Content-Type: application/json" \
+#     -d '{"agent":"gary-halbert","task":"write-headline","brief":"Produto X para Y"}'
+#
+# Prerequisites:
+#   Copy .env.example to .env and fill in all REPLACE_ME values.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# NAMED VOLUMES
+# ---------------------------------------------------------------------------
+volumes:
+  agent-memory:
+    driver: local
+
+  litellm-data:
+    driver: local
+
+  playwright-cache:
+    driver: local
+
+  gsd-home:
+    driver: local
+
+  # xquads-library is mounted via direct bind mount in each service (Windows compatible)
+
+# ---------------------------------------------------------------------------
+# NETWORKS
+# ---------------------------------------------------------------------------
+networks:
+  starken-internal:
+    driver: bridge
+    internal: true
+
+  starken-external:
+    driver: bridge
+
+# ---------------------------------------------------------------------------
+# SERVICES
+# ---------------------------------------------------------------------------
+services:
+
+  # ---------------------------------------------------------------------------
+  # CORE INFRASTRUCTURE (always start)
+  # ---------------------------------------------------------------------------
+
+  litellm-proxy:
+    image: ghcr.io/berriai/litellm:main-v1.63.14-stable
+    container_name: starken-litellm
+    restart: unless-stopped
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - LITELLM_LOG_LEVEL=${LITELLM_LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./docker/litellm/litellm-config.yaml:/app/config.yaml:ro
+      - litellm-data:/app/data
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "4"]
+    networks:
+      - starken-internal
+      - starken-external
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4000/health/liveliness')"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 60s
+
+  playwright-service:
+    image: mcr.microsoft.com/playwright:v1.50.0-noble
+    container_name: starken-playwright
+    restart: unless-stopped
+    volumes:
+      - playwright-cache:/root/.npm
+    command: >
+      bash -c "npx -y playwright@1.50.0 run-server --port 9222 --host 0.0.0.0"
+    networks:
+      - starken-internal
+      - starken-external
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'run-server' > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # WEB FRONTEND  (profile: web)
+  # Serves starken-os.html via nginx + reverse proxies /api and /squad
+  # ---------------------------------------------------------------------------
+
+  starken-web:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: starken-web
+    profiles: ["web"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:80:80"
+    depends_on:
+      - assessoria-api
+      - squad-router
+    networks:
+      - starken-internal
+      - starken-external
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # SQUAD ROUTER  (profile: squads)
+  # Node.js micro-API: POST /squad/:name/run → LiteLLM
+  # ---------------------------------------------------------------------------
+
+  squad-router:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: starken-squad-router
+    profiles: ["squads", "web"]
+    restart: unless-stopped
+    environment:
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+      - SQUADS_BASE_PATH=/squads
+      - DEFAULT_SQUAD_MODEL=${DEFAULT_SQUAD_MODEL:-gemini-flash}
+    ports:
+      - "127.0.0.1:4001:4001"
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4001/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # ASSESSORIA STACK  (profile: assessoria)
+  # ---------------------------------------------------------------------------
+
+  assessoria-agents:
+    build:
+      context: .
+      dockerfile: Dockerfile.agents
+    container_name: starken-assessoria-agents
+    profiles: ["assessoria"]
+    restart: "no"
+    # ENTRYPOINT in Dockerfile.agents is already "python", so command = args only
+    command: ["-c", "import time; print('Agents container ready'); time.sleep(86400)"]
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - PLAYWRIGHT_WS_ENDPOINT=${PLAYWRIGHT_WS_ENDPOINT}
+    volumes:
+      - agent-memory:/app/memory
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/app/xquads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+      playwright-service:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  assessoria-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: starken-assessoria-api
+    profiles: ["assessoria", "web"]
+    restart: unless-stopped
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - ASANA_PAT=${ASANA_PAT}
+      - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+      - starken-external
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # GSD - GET SHIT DONE CLI  (profile: gsd)
+  # ---------------------------------------------------------------------------
+
+  gsd-cli:
+    build:
+      context: "C:/Users/Juan/Documents/GitHub/get-shit-done-main (1)/get-shit-done-main"
+      dockerfile: "C:/Users/Juan/Documents/GitHub/ASSESSORIA/ASSESSORIA/docker/gsd/Dockerfile"
+    container_name: starken-gsd
+    profiles: ["gsd"]
+    restart: "no"
+    environment:
+      - NODE_ENV=${GSD_NODE_ENV:-production}
+    volumes:
+      - agent-memory:/app/memory
+      - gsd-home:/home/gsduser
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/app/xquads:ro
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  # ---------------------------------------------------------------------------
+  # AIOX CORE  (profile: aiox)
+  # ---------------------------------------------------------------------------
+
+  aiox-core:
+    build:
+      context: C:/Users/Juan/Documents/GitHub/aiox-core-main/aiox-core-main
+      dockerfile: Dockerfile
+      args:
+        NODE_VERSION: "20"
+    container_name: starken-aiox
+    profiles: ["aiox"]
+    restart: unless-stopped
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - AIOX_WORKSPACE_MODE=${AIOX_WORKSPACE_MODE:-docker}
+      - AIOX_MCP_ENABLED=${AIOX_MCP_ENABLED:-false}
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL}
+    volumes:
+      - agent-memory:/app/memory
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/app/xquads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  # ===========================================================================
+  # XQUADS SQUADS  (profile: squads)
+  # Each squad service is a standalone squad-runner that mounts its own
+  # agent prompts read-only. The squad-router handles routing automatically.
+  # These services exist for dedicated/isolated squad execution if needed.
+  # For most use cases, squad-router above handles everything.
+  # ===========================================================================
+
+  # Note: Each xquads squad can be addressed via squad-router.
+  # Individual squad containers below are optional — they allow dedicated
+  # resources and monitoring per squad if you want to scale independently.
+  # Run all via: docker compose --profile squads up
+
+  squad-advisory-board:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-advisory-board
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=advisory-board
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-brand:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-brand
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=brand-squad
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-clevel:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-clevel
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=c-level-squad
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-copy:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-copy
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=copy-squad
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-cyber:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-cyber
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=cybersecurity
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-data:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-data
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=data-squad
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-design:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-design
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=design-squad
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-hormozi:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-hormozi
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=hormozi-squad
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-movement:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-movement
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=movement
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-storytelling:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-storytelling
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=storytelling
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true
+
+  squad-traffic:
+    build:
+      context: ./docker/squad-router
+      dockerfile: Dockerfile
+    container_name: squad-traffic
+    profiles: ["squads"]
+    restart: unless-stopped
+    environment:
+      - SQUAD_NAME=traffic-masters
+      - LITELLM_BASE_URL=${LITELLM_BASE_URL:-http://litellm-proxy:4000}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY}
+    volumes:
+      - C:/Users/Juan/Documents/GitHub/xquads-squads-main/xquads-squads-main:/squads:ro
+    depends_on:
+      litellm-proxy:
+        condition: service_started
+    networks:
+      - starken-internal
+    security_opt:
+      - no-new-privileges:true

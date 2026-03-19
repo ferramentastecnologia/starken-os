@@ -1,0 +1,16 @@
+{
+  "name": "assessoria-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Assessoria REST API — Express wrapper for Vercel-style serverless handlers",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
