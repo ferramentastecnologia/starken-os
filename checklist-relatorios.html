@@ -6837,13 +6837,14 @@ async function metaPublishSubmit() {
       } else if (plat === 'fb' && resolvedImageUrl) {
         body.image_url = resolvedImageUrl;
       }
-      if (plat === 'ig' && containerIds.length > 1) {
-        body.container_ids = containerIds; // Array for IG carousel
+      if (plat === 'ig' && resolvedImageUrls.length > 1) {
+        body.image_urls = resolvedImageUrls; // IG carousel via URLs
         body.type = 'carousel';
       } else if (plat === 'ig' && resolvedImageUrl) {
         body.image_url = resolvedImageUrl;
+      } else if (plat === 'ig' && containerId) {
+        body.container_id = containerId;
       }
-      if (plat === 'ig' && containerId && containerIds.length <= 1) body.container_id = containerId;
       if (mode === 'schedule' && datetime) {
         body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
       }
