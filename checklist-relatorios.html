@@ -7057,10 +7057,9 @@ function ctRenderList() {
         const indent = 36 + (depth * 24);
         const canAddSub = depth < 5;
 
-        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" draggable="true" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" style="padding-left:' + indent + 'px" '
-          + 'ondragstart="ctDragStart(event)" ondragover="ctDragOver(event)" ondragleave="ctDragLeave(event)" ondrop="ctDrop(event)" ondragend="ctDragEnd(event)">'
+        let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" style="padding-left:' + indent + 'px">'
           + '<div class="ct-name">'
-          + '<span class="ct-drag-handle" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.75rem">⠿</span>'
+          + '<span class="ct-drag-handle" draggable="true" ondragstart="ctDragStart(event)" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.85rem;user-select:none">⠿</span>'
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
           + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
           + (canAddSub ? '<button onclick="event.stopPropagation();ctShowAddSubtask(\'' + task.id + '\',\'' + groupId + '\')" style="opacity:0;margin-left:6px;border:none;background:none;cursor:pointer;font-size:0.72rem;color:var(--text-muted);transition:opacity 0.15s" class="ct-add-sub-btn" title="Adicionar subtarefa">＋ sub</button>' : '')
@@ -7104,6 +7103,13 @@ function ctRenderList() {
   });
 
   body.innerHTML = html;
+
+  // Attach drag events to all task rows
+  body.querySelectorAll('.ct-row[data-task-id]').forEach(row => {
+    row.addEventListener('dragover', ctDragOver);
+    row.addEventListener('dragleave', ctDragLeave);
+    row.addEventListener('drop', ctDrop);
+  });
 }
 
 // ─── TOGGLE EXPAND ───
@@ -7660,12 +7666,17 @@ let ctDraggedParent = null;
 let ctDraggedGroup = null;
 
 function ctDragStart(e) {
-  ctDraggedId = e.currentTarget.dataset.taskId;
-  ctDraggedParent = e.currentTarget.dataset.parentId || null;
-  ctDraggedGroup = e.currentTarget.dataset.groupId;
-  e.currentTarget.classList.add('dragging');
+  // Handle is the drag source, but data is on parent .ct-row
+  const row = e.target.closest('.ct-row[data-task-id]');
+  if (!row) return;
+  ctDraggedId = row.dataset.taskId;
+  ctDraggedParent = row.dataset.parentId || null;
+  ctDraggedGroup = row.dataset.groupId;
+  row.classList.add('dragging');
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', ctDraggedId);
+  // Set drag image to the full row
+  e.dataTransfer.setDragImage(row, 50, 15);
 }
 
 function ctDragOver(e) {
