@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "starken-local",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-l", "7000", "-s", "."],
+      "port": 7000
+    }
+  ]
+}
