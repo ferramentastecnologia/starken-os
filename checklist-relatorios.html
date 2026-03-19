@@ -1524,11 +1524,14 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
                   <div id="metaPubPreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
                 </div>
 
-                <!-- URL da Mídia (alternativa para IG) -->
+                <!-- URL da Mídia -->
                 <div class="form-group" id="metaPubMediaUrlWrap" style="margin-bottom:16px">
-                  <label class="form-label">&#128279; URL da Mídia (alternativa)</label>
-                  <input type="url" class="form-input" id="metaPubMediaUrl" placeholder="https://exemplo.com/imagem.jpg" oninput="metaPublishUpdatePreview()">
-                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">Cole a URL pública da imagem/vídeo. A Meta exige URL acessível publicamente.</div>
+                  <label class="form-label">&#128279; URL da Imagem/Vídeo</label>
+                  <input type="url" class="form-input" id="metaPubMediaUrl" placeholder="https://exemplo.com/imagem.jpg" oninput="metaPublishUpdatePreview();metaPublishValidateForm()" style="font-size:0.88rem">
+                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">
+                    &#128161; Cole a URL pública da imagem. Pode usar links do Canva, Google Drive (público), Imgur, etc.
+                    A Meta exige URL acessível publicamente. A imagem será enviada automaticamente para a Meta antes de publicar.
+                  </div>
                 </div>
 
                 <!-- Botão de publicação -->
@@ -6033,13 +6036,63 @@ async function metaPublishSubmit() {
   statusDiv.innerHTML = '⏳ Enviando para Meta Graph API...';
 
   try {
+    const imageUrl = mediaUrl.trim();
+    let containerId = null;  // IG
+    let photoIds = [];       // FB
+
+    // ─── ETAPA 1: Upload de mídia (se houver URL) ───
+    if (imageUrl) {
+      statusDiv.innerHTML = '📤 <b>Etapa 1/2:</b> Enviando mídia para Meta...';
+      statusDiv.style.background = '#fffbeb';
+      statusDiv.style.color = '#b45309';
+
+      const mediaBody = {
+        destination: platform,
+        client: clientKey,
+        image_url: imageUrl,
+        media_type: type === 'reels' ? 'REELS' : (type === 'stories' ? 'VIDEO' : 'IMAGE'),
+      };
+      if (platform === 'ig') mediaBody.caption = caption; // IG: caption vai no container
+
+      const mediaRes = await fetch(metaApiBase() + '/api/meta/media', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mediaBody),
+      });
+      const mediaData = await mediaRes.json();
+
+      if (mediaData.error) {
+        statusDiv.style.background = '#fef2f2';
+        statusDiv.style.color = '#dc2626';
+        statusDiv.innerHTML = '❌ <b>Erro no upload de mídia:</b> ' + mediaData.message;
+        return;
+      }
+
+      if (platform === 'ig') {
+        containerId = mediaData.container_id;
+        statusDiv.innerHTML = '✅ Mídia processada · Container: ' + containerId;
+      } else {
+        photoIds.push(mediaData.photo_id);
+        statusDiv.innerHTML = '✅ Foto enviada · ID: ' + mediaData.photo_id;
+      }
+
+      // Pausa visual para o usuário ver o progresso
+      await new Promise(r => setTimeout(r, 500));
+    }
+
+    // ─── ETAPA 2: Publicar/Agendar o post ───
+    statusDiv.innerHTML = (imageUrl ? '📤 <b>Etapa 2/2:</b> ' : '📤 ') + 'Publicando post...';
+    statusDiv.style.background = '#eff6ff';
+    statusDiv.style.color = '#1d4ed8';
+
     const body = {
       destination: platform,
       client: clientKey,
       caption: caption,
       type: type,
     };
-    if (mediaUrl) body.media_url = mediaUrl;
+    if (containerId) body.container_id = containerId;
+    if (photoIds.length) body.photo_ids = photoIds;
     if (mode === 'schedule' && datetime) {
       body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
     }
@@ -6057,9 +6110,11 @@ async function metaPublishSubmit() {
       statusDiv.innerHTML = '❌ <b>Erro:</b> ' + data.message;
     } else {
       const isScheduled = mode === 'schedule';
+      const hasImage = !!imageUrl;
       statusDiv.style.background = '#ecfdf5';
       statusDiv.style.color = '#059669';
-      statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> ' + (data.client || clientName) + ' · ID: ' + (data.post_id || data.id);
+      statusDiv.innerHTML = (isScheduled ? '📅' : '✅') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> '
+        + (data.client || clientName) + (hasImage ? ' · 🖼️ Com imagem' : '') + ' · ID: ' + (data.post_id || data.id);
 
       // Histórico
       _metaPubHistory.unshift({
@@ -6071,6 +6126,7 @@ async function metaPublishSubmit() {
         caption: caption.substring(0, 80) + (caption.length > 80 ? '...' : ''),
         time: new Date().toLocaleString('pt-BR'),
         scheduled: isScheduled ? datetime : null,
+        hasImage: hasImage,
       });
       try { localStorage.setItem('metaPubHistory', JSON.stringify(_metaPubHistory.slice(0, 50))); } catch(e) {}
       metaPublishRenderHistory();
@@ -6082,6 +6138,8 @@ async function metaPublishSubmit() {
       if (document.getElementById('metaPubMediaUrl')) document.getElementById('metaPubMediaUrl').value = '';
       if (document.getElementById('metaPubCaptionTips')) document.getElementById('metaPubCaptionTips').innerHTML = '';
       _metaPubFiles = [];
+      const countEl = document.getElementById('metaPubMediaCount');
+      if (countEl) countEl.textContent = '';
       metaPublishRenderPreviews();
       metaPublishUpdatePreview();
     }

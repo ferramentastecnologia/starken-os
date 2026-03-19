@@ -68,20 +68,24 @@ module.exports = async function handler(req, res) {
 
         const childIds = [];
         for (const child of children) {
-          const childRes = await graphPost(`/${tenant.igUserId}/media`, {
+          const childBody = {
             image_url: child.image_url,
             is_carousel_item: true,
-          });
+          };
+          if (tenant.pageAccessToken) childBody.access_token = tenant.pageAccessToken;
+          const childRes = await graphPost(`/${tenant.igUserId}/media`, childBody);
           await pollContainerStatus(childRes.id);
           childIds.push(childRes.id);
         }
 
         // Criar container pai
-        const carouselRes = await graphPost(`/${tenant.igUserId}/media`, {
+        const carouselBody = {
           media_type: 'CAROUSEL',
           caption: caption || '',
           children: childIds.join(','),
-        });
+        };
+        if (tenant.pageAccessToken) carouselBody.access_token = tenant.pageAccessToken;
+        const carouselRes = await graphPost(`/${tenant.igUserId}/media`, carouselBody);
         await pollContainerStatus(carouselRes.id);
 
         return res.status(201).json({
@@ -100,6 +104,7 @@ module.exports = async function handler(req, res) {
         body.media_type = media_type === 'REELS' ? 'REELS' : 'VIDEO';
       }
       if (caption) body.caption = caption;
+      if (tenant.pageAccessToken) body.access_token = tenant.pageAccessToken;
 
       const containerRes = await graphPost(`/${tenant.igUserId}/media`, body);
       await pollContainerStatus(containerRes.id);
@@ -116,12 +121,16 @@ module.exports = async function handler(req, res) {
       if (!tenant.pageId) {
         return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: `Page ID não configurado para "${tenant.key}"` });
       }
+      if (!tenant.pageAccessToken) {
+        return res.status(400).json({ error: true, code: 'MISSING_PAGE_TOKEN', message: `Page Access Token não encontrado para "${tenant.name || tenant.key}". Re-descubra ativos na Configuração Meta.` });
+      }
 
       // Upload foto como não publicada (para depois anexar ao post)
       const photoRes = await graphPost(`/${tenant.pageId}/photos`, {
         url: image_url,
         published: false,
         caption: caption || '',
+        access_token: tenant.pageAccessToken,
       });
 
       return res.status(201).json({
