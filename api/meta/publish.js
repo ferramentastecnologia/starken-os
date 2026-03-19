@@ -78,15 +78,23 @@ module.exports = async function handler(req, res) {
         });
       }
 
+      // CRÍTICO: A Graph API EXIGE Page Access Token para /{page_id}/feed
+      // O User Token NÃO tem permissão para publicar — só o Page Token funciona
+      if (!tenant.pageAccessToken) {
+        return res.status(400).json({
+          error: true, code: 'MISSING_PAGE_TOKEN',
+          message: `Page Access Token não encontrado para "${tenant.name || tenant.key}". `
+            + `Vá em Configuração Meta → clique "Descobrir Ativos" → selecione novamente a página do cliente → Salvar. `
+            + `O token de página é capturado automaticamente durante a descoberta.`,
+        });
+      }
+
       const postBody = {
         message: caption || '',
       };
 
-      // CRÍTICO: Usa page access token do cliente para postar na página
-      // A Graph API exige token de página para /{page_id}/feed
-      if (tenant.pageAccessToken) {
-        postBody.access_token = tenant.pageAccessToken;
-      }
+      // Usa page access token do cliente (obrigatório para /{page_id}/feed)
+      postBody.access_token = tenant.pageAccessToken;
 
       // Anexar fotos se houver
       if (photo_ids && photo_ids.length > 0) {

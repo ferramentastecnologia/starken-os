@@ -5550,7 +5550,11 @@ function metaPublishClientChange() {
     if (hasFb) parts.push('📄 ' + (c.pageName || 'Página FB'));
     if (hasIg) parts.push('📷 @' + (c.igUsername || 'IG'));
     if (c.adAccountId) parts.push('💰 Ads OK');
-    infoDiv.innerHTML = '<span style="color:#10b981">' + parts.join(' · ') + '</span>';
+    const hasToken = !!c.pageAccessToken;
+    if (hasToken) parts.push('🔑 Token OK');
+    infoDiv.innerHTML = '<span style="color:' + (hasToken ? '#10b981' : '#f59e0b') + '">' + parts.join(' · ')
+      + (hasToken ? '' : ' · <b style="color:#ef4444">⚠️ Sem Page Token</b> — <a href="#" onclick="switchTab(\'meta-config\');return false" style="color:#3b82f6">Re-descobrir</a>')
+      + '</span>';
   }
 
   // Auto-seleciona se só tem uma
