@@ -941,6 +941,15 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 }
 .meta-pub-filter-btn:hover { background: var(--bg-secondary); }
 .meta-pub-filter-btn.active { background: var(--accent,#3b82f6); color: #fff; border-color: var(--accent,#3b82f6); }
+.meta-pub-aspect-btn {
+  flex: 1; padding: 6px 4px; border-radius: 8px; cursor: pointer;
+  border: 2px solid var(--border); background: var(--bg-secondary);
+  color: var(--text-secondary); text-align: center; font-family: inherit;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: all 0.2s; font-size: 0.65rem; font-weight: 600;
+}
+.meta-pub-aspect-btn:hover { border-color: var(--accent,#3b82f6); color: var(--accent,#3b82f6); }
+.meta-pub-aspect-btn.selected { border-color: var(--accent,#3b82f6); background: #eff6ff; color: var(--accent,#3b82f6); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
 @media (max-width: 900px) {
   #tab-meta-publish .card:first-child { grid-template-columns: 1fr !important; }
 }
@@ -1443,16 +1452,38 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
                   </div>
                 </div>
 
-                <!-- Linha 2: Tipo + Agendamento -->
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+                <!-- Linha 2: Tipo + Formato + Agendamento -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
                   <div class="form-group">
                     <label class="form-label">&#128196; Tipo de Post</label>
-                    <select class="form-input" id="metaPubType" onchange="metaPublishUpdatePreview()">
+                    <select class="form-input" id="metaPubType" onchange="metaPublishTypeChange()">
                       <option value="feed">&#128248; Feed</option>
                       <option value="stories">&#128247; Stories</option>
                       <option value="reels">&#127916; Reels</option>
                       <option value="carousel">&#127922; Carrossel</option>
                     </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">&#128208; Formato</label>
+                    <div id="metaPubAspectBtns" style="display:flex;gap:6px;margin-top:4px">
+                      <button class="meta-pub-aspect-btn" onclick="metaPublishSelectAspect('1:1',this)" title="Quadrado 1:1">
+                        <div style="width:20px;height:20px;border:2px solid currentColor;border-radius:2px"></div>
+                        <span>1:1</span>
+                      </button>
+                      <button class="meta-pub-aspect-btn selected" onclick="metaPublishSelectAspect('4:5',this)" title="Retrato 4:5 (Recomendado)">
+                        <div style="width:16px;height:20px;border:2px solid currentColor;border-radius:2px"></div>
+                        <span>4:5</span>
+                      </button>
+                      <button class="meta-pub-aspect-btn" onclick="metaPublishSelectAspect('16:9',this)" title="Paisagem 16:9">
+                        <div style="width:24px;height:14px;border:2px solid currentColor;border-radius:2px"></div>
+                        <span>16:9</span>
+                      </button>
+                      <button class="meta-pub-aspect-btn" onclick="metaPublishSelectAspect('9:16',this)" title="Stories/Reels 9:16">
+                        <div style="width:12px;height:20px;border:2px solid currentColor;border-radius:2px"></div>
+                        <span>9:16</span>
+                      </button>
+                    </div>
+                    <input type="hidden" id="metaPubAspect" value="4:5">
                   </div>
                   <div class="form-group">
                     <label class="form-label">&#128338; Quando Publicar</label>
@@ -5586,6 +5617,34 @@ function metaPublishSelectPlatform(platform) {
 }
 
 // ─── Agendamento change ───
+// ─── Tipo de post muda → auto-seleciona aspect ratio ───
+function metaPublishTypeChange() {
+  const type = document.getElementById('metaPubType').value;
+  // Auto-seleciona formato baseado no tipo
+  if (type === 'stories' || type === 'reels') {
+    metaPublishSelectAspect('9:16');
+  } else if (type === 'feed') {
+    metaPublishSelectAspect('4:5');
+  }
+  metaPublishUpdatePreview();
+}
+
+// ─── Seleciona aspect ratio ───
+function metaPublishSelectAspect(ratio, btn) {
+  document.getElementById('metaPubAspect').value = ratio;
+  document.querySelectorAll('.meta-pub-aspect-btn').forEach(b => b.classList.remove('selected'));
+  if (btn) {
+    btn.classList.add('selected');
+  } else {
+    // Seleciona pelo valor
+    const btns = document.querySelectorAll('.meta-pub-aspect-btn');
+    btns.forEach(b => {
+      if (b.querySelector('span') && b.querySelector('span').textContent === ratio) b.classList.add('selected');
+    });
+  }
+  metaPublishUpdatePreview();
+}
+
 function metaPublishScheduleChange() {
   const mode = document.getElementById('metaPubScheduleMode').value;
   document.getElementById('metaPubDatetimeWrap').style.display = mode === 'schedule' ? 'block' : 'none';
@@ -5766,41 +5825,63 @@ function metaPublishUpdatePreview() {
     captionEl.style.color = 'var(--text-secondary)';
   }
 
-  // Preview de mídia
+  // Aspect ratio para preview
+  const aspect = document.getElementById('metaPubAspect') ? document.getElementById('metaPubAspect').value : '4:5';
+  const aspectMap = { '1:1': '100%', '4:5': '125%', '16:9': '56.25%', '9:16': '177.78%' };
+  const paddingPct = aspectMap[aspect] || '125%';
+
+  // Preview de mídia com aspect ratio
   if (_metaPubFiles.length > 0) {
     mediaEl.innerHTML = '';
+    mediaEl.style.cssText = 'margin-bottom:12px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-top:' + paddingPct + ';background:#000';
     if (_metaPubFiles.length === 1) {
       const file = _metaPubFiles[0];
       if (file.type.startsWith('image/')) {
         const img = document.createElement('img');
         img.src = URL.createObjectURL(file);
-        img.style.cssText = 'width:100%;max-height:280px;object-fit:cover';
+        img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover';
         mediaEl.appendChild(img);
       } else {
-        mediaEl.innerHTML = '<div style="padding:40px;text-align:center;font-size:2rem">🎬</div>';
+        const vid = document.createElement('div');
+        vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:#1a1a2e';
+        vid.textContent = '🎬';
+        mediaEl.appendChild(vid);
       }
     } else {
-      // Multi-image grid
-      mediaEl.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:2px;border-radius:8px;overflow:hidden';
+      // Multi-image grid dentro do aspect ratio
+      mediaEl.style.cssText = 'margin-bottom:12px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-top:' + paddingPct + ';background:#000';
+      const grid = document.createElement('div');
+      grid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:grid;grid-template-columns:1fr 1fr;gap:2px';
       _metaPubFiles.slice(0, 4).forEach((file, idx) => {
         if (file.type.startsWith('image/')) {
           const img = document.createElement('img');
           img.src = URL.createObjectURL(file);
-          img.style.cssText = 'width:100%;height:140px;object-fit:cover';
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover';
           if (idx === 0 && _metaPubFiles.length === 3) img.style.gridRow = 'span 2';
-          mediaEl.appendChild(img);
+          grid.appendChild(img);
         }
       });
+      mediaEl.appendChild(grid);
       if (_metaPubFiles.length > 4) {
         const more = document.createElement('div');
-        more.style.cssText = 'position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 10px;border-radius:16px;font-size:0.78rem;font-weight:600';
+        more.style.cssText = 'position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:4px 10px;border-radius:16px;font-size:0.78rem;font-weight:600;z-index:2';
         more.textContent = '+' + (_metaPubFiles.length - 4) + ' mais';
-        mediaEl.style.position = 'relative';
         mediaEl.appendChild(more);
       }
     }
+    // Badge do aspect ratio
+    const aspectBadge = document.createElement('div');
+    aspectBadge.style.cssText = 'position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);color:#fff;padding:3px 8px;border-radius:6px;font-size:0.65rem;font-weight:700;z-index:2';
+    aspectBadge.textContent = aspect;
+    mediaEl.appendChild(aspectBadge);
   } else if (mediaUrl) {
-    mediaEl.innerHTML = '<img src="' + mediaUrl + '" style="width:100%;max-height:280px;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=padding:20px;text-align:center;color:#ef4444>URL inválida ou inacessível</div>\'">';
+    mediaEl.innerHTML = '';
+    mediaEl.style.cssText = 'margin-bottom:12px;border-radius:8px;overflow:hidden;position:relative;width:100%;padding-top:' + paddingPct + ';background:#000';
+    const img = document.createElement('img');
+    img.src = mediaUrl;
+    img.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover';
+    img.onerror = function() { this.parentElement.innerHTML = '<div style="position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#ef4444;background:var(--bg-secondary)">URL inválida</div>'; };
+    mediaEl.appendChild(img);
   } else {
     mediaEl.innerHTML = '<div style="color:var(--text-secondary);font-size:0.82rem;padding:20px;text-align:center">Adicione mídia para preview</div>';
     mediaEl.style.cssText = 'margin-bottom:12px;border-radius:8px;overflow:hidden;background:var(--bg-secondary);min-height:60px;display:flex;align-items:center;justify-content:center';
