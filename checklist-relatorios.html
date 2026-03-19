@@ -7046,7 +7046,7 @@ function ctRenderList() {
           + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')">'
           + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
           + '</div>'
-          + '<div style="font-size:0.82rem;color:var(--text-secondary)">' + dueStr + '</div>'
+          + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
           + '<div style="font-size:0.82rem;color:var(--text-secondary);text-align:center">💬</div>'
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')">' + priority.icon + '</div>'
           + '</div>';
@@ -7065,7 +7065,7 @@ function ctRenderList() {
               + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + sub.id + '\')">'
               + (subUser ? '<div class="ct-assignee-avatar" style="background:' + subUser.color + '">' + subUser.name.substring(0,2).toUpperCase() + '</div><span>' + subUser.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
               + '</div>'
-              + '<div style="font-size:0.82rem;color:var(--text-secondary)">' + (sub.due_date ? new Date(sub.due_date+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—') + '</div>'
+              + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + sub.id + '\',\'' + (sub.due_date||'') + '\')">' + (sub.due_date ? new Date(sub.due_date+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}) : '—') + '</div>'
               + '<div></div>'
               + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + sub.id + '\')">' + subPriority.icon + '</div>'
               + '</div>';
@@ -7318,7 +7318,20 @@ async function ctSaveTaskField(field, value) {
   ctModalTask[field] = value;
   await ctApi('upsert_task', { id: ctModalTask.id, [field]: value, user: ctGetUser() });
 
-  // If status changed, handle special cases
+  // Update visual in modal
+  if (field === 'assignee') {
+    const assigneeEl = document.getElementById('ctModalAssignee');
+    if (value) {
+      const user = CT_USERS.find(u => u.name === value);
+      assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:' + (user ? user.color : '#6b7280') + '">' + value.substring(0,2).toUpperCase() + '</div><span>' + value + '</span>';
+    } else {
+      assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
+    }
+  }
+  if (field === 'priority') {
+    const p = CT_PRIORITIES.find(pr => pr.key === value) || CT_PRIORITIES[2];
+    document.getElementById('ctModalPriority').innerHTML = p.icon;
+  }
   if (field === 'status') {
     const showPublish = ['aprovado', 'agendar'].includes(value);
     document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
@@ -7615,7 +7628,115 @@ function ctSelectPlatform(platform) {
 }
 
 // ─── LIGHTBOX (visualizar imagem grande) ───
-// ─── DATE PICKER CUSTOMIZADO ───
+// ─── DATE PICKER PARA LISTA (não-modal) ───
+function ctShowDatePickerList(event, taskId, currentDate) {
+  event.stopPropagation();
+  // Reuse the same picker mechanism but save to API directly
+  ctCloseDropdowns();
+  if (ctDatePickerEl) { ctDatePickerEl.remove(); ctDatePickerEl = null; }
+
+  const rect = event.currentTarget.getBoundingClientRect();
+  const picker = document.createElement('div');
+  picker.className = 'ct-datepicker';
+  let top = rect.bottom + 6;
+  let left = rect.left - 200;
+  if (left < 10) left = 10;
+  if (left + 420 > window.innerWidth) left = window.innerWidth - 430;
+  if (top + 380 > window.innerHeight) top = rect.top - 386;
+  picker.style.top = top + 'px';
+  picker.style.left = left + 'px';
+  picker.style.position = 'fixed';
+
+  const now = new Date();
+  let viewMonth = now.getMonth();
+  let viewYear = now.getFullYear();
+  if (currentDate) {
+    const cv = new Date(currentDate + 'T00:00:00');
+    if (!isNaN(cv)) { viewMonth = cv.getMonth(); viewYear = cv.getFullYear(); }
+  }
+
+  function getDateStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d; }
+  function formatLabel(d) { const days = ['dom','seg','ter','qua','qui','sex','sáb']; return days[d.getDay()] + ', ' + d.getDate() + '/' + (d.getMonth()+1); }
+
+  const shortcuts = [
+    { label: 'Hoje', hint: formatLabel(now), date: now },
+    { label: 'Amanhã', hint: formatLabel(addDays(1)), date: addDays(1) },
+    { label: 'Semana que vem', hint: formatLabel(addDays(7)), date: addDays(7) },
+    { label: '2 semanas', hint: formatLabel(addDays(14)), date: addDays(14) },
+  ];
+
+  async function selectDate(d) {
+    const str = getDateStr(d);
+    await ctApi('upsert_task', { id: taskId, due_date: str, user: ctGetUser() });
+    // Also update modal if open
+    if (ctModalTask && ctModalTask.id === taskId) {
+      ctModalTask.due_date = str;
+      document.getElementById('ctModalDueDate').value = str;
+      document.getElementById('ctModalDueDateLabel').textContent = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    }
+    closePicker();
+    ctLoadGroups();
+  }
+
+  function closePicker() { if (picker.parentElement) picker.remove(); ctDatePickerEl = null; }
+
+  function renderCal() {
+    const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const calDiv = picker.querySelector('.ct-datepicker-cal');
+    if (!calDiv) return;
+    let html = '<div class="ct-datepicker-cal-header"><button onclick="event.stopPropagation();this.dpNav(-1)">‹</button><span>' + months[viewMonth] + ' ' + viewYear + '</span><button onclick="event.stopPropagation();this.dpNav(1)">›</button></div>';
+    html += '<div class="ct-datepicker-grid">';
+    ['2ª','3ª','4ª','5ª','6ª','sá','do'].forEach(d => html += '<div class="dp-day-head">' + d + '</div>');
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    let startDay = firstDay.getDay() - 1; if (startDay < 0) startDay = 6;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const todayStr = getDateStr(now);
+    for (let i = startDay - 1; i >= 0; i--) html += '<div class="dp-day other-month"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      let cls = 'dp-day'; if (ds === todayStr) cls += ' today'; if (ds === currentDate) cls += ' selected';
+      html += '<div class="' + cls + '" data-date="' + ds + '">' + d + '</div>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:8px;text-align:center"><button class="dp-clear-btn" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;font-size:0.78rem">🗑️ Remover data</button></div>';
+    calDiv.innerHTML = html;
+    // Bind events
+    calDiv.querySelectorAll('.dp-day:not(.other-month)').forEach(el => {
+      el.onclick = function(e) { e.stopPropagation(); selectDate(new Date(viewYear, viewMonth, parseInt(this.textContent))); };
+    });
+    calDiv.querySelector('.dp-clear-btn').onclick = async function(e) {
+      e.stopPropagation();
+      await ctApi('upsert_task', { id: taskId, due_date: null, user: ctGetUser() });
+      if (ctModalTask && ctModalTask.id === taskId) { ctModalTask.due_date = null; document.getElementById('ctModalDueDate').value = ''; document.getElementById('ctModalDueDateLabel').textContent = 'Sem data'; }
+      closePicker(); ctLoadGroups();
+    };
+    calDiv.querySelectorAll('.ct-datepicker-cal-header button').forEach((btn, i) => {
+      btn.onclick = function(e) { e.stopPropagation(); viewMonth += (i === 0 ? -1 : 1); if (viewMonth < 0) { viewMonth = 11; viewYear--; } if (viewMonth > 11) { viewMonth = 0; viewYear++; } renderCal(); };
+    });
+  }
+
+  let shortcutsHtml = '<div class="ct-datepicker-shortcuts">';
+  shortcuts.forEach((s, i) => {
+    shortcutsHtml += '<button data-idx="' + i + '">' + s.label + '<span class="dp-hint">' + s.hint + '</span></button>';
+  });
+  shortcutsHtml += '</div><div class="ct-datepicker-cal"></div>';
+  picker.innerHTML = shortcutsHtml;
+  picker.querySelectorAll('.ct-datepicker-shortcuts button').forEach(btn => {
+    btn.onclick = function(e) { e.stopPropagation(); selectDate(shortcuts[parseInt(this.dataset.idx)].date); };
+  });
+
+  document.body.appendChild(picker);
+  ctDatePickerEl = picker;
+  renderCal();
+
+  setTimeout(() => {
+    const closeHandler = function(e) { if (picker.parentElement && !picker.contains(e.target)) { closePicker(); document.removeEventListener('click', closeHandler); } };
+    document.addEventListener('click', closeHandler);
+  }, 10);
+}
+
+// ─── DATE PICKER CUSTOMIZADO (MODAL) ───
 let ctDatePickerEl = null;
 function ctShowDatePicker(event) {
   event.stopPropagation();
