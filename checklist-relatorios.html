@@ -5535,11 +5535,35 @@ let _metaPubHistoryFilter = 'all';
 function metaPublishInit() {
   metaPublishLoadClients();
   metaPublishValidateForm();
-  // Carrega histórico do localStorage
+  // Carrega histórico do Supabase (centralizado)
+  metaPublishLoadHistory();
+}
+
+async function metaPublishLoadHistory() {
   try {
-    const saved = localStorage.getItem('metaPubHistory');
-    if (saved) { _metaPubHistory = JSON.parse(saved); metaPublishRenderHistory(); }
-  } catch(e) {}
+    const res = await fetch(metaApiBase() + '/api/meta/publish?limit=50');
+    const data = await res.json();
+    if (data.history && data.history.length > 0) {
+      _metaPubHistory = data.history.map(h => ({
+        client: h.client_name,
+        platform: h.platform,
+        status: h.status,
+        post_id: h.post_id || '',
+        caption: (h.caption || '').substring(0, 80) + ((h.caption || '').length > 80 ? '...' : ''),
+        time: new Date(h.created_at).toLocaleString('pt-BR'),
+        scheduled: h.scheduled_for,
+        hasImage: h.has_image,
+        user: h.user_name,
+      }));
+      metaPublishRenderHistory();
+    }
+  } catch(e) {
+    // Fallback: localStorage
+    try {
+      const saved = localStorage.getItem('metaPubHistory');
+      if (saved) { _metaPubHistory = JSON.parse(saved); metaPublishRenderHistory(); }
+    } catch(e2) {}
+  }
 }
 
 // ─── Carrega clientes configurados no dropdown ───
@@ -6141,9 +6165,14 @@ async function metaPublishSubmit() {
       client: clientKey,
       caption: caption,
       type: type,
+      user: gpState.user ? gpState.user.name : 'Sistema',
     };
     // FB com imagem: envia image_url para publicar direto via /{page_id}/photos
     if (platform === 'fb' && resolvedImageUrl) {
+      body.image_url = resolvedImageUrl;
+    }
+    // IG com imagem via URL
+    if (platform === 'ig' && resolvedImageUrl) {
       body.image_url = resolvedImageUrl;
     }
     // IG com container
@@ -6258,6 +6287,7 @@ function metaPublishRenderHistory() {
       + '<div style="text-align:right;flex-shrink:0">'
       + '<div style="font-size:0.72rem;font-weight:700;color:' + statusColor + '">' + h.status + '</div>'
       + '<div style="font-size:0.68rem;color:var(--text-secondary)">' + h.time + '</div>'
+      + (h.user ? '<div style="font-size:0.62rem;color:var(--text-secondary);margin-top:2px">👤 ' + h.user + '</div>' : '')
       + '</div></div>';
   });
   html += '</div>';
