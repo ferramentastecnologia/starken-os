@@ -1006,13 +1006,17 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 /* ═══ TASK MODAL ═══ */
 .ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;transition:opacity 0.2s; }
 .ct-modal-overlay.open { opacity:1; }
-.ct-modal { background:#fff;border-radius:14px;width:100%;max-width:1100px;max-height:90vh;display:grid;grid-template-columns:220px 1fr 260px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
-.ct-modal-sidebar { background:var(--bg-secondary);padding:16px;border-right:1px solid var(--border);overflow-y:auto;font-size:0.82rem; }
+.ct-modal { background:#fff;border-radius:14px;width:100%;max-width:1400px;height:92vh;display:grid;grid-template-columns:220px 1fr 280px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.25); }
+.ct-modal-sidebar { background:var(--bg-secondary);padding:16px;border-right:1px solid var(--border);overflow-y:auto;font-size:0.82rem;height:92vh; }
 .ct-modal-sidebar .ct-tree-item { padding:6px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background 0.15s; }
 .ct-modal-sidebar .ct-tree-item:hover { background:var(--border); }
 .ct-modal-sidebar .ct-tree-item.active { background:var(--accent,#3b82f6);color:#fff;font-weight:600; }
-.ct-modal-main { padding:24px;overflow-y:auto; }
-.ct-modal-activity { background:var(--bg-secondary);padding:16px;border-left:1px solid var(--border);overflow-y:auto;font-size:0.78rem; }
+.ct-modal-main { padding:24px 28px;overflow-y:auto;height:92vh; }
+.ct-modal-activity { background:var(--bg-secondary);padding:16px;border-left:1px solid var(--border);overflow-y:auto;font-size:0.78rem;height:92vh; }
+/* Lightbox para visualizar imagens */
+.ct-lightbox { position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:40px; }
+.ct-lightbox img { max-width:95%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.5); }
+.ct-lightbox-close { position:absolute;top:20px;right:30px;color:#fff;font-size:2rem;cursor:pointer;background:rgba(0,0,0,0.5);border:none;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center; }
 .ct-modal-close { position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-secondary);z-index:1; }
 .ct-modal-title { font-size:1.3rem;font-weight:700;margin-bottom:16px;outline:none;border:none;width:100%;padding:4px 0;border-bottom:2px solid transparent;transition:border-color 0.2s; }
 .ct-modal-title:focus { border-bottom-color:var(--accent,#3b82f6); }
@@ -7128,10 +7132,10 @@ function ctRenderModalAttachments(attachments) {
   const creativesEl = document.getElementById('ctModalCreatives');
 
   refsEl.innerHTML = refs.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhuma referência adicionada</div>' :
-    refs.map(a => '<div class="ct-attachment-card"><span class="ct-att-category">REF</span><img src="' + a.file_url + '" onerror="this.src=\'\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
+    refs.map(a => '<div class="ct-attachment-card" onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category">REF</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
 
   creativesEl.innerHTML = creatives.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Designer ainda não enviou o criativo</div>' :
-    creatives.map(a => '<div class="ct-attachment-card"><span class="ct-att-category" style="background:#10b981">FINAL</span><img src="' + a.file_url + '" onerror="this.src=\'\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
+    creatives.map(a => '<div class="ct-attachment-card" onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category" style="background:#10b981">FINAL</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div>').join('');
 }
 
 function ctRenderModalComments(comments) {
@@ -7373,6 +7377,20 @@ async function ctPublishFromModal() {
 function ctSelectPlatform(platform) {
   document.getElementById('ctPubFb').classList.toggle('selected', platform === 'fb');
   document.getElementById('ctPubIg').classList.toggle('selected', platform === 'ig');
+}
+
+// ─── LIGHTBOX (visualizar imagem grande) ───
+function ctOpenLightbox(url) {
+  if (!url) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'ct-lightbox';
+  overlay.onclick = function() { this.remove(); };
+  overlay.innerHTML = '<button class="ct-lightbox-close" onclick="this.parentElement.remove()">&times;</button>'
+    + '<img src="' + url + '" onclick="event.stopPropagation()">';
+  document.body.appendChild(overlay);
+  // ESC para fechar
+  const handler = function(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); } };
+  document.addEventListener('keydown', handler);
 }
 </script>
 </body>
