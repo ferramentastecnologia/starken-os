@@ -75,15 +75,21 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'post_id é obrigatório' });
     }
 
-    // Busca o client para pegar o page access token
-    const tenant = await validateTenant(req, res);
-    if (!tenant) return;
-
     try {
+      // Tenta pegar page access token do cliente (se informado)
+      let pageToken = null;
+      if (client) {
+        try {
+          const { getClient } = require('./_lib/tenants');
+          const clientData = await getClient(client);
+          if (clientData) pageToken = clientData.pageAccessToken;
+        } catch (e) { /* usa token global */ }
+      }
+
       // Deleta do Meta Graph API (funciona para publicados e agendados)
-      await graphDelete(`/${post_id}`, {
-        access_token: tenant.pageAccessToken || undefined,
-      });
+      const deleteParams = {};
+      if (pageToken) deleteParams.access_token = pageToken;
+      await graphDelete(`/${post_id}`, deleteParams);
 
       // Atualiza status no histórico (Supabase)
       if (history_id) {
