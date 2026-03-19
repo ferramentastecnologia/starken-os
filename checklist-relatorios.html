@@ -2167,38 +2167,38 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
         </div>
       </div>
 
-    </div>
-  </div>
-</div>
-
-<!-- ═══ CALENDÁRIO DE POSTS ═══ -->
-<div id="tab-calendario" class="tab-content" style="padding:0!important">
-  <div class="pc-wrap">
-    <div class="pc-toolbar">
-      <h2 class="pc-title">📅 Calendário de Posts</h2>
-      <div class="pc-toolbar-right">
-        <select id="calClientFilter" onchange="calFilterClient()" class="pc-filter">
-          <option value="">Todos os clientes</option>
-        </select>
-        <button class="pc-today-btn" onclick="calGoToday()">Hoje</button>
-        <div class="pc-nav">
-          <button class="pc-nav-btn" onclick="calNavigate(-1)">&#8249;</button>
-          <span class="pc-nav-month" id="calNavMonth">—</span>
-          <button class="pc-nav-btn" onclick="calNavigate(1)">&#8250;</button>
+      <!-- ═══ CALENDÁRIO DE POSTS ═══ -->
+      <div id="tab-calendario" class="tab-content" style="padding:0!important">
+        <div class="pc-wrap">
+          <div class="pc-toolbar">
+            <h2 class="pc-title">📅 Calendário de Posts</h2>
+            <div class="pc-toolbar-right">
+              <select id="calClientFilter" onchange="calFilterClient()" class="pc-filter">
+                <option value="">Todos os clientes</option>
+              </select>
+              <button class="pc-today-btn" onclick="calGoToday()">Hoje</button>
+              <div class="pc-nav">
+                <button class="pc-nav-btn" onclick="calNavigate(-1)">&#8249;</button>
+                <span class="pc-nav-month" id="calNavMonth">—</span>
+                <button class="pc-nav-btn" onclick="calNavigate(1)">&#8250;</button>
+              </div>
+            </div>
+          </div>
+          <div class="pc-weekdays">
+            <div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div><div>DOM</div>
+          </div>
+          <div class="pc-grid" id="calGrid"></div>
+          <!-- Detail panel -->
+          <div class="pc-detail" id="calDetailPanel" style="display:none">
+            <div class="pc-detail-header">
+              <div class="pc-detail-title" id="calDetailTitle">—</div>
+              <button class="pc-detail-close" onclick="document.getElementById('calDetailPanel').style.display='none'">&times;</button>
+            </div>
+            <div class="pc-detail-list" id="calDetailList"></div>
+          </div>
         </div>
       </div>
-    </div>
-    <div class="pc-weekdays">
-      <div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div><div>DOM</div>
-    </div>
-    <div class="pc-grid" id="calGrid"></div>
-    <!-- Detail panel -->
-    <div class="pc-detail" id="calDetailPanel" style="display:none">
-      <div class="pc-detail-header">
-        <div class="pc-detail-title" id="calDetailTitle">—</div>
-        <button class="pc-detail-close" onclick="document.getElementById('calDetailPanel').style.display='none'">&times;</button>
-      </div>
-      <div class="pc-detail-list" id="calDetailList"></div>
+
     </div>
   </div>
 </div>
