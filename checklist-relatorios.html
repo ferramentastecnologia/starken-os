@@ -111,6 +111,14 @@
   background: #172554;
   border-color: #1e40af;
 }
+[data-theme="dark"] .ct-pub-badge.scheduled { background:#422006;color:#fbbf24;border-color:#92400e; }
+[data-theme="dark"] .ct-pub-badge.published { background:#052e16;color:#4ade80;border-color:#166534; }
+[data-theme="dark"] .ct-pub-badge.failed { background:#450a0a;color:#fca5a5;border-color:#991b1b; }
+[data-theme="dark"] .ct-ph-entry.scheduled { background:#422006; }
+[data-theme="dark"] .ct-ph-entry.published { background:#052e16; }
+[data-theme="dark"] .ct-ph-entry.failed { background:#450a0a; }
+[data-theme="dark"] .ct-mini-day.today { background:#172554;border-color:#1e40af; }
+[data-theme="dark"] .ct-mini-day.current-task { background:#1e3a5f;border-color:#3b82f6; }
 
 [data-theme="dark"] .meta-pub-dropzone {
   background: #0f172a;
@@ -189,6 +197,12 @@
   background: #f0ead8;
   border-color: #d8ceb8;
 }
+[data-theme="warm"] .ct-pub-badge.scheduled { background:#fef3c7;border-color:#e0d8c8; }
+[data-theme="warm"] .ct-pub-badge.published { background:#dcfce7;border-color:#d8ceb8; }
+[data-theme="warm"] .ct-ph-entry.scheduled { background:#fef9e8; }
+[data-theme="warm"] .ct-ph-entry.published { background:#f0f8f0; }
+[data-theme="warm"] .ct-mini-day.today { background:#faf6ee;border-color:#d8ceb8; }
+[data-theme="warm"] .ct-mini-day.current-task { background:#e8e0c8;border-color:#b45309; }
 
 [data-theme="warm"] .meta-pub-dropzone {
   background: #faf6ee;
@@ -1259,6 +1273,35 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-publish-section { background:#eff6ff;border:2px solid #bfdbfe;border-radius:10px;padding:16px;margin-top:16px; }
 .ct-publish-section.scheduling { background:#fffbeb;border-color:#fde68a; }
 
+/* Publish badges (task row) */
+.ct-pub-badges { display:flex;gap:4px;flex-wrap:wrap;margin-top:2px; }
+.ct-pub-badge { display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:0.65rem;font-weight:600;line-height:1.4;white-space:nowrap; }
+.ct-pub-badge.scheduled { background:#fffbeb;color:#b45309;border:1px solid #fde68a; }
+.ct-pub-badge.published { background:#ecfdf5;color:#059669;border:1px solid #a7f3d0; }
+.ct-pub-badge.failed { background:#fef2f2;color:#dc2626;border:1px solid #fecaca; }
+
+/* Publish history (modal) */
+.ct-publish-history { margin-top:14px;border-top:1px solid #bfdbfe;padding-top:12px; }
+.ct-ph-title { font-size:0.78rem;font-weight:700;margin-bottom:8px;color:var(--text-primary); }
+.ct-ph-entry { display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px;font-size:0.78rem; }
+.ct-ph-entry.scheduled { background:#fffbeb; }
+.ct-ph-entry.published { background:#ecfdf5; }
+.ct-ph-entry.failed { background:#fef2f2; }
+.ct-ph-platform { font-weight:700;min-width:24px; }
+.ct-ph-status { padding:2px 8px;border-radius:10px;font-weight:600;font-size:0.68rem; }
+.ct-ph-date { margin-left:auto;color:var(--text-secondary);font-size:0.72rem; }
+.ct-ph-empty { padding:12px;text-align:center;color:var(--text-secondary);font-size:0.8rem; }
+
+/* Mini calendar strip */
+.ct-mini-day { padding:6px 2px;border-radius:8px;font-size:0.72rem; }
+.ct-mini-day .day-name { font-weight:600;color:var(--text-secondary);text-transform:uppercase;font-size:0.6rem;margin-bottom:2px; }
+.ct-mini-day .day-num { font-weight:700;font-size:0.85rem;margin-bottom:3px; }
+.ct-mini-day.today { background:#eff6ff;border:1px solid #bfdbfe; }
+.ct-mini-day.current-task { background:#dbeafe;border:2px solid #3b82f6; }
+.ct-mini-dot { width:6px;height:6px;border-radius:50%;display:inline-block;margin:0 1px; }
+.ct-mini-dot.scheduled { background:#f59e0b; }
+.ct-mini-dot.published { background:#10b981; }
+
 /* Add task inline */
 .ct-add-inline { padding:6px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px; }
 .ct-add-inline input { border:none;outline:none;font-family:inherit;font-size:0.85rem;flex:1;padding:4px 0;background:transparent; }
@@ -2181,6 +2224,27 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
               </div>
               <div id="ctPubStatus" style="margin-top:12px;font-size:0.85rem;display:none"></div>
               <button class="ct-add-btn" style="width:100%;margin-top:12px;padding:12px;font-size:0.92rem" id="ctPubSubmitBtn" onclick="ctPublishFromModal()">🚀 Publicar</button>
+              <!-- Publish History -->
+              <div class="ct-publish-history">
+                <div class="ct-ph-title">📋 Histórico de Publicações</div>
+                <div id="ctPublishHistoryList"></div>
+              </div>
+            </div>
+
+            <!-- Publish History (always visible, even when publish form is hidden) -->
+            <div id="ctPublishHistoryAlways" style="display:none">
+              <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px">
+                <div class="ct-ph-title">📋 Histórico de Publicações</div>
+                <div id="ctPublishHistoryListAlways"></div>
+              </div>
+            </div>
+
+            <!-- Mini Calendar Strip -->
+            <div id="ctMiniCalSection" style="display:none;margin-top:16px">
+              <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="font-size:0.78rem;font-weight:700;margin-bottom:10px">📅 Agenda da Semana</div>
+                <div id="ctMiniCalStrip" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
+              </div>
             </div>
 
             <!-- Comments -->
@@ -7554,6 +7618,133 @@ async function ctLoadGroups() {
   ctRenderList();
 }
 
+// ─── PUBLISH BADGES (inline in task row) ───
+function ctRenderPublishBadges(publishConfig) {
+  if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) return '';
+  let html = '<div class="ct-pub-badges">';
+  publishConfig.entries.forEach(e => {
+    const plat = e.platform === 'facebook' ? 'FB' : 'IG';
+    const platIcon = e.platform === 'facebook' ? '📄' : '📷';
+    const st = e.status || 'scheduled';
+    let label = '';
+    if (st === 'scheduled' && e.scheduled_for) {
+      const d = new Date(e.scheduled_for);
+      label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0');
+    } else if (st === 'published') {
+      label = 'Pub';
+    } else if (st === 'failed') {
+      label = 'Erro';
+    }
+    html += '<span class="ct-pub-badge ' + st + '">' + platIcon + ' ' + plat + (label ? ' ' + label : '') + '</span>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// ─── PUBLISH HISTORY (modal section) ───
+function ctRenderPublishHistory(publishConfig) {
+  const container = document.getElementById('ctPublishHistoryList');
+  if (!container) return;
+  if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) {
+    container.innerHTML = '<div class="ct-ph-empty">Nenhuma publicação registrada</div>';
+    return;
+  }
+  let html = '';
+  publishConfig.entries.slice().reverse().forEach(e => {
+    const plat = e.platform === 'facebook' ? 'FB' : 'IG';
+    const platIcon = e.platform === 'facebook' ? '📄' : '📷';
+    const st = e.status || 'scheduled';
+    const stLabel = st === 'scheduled' ? '📅 Agendado' : st === 'published' ? '✅ Publicado' : '❌ Falhou';
+    let dateStr = '';
+    if (st === 'scheduled' && e.scheduled_for) {
+      const d = new Date(e.scheduled_for);
+      dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } else if (e.published_at) {
+      const d = new Date(e.published_at);
+      dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    html += '<div class="ct-ph-entry ' + st + '">'
+      + '<span class="ct-ph-platform">' + platIcon + ' ' + plat + '</span>'
+      + '<span class="ct-ph-status" style="background:' + (st === 'scheduled' ? '#fef3c7;color:#b45309' : st === 'published' ? '#d1fae5;color:#059669' : '#fecaca;color:#dc2626') + '">' + stLabel + '</span>'
+      + (dateStr ? '<span class="ct-ph-date">' + dateStr + '</span>' : '')
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ─── MINI CALENDAR (modal) ───
+function ctRenderMiniCalendar() {
+  const section = document.getElementById('ctMiniCalSection');
+  const strip = document.getElementById('ctMiniCalStrip');
+  if (!section || !strip || !ctModalTask) { if (section) section.style.display = 'none'; return; }
+
+  // Get current task's scheduled date
+  const taskConfig = ctModalTask.publish_config || {};
+  const taskEntries = taskConfig.entries || [];
+  let taskDate = null;
+  taskEntries.forEach(e => {
+    if (e.scheduled_for) taskDate = new Date(e.scheduled_for);
+  });
+  if (!taskDate && ctModalTask.due_date) taskDate = new Date(ctModalTask.due_date + 'T12:00:00');
+
+  // Center week around the task date (or today)
+  const centerDate = taskDate || new Date();
+  const startOfWeek = new Date(centerDate);
+  const dow = startOfWeek.getDay();
+  startOfWeek.setDate(startOfWeek.getDate() - ((dow + 6) % 7)); // Monday start
+
+  // Collect all scheduled posts from all groups for this client
+  const allScheduled = {};
+  ctGroups.forEach(g => {
+    (g.tasks || []).forEach(t => {
+      const pc = t.publish_config;
+      if (pc && pc.entries) {
+        pc.entries.forEach(e => {
+          if (e.scheduled_for) {
+            const d = new Date(e.scheduled_for).toISOString().slice(0, 10);
+            if (!allScheduled[d]) allScheduled[d] = [];
+            allScheduled[d].push({ status: e.status, platform: e.platform, taskId: t.id });
+          }
+        });
+      }
+      if (t.due_date && (t.status === 'agendado' || t.status === 'publicado')) {
+        const d = t.due_date;
+        if (!allScheduled[d]) allScheduled[d] = [];
+        allScheduled[d].push({ status: t.status === 'publicado' ? 'published' : 'scheduled', taskId: t.id });
+      }
+    });
+  });
+
+  const dayNames = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
+  const today = new Date().toISOString().slice(0, 10);
+  const taskDateStr = taskDate ? taskDate.toISOString().slice(0, 10) : null;
+
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(startOfWeek);
+    d.setDate(d.getDate() + i);
+    const dStr = d.toISOString().slice(0, 10);
+    const isToday = dStr === today;
+    const isCurrentTask = dStr === taskDateStr;
+    const posts = allScheduled[dStr] || [];
+
+    html += '<div class="ct-mini-day' + (isCurrentTask ? ' current-task' : isToday ? ' today' : '') + '">'
+      + '<div class="day-name">' + dayNames[i] + '</div>'
+      + '<div class="day-num">' + d.getDate() + '</div>';
+    if (posts.length > 0) {
+      html += '<div>';
+      posts.slice(0, 4).forEach(p => {
+        html += '<span class="ct-mini-dot ' + (p.status === 'published' ? 'published' : 'scheduled') + '"></span>';
+      });
+      if (posts.length > 4) html += '<span style="font-size:0.55rem;color:var(--text-secondary)">+' + (posts.length - 4) + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  strip.innerHTML = html;
+  section.style.display = 'block';
+}
+
 // ─── RENDER LIST ───
 function ctRenderList() {
   const body = document.getElementById('ctListBody');
@@ -7599,6 +7790,7 @@ function ctRenderList() {
           + (depth > 0 ? '<span style="width:' + (depth * 24) + 'px;flex-shrink:0"></span>' : '')
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
           + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
+          + ctRenderPublishBadges(task.publish_config)
           + (canAddSub ? '<button onclick="event.stopPropagation();ctShowAddSubtask(\'' + task.id + '\',\'' + groupId + '\')" style="opacity:0;margin-left:6px;border:none;background:none;cursor:pointer;font-size:0.72rem;color:var(--text-muted);transition:opacity 0.15s" class="ct-add-sub-btn" title="Adicionar subtarefa">＋ sub</button>' : '')
           + '</div>'
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
@@ -7847,9 +8039,27 @@ async function ctOpenModal(taskId) {
   const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
   document.getElementById('ctModalPriority').innerHTML = priority.icon + ' ' + priority.label;
 
-  // Publish section
-  const showPublish = ['aprovado', 'agendar'].includes(task.status);
-  document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
+  // Publish section: show form for aprovado/agendar, or show if already has publish data
+  const hasPublishEntries = task.publish_config && task.publish_config.entries && task.publish_config.entries.length > 0;
+  const showPublishForm = ['aprovado', 'agendar'].includes(task.status);
+  const showPublishSection = showPublishForm || hasPublishEntries;
+  document.getElementById('ctModalPublish').style.display = showPublishSection ? 'block' : 'none';
+  // Hide the publish button if already published/scheduled (but show history)
+  document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
+  // Render publish history inside the section
+  ctRenderPublishHistory(task.publish_config);
+  // "Always" section (used when publish section is fully hidden but has entries)
+  const alwaysSection = document.getElementById('ctPublishHistoryAlways');
+  const alwaysListEl = document.getElementById('ctPublishHistoryListAlways');
+  if (!showPublishSection && hasPublishEntries) {
+    alwaysSection.style.display = 'block';
+    alwaysListEl.innerHTML = document.getElementById('ctPublishHistoryList').innerHTML;
+  } else {
+    alwaysSection.style.display = 'none';
+  }
+
+  // Render mini calendar
+  ctRenderMiniCalendar();
 
   // Load attachments
   ctRenderModalAttachments(data.attachments || []);
@@ -7904,8 +8114,11 @@ async function ctSaveTaskField(field, value) {
     document.getElementById('ctModalPriority').innerHTML = p.icon;
   }
   if (field === 'status') {
-    const showPublish = ['aprovado', 'agendar'].includes(value);
-    document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
+    const hasPublishEntries = ctModalTask.publish_config && ctModalTask.publish_config.entries && ctModalTask.publish_config.entries.length > 0;
+    const showPublishForm = ['aprovado', 'agendar'].includes(value);
+    const showPublishSection = showPublishForm || hasPublishEntries;
+    document.getElementById('ctModalPublish').style.display = showPublishSection ? 'block' : 'none';
+    document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
   }
 }
 
@@ -8173,6 +8386,7 @@ async function ctPublishFromModal() {
             image_urls: imageUrls,
             scheduled_for: new Date(datetime).toISOString(),
             user_name: ctGetUser(),
+            task_id: ctModalTask.id,
           }),
         });
         const qData = await qRes.json();
@@ -8189,6 +8403,7 @@ async function ctPublishFromModal() {
       caption: copy,
       type: imageUrls.length > 1 ? 'carousel' : 'feed',
       user: ctGetUser(),
+      task_id: ctModalTask.id,
     };
     if (imageUrls.length > 1) body.image_urls = imageUrls;
     else if (imageUrls.length === 1) body.image_url = imageUrls[0];
@@ -8221,6 +8436,21 @@ async function ctPublishFromModal() {
     // Auto-update task status
     const newStatus = isSchedule ? 'agendado' : 'publicado';
     await ctChangeModalStatus(newStatus);
+
+    // ─── Persist publish details in task.publish_config ───
+    const existingConfig = ctModalTask.publish_config || { entries: [] };
+    if (!existingConfig.entries) existingConfig.entries = [];
+    results.filter(r => r.ok).forEach(r => {
+      existingConfig.entries.push({
+        platform: r.plat === 'Facebook' ? 'facebook' : 'instagram',
+        status: isSchedule ? 'scheduled' : 'published',
+        post_id: r.postId || null,
+        scheduled_for: isSchedule ? new Date(datetime).toISOString() : null,
+        published_at: isSchedule ? null : new Date().toISOString(),
+      });
+    });
+    await ctSaveTaskField('publish_config', existingConfig);
+    ctRenderPublishHistory(existingConfig);
   } else {
     statusDiv.innerHTML = '❌ Erro: ' + results.map(r => r.plat + ': ' + r.msg).join(' | ');
     statusDiv.style.color = '#dc2626';

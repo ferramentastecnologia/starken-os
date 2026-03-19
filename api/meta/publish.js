@@ -275,7 +275,7 @@ module.exports = async function handler(req, res) {
   // ─── QUEUE: Agendar para publicação futura ───
   if (req.body && req.body.action === 'queue') {
     try {
-      const { client_key, client_name, platform, caption, image_urls, post_type, scheduled_for, user_name } = req.body;
+      const { client_key, client_name, platform, caption, image_urls, post_type, scheduled_for, user_name, task_id } = req.body;
       if (!client_key || !platform || !scheduled_for) {
         return res.status(400).json({ error: true, message: 'client_key, platform e scheduled_for são obrigatórios' });
       }
@@ -291,7 +291,7 @@ module.exports = async function handler(req, res) {
         user_name: user_name || 'Sistema', client_key, client_name: client_name || client_key,
         platform, status: 'SCHEDULED', post_id: queued.id,
         caption: caption || '', has_image: (image_urls || []).length > 0,
-        scheduled_for,
+        scheduled_for, ...(task_id && { task_id }),
       });
 
       return res.status(201).json({ ok: true, queue_id: queued.id, status: 'SCHEDULED', scheduled_for });
@@ -303,7 +303,7 @@ module.exports = async function handler(req, res) {
   const tenant = await validateTenant(req, res);
   if (!tenant) return;
 
-  const { destination, caption, type, container_id, photo_ids, scheduled_publish_time, image_url, user } = req.body || {};
+  const { destination, caption, type, container_id, photo_ids, scheduled_publish_time, image_url, user, task_id } = req.body || {};
 
   if (!destination || !['ig', 'fb'].includes(destination)) {
     return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'destination deve ser "ig" ou "fb"' });
@@ -426,6 +426,7 @@ module.exports = async function handler(req, res) {
         caption: caption || '',
         has_image: true,
         image_url: image_url || (image_urls[0] || null),
+        ...(task_id && { task_id }),
       });
 
       return res.status(201).json(result);
@@ -572,6 +573,7 @@ module.exports = async function handler(req, res) {
         has_image: result.has_image || false,
         image_url: image_url || null,
         scheduled_for: result.scheduled_for || null,
+        ...(task_id && { task_id }),
       });
 
       return res.status(201).json(result);
@@ -586,6 +588,7 @@ module.exports = async function handler(req, res) {
       status: 'FAILED',
       caption: caption || '',
       has_image: !!image_url,
+      ...(task_id && { task_id }),
     });
 
     if (err.error) {
