@@ -22,6 +22,139 @@ function supabaseHeaders() {
   return { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
 }
 
+// ─── Queue helpers ───
+async function saveToQueue(record) {
+  const url = SUPABASE_URL();
+  if (!url) throw new Error('Supabase não configurado');
+  const res = await fetch(`${url}/rest/v1/publish_queue`, {
+    method: 'POST',
+    headers: { ...supabaseHeaders(), 'Prefer': 'return=representation' },
+    body: JSON.stringify(record),
+  });
+  if (!res.ok) throw new Error('Erro ao salvar na fila: ' + await res.text());
+  const data = await res.json();
+  return data[0] || data;
+}
+
+async function processPublishQueue() {
+  const url = SUPABASE_URL();
+  if (!url) return { processed: 0 };
+
+  const now = new Date().toISOString();
+  // Busca posts QUEUED que já passaram da hora
+  const queueRes = await fetch(
+    `${url}/rest/v1/publish_queue?status=eq.QUEUED&scheduled_for=lte.${now}&order=scheduled_for.asc&limit=10`,
+    { headers: { 'apikey': SUPABASE_KEY(), 'Authorization': `Bearer ${SUPABASE_KEY()}` } }
+  );
+  if (!queueRes.ok) return { processed: 0, error: 'Queue fetch failed' };
+  const items = await queueRes.json();
+  if (items.length === 0) return { processed: 0 };
+
+  const { getClient } = require('./_lib/tenants');
+  const results = [];
+
+  for (const item of items) {
+    // Mark as PROCESSING
+    await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
+      method: 'PATCH',
+      headers: supabaseHeaders(),
+      body: JSON.stringify({ status: 'PROCESSING' }),
+    });
+
+    try {
+      const client = await getClient(item.client_key);
+      if (!client) throw new Error('Cliente não encontrado: ' + item.client_key);
+
+      const igToken = client.pageAccessToken || process.env.META_ACCESS_TOKEN;
+      const imageUrls = item.image_urls || [];
+      let publishedId;
+
+      if (item.platform === 'ig') {
+        // Helper: wait for container
+        async function waitIG(cid) {
+          for (let i = 0; i < 15; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const ck = await fetch(`https://graph.facebook.com/v25.0/${cid}?fields=status_code&access_token=${igToken}`);
+            const st = await ck.json();
+            if (st.status_code === 'FINISHED') return;
+            if (st.status_code === 'ERROR') throw new Error('IG processing error');
+          }
+        }
+
+        if (imageUrls.length > 1) {
+          // Carousel
+          const childIds = [];
+          for (const imgUrl of imageUrls) {
+            const ir = await graphPost(`/${client.igUserId}/media`, { image_url: imgUrl, is_carousel_item: true, access_token: igToken });
+            childIds.push(ir.id);
+          }
+          for (const cid of childIds) await waitIG(cid);
+          const cr = await graphPost(`/${client.igUserId}/media`, { media_type: 'CAROUSEL', children: childIds.join(','), caption: item.caption || '', access_token: igToken });
+          await waitIG(cr.id);
+          const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: cr.id, access_token: igToken });
+          publishedId = pr.id;
+        } else if (imageUrls.length === 1) {
+          const mr = await graphPost(`/${client.igUserId}/media`, { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken });
+          await waitIG(mr.id);
+          const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
+          publishedId = pr.id;
+        }
+      } else if (item.platform === 'fb') {
+        // FB scheduled (should have been published by FB itself, but handle direct publish too)
+        if (imageUrls.length > 1) {
+          const photoIds = [];
+          for (const imgUrl of imageUrls) {
+            const pr = await graphPost(`/${client.pageId}/photos`, { url: imgUrl, published: false, access_token: igToken });
+            photoIds.push(pr.id);
+          }
+          const body = { message: item.caption || '', access_token: igToken };
+          photoIds.forEach((pid, i) => { body[`attached_media[${i}]`] = JSON.stringify({ media_fbid: pid }); });
+          const postRes = await graphPostForm(`/${client.pageId}/feed`, body);
+          publishedId = postRes.id;
+        } else if (imageUrls.length === 1) {
+          const pr = await graphPost(`/${client.pageId}/photos`, { url: imageUrls[0], caption: item.caption || '', access_token: igToken });
+          publishedId = pr.id;
+        } else {
+          const pr = await graphPost(`/${client.pageId}/feed`, { message: item.caption || '', access_token: igToken });
+          publishedId = pr.id;
+        }
+      }
+
+      // Mark as PUBLISHED
+      await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
+        method: 'PATCH',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({ status: 'PUBLISHED', post_id: publishedId, processed_at: new Date().toISOString() }),
+      });
+
+      // Save to history
+      await saveToHistory({
+        user_name: item.user_name || 'Cron',
+        client_key: item.client_key,
+        client_name: item.client_name,
+        platform: item.platform,
+        status: 'PUBLISHED',
+        post_id: publishedId,
+        caption: item.caption || '',
+        has_image: imageUrls.length > 0,
+        scheduled_for: item.scheduled_for,
+      });
+
+      results.push({ id: item.id, status: 'PUBLISHED', post_id: publishedId });
+    } catch (err) {
+      // Mark as FAILED
+      await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
+        method: 'PATCH',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({ status: 'FAILED', error_message: err.message, processed_at: new Date().toISOString() }),
+      });
+      results.push({ id: item.id, status: 'FAILED', error: err.message });
+    }
+  }
+
+  return { processed: results.length, results };
+}
+
 async function saveToHistory(record) {
   const url = SUPABASE_URL();
   if (!url) return; // Silently skip if no Supabase
@@ -61,8 +194,18 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ─── GET: Histórico de publicações ───
+  // ─── GET: Histórico ou Cron de publicação ───
   if (req.method === 'GET') {
+    // CRON: processar fila de agendamentos
+    if (req.query.cron === 'process') {
+      try {
+        const result = await processPublishQueue();
+        return res.status(200).json(result);
+      } catch (err) {
+        return res.status(500).json({ error: true, message: err.message });
+      }
+    }
+    // Histórico normal
     const history = await loadHistory(req.query || {});
     return res.status(200).json({ history, count: history.length });
   }
@@ -127,6 +270,34 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: true, code: 'METHOD_NOT_ALLOWED', message: 'Use GET, POST ou DELETE' });
+  }
+
+  // ─── QUEUE: Agendar para publicação futura ───
+  if (req.body && req.body.action === 'queue') {
+    try {
+      const { client_key, client_name, platform, caption, image_urls, post_type, scheduled_for, user_name } = req.body;
+      if (!client_key || !platform || !scheduled_for) {
+        return res.status(400).json({ error: true, message: 'client_key, platform e scheduled_for são obrigatórios' });
+      }
+      const queued = await saveToQueue({
+        client_key, client_name: client_name || client_key, platform,
+        caption: caption || '', image_urls: image_urls || [],
+        post_type: post_type || 'feed', scheduled_for,
+        user_name: user_name || 'Sistema', status: 'QUEUED',
+      });
+
+      // Also save to history as SCHEDULED
+      await saveToHistory({
+        user_name: user_name || 'Sistema', client_key, client_name: client_name || client_key,
+        platform, status: 'SCHEDULED', post_id: queued.id,
+        caption: caption || '', has_image: (image_urls || []).length > 0,
+        scheduled_for,
+      });
+
+      return res.status(201).json({ ok: true, queue_id: queued.id, status: 'SCHEDULED', scheduled_for });
+    } catch (err) {
+      return res.status(500).json({ error: true, message: err.message });
+    }
   }
 
   const tenant = await validateTenant(req, res);
