@@ -188,9 +188,49 @@ module.exports = async function handler(req, res) {
       }
 
       let result;
+      const image_urls = req.body.image_urls || [];
 
-      // ─── COM IMAGEM ───
-      if (image_url) {
+      // ─── CARROSSEL (múltiplas imagens) ───
+      if (image_urls.length > 1) {
+        // Upload all as unpublished photos
+        const photoIds = [];
+        for (const url of image_urls) {
+          const photoRes = await graphPost(`/${tenant.pageId}/photos`, {
+            url: url,
+            published: false,
+            access_token: tenant.pageAccessToken,
+          });
+          photoIds.push(photoRes.id);
+        }
+
+        // Create post with attached_media
+        const postBody = {
+          message: caption || '',
+          access_token: tenant.pageAccessToken,
+        };
+        photoIds.forEach((pid, i) => {
+          postBody[`attached_media[${i}]`] = JSON.stringify({ media_fbid: pid });
+        });
+
+        if (scheduled_publish_time) {
+          postBody.scheduled_publish_time = scheduled_publish_time;
+          postBody.published = false;
+        }
+
+        const postRes = await graphPostForm(`/${tenant.pageId}/feed`, postBody);
+
+        result = {
+          post_id: postRes.id,
+          status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',
+          has_image: true,
+          photo_count: photoIds.length,
+          client: tenant.name || tenant.key,
+          page: tenant.pageName || tenant.pageId,
+          ...(scheduled_publish_time && { scheduled_for: new Date(scheduled_publish_time * 1000).toISOString() }),
+        };
+      }
+      // ─── COM IMAGEM ÚNICA ───
+      else if (image_url) {
 
         // PUBLICAR AGORA com imagem
         if (!scheduled_publish_time) {
