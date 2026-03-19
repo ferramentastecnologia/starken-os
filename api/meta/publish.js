@@ -137,22 +137,70 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      if (!container_id) {
+      const igToken = tenant.pageAccessToken || undefined;
+      const image_urls = req.body.image_urls || [];
+      let publishedId;
+
+      // ─── IG CARROSSEL (múltiplas imagens) ───
+      if (image_urls.length > 1) {
+        // Step 1: Create individual media containers (is_carousel_item)
+        const childIds = [];
+        for (const url of image_urls) {
+          const itemRes = await graphPost(`/${tenant.igUserId}/media`, {
+            image_url: url,
+            is_carousel_item: true,
+            ...(igToken && { access_token: igToken }),
+          });
+          childIds.push(itemRes.id);
+        }
+
+        // Step 2: Create carousel container
+        const carouselRes = await graphPost(`/${tenant.igUserId}/media`, {
+          media_type: 'CAROUSEL',
+          children: childIds.join(','),
+          caption: caption || '',
+          ...(igToken && { access_token: igToken }),
+        });
+
+        // Step 3: Publish carousel
+        const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
+          creation_id: carouselRes.id,
+          ...(igToken && { access_token: igToken }),
+        });
+        publishedId = pubRes.id;
+      }
+      // ─── IG IMAGEM ÚNICA (via container_id ou image_url) ───
+      else if (container_id) {
+        const pubBody = { creation_id: container_id };
+        if (igToken) pubBody.access_token = igToken;
+        const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, pubBody);
+        publishedId = pubRes.id;
+      }
+      // ─── IG IMAGEM ÚNICA via URL direta ───
+      else if (image_url) {
+        const mediaRes = await graphPost(`/${tenant.igUserId}/media`, {
+          image_url: image_url,
+          caption: caption || '',
+          ...(igToken && { access_token: igToken }),
+        });
+        const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
+          creation_id: mediaRes.id,
+          ...(igToken && { access_token: igToken }),
+        });
+        publishedId = pubRes.id;
+      }
+      else {
         return res.status(400).json({
           error: true, code: 'MISSING_PARAM',
-          message: 'container_id obrigatório para publicação IG. Use /api/meta/media primeiro.',
+          message: 'Instagram requer imagem. Envie image_url, image_urls[] ou container_id.',
         });
       }
 
-      const pubBody = { creation_id: container_id };
-      if (tenant.pageAccessToken) pubBody.access_token = tenant.pageAccessToken;
-
-      const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, pubBody);
-
       const result = {
-        post_id: pubRes.id,
+        post_id: publishedId,
         status: 'PUBLISHED',
         client: tenant.name || tenant.key,
+        photo_count: image_urls.length > 1 ? image_urls.length : 1,
       };
 
       // Salva no histórico
@@ -162,10 +210,10 @@ module.exports = async function handler(req, res) {
         client_name: tenant.name || tenant.key,
         platform: 'ig',
         status: 'PUBLISHED',
-        post_id: pubRes.id,
+        post_id: publishedId,
         caption: caption || '',
         has_image: true,
-        image_url: image_url || null,
+        image_url: image_url || (image_urls[0] || null),
       });
 
       return res.status(201).json(result);
