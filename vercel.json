@@ -9,11 +9,5 @@
     "api/meta/publish.js": {
       "maxDuration": 60
     }
-  },
-  "crons": [
-    {
-      "path": "/api/meta/publish?cron=process",
-      "schedule": "* * * * *"
-    }
-  ]
+  }
 }
