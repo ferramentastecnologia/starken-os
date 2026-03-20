@@ -5852,6 +5852,15 @@ function activateSession(user) {
   setTimeout(function() { populateSidebarClients(); restoreSidebarFolders(); }, 3000);
 }
 
+// ── Definições essenciais para preload (devem existir ANTES de restoreSession) ──
+var META_CLIENTS_LS_KEY = 'metaClientsBackup';
+var _metaClients = {};
+function metaApiBase() {
+  var loc = window.location;
+  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') return '';
+  return loc.origin;
+}
+
 // Pré-carrega clientes Meta no init (sem depender da aba Config)
 function metaClientsPreload() {
   // 1. Tenta localStorage primeiro (instantâneo)
@@ -6175,8 +6184,8 @@ document.addEventListener('DOMContentLoaded', () => { Gestao.init(); });
 // ============ META CONFIG (baseado em clientes) ============
 let _metaDiscoveredData = null;
 
-// Mapa de clientes: { "id-slug": { name, tenant, pageId, pageName, pageAccessToken, igUserId, igUsername, adAccountId, adAccountName } }
-let _metaClients = {};
+// Mapa de clientes: _metaClients já definido antes do preload (script block anterior)
+// { "id-slug": { name, tenant, pageId, pageName, pageAccessToken, igUserId, igUsername, adAccountId, adAccountName } }
 
 // Tenants disponíveis (fixos)
 const _metaTenants = {
@@ -6187,7 +6196,7 @@ const _metaTenants = {
 // Contador para gerar IDs únicos temporários de novos clientes
 let _metaClientSeq = 0;
 
-const META_CLIENTS_LS_KEY = 'metaClientsBackup';
+// META_CLIENTS_LS_KEY já definido antes do preload
 
 // Salva seleções no localStorage automaticamente
 function metaConfigAutoSave() {
@@ -6583,11 +6592,7 @@ async function metaConfigSave() {
 }
 
 // ============ HELPERS ============
-function metaApiBase() {
-  const loc = window.location;
-  if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') return '';
-  return loc.origin;
-}
+// metaApiBase() já definido antes do preload
 
 function metaFormatBRL(value) {
   const num = parseFloat(value) || 0;
