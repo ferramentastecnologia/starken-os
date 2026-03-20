@@ -2042,6 +2042,376 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   .ch-field-row { grid-template-columns: 1fr; }
   .ch-completeness-bar-wrap { width: 80px; }
 }
+
+/* ── Inner panel switcher ── */
+.ch-inner-panel { display: none; }
+.ch-inner-panel.active { display: block; }
+
+/* View buttons in header */
+.ch-btn-view {
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+.ch-btn-view:hover { background: var(--starken-bg); color: var(--starken); border-color: var(--starken-border); }
+[data-theme="dark"] .ch-btn-view { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .ch-btn-view:hover { background: #172554; color: #93c5fd; border-color: #1e3a8a; }
+
+/* Save indicator */
+.ch-save-indicator {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 80px;
+  text-align: right;
+}
+.ch-save-indicator.saving { color: var(--warning); }
+.ch-save-indicator.saved  { color: var(--success); }
+
+/* ── Quick links (Acesso Rápido) ── */
+.ch-quick-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ch-quick-link-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--text);
+  transition: background 0.12s, border-color 0.12s;
+}
+.ch-quick-link-item:hover { background: var(--starken-bg); border-color: var(--starken-border); color: var(--starken); }
+[data-theme="dark"] .ch-quick-link-item { background: #0f172a; border-color: #334155; }
+[data-theme="dark"] .ch-quick-link-item:hover { background: #172554; border-color: #1e3a8a; color: #93c5fd; }
+.ch-quick-link-icon { font-size: 1rem; flex-shrink: 0; }
+.ch-quick-link-text { flex: 1; font-size: 0.8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-quick-link-arrow { font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; }
+.ch-quick-links-empty { font-size: 0.78rem; color: var(--text-muted); padding: 8px 0; text-align: center; }
+
+/* Social row open link */
+.ch-social-link {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background 0.12s, color 0.12s;
+}
+.ch-social-link:hover { background: var(--starken-bg); color: var(--starken); border-color: var(--starken-border); }
+
+/* Link with open button */
+.ch-link-with-btn {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ch-link-open {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  background: var(--bg);
+  transition: background 0.12s, color 0.12s;
+}
+.ch-link-open:hover { background: var(--starken-bg); color: var(--starken); border-color: var(--starken-border); }
+[data-theme="dark"] .ch-link-open { background: #0f172a; border-color: #334155; }
+
+/* ── Materials tab ── */
+.ch-mat-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.ch-mat-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.ch-mat-filter {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.ch-mat-filter:hover  { background: var(--starken-bg); color: var(--starken); border-color: var(--starken-border); }
+.ch-mat-filter.active { background: var(--starken); color: #fff; border-color: var(--starken); }
+[data-theme="dark"] .ch-mat-filter { background: #1e293b; border-color: #334155; }
+[data-theme="dark"] .ch-mat-filter.active { background: var(--starken); }
+
+.ch-mat-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--starken);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ch-mat-upload-btn:hover { opacity: 0.85; }
+
+.ch-mat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.ch-mat-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.ch-mat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.15s, transform 0.15s;
+  position: relative;
+}
+.ch-mat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+[data-theme="dark"] .ch-mat-card { border-color: #334155; }
+
+.ch-mat-thumb {
+  width: 100%;
+  aspect-ratio: 4/3;
+  object-fit: cover;
+  background: var(--bg);
+  display: block;
+}
+.ch-mat-thumb-placeholder {
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+[data-theme="dark"] .ch-mat-thumb-placeholder { background: #0f172a; }
+
+.ch-mat-info {
+  padding: 8px 10px;
+}
+.ch-mat-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 4px;
+}
+.ch-mat-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.ch-mat-cat {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--starken-bg);
+  color: var(--starken-dark);
+}
+[data-theme="dark"] .ch-mat-cat { background: #172554; color: #93c5fd; }
+
+.ch-mat-date {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+.ch-mat-del {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.ch-mat-card:hover .ch-mat-del { opacity: 1; }
+.ch-mat-del:hover { background: var(--danger); }
+
+.ch-mat-uploading {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: var(--starken-bg);
+  border: 1px dashed var(--starken-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  color: var(--starken);
+  font-weight: 600;
+}
+
+/* ── Activity timeline ── */
+.ch-activity-wrap {
+  max-width: 720px;
+}
+.ch-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ch-activity-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.ch-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.ch-activity-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.ch-activity-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
+  position: relative;
+}
+.ch-activity-item:last-child { border-bottom: none; }
+.ch-activity-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--starken-bg);
+  border: 2px solid var(--starken-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+[data-theme="dark"] .ch-activity-icon { background: #172554; border-color: #1e3a8a; }
+.ch-activity-body { flex: 1; min-width: 0; }
+.ch-activity-line {
+  font-size: 0.8rem;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.ch-activity-actor {
+  font-weight: 700;
+  color: var(--starken);
+}
+.ch-activity-action {
+  color: var(--text-secondary);
+}
+.ch-activity-time {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.ch-activity-details {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Drive folder rows */
+.ch-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ch-folder-name {
+  width: 100px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="dark"] .ch-folder-name { background: #0f172a; color: #f1f5f9; border-color: #334155; }
+.ch-folder-url {
+  flex: 1;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="dark"] .ch-folder-url { background: #0f172a; color: #f1f5f9; border-color: #334155; }
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .ch-mat-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .ch-mat-toolbar { flex-direction: column; align-items: flex-start; }
+  .ch-activity-wrap { max-width: 100%; }
+  .ch-btn-view { display: none; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -2932,250 +3302,375 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
             </div>
             <div class="ch-header-right">
+              <span class="ch-save-indicator" id="chSaveIndicator"></span>
               <button class="ch-btn-save" id="chBtnSave" onclick="hubSave()">💾 Salvar</button>
+              <button class="ch-btn-view" onclick="hubSwitchView('content',null)" title="Ver Conteúdo">📝 Conteúdo</button>
+              <button class="ch-btn-view" onclick="hubSwitchView('calendar',null)" title="Ver Calendário">📅 Calendário</button>
             </div>
           </div>
 
-          <!-- Sub-tab toggle: Hub | Conteúdo | Calendário -->
-          <div class="ch-tabs">
-            <button class="ch-tab active" onclick="hubSwitchView('hub',event)">📋 Hub</button>
-            <button class="ch-tab" onclick="hubSwitchView('content',event)">📝 Conteúdo</button>
-            <button class="ch-tab" onclick="hubSwitchView('calendar',event)">📅 Calendário</button>
+          <!-- 5 inner tabs -->
+          <div class="ch-tabs" id="chInnerTabs">
+            <button class="ch-tab active" data-chtab="visao" onclick="hubSwitchInnerTab('visao',this)">📋 Visão Geral</button>
+            <button class="ch-tab" data-chtab="marca" onclick="hubSwitchInnerTab('marca',this)">🎨 Marca &amp; Identidade</button>
+            <button class="ch-tab" data-chtab="materiais" onclick="hubSwitchInnerTab('materiais',this)">📁 Materiais</button>
+            <button class="ch-tab" data-chtab="links" onclick="hubSwitchInnerTab('links',this)">🔗 Links &amp; Recursos</button>
+            <button class="ch-tab" data-chtab="atividade" onclick="hubSwitchInnerTab('atividade',this)">🕐 Atividade</button>
           </div>
 
-          <!-- 2-column grid with collapsible cards -->
-          <div class="ch-grid" id="chGrid">
+          <!-- ── TAB: VISAO GERAL ── -->
+          <div class="ch-inner-panel active" id="chPanel-visao">
+            <div class="ch-grid">
 
-            <!-- LEFT COLUMN -->
-            <div class="ch-col">
+              <!-- LEFT: Profile + Contract + Notes -->
+              <div class="ch-col">
 
-              <!-- Card: Perfil do Cliente -->
-              <div class="ch-card" id="chCardProfile">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardProfile')">
-                  <span>👤 Perfil do Cliente</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <div class="ch-field">
-                    <label class="ch-field-label">Segmento</label>
-                    <input type="text" class="ch-field-value" id="chSegment" placeholder="Ex: Gastronomia, Moda, Saúde...">
+                <div class="ch-card" id="chCardProfile">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardProfile')">
+                    <span>👤 Perfil do Cliente</span>
+                    <span class="ch-chevron">▶</span>
                   </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Responsável</label>
-                    <select class="ch-field-value" id="chResponsible">
-                      <option value="">Selecione</option>
-                      <option value="Juan">Juan</option>
-                      <option value="Henrique">Henrique</option>
-                      <option value="Emily">Emily</option>
-                    </select>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Status</label>
-                    <select class="ch-field-value" id="chStatus" onchange="hubUpdateStatusBadge()">
-                      <option value="ativo">Ativo</option>
-                      <option value="standby">Standby</option>
-                      <option value="encerrado">Encerrado</option>
-                    </select>
-                  </div>
-                  <div class="ch-field-row">
-                    <div class="ch-field">
-                      <label class="ch-field-label">Telefone</label>
-                      <input type="text" class="ch-field-value" id="chPhone" placeholder="(47) 99999-9999">
-                    </div>
-                    <div class="ch-field">
-                      <label class="ch-field-label">Email</label>
-                      <input type="email" class="ch-field-value" id="chEmail" placeholder="cliente@email.com">
-                    </div>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Contato Principal</label>
-                    <input type="text" class="ch-field-value" id="chContactName" placeholder="Nome do contato no cliente">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Card: Contrato -->
-              <div class="ch-card" id="chCardContract">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardContract')">
-                  <span>📄 Contrato</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <div class="ch-field">
-                    <label class="ch-field-label">Data de Início</label>
-                    <input type="date" class="ch-field-value" id="chContractStart">
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Valor</label>
-                    <input type="text" class="ch-field-value" id="chContractValue" placeholder="R$ 2.500/mês">
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Pacote</label>
-                    <input type="text" class="ch-field-value" id="chContractPackage" placeholder="12 posts + 8 stories + tráfego">
-                  </div>
-                </div>
-              </div>
-
-              <!-- Card: Voz e Comunicação -->
-              <div class="ch-card" id="chCardVoice">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardVoice')">
-                  <span>🗣️ Voz e Comunicação</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <div class="ch-field">
-                    <label class="ch-field-label">Tom de Voz</label>
-                    <textarea class="ch-textarea" id="chToneOfVoice" rows="3" placeholder="Ex: Informal, divertido, usa emojis, evita termos técnicos..."></textarea>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Persona / Público-alvo</label>
-                    <textarea class="ch-textarea" id="chPersona" rows="3" placeholder="Ex: Jovens 18-35, universitários, amantes de comida..."></textarea>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Palavras-chave</label>
-                    <div class="ch-tag-input-wrap">
-                      <div class="ch-tag-list" id="chKeywords"></div>
-                      <input type="text" class="ch-tag-add" id="chKeywordInput" placeholder="Adicionar palavra + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chKeywords','chKeywordInput');event.preventDefault();}">
-                    </div>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Palavras Proibidas</label>
-                    <div class="ch-tag-input-wrap">
-                      <div class="ch-tag-list" id="chForbiddenWords"></div>
-                      <input type="text" class="ch-tag-add" id="chForbiddenInput" placeholder="Adicionar palavra + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chForbiddenWords','chForbiddenInput');event.preventDefault();}">
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Card: Exemplos de Copy -->
-              <div class="ch-card" id="chCardCopy">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardCopy')">
-                  <span>✍️ Exemplos de Copy</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <div id="chCopyExamples"></div>
-                  <button class="ch-btn-add" onclick="hubAddCopyExample()">+ Adicionar Exemplo</button>
-                </div>
-              </div>
-
-            </div><!-- end .ch-col left -->
-
-            <!-- RIGHT COLUMN -->
-            <div class="ch-col">
-
-              <!-- Card: Identidade Visual -->
-              <div class="ch-card" id="chCardBrand">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardBrand')">
-                  <span>🎨 Identidade Visual</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <div class="ch-field">
-                    <label class="ch-field-label">Cores da Marca</label>
-                    <div id="chColors"></div>
-                    <button class="ch-btn-add" onclick="hubAddColor()">+ Adicionar Cor</button>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Fontes</label>
+                  <div class="ch-card-body">
                     <div class="ch-field-row">
-                      <div class="ch-field" style="flex:1">
-                        <label class="ch-field-label" style="font-size:0.6rem">Título</label>
-                        <input type="text" class="ch-field-value" id="chFontTitle" placeholder="Montserrat">
+                      <div class="ch-field">
+                        <label class="ch-field-label">Segmento</label>
+                        <input type="text" class="ch-field-value" id="chSegment" placeholder="Ex: Gastronomia, Moda..." oninput="hubMarkDirty()">
                       </div>
-                      <div class="ch-field" style="flex:1">
-                        <label class="ch-field-label" style="font-size:0.6rem">Corpo</label>
-                        <input type="text" class="ch-field-value" id="chFontBody" placeholder="Open Sans">
+                      <div class="ch-field">
+                        <label class="ch-field-label">Status</label>
+                        <select class="ch-field-value" id="chStatus" onchange="hubUpdateStatusBadge();hubMarkDirty()">
+                          <option value="ativo">Ativo</option>
+                          <option value="standby">Standby</option>
+                          <option value="encerrado">Encerrado</option>
+                        </select>
                       </div>
                     </div>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Estilo Visual</label>
-                    <div class="ch-tag-input-wrap">
-                      <div class="ch-tag-list" id="chStyleTags"></div>
-                      <input type="text" class="ch-tag-add" id="chStyleTagInput" placeholder="Ex: minimalista, moderno + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chStyleTags','chStyleTagInput');event.preventDefault();}">
+                    <div class="ch-field">
+                      <label class="ch-field-label">Responsável</label>
+                      <select class="ch-field-value" id="chResponsible" onchange="hubMarkDirty()">
+                        <option value="">Selecione</option>
+                        <option value="Juan">Juan</option>
+                        <option value="Henrique">Henrique</option>
+                        <option value="Emily">Emily</option>
+                      </select>
                     </div>
-                  </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Logo Principal</label>
-                    <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="URL do logo" oninput="hubUpdateLogoPreview()">
-                    <div id="chLogoPreview" class="ch-logo-preview"></div>
+                    <div class="ch-field-row">
+                      <div class="ch-field">
+                        <label class="ch-field-label">Telefone</label>
+                        <input type="text" class="ch-field-value" id="chPhone" placeholder="(47) 99999-9999" oninput="hubMarkDirty()">
+                      </div>
+                      <div class="ch-field">
+                        <label class="ch-field-label">Email</label>
+                        <input type="email" class="ch-field-value" id="chEmail" placeholder="cliente@email.com" oninput="hubMarkDirty()">
+                      </div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Contato Principal</label>
+                      <input type="text" class="ch-field-value" id="chContactName" placeholder="Nome do contato no cliente" oninput="hubMarkDirty()">
+                    </div>
                   </div>
                 </div>
+
+                <div class="ch-card" id="chCardContract">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardContract')">
+                    <span>📄 Contrato</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <div class="ch-field-row">
+                      <div class="ch-field">
+                        <label class="ch-field-label">Data de Início</label>
+                        <input type="date" class="ch-field-value" id="chContractStart" onchange="hubMarkDirty()">
+                      </div>
+                      <div class="ch-field">
+                        <label class="ch-field-label">Valor</label>
+                        <input type="text" class="ch-field-value" id="chContractValue" placeholder="R$ 2.500/mês" oninput="hubMarkDirty()">
+                      </div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Pacote</label>
+                      <input type="text" class="ch-field-value" id="chContractPackage" placeholder="12 posts + 8 stories + tráfego" oninput="hubMarkDirty()">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ch-card" id="chCardNotes">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardNotes')">
+                    <span>📝 Notas</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <textarea class="ch-textarea" id="chNotes" rows="5" placeholder="Anotações gerais, observações, instruções especiais..." oninput="hubMarkDirty()"></textarea>
+                  </div>
+                </div>
+
               </div>
 
-              <!-- Card: Links e Recursos -->
-              <div class="ch-card" id="chCardLinks">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardLinks')">
-                  <span>🔗 Links e Recursos</span>
-                  <span class="ch-chevron">▶</span>
+              <!-- RIGHT: Quick links + Social -->
+              <div class="ch-col">
+
+                <div class="ch-card" id="chCardQuickLinks">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardQuickLinks')">
+                    <span>🚀 Acesso Rápido</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <div class="ch-quick-links" id="chQuickLinks">
+                      <!-- Rendered by hubRenderQuickLinks() -->
+                    </div>
+                  </div>
                 </div>
-                <div class="ch-card-body">
-                  <div class="ch-field">
-                    <label class="ch-field-label">Website</label>
-                    <input type="url" class="ch-field-value" id="chWebsite" placeholder="https://...">
+
+                <div class="ch-card" id="chCardSocial">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardSocial')">
+                    <span>📱 Redes Sociais</span>
+                    <span class="ch-chevron">▶</span>
                   </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Google Drive</label>
-                    <input type="url" class="ch-field-value" id="chDriveUrl" placeholder="https://drive.google.com/...">
+                  <div class="ch-card-body">
+                    <div class="ch-social-row">
+                      <span class="ch-social-icon">📷</span>
+                      <input type="url" class="ch-field-value" id="chSocialIg" placeholder="https://instagram.com/..." oninput="hubMarkDirty()">
+                      <a class="ch-social-link" id="chSocialIgLink" href="#" target="_blank" title="Abrir">↗</a>
+                    </div>
+                    <div class="ch-social-row">
+                      <span class="ch-social-icon">📘</span>
+                      <input type="url" class="ch-field-value" id="chSocialFb" placeholder="https://facebook.com/..." oninput="hubMarkDirty()">
+                      <a class="ch-social-link" id="chSocialFbLink" href="#" target="_blank" title="Abrir">↗</a>
+                    </div>
+                    <div class="ch-social-row">
+                      <span class="ch-social-icon">🎵</span>
+                      <input type="url" class="ch-field-value" id="chSocialTiktok" placeholder="https://tiktok.com/@..." oninput="hubMarkDirty()">
+                      <a class="ch-social-link" id="chSocialTiktokLink" href="#" target="_blank" title="Abrir">↗</a>
+                    </div>
+                    <div class="ch-social-row">
+                      <span class="ch-social-icon">💼</span>
+                      <input type="url" class="ch-field-value" id="chSocialLinkedin" placeholder="https://linkedin.com/company/..." oninput="hubMarkDirty()">
+                      <a class="ch-social-link" id="chSocialLinkedinLink" href="#" target="_blank" title="Abrir">↗</a>
+                    </div>
+                    <div class="ch-social-row">
+                      <span class="ch-social-icon">▶️</span>
+                      <input type="url" class="ch-field-value" id="chSocialYoutube" placeholder="https://youtube.com/@..." oninput="hubMarkDirty()">
+                      <a class="ch-social-link" id="chSocialYoutubeLink" href="#" target="_blank" title="Abrir">↗</a>
+                    </div>
                   </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Link de Aprovação</label>
-                    <input type="url" class="ch-field-value" id="chApprovalUrl" placeholder="https://...">
+                </div>
+
+              </div>
+
+            </div><!-- end .ch-grid -->
+          </div><!-- end #chPanel-visao -->
+
+          <!-- ── TAB: MARCA & IDENTIDADE ── -->
+          <div class="ch-inner-panel" id="chPanel-marca">
+            <div class="ch-grid">
+
+              <!-- LEFT: Colors + Fonts + Style -->
+              <div class="ch-col">
+
+                <div class="ch-card" id="chCardBrand">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardBrand')">
+                    <span>🎨 Identidade Visual</span>
+                    <span class="ch-chevron">▶</span>
                   </div>
-                  <div class="ch-field">
-                    <label class="ch-field-label">Links Adicionais</label>
+                  <div class="ch-card-body">
+                    <div class="ch-field">
+                      <label class="ch-field-label">Logo Principal</label>
+                      <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="URL do logo" oninput="hubUpdateLogoPreview();hubMarkDirty()">
+                      <div id="chLogoPreview" class="ch-logo-preview"></div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Cores da Marca</label>
+                      <div id="chColors"></div>
+                      <button class="ch-btn-add" onclick="hubAddColor()">+ Adicionar Cor</button>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Fontes</label>
+                      <div class="ch-field-row">
+                        <div class="ch-field" style="flex:1">
+                          <label class="ch-field-label" style="font-size:0.6rem">Título</label>
+                          <input type="text" class="ch-field-value" id="chFontTitle" placeholder="Montserrat" oninput="hubMarkDirty()">
+                        </div>
+                        <div class="ch-field" style="flex:1">
+                          <label class="ch-field-label" style="font-size:0.6rem">Corpo</label>
+                          <input type="text" class="ch-field-value" id="chFontBody" placeholder="Open Sans" oninput="hubMarkDirty()">
+                        </div>
+                      </div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Estilo Visual</label>
+                      <div class="ch-tag-input-wrap">
+                        <div class="ch-tag-list" id="chStyleTags"></div>
+                        <input type="text" class="ch-tag-add" id="chStyleTagInput" placeholder="Ex: minimalista, moderno + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chStyleTags','chStyleTagInput');event.preventDefault();}">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- RIGHT: Voice + Copy -->
+              <div class="ch-col">
+
+                <div class="ch-card" id="chCardVoice">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardVoice')">
+                    <span>🗣️ Voz e Comunicação</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <div class="ch-field">
+                      <label class="ch-field-label">Tom de Voz</label>
+                      <textarea class="ch-textarea" id="chToneOfVoice" rows="3" placeholder="Ex: Informal, divertido, usa emojis, evita termos técnicos..." oninput="hubMarkDirty()"></textarea>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Persona / Público-alvo</label>
+                      <textarea class="ch-textarea" id="chPersona" rows="3" placeholder="Ex: Jovens 18-35, universitários, amantes de comida..." oninput="hubMarkDirty()"></textarea>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Palavras-chave</label>
+                      <div class="ch-tag-input-wrap">
+                        <div class="ch-tag-list" id="chKeywords"></div>
+                        <input type="text" class="ch-tag-add" id="chKeywordInput" placeholder="Adicionar palavra + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chKeywords','chKeywordInput');event.preventDefault();}">
+                      </div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Palavras Proibidas</label>
+                      <div class="ch-tag-input-wrap">
+                        <div class="ch-tag-list" id="chForbiddenWords"></div>
+                        <input type="text" class="ch-tag-add" id="chForbiddenInput" placeholder="Adicionar palavra + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chForbiddenWords','chForbiddenInput');event.preventDefault();}">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="ch-card" id="chCardCopy">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardCopy')">
+                    <span>✍️ Exemplos de Copy</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <div id="chCopyExamples"></div>
+                    <button class="ch-btn-add" onclick="hubAddCopyExample()">+ Adicionar Exemplo</button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div><!-- end .ch-grid -->
+          </div><!-- end #chPanel-marca -->
+
+          <!-- ── TAB: MATERIAIS ── -->
+          <div class="ch-inner-panel" id="chPanel-materiais">
+
+            <!-- Toolbar -->
+            <div class="ch-mat-toolbar">
+              <div class="ch-mat-filters" id="chMatFilters">
+                <button class="ch-mat-filter active" data-cat="all" onclick="hubMaterialsFilter('all',this)">Todos</button>
+                <button class="ch-mat-filter" data-cat="logo" onclick="hubMaterialsFilter('logo',this)">Logo</button>
+                <button class="ch-mat-filter" data-cat="product_photo" onclick="hubMaterialsFilter('product_photo',this)">Fotos</button>
+                <button class="ch-mat-filter" data-cat="template" onclick="hubMaterialsFilter('template',this)">Templates</button>
+                <button class="ch-mat-filter" data-cat="reference" onclick="hubMaterialsFilter('reference',this)">Referências</button>
+                <button class="ch-mat-filter" data-cat="document" onclick="hubMaterialsFilter('document',this)">Documentos</button>
+                <button class="ch-mat-filter" data-cat="other" onclick="hubMaterialsFilter('other',this)">Outros</button>
+              </div>
+              <label class="ch-mat-upload-btn" for="chMatFileInput">
+                ⬆ Upload
+                <input type="file" id="chMatFileInput" multiple accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" style="display:none" onchange="hubUploadMaterials(this.files)">
+              </label>
+            </div>
+
+            <!-- Grid of materials -->
+            <div class="ch-mat-grid" id="chMatGrid">
+              <div class="ch-mat-empty" id="chMatEmpty">
+                <div style="font-size:2.5rem;margin-bottom:8px">📁</div>
+                <div>Nenhum material enviado ainda</div>
+                <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">Clique em "Upload" para adicionar arquivos</div>
+              </div>
+            </div>
+
+          </div><!-- end #chPanel-materiais -->
+
+          <!-- ── TAB: LINKS & RECURSOS ── -->
+          <div class="ch-inner-panel" id="chPanel-links">
+            <div class="ch-grid">
+
+              <!-- LEFT: Main links -->
+              <div class="ch-col">
+
+                <div class="ch-card" id="chCardLinks">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardLinks')">
+                    <span>🔗 Links Principais</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <div class="ch-field">
+                      <label class="ch-field-label">Website</label>
+                      <div class="ch-link-with-btn">
+                        <input type="url" class="ch-field-value" id="chWebsite" placeholder="https://..." oninput="hubMarkDirty()">
+                        <a class="ch-link-open" id="chWebsiteLink" href="#" target="_blank" title="Abrir site">↗</a>
+                      </div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Google Drive</label>
+                      <div class="ch-link-with-btn">
+                        <input type="url" class="ch-field-value" id="chDriveUrl" placeholder="https://drive.google.com/..." oninput="hubMarkDirty()">
+                        <a class="ch-link-open" id="chDriveLink" href="#" target="_blank" title="Abrir Drive">↗</a>
+                      </div>
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Link de Aprovação</label>
+                      <div class="ch-link-with-btn">
+                        <input type="url" class="ch-field-value" id="chApprovalUrl" placeholder="https://..." oninput="hubMarkDirty()">
+                        <a class="ch-link-open" id="chApprovalLink" href="#" target="_blank" title="Abrir link">↗</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- RIGHT: Extra links -->
+              <div class="ch-col">
+
+                <div class="ch-card" id="chCardExtraLinks">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardExtraLinks')">
+                    <span>➕ Links Adicionais</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
                     <div id="chExtraLinks"></div>
                     <button class="ch-btn-add" onclick="hubAddExtraLink()">+ Adicionar Link</button>
                   </div>
                 </div>
+
+                <div class="ch-card" id="chCardDriveFolders">
+                  <div class="ch-card-header" onclick="hubToggleCard('chCardDriveFolders')">
+                    <span>📂 Pastas do Drive</span>
+                    <span class="ch-chevron">▶</span>
+                  </div>
+                  <div class="ch-card-body">
+                    <div id="chDriveFolders"></div>
+                    <button class="ch-btn-add" onclick="hubAddDriveFolder()">+ Adicionar Pasta</button>
+                  </div>
+                </div>
+
               </div>
 
-              <!-- Card: Redes Sociais -->
-              <div class="ch-card" id="chCardSocial">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardSocial')">
-                  <span>📱 Redes Sociais</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <div class="ch-social-row">
-                    <span class="ch-social-icon">📷</span>
-                    <input type="url" class="ch-field-value" id="chSocialIg" placeholder="https://instagram.com/...">
-                  </div>
-                  <div class="ch-social-row">
-                    <span class="ch-social-icon">📘</span>
-                    <input type="url" class="ch-field-value" id="chSocialFb" placeholder="https://facebook.com/...">
-                  </div>
-                  <div class="ch-social-row">
-                    <span class="ch-social-icon">🎵</span>
-                    <input type="url" class="ch-field-value" id="chSocialTiktok" placeholder="https://tiktok.com/@...">
-                  </div>
-                  <div class="ch-social-row">
-                    <span class="ch-social-icon">💼</span>
-                    <input type="url" class="ch-field-value" id="chSocialLinkedin" placeholder="https://linkedin.com/company/...">
-                  </div>
-                  <div class="ch-social-row">
-                    <span class="ch-social-icon">▶️</span>
-                    <input type="url" class="ch-field-value" id="chSocialYoutube" placeholder="https://youtube.com/@...">
-                  </div>
-                </div>
+            </div><!-- end .ch-grid -->
+          </div><!-- end #chPanel-links -->
+
+          <!-- ── TAB: ATIVIDADE ── -->
+          <div class="ch-inner-panel" id="chPanel-atividade">
+            <div class="ch-activity-wrap">
+              <div class="ch-activity-header">
+                <span class="ch-activity-title">Histórico de Alterações</span>
+                <button class="ch-btn-add" style="width:auto;padding:6px 14px" onclick="hubLoadActivity()">↻ Atualizar</button>
               </div>
-
-              <!-- Card: Notas -->
-              <div class="ch-card" id="chCardNotes">
-                <div class="ch-card-header" onclick="hubToggleCard('chCardNotes')">
-                  <span>📝 Notas</span>
-                  <span class="ch-chevron">▶</span>
-                </div>
-                <div class="ch-card-body">
-                  <textarea class="ch-textarea" id="chNotes" rows="5" placeholder="Anotações gerais, observações, instruções especiais..."></textarea>
-                </div>
+              <div id="chActivityList" class="ch-activity-list">
+                <div class="ch-activity-empty">Carregando atividade...</div>
               </div>
+            </div>
+          </div><!-- end #chPanel-atividade -->
 
-            </div><!-- end .ch-col right -->
-
-          </div><!-- end .ch-grid -->
         </div><!-- end .ch-wrap -->
       </div><!-- end #tab-client-hub -->
 
@@ -10626,9 +11121,12 @@ function ctOpenLightbox(url) {
 // ============================================================
 
 // -- State --
-var _hubCurrentSlug = null;
-var _hubData        = {};
-var _hubDirty       = false;
+var _hubCurrentSlug  = null;
+var _hubData         = {};
+var _hubDirty        = false;
+var _hubMatCategory  = 'all';
+var _hubMaterials    = [];
+var _hubSaveTimer    = null;
 
 // -- API helper: routes to api/asana/tasks.js (multiplexed) --
 function hubApi(body) {
@@ -10643,8 +11141,13 @@ function hubApi(body) {
 function hubOpen(clientSlug, clientName) {
   _hubCurrentSlug = clientSlug;
   _hubDirty       = false;
+  _hubMaterials   = [];
   switchTab('client-hub');
   document.getElementById('chClientName').textContent = clientName || clientSlug;
+
+  // Reset to first inner tab
+  var firstTabBtn = document.querySelector('#chInnerTabs .ch-tab[data-chtab="visao"]');
+  hubSwitchInnerTab('visao', firstTabBtn);
 
   // Reset form while loading
   _hubData = { client_slug: clientSlug, client_name: clientName || clientSlug };
@@ -10697,7 +11200,7 @@ function hubPopulateForm() {
   el('chSocialLinkedin').value = social.linkedin  || '';
   el('chSocialYoutube').value  = social.youtube   || '';
 
-  // Arrays
+  // Arrays / tags
   hubRenderTags('chKeywords',     _hubData.keywords         || []);
   hubRenderTags('chForbiddenWords',_hubData.forbidden_words || []);
   hubRenderTags('chStyleTags',    _hubData.brand_style_tags || []);
@@ -10706,12 +11209,15 @@ function hubPopulateForm() {
   hubRenderColors(_hubData.brand_colors  || []);
   hubRenderCopyExamples(_hubData.copy_examples || []);
   hubRenderExtraLinks(_hubData.extra_links     || []);
+  hubRenderDriveFolders(_hubData.drive_folders || []);
 
   // Derived UI
   hubUpdateLogoPreview();
   hubUpdateStatusBadge();
   hubUpdateCompleteness();
   hubRestoreCardState();
+  hubRenderQuickLinks();
+  hubUpdateLinkAnchors();
 }
 
 // -- Collect all form fields into a plain object for saving --
@@ -10752,15 +11258,18 @@ function hubCollectForm() {
     brand_style_tags: hubGetTags('chStyleTags'),
     brand_colors:     hubGetColors(),
     copy_examples:    hubGetCopyExamples(),
-    extra_links:      hubGetExtraLinks()
+    extra_links:      hubGetExtraLinks(),
+    drive_folders:    hubGetDriveFolders()
   };
 }
 
 // -- Save hub data to API --
 function hubSave() {
-  var btn = document.getElementById('chBtnSave');
+  var btn  = document.getElementById('chBtnSave');
+  var ind  = document.getElementById('chSaveIndicator');
   btn.disabled    = true;
   btn.textContent = 'Salvando...';
+  if (ind) { ind.textContent = 'Salvando...'; ind.className = 'ch-save-indicator saving'; }
 
   var data = hubCollectForm();
   var user = (typeof gpState !== 'undefined' && gpState.user) ? gpState.user.name : 'Sistema';
@@ -10774,17 +11283,23 @@ function hubSave() {
     btn.disabled    = false;
     btn.textContent = '💾 Salvar';
     if (res && res.error) {
+      if (ind) { ind.textContent = 'Erro ao salvar'; ind.className = 'ch-save-indicator'; }
       alert('Erro ao salvar: ' + (res.message || res.error));
     } else {
-      // Merge returned record back into state
       if (res && res.client_slug) _hubData = res;
       _hubDirty = false;
+      if (ind) {
+        ind.textContent = 'Salvo';
+        ind.className   = 'ch-save-indicator saved';
+        setTimeout(function() { if (ind) { ind.textContent = ''; ind.className = 'ch-save-indicator'; } }, 2500);
+      }
       hubUpdateCompleteness();
       hubToast('Hub salvo com sucesso!');
     }
   }).catch(function(err) {
     btn.disabled    = false;
     btn.textContent = '💾 Salvar';
+    if (ind) { ind.textContent = 'Erro'; ind.className = 'ch-save-indicator'; }
     alert('Erro de conexão: ' + (err && err.message ? err.message : 'desconhecido'));
   });
 }
@@ -11061,21 +11576,37 @@ function hubUpdateCompleteness() {
   if (text) text.textContent = pct + '%';
 }
 
-// -- Mark data dirty (called by inline onchange handlers) --
+// -- Mark data dirty and schedule debounced auto-save indicator --
 function hubMarkDirty() {
   _hubDirty = true;
+  var ind = document.getElementById('chSaveIndicator');
+  if (ind) { ind.textContent = 'Modificado'; ind.className = 'ch-save-indicator'; }
 }
 
-// -- Sub-view switcher: Hub / Conteúdo / Calendário --
-function hubSwitchView(view, evt) {
-  // Update active tab button
-  document.querySelectorAll('#tab-client-hub .ch-tab').forEach(function(t) {
+// -- Switch inner tabs (Visão Geral / Marca / Materiais / Links / Atividade) --
+function hubSwitchInnerTab(tab, btn) {
+  // Update active button
+  document.querySelectorAll('#chInnerTabs .ch-tab').forEach(function(t) {
     t.classList.remove('active');
   });
-  if (evt && evt.target) evt.target.classList.add('active');
+  if (btn) btn.classList.add('active');
 
+  // Show the right panel
+  document.querySelectorAll('.ch-inner-panel').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  var panel = document.getElementById('chPanel-' + tab);
+  if (panel) panel.classList.add('active');
+
+  // Lazy-load data for heavy panels
+  if (tab === 'materiais') hubLoadMaterials();
+  if (tab === 'atividade') hubLoadActivity();
+  if (tab === 'links')     hubUpdateLinkAnchors();
+}
+
+// -- Navigate to other app tabs (Conteúdo / Calendário) --
+function hubSwitchView(view, evt) {
   if (view === 'content') {
-    // Switch to content management, pre-filtered to current client
     if (typeof ctInit === 'function') {
       switchTab('content');
       setTimeout(function() {
@@ -11089,7 +11620,342 @@ function hubSwitchView(view, evt) {
   } else if (view === 'calendar') {
     switchTab('calendario');
   }
-  // For 'hub' view we stay on current tab — nothing more to do
+}
+
+// -- Render the Quick Links card (Acesso Rápido) --
+function hubRenderQuickLinks() {
+  var container = document.getElementById('chQuickLinks');
+  if (!container) return;
+  var links = [];
+  var ws  = (document.getElementById('chWebsite')     || {}).value || (_hubData.website_url     || '');
+  var dr  = (document.getElementById('chDriveUrl')    || {}).value || (_hubData.drive_folder_url || '');
+  var ap  = (document.getElementById('chApprovalUrl') || {}).value || (_hubData.approval_url     || '');
+  var ig  = (document.getElementById('chSocialIg')    || {}).value || ((_hubData.social_links || {}).instagram || '');
+  var fb  = (document.getElementById('chSocialFb')    || {}).value || ((_hubData.social_links || {}).facebook  || '');
+  if (ws) links.push({ icon: '🌐', label: 'Website', url: ws });
+  if (dr) links.push({ icon: '📁', label: 'Google Drive', url: dr });
+  if (ap) links.push({ icon: '✅', label: 'Aprovação', url: ap });
+  if (ig) links.push({ icon: '📷', label: 'Instagram', url: ig });
+  if (fb) links.push({ icon: '📘', label: 'Facebook', url: fb });
+  if (links.length === 0) {
+    container.innerHTML = '<div class="ch-quick-links-empty">Adicione links na aba Links &amp; Recursos</div>';
+    return;
+  }
+  container.innerHTML = links.map(function(l) {
+    var safeUrl = l.url.replace(/"/g, '&quot;');
+    var safeLbl = l.label.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<a class="ch-quick-link-item" href="' + safeUrl + '" target="_blank" rel="noopener">' +
+      '<span class="ch-quick-link-icon">' + l.icon + '</span>' +
+      '<span class="ch-quick-link-text">' + safeLbl + '</span>' +
+      '<span class="ch-quick-link-arrow">↗</span>' +
+    '</a>';
+  }).join('');
+}
+
+// -- Update open-link anchors next to URL fields --
+function hubUpdateLinkAnchors() {
+  var pairs = [
+    ['chWebsite',     'chWebsiteLink'],
+    ['chDriveUrl',    'chDriveLink'],
+    ['chApprovalUrl', 'chApprovalLink'],
+    ['chSocialIg',    'chSocialIgLink'],
+    ['chSocialFb',    'chSocialFbLink'],
+    ['chSocialTiktok','chSocialTiktokLink'],
+    ['chSocialLinkedin','chSocialLinkedinLink'],
+    ['chSocialYoutube', 'chSocialYoutubeLink']
+  ];
+  pairs.forEach(function(p) {
+    var input  = document.getElementById(p[0]);
+    var anchor = document.getElementById(p[1]);
+    if (!input || !anchor) return;
+    var url = input.value.trim();
+    if (url) {
+      anchor.href = url;
+      anchor.style.visibility = 'visible';
+    } else {
+      anchor.href  = '#';
+      anchor.style.visibility = 'hidden';
+    }
+  });
+}
+
+// -- Drive Folders CRUD --
+function hubRenderDriveFolders(folders) {
+  var container = document.getElementById('chDriveFolders');
+  if (!container) return;
+  container.innerHTML = (folders || []).map(function(f, i) {
+    var name = (f.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var url  = (f.url  || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="ch-folder-row" data-index="' + i + '">' +
+      '<input type="text"  class="ch-folder-name" placeholder="Nome" value="' + name + '" onchange="hubMarkDirty()">' +
+      '<input type="url"   class="ch-folder-url"  placeholder="https://drive.google.com/..." value="' + url + '" onchange="hubMarkDirty()">' +
+      (url ? '<a href="' + url + '" target="_blank" class="ch-link-open" title="Abrir">↗</a>' : '') +
+      '<button type="button" class="ch-btn-remove" onclick="hubRemoveDriveFolder(' + i + ')" title="Remover">&times;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function hubAddDriveFolder() {
+  var folders = hubGetDriveFolders();
+  folders.push({ name: '', url: '' });
+  hubRenderDriveFolders(folders);
+  _hubDirty = true;
+}
+
+function hubRemoveDriveFolder(i) {
+  var folders = hubGetDriveFolders();
+  folders.splice(i, 1);
+  hubRenderDriveFolders(folders);
+  _hubDirty = true;
+}
+
+function hubGetDriveFolders() {
+  var folders = [];
+  var container = document.getElementById('chDriveFolders');
+  if (!container) return folders;
+  container.querySelectorAll('.ch-folder-row').forEach(function(row) {
+    folders.push({
+      name: row.querySelector('.ch-folder-name').value,
+      url:  row.querySelector('.ch-folder-url').value
+    });
+  });
+  return folders;
+}
+
+// ── MATERIALS ──────────────────────────────────────────────
+
+function hubLoadMaterials() {
+  if (!_hubCurrentSlug) return;
+  var grid = document.getElementById('chMatGrid');
+  if (grid) grid.innerHTML = '<div class="ch-mat-empty"><div style="font-size:2rem">⏳</div><div>Carregando materiais...</div></div>';
+
+  hubApi({ action: 'hub_materials_list', client_slug: _hubCurrentSlug, category: _hubMatCategory })
+    .then(function(data) {
+      _hubMaterials = Array.isArray(data) ? data : [];
+      hubRenderMaterials();
+    })
+    .catch(function() {
+      _hubMaterials = [];
+      hubRenderMaterials();
+    });
+}
+
+function hubMaterialsFilter(cat, btn) {
+  _hubMatCategory = cat;
+  document.querySelectorAll('.ch-mat-filter').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  hubLoadMaterials();
+}
+
+function hubRenderMaterials() {
+  var grid  = document.getElementById('chMatGrid');
+  if (!grid) return;
+
+  var items = _hubMaterials.filter(function(m) {
+    return _hubMatCategory === 'all' || m.category === _hubMatCategory;
+  });
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div class="ch-mat-empty"><div style="font-size:2.5rem;margin-bottom:8px">📁</div><div>Nenhum material encontrado</div>' +
+      (_hubMatCategory !== 'all' ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">Tente outro filtro</div>' : '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">Clique em "Upload" para adicionar arquivos</div>') +
+    '</div>';
+    return;
+  }
+
+  var catLabels = { logo: 'Logo', product_photo: 'Foto', template: 'Template', reference: 'Referência', document: 'Documento', other: 'Outro' };
+  var imageExts = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i;
+  var videoExts = /\.(mp4|mov|avi|webm)$/i;
+
+  grid.innerHTML = items.map(function(m) {
+    var isImage = (m.mime_type && m.mime_type.startsWith('image/')) || imageExts.test(m.file_name || '');
+    var isVideo = (m.mime_type && m.mime_type.startsWith('video/')) || videoExts.test(m.file_name || '');
+    var thumbHtml;
+    if (isImage && m.file_url) {
+      thumbHtml = '<img class="ch-mat-thumb" src="' + m.file_url.replace(/"/g,'&quot;') + '" alt="' + (m.file_name || '').replace(/"/g,'&quot;') + '" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+        '<div class="ch-mat-thumb-placeholder" style="display:none">🖼️</div>';
+    } else if (isVideo) {
+      thumbHtml = '<div class="ch-mat-thumb-placeholder">🎬</div>';
+    } else if ((m.mime_type || '').includes('pdf')) {
+      thumbHtml = '<div class="ch-mat-thumb-placeholder">📄</div>';
+    } else if ((m.mime_type || '').includes('word') || /\.docx?$/i.test(m.file_name || '')) {
+      thumbHtml = '<div class="ch-mat-thumb-placeholder">📝</div>';
+    } else if ((m.mime_type || '').includes('zip')) {
+      thumbHtml = '<div class="ch-mat-thumb-placeholder">🗜️</div>';
+    } else {
+      thumbHtml = '<div class="ch-mat-thumb-placeholder">📎</div>';
+    }
+
+    var name  = (m.file_name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var cat   = catLabels[m.category] || m.category || 'Outro';
+    var date  = m.created_at ? new Date(m.created_at).toLocaleDateString('pt-BR') : '';
+    var safeId = String(m.id).replace(/[^a-z0-9_-]/gi,'');
+    var openLink = m.file_url ? '<a href="' + m.file_url.replace(/"/g,'&quot;') + '" target="_blank" rel="noopener" style="position:absolute;inset:0;z-index:0"></a>' : '';
+
+    return '<div class="ch-mat-card" data-id="' + safeId + '">' +
+      openLink +
+      thumbHtml +
+      '<button class="ch-mat-del" onclick="event.preventDefault();event.stopPropagation();hubDeleteMaterial(\'' + safeId + '\')" title="Excluir">&times;</button>' +
+      '<div class="ch-mat-info">' +
+        '<div class="ch-mat-name" title="' + name + '">' + name + '</div>' +
+        '<div class="ch-mat-footer">' +
+          '<span class="ch-mat-cat">' + cat + '</span>' +
+          '<span class="ch-mat-date">' + date + '</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function hubDeleteMaterial(materialId) {
+  if (!confirm('Excluir este material?')) return;
+  hubApi({ action: 'hub_materials_delete', client_slug: _hubCurrentSlug, material_id: materialId })
+    .then(function(res) {
+      if (res && res.error) {
+        alert('Erro ao excluir: ' + (res.message || res.error));
+      } else {
+        _hubMaterials = _hubMaterials.filter(function(m) { return String(m.id) !== String(materialId); });
+        hubRenderMaterials();
+        hubToast('Material excluído!');
+      }
+    })
+    .catch(function() { alert('Erro de conexão ao excluir material.'); });
+}
+
+function hubUploadMaterials(files) {
+  if (!files || files.length === 0) return;
+  if (!_supabase) { alert('Supabase não inicializado. Recarregue a página.'); return; }
+
+  var grid = document.getElementById('chMatGrid');
+  var indicator = document.createElement('div');
+  indicator.className = 'ch-mat-uploading';
+  indicator.id = 'chMatUploading';
+  indicator.textContent = '⬆ Enviando ' + files.length + ' arquivo(s)...';
+  if (grid) grid.prepend(indicator);
+
+  var user    = (typeof gpState !== 'undefined' && gpState.user) ? gpState.user.name : 'Sistema';
+  var slug    = _hubCurrentSlug;
+  var pending = Array.from(files);
+  var done    = 0;
+
+  var CATEGORY_MAP = { logo: 'logo', photo: 'product_photo', template: 'template', ref: 'reference', doc: 'document' };
+
+  function guessCategory(file) {
+    var name = file.name.toLowerCase();
+    if (/logo/.test(name)) return 'logo';
+    if (/template|modelo/.test(name)) return 'template';
+    if (file.type.startsWith('image/')) return 'product_photo';
+    if (/\.pdf$/.test(name) || /\.docx?$/.test(name) || /\.xlsx?$/.test(name)) return 'document';
+    return 'other';
+  }
+
+  function uploadOne(file) {
+    var ext       = file.name.split('.').pop();
+    var safeName  = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    var storagePath = slug + '/' + Date.now() + '_' + safeName;
+
+    return _supabase.storage.from('client-hub-materials').upload(storagePath, file, { upsert: false })
+      .then(function(res) {
+        if (res.error) throw res.error;
+        var pubUrl = _supabase.storage.from('client-hub-materials').getPublicUrl(storagePath).data.publicUrl;
+        return hubApi({
+          action:       'hub_materials_insert',
+          client_slug:  slug,
+          user:         user,
+          material: {
+            file_name:    file.name,
+            file_url:     pubUrl,
+            storage_path: storagePath,
+            category:     guessCategory(file),
+            mime_type:    file.type || null,
+            file_size:    file.size || null
+          }
+        });
+      })
+      .then(function(record) {
+        if (record && record.id) _hubMaterials.unshift(record);
+        done++;
+        if (indicator) indicator.textContent = '⬆ Enviando... ' + done + '/' + pending.length;
+      })
+      .catch(function(err) {
+        done++;
+        hubToast('Falha ao enviar: ' + file.name);
+      });
+  }
+
+  Promise.all(pending.map(uploadOne)).then(function() {
+    if (indicator && indicator.parentNode) indicator.parentNode.removeChild(indicator);
+    hubRenderMaterials();
+    hubToast(done + ' arquivo(s) enviado(s) com sucesso!');
+    // Reset file input
+    var input = document.getElementById('chMatFileInput');
+    if (input) input.value = '';
+  });
+}
+
+// ── ACTIVITY ──────────────────────────────────────────────
+
+function hubLoadActivity() {
+  if (!_hubCurrentSlug) return;
+  var list = document.getElementById('chActivityList');
+  if (list) list.innerHTML = '<div class="ch-activity-empty">Carregando...</div>';
+
+  hubApi({ action: 'hub_activity', client_slug: _hubCurrentSlug, limit: 50 })
+    .then(function(data) {
+      hubRenderActivity(Array.isArray(data) ? data : []);
+    })
+    .catch(function() {
+      var list = document.getElementById('chActivityList');
+      if (list) list.innerHTML = '<div class="ch-activity-empty">Erro ao carregar atividade.</div>';
+    });
+}
+
+function hubRenderActivity(items) {
+  var list = document.getElementById('chActivityList');
+  if (!list) return;
+
+  if (!items || items.length === 0) {
+    list.innerHTML = '<div class="ch-activity-empty">Nenhuma atividade registrada ainda.</div>';
+    return;
+  }
+
+  var ACTION_ICONS = {
+    hub_created:      '🚀',
+    hub_updated:      '✏️',
+    hub_bulk_created: '⚡',
+    hub_deleted:      '🗑️'
+  };
+  var ACTION_LABELS = {
+    hub_created:      'criou o hub',
+    hub_updated:      'atualizou o hub',
+    hub_bulk_created: 'criou via importação em massa',
+    hub_deleted:      'encerrou o cliente'
+  };
+
+  list.innerHTML = items.map(function(item) {
+    var icon   = ACTION_ICONS[item.action]  || '🔔';
+    var label  = ACTION_LABELS[item.action] || item.action;
+    var actor  = item.actor || 'Sistema';
+    var ts     = item.created_at ? new Date(item.created_at) : null;
+    var timeStr = ts ? ts.toLocaleDateString('pt-BR') + ' às ' + ts.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+    var details = '';
+    if (item.details && item.details.fields && Array.isArray(item.details.fields)) {
+      var fieldNames = item.details.fields.slice(0, 6).join(', ');
+      if (item.details.fields.length > 0) {
+        details = '<div class="ch-activity-details">Campos: ' + fieldNames.replace(/</g,'&lt;').replace(/>/g,'&gt;') + (item.details.fields.length > 6 ? '...' : '') + '</div>';
+      }
+    }
+    return '<div class="ch-activity-item">' +
+      '<div class="ch-activity-icon">' + icon + '</div>' +
+      '<div class="ch-activity-body">' +
+        '<div class="ch-activity-line">' +
+          '<span class="ch-activity-actor">' + actor.replace(/</g,'&lt;') + '</span> ' +
+          '<span class="ch-activity-action">' + label + '</span>' +
+        '</div>' +
+        details +
+      '</div>' +
+      '<div class="ch-activity-time">' + timeStr + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 // ============ END CLIENT HUB MODULE ============

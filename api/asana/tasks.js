@@ -316,6 +316,103 @@ async function hubBulkInit({ user }) {
 }
 
 // =============================================================================
+// 7. hub_materials_list — List materials for a client hub
+// =============================================================================
+
+async function hubMaterialsList({ client_slug, category }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+
+  const sb = supabase();
+  let query = sb
+    .from('client_hub_materials')
+    .select('*')
+    .eq('client_slug', client_slug)
+    .order('created_at', { ascending: false });
+
+  if (category && category !== 'all') {
+    query = query.eq('category', category);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return data || [];
+}
+
+// =============================================================================
+// 8. hub_materials_delete — Delete a material record (file cleanup optional)
+// =============================================================================
+
+async function hubMaterialsDelete({ client_slug, material_id }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+  if (!material_id) return { error: true, message: 'material_id is required' };
+
+  const sb = supabase();
+
+  // Fetch the record first so we can get the storage path
+  const { data: mat, error: fetchErr } = await sb
+    .from('client_hub_materials')
+    .select('*')
+    .eq('id', material_id)
+    .eq('client_slug', client_slug)
+    .single();
+
+  if (fetchErr || !mat) {
+    return { error: true, message: 'Material not found' };
+  }
+
+  // Attempt to delete from storage if storage_path is set
+  if (mat.storage_path) {
+    await sb.storage.from('client-hub-materials').remove([mat.storage_path]);
+  }
+
+  // Delete the DB record
+  const { error: delErr } = await sb
+    .from('client_hub_materials')
+    .delete()
+    .eq('id', material_id)
+    .eq('client_slug', client_slug);
+
+  if (delErr) throw delErr;
+
+  return { success: true, deleted_id: material_id };
+}
+
+// =============================================================================
+// 9. hub_materials_insert — Insert a material record (upload done client-side)
+// =============================================================================
+
+async function hubMaterialsInsert({ client_slug, user, material }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+  if (!material || !material.file_name) return { error: true, message: 'material.file_name is required' };
+
+  const sb = supabase();
+  const now = new Date().toISOString();
+
+  const record = {
+    client_slug,
+    file_name:    material.file_name,
+    file_url:     material.file_url     || null,
+    storage_path: material.storage_path || null,
+    category:     material.category     || 'other',
+    mime_type:    material.mime_type    || null,
+    file_size:    material.file_size    || null,
+    uploaded_by:  user || 'Sistema',
+    created_at:   now,
+  };
+
+  const { data, error } = await sb
+    .from('client_hub_materials')
+    .insert(record)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
+// =============================================================================
 // Action router
 // =============================================================================
 
@@ -326,6 +423,9 @@ const ACTIONS = {
   hub_delete: hubDelete,
   hub_activity: hubActivity,
   hub_bulk_init: hubBulkInit,
+  hub_materials_list:   hubMaterialsList,
+  hub_materials_delete: hubMaterialsDelete,
+  hub_materials_insert: hubMaterialsInsert,
 };
 
 // =============================================================================
