@@ -9131,16 +9131,22 @@ function metaPublishRenderHistory() {
       const canDelete = h.status === 'SCHEDULED' || h.status === 'PUBLISHED';
       if (canDelete) {
         const label = h.status === 'SCHEDULED' ? 'Cancelar' : 'Excluir';
-        const confirmMsg = h.status === 'SCHEDULED'
-          ? 'Cancelar agendamento de &quot;' + h.client + '&quot;?'
-          : 'Excluir post publicado de &quot;' + h.client + '&quot;? Isso remove do Facebook.';
-        actions = '<button onclick="metaPublishDeletePost(' + idx + ',\'' + (h.post_id || '') + '\',\'' + (h.history_id || '') + '\',\'' + (h.client_key || '') + '\')" '
+        actions += '<button onclick="metaPublishDeletePost(' + idx + ',\'' + (h.post_id || '') + '\',\'' + (h.history_id || '') + '\',\'' + (h.client_key || '') + '\')" '
           + 'style="margin-top:4px;padding:3px 10px;border-radius:6px;border:1px solid ' + (h.status === 'SCHEDULED' ? '#f59e0b' : '#ef4444') + ';'
           + 'background:transparent;color:' + (h.status === 'SCHEDULED' ? '#b45309' : '#dc2626') + ';cursor:pointer;font-size:0.68rem;font-family:inherit;font-weight:600;transition:all 0.2s" '
           + 'onmouseenter="this.style.background=\'' + (h.status === 'SCHEDULED' ? '#fffbeb' : '#fef2f2') + '\'" '
           + 'onmouseleave="this.style.background=\'transparent\'">'
-          + (h.status === 'SCHEDULED' ? '⏹️' : '🗑️') + ' ' + label + '</button>';
+          + (h.status === 'SCHEDULED' ? '⏹️' : '🗑️') + ' ' + label + '</button> ';
       }
+    }
+    // Botão "Remover" do histórico (para qualquer status)
+    if (h.history_id) {
+      actions += '<button onclick="metaPublishRemoveFromHistory(\'' + h.history_id + '\')" '
+        + 'style="margin-top:4px;padding:3px 10px;border-radius:6px;border:1px solid #9ca3af;'
+        + 'background:transparent;color:#6b7280;cursor:pointer;font-size:0.68rem;font-family:inherit;font-weight:600;transition:all 0.2s" '
+        + 'onmouseenter="this.style.background=\'#f3f4f6\'" '
+        + 'onmouseleave="this.style.background=\'transparent\'">'
+        + '🗑️ Remover</button>';
     }
 
     html += '<div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:8px;margin-bottom:6px;background:' + st.bg + ';border:1px solid ' + st.border + (isDeleted ? ';opacity:0.6' : '') + '">'
@@ -9160,6 +9166,40 @@ function metaPublishRenderHistory() {
   });
   html += '</div>';
   container.innerHTML = html;
+}
+
+// ─── Remover entrada do histórico (apenas do banco, não do Meta) ───
+async function metaPublishRemoveFromHistory(historyId) {
+  if (!confirm('Remover este registro do histórico?\n\nIsso NÃO cancela o post no Facebook/Instagram, apenas remove da lista.')) return;
+
+  const statusDiv = document.getElementById('metaPubStatus');
+  statusDiv.style.display = 'block';
+  statusDiv.style.background = '#fffbeb';
+  statusDiv.style.color = '#b45309';
+  statusDiv.innerHTML = '⏳ Removendo do histórico...';
+
+  try {
+    const { error } = await _supabase
+      .from('publish_history')
+      .delete()
+      .eq('id', historyId);
+
+    if (error) throw error;
+
+    statusDiv.style.background = '#ecfdf5';
+    statusDiv.style.color = '#059669';
+    statusDiv.innerHTML = '✅ Removido do histórico!';
+
+    // Recarrega a lista
+    setTimeout(() => {
+      metaPublishLoadHistory();
+      statusDiv.style.display = 'none';
+    }, 1000);
+  } catch (e) {
+    statusDiv.style.background = '#fef2f2';
+    statusDiv.style.color = '#dc2626';
+    statusDiv.innerHTML = '❌ Erro: ' + e.message;
+  }
 }
 
 // ─── Excluir/cancelar post do Meta ───
