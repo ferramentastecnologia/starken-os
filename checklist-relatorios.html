@@ -230,8 +230,8 @@ body {
 .app { display: flex; min-height: 100vh; }
 
 .sidebar {
-  width: 220px;
-  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  width: 240px;
+  background: linear-gradient(180deg, #0f172a 0%, #1a2332 100%);
   color: white;
   position: fixed;
   top: 0; left: 0; bottom: 0;
@@ -239,65 +239,98 @@ body {
   display: flex;
   flex-direction: column;
   transition: transform 0.3s;
+  font-size: 0.8rem;
 }
 
 .sidebar-brand {
-  padding: 20px 16px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 16px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
-.sidebar-brand h1 { font-size: 0.95rem; font-weight: 800; line-height: 1.3; }
-.sidebar-brand span { font-size: 0.65rem; color: rgba(255,255,255,0.45); font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; display: block; margin-top: 4px; }
+.sidebar-brand h1 { font-size: 0.85rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.01em; }
+.sidebar-brand span { font-size: 0.58rem; color: rgba(255,255,255,0.35); font-weight: 500; letter-spacing: 1.8px; text-transform: uppercase; display: block; margin-top: 3px; }
 
-.sidebar-nav { flex: 1; padding: 10px 8px; overflow-y: auto; }
+.sidebar-nav {
+  flex: 1; padding: 6px 6px; overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.08) transparent;
+}
+.sidebar-nav::-webkit-scrollbar { width: 3px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
 .sidebar-nav button {
   width: 100%; text-align: left; background: none; border: none;
-  color: rgba(255,255,255,0.55); padding: 9px 12px; border-radius: var(--radius-sm);
-  cursor: pointer; font-size: 0.82rem; font-weight: 500;
-  display: flex; align-items: center; gap: 9px; transition: all 0.15s; margin-bottom: 1px; font-family: inherit;
+  color: rgba(255,255,255,0.5); padding: 6px 8px; border-radius: 5px;
+  cursor: pointer; font-size: 0.74rem; font-weight: 500;
+  display: flex; align-items: center; gap: 8px; transition: all 0.12s ease; margin-bottom: 0; font-family: inherit;
+  position: relative; letter-spacing: 0.01em;
 }
-.sidebar-nav button:hover { background: rgba(255,255,255,0.08); color: white; }
-.sidebar-nav button.active { background: rgba(255,255,255,0.12); color: white; font-weight: 600; }
-.sidebar-nav button .icon { font-size: 1rem; width: 20px; text-align: center; }
-.sidebar-nav button.sub { padding-left: 22px; font-size: 0.79rem; }
+.sidebar-nav button:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
+.sidebar-nav button.active {
+  background: rgba(59,130,246,0.12); color: #93bbfc; font-weight: 600;
+  box-shadow: inset 2.5px 0 0 #3b82f6;
+}
+.sidebar-nav button .icon { font-size: 0.85rem; width: 18px; text-align: center; flex-shrink: 0; }
+.sidebar-nav button.sub { padding-left: 20px; font-size: 0.72rem; }
 
-.sidebar-folder { margin-bottom: 1px; }
+.sidebar-folder { margin-bottom: 0; }
 .sidebar-folder-header {
   width: 100%; text-align: left; background: none; border: none;
-  color: rgba(255,255,255,0.55); padding: 7px 12px; border-radius: var(--radius-sm);
-  cursor: pointer; font-size: 0.8rem; font-weight: 600;
-  display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-family: inherit;
+  color: rgba(255,255,255,0.5); padding: 5px 8px; border-radius: 5px;
+  cursor: pointer; font-size: 0.73rem; font-weight: 600;
+  display: flex; align-items: center; gap: 5px; transition: all 0.12s ease; font-family: inherit;
 }
-.sidebar-folder-header:hover { background: rgba(255,255,255,0.08); color: white; }
-.sidebar-folder-chevron { font-size: 0.6rem; transition: transform 0.2s; width: 12px; text-align: center; }
+.sidebar-folder-header:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
+.sidebar-folder-chevron { font-size: 0.55rem; transition: transform 0.2s; width: 10px; text-align: center; }
 .sidebar-folder-chevron.open { transform: rotate(90deg); }
-.sidebar-folder-count { margin-left: auto; font-size: 0.65rem; color: rgba(255,255,255,0.3); font-weight: 400; }
-.sidebar-folder-items { padding-left: 8px; }
+.sidebar-folder-count { margin-left: auto; font-size: 0.6rem; color: rgba(255,255,255,0.22); font-weight: 400; }
+.sidebar-folder-items { padding-left: 6px; }
 .sidebar-client-btn {
   width: 100%; text-align: left; background: none; border: none;
-  color: rgba(255,255,255,0.45); padding: 5px 12px 5px 20px; border-radius: var(--radius-sm);
-  cursor: pointer; font-size: 0.75rem; font-weight: 400;
-  display: flex; align-items: center; gap: 6px; transition: all 0.15s; font-family: inherit;
+  color: rgba(255,255,255,0.4); padding: 4px 10px 4px 18px; border-radius: 5px;
+  cursor: pointer; font-size: 0.7rem; font-weight: 400;
+  display: flex; align-items: center; gap: 6px; transition: all 0.12s ease; font-family: inherit;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sidebar-client-btn:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); }
-.sidebar-client-btn.active { background: rgba(255,255,255,0.12); color: white; font-weight: 600; }
-.sidebar-client-btn::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: 0.5; }
+.sidebar-client-btn.active { background: rgba(59,130,246,0.1); color: #93bbfc; font-weight: 500; }
+.sidebar-client-btn::before { content: ''; width: 3px; height: 3px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: 0.4; }
 
 .nav-category {
-  font-size: 0.63rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
-  color: rgba(255,255,255,0.28); padding: 10px 12px 4px; margin-top: 4px;
+  font-size: 0.56rem; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase;
+  color: rgba(255,255,255,0.22); padding: 16px 8px 4px;
+  margin-top: 0;
+  border-top: 1px solid rgba(255,255,255,0.04);
 }
+.nav-category:first-child { border-top: none; margin-top: 0; padding-top: 4px; }
 
-.sidebar-footer { padding: 10px 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+/* ===== SIDEBAR DRAG & DROP ===== */
+.sidebar-drag-handle {
+  opacity: 0; cursor: grab; font-size: 0.7rem;
+  color: rgba(255,255,255,0.3); transition: opacity 0.15s; user-select: none;
+  margin-right: 2px; flex-shrink: 0;
+}
+.sidebar-nav button:hover .sidebar-drag-handle,
+.nav-category-wrap:hover .sidebar-drag-handle { opacity: 1; }
+.sidebar-drag-handle:active { cursor: grabbing; }
+.dragging { opacity: 0.4; }
+.drop-indicator {
+  height: 2px; background: #3b82f6; border-radius: 1px;
+  margin: 0 8px; transition: all 0.15s; pointer-events: none;
+}
+.nav-category-wrap { display: flex; align-items: center; }
+.nav-category-wrap .sidebar-drag-handle { margin-left: 0; margin-right: 4px; }
+
+.sidebar-footer { padding: 6px 8px; border-top: 1px solid rgba(255,255,255,0.05); }
 .sidebar-footer button {
   width: 100%; text-align: left; background: none; border: none;
-  color: rgba(255,255,255,0.45); padding: 7px 12px; border-radius: var(--radius-sm);
-  cursor: pointer; font-size: 0.75rem; font-weight: 500;
-  display: flex; align-items: center; gap: 7px; transition: all 0.15s; font-family: inherit;
+  color: rgba(255,255,255,0.4); padding: 5px 10px; border-radius: 5px;
+  cursor: pointer; font-size: 0.72rem; font-weight: 500;
+  display: flex; align-items: center; gap: 6px; transition: all 0.12s ease; font-family: inherit;
 }
-.sidebar-footer button:hover { background: rgba(255,255,255,0.08); color: white; }
+.sidebar-footer button:hover { background: rgba(255,255,255,0.06); color: white; }
 
 .menu-toggle {
   display: none; position: fixed; top: 10px; left: 10px; z-index: 200;
@@ -305,7 +338,7 @@ body {
   border-radius: var(--radius-sm); cursor: pointer; font-size: 1.1rem; box-shadow: var(--shadow-md);
 }
 
-.content { margin-left: 220px; flex: 1; min-height: 100vh; }
+.content { margin-left: 240px; flex: 1; min-height: 100vh; }
 
 .topbar {
   background: var(--card); border-bottom: 1px solid var(--border);
@@ -918,10 +951,10 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .hidden { display:none !important; }
 
 /* ===== SPACE SELECTOR ===== */
-.sb-space { padding:10px 12px 8px; border-bottom:1px solid rgba(255,255,255,0.08); }
-.sb-space label { font-size:0.62rem; text-transform:uppercase; color:rgba(255,255,255,0.35); letter-spacing:1.2px; display:block; margin-bottom:5px; }
-.sb-space select { width:100%; background:rgba(255,255,255,0.1); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:6px; padding:7px 10px; font-size:0.82rem; font-family:inherit; cursor:pointer; }
-.sb-space select option { background:#1e293b; color:#fff; }
+.sb-space-tabs { display:flex; padding:8px 10px; gap:4px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sb-space-tab { flex:1; padding:6px 8px; border:none; border-radius:6px; background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.45); font-size:0.68rem; font-weight:700; letter-spacing:1.5px; cursor:pointer; transition:all 0.2s; font-family:inherit; text-transform:uppercase; }
+.sb-space-tab:hover { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); }
+.sb-space-tab.active { background:rgba(59,130,246,0.2); color:#60a5fa; }
 
 /* ===== SIDEBAR USER FOOTER ===== */
 .sb-user { padding:10px 12px; border-top:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; gap:10px; }
@@ -929,6 +962,18 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .sb-user-name { flex:1; font-size:0.82rem; color:rgba(255,255,255,0.7); }
 .sb-logout { background:none; border:none; color:rgba(255,255,255,0.4); cursor:pointer; padding:4px; border-radius:4px; font-size:14px; font-family:inherit; }
 .sb-logout:hover { color:#fff; background:rgba(255,255,255,0.1); }
+.sb-user { cursor:pointer; position:relative; padding:8px 10px; border-top:1px solid rgba(255,255,255,0.05); }
+.sb-avatar { width:26px; height:26px; border-radius:6px; font-size:10px; }
+.sb-user-name { font-size:0.74rem; color:rgba(255,255,255,0.6); }
+.sb-user-menu-toggle { background:none; border:none; color:rgba(255,255,255,0.3); cursor:pointer; padding:3px; border-radius:4px; font-size:13px; display:flex; align-items:center; transition:all 0.12s; }
+.sb-user-menu-toggle:hover { color:#fff; background:rgba(255,255,255,0.08); }
+.sb-user-popup { display:none; position:absolute; bottom:100%; left:6px; right:6px; background:#1a2332; border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:4px 0; margin-bottom:4px; box-shadow:0 -8px 30px rgba(0,0,0,0.5); z-index:999; }
+.sb-user-popup.open { display:block; }
+.sb-user-popup button { display:block; width:100%; text-align:left; padding:7px 12px; border:none; background:none; color:rgba(255,255,255,0.6); font-size:0.72rem; cursor:pointer; font-family:inherit; transition:all 0.12s; }
+.sb-user-popup button:hover { background:rgba(255,255,255,0.06); color:#fff; }
+.sb-user-popup-divider { height:1px; background:rgba(255,255,255,0.06); margin:3px 0; }
+.sb-user-popup-logout { color:#f87171 !important; }
+.sb-user-popup-logout:hover { background:rgba(248,113,113,0.08) !important; }
 
 /* ===== GESTÃO DE PROJETOS ===== */
 .gestao-wrap { display:flex; flex-direction:column; }
@@ -1432,75 +1477,37 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
       <h1>Starken OS</h1>
       <span>Sistema Operacional</span>
     </div>
-    <div class="sb-space">
-      <label>Espaço</label>
-      <select id="gpSpaceSelector">
-        <option value="starken">⭐ Starken</option>
-        <option value="alpha">🌿 Alpha Assessoria</option>
-      </select>
+    <div class="sb-space-tabs">
+      <button class="sb-space-tab active" data-space="starken" onclick="switchSpace('starken')">STARKEN</button>
+      <button class="sb-space-tab" data-space="alpha" onclick="switchSpace('alpha')">ALPHA</button>
     </div>
-    <nav class="sidebar-nav">
-      <button class="active" onclick="switchTab('dashboard')"><span class="icon">&#9632;</span> Dashboard</button>
-
-      <div class="nav-category">Relatórios</div>
-      <button class="sub" onclick="switchTab('weekly')"><span class="icon">&#128197;</span> Semanal</button>
-      <button class="sub" onclick="switchTab('monthly')"><span class="icon">&#128198;</span> Mensal</button>
-
-      <div class="nav-category">Cronogramas</div>
-      <button class="sub" onclick="switchTab('sched-weekly')"><span class="icon">&#128197;</span> Semanal</button>
-      <button class="sub" onclick="switchTab('content-approval')"><span class="icon">&#128203;</span> Conteúdo</button>
-
-      <div class="nav-category">Meta Ads</div>
-      <button class="sub" onclick="switchTab('meta-config')"><span class="icon">&#9881;</span> Configuração</button>
-      <button class="sub" onclick="switchTab('meta-balance')"><span class="icon">&#128176;</span> Saldo Contas</button>
-      <button class="sub" onclick="switchTab('meta-bi')"><span class="icon">&#128202;</span> BI Campanhas</button>
-      <button class="sub" onclick="switchTab('meta-publish')"><span class="icon">&#128228;</span> Agendamento</button>
-
-      <div class="nav-category">Conteúdo</div>
-      <button onclick="switchTab('content')"><span class="icon">📋</span> Gestão de Conteúdo</button>
-      <div class="sidebar-folder" id="sidebarStarken">
-        <button class="sidebar-folder-header" onclick="toggleSidebarFolder('starken')">
-          <span class="sidebar-folder-chevron" id="chevronStarken">▶</span>
-          <span style="color:#3b82f6">⭐</span> Starken Performance
-          <span class="sidebar-folder-count" id="countStarken">25</span>
-        </button>
-        <div class="sidebar-folder-items" id="itemsStarken" style="display:none"></div>
-      </div>
-      <div class="sidebar-folder" id="sidebarAlpha">
-        <button class="sidebar-folder-header" onclick="toggleSidebarFolder('alpha')">
-          <span class="sidebar-folder-chevron" id="chevronAlpha">▶</span>
-          <span style="color:#f59e0b">🔶</span> Alpha Assessoria
-          <span class="sidebar-folder-count" id="countAlpha">10</span>
-        </button>
-        <div class="sidebar-folder-items" id="itemsAlpha" style="display:none"></div>
-      </div>
-      <button class="sub" onclick="switchTab('calendario')"><span class="icon">📅</span> Calendário</button>
-
-      <div class="nav-category">Geral</div>
-      <button class="sub" onclick="switchTab('clients')"><span class="icon">&#128101;</span> Clientes</button>
-      <button class="sub" onclick="switchTab('history')"><span class="icon">&#128203;</span> Histórico</button>
-
-      <div class="nav-category">Agents</div>
-      <button class="sub" onclick="switchTab('ai-squads')"><span class="icon">🤖</span> AI Squads</button>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <!-- Rendered by renderSidebarMenu() -->
     </nav>
     <div class="sidebar-footer">
       <!-- Theme Switcher -->
-      <div style="padding:8px 12px;display:flex;gap:4px;justify-content:center;margin-bottom:4px">
+      <div style="padding:8px 12px;display:flex;gap:4px;justify-content:center">
         <button onclick="setTheme('light')" title="Tema Claro" style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:#f1f5f9;cursor:pointer;transition:all 0.2s" id="themeLight">☀️</button>
         <button onclick="setTheme('dark')" title="Tema Escuro" style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:#0f172a;cursor:pointer;transition:all 0.2s" id="themeDark">🌙</button>
         <button onclick="setTheme('warm')" title="Tema Sépia" style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);background:#f5f0e8;cursor:pointer;transition:all 0.2s" id="themeWarm">🍂</button>
       </div>
-      <button onclick="document.getElementById('syncFile').click()" style="color:#10b981">&#128260; Sincronizar Relatórios</button>
       <input type="file" id="syncFile" accept=".json" style="display:none" onchange="importSyncData(event)">
-      <button onclick="exportData()">&#128229; Exportar Backup</button>
-      <button onclick="document.getElementById('importFile').click()">&#128228; Importar Backup</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
-      <div id="syncStatus" style="padding:7px 12px;font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.35)">☁️ Nuvem</div>
     </div>
-    <div class="sb-user">
+    <div class="sb-user" id="sbUserArea">
       <div class="sb-avatar" id="sbUserAvatar" style="background:#3b82f6">JU</div>
       <div class="sb-user-name" id="sbUserName">Juan</div>
-      <button class="sb-logout" id="gpLogoutBtn" title="Sair">🚪</button>
+      <button class="sb-user-menu-toggle" onclick="toggleUserMenu()" title="Opções">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 2a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 4.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm0 4.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/></svg>
+      </button>
+      <div class="sb-user-popup" id="sbUserPopup">
+        <button onclick="document.getElementById('syncFile').click(); toggleUserMenu();">🔄 Sincronizar Relatórios</button>
+        <button onclick="exportData(); toggleUserMenu();">📥 Exportar Backup</button>
+        <button onclick="document.getElementById('importFile').click(); toggleUserMenu();">📤 Importar Backup</button>
+        <div id="syncStatus" style="padding:6px 12px;font-size:0.7rem;color:rgba(255,255,255,0.35)">☁️ Nuvem</div>
+        <div class="sb-user-popup-divider"></div>
+        <button class="sb-user-popup-logout" onclick="gpLogout()">🚪 Sair</button>
+      </div>
     </div>
   </aside>
 
@@ -3123,6 +3130,319 @@ function getCurrentMonthKey() {
   const now = new Date();
   const key = now.getFullYear() + '-' + pad(now.getMonth() + 1);
   return MONTHS_2026.find(m => m.key === key) ? key : '2026-03';
+}
+
+// ============ SIDEBAR MENU DATA & RENDER ============
+let SIDEBAR_MENU = [
+  { type: 'item', id: 'dashboard', label: 'Dashboard', icon: '&#9632;', tab: 'dashboard' },
+  { type: 'category', id: 'cat-conteudo', label: 'Conteúdo', items: [
+    { type: 'item', id: 'calendario', label: 'Calendário de Postagens', icon: '📅', tab: 'calendario' },
+    { type: 'folder', id: 'folder-starken' },
+    { type: 'folder', id: 'folder-alpha' },
+  ]},
+  { type: 'category', id: 'cat-cronogramas', label: 'Cronogramas', items: [
+    { type: 'item', id: 'sched-weekly', label: 'Semanal', icon: '📅', tab: 'sched-weekly' },
+    { type: 'item', id: 'content-approval', label: 'Conteúdo', icon: '📋', tab: 'content-approval' },
+  ]},
+  { type: 'category', id: 'cat-relatorios', label: 'Relatórios', items: [
+    { type: 'item', id: 'weekly', label: 'Semanal', icon: '📅', tab: 'weekly' },
+    { type: 'item', id: 'monthly', label: 'Mensal', icon: '📆', tab: 'monthly' },
+  ]},
+  { type: 'category', id: 'cat-meta', label: 'Meta Ads', items: [
+    { type: 'item', id: 'meta-config', label: 'Configuração', icon: '⚙', tab: 'meta-config' },
+    { type: 'item', id: 'meta-balance', label: 'Saldo Contas', icon: '💰', tab: 'meta-balance' },
+    { type: 'item', id: 'meta-bi', label: 'BI Campanhas', icon: '📊', tab: 'meta-bi' },
+    { type: 'item', id: 'meta-publish', label: 'Agendamento', icon: '📤', tab: 'meta-publish' },
+  ]},
+  { type: 'category', id: 'cat-geral', label: 'Geral', items: [
+    { type: 'item', id: 'clients', label: 'Clientes', icon: '&#128101;', tab: 'clients' },
+    { type: 'item', id: 'history', label: 'Histórico', icon: '📋', tab: 'history' },
+  ]},
+  { type: 'category', id: 'cat-agents', label: 'Agents', items: [
+    { type: 'item', id: 'ai-squads', label: 'AI Squads', icon: '🤖', tab: 'ai-squads' },
+  ]},
+];
+
+// Load saved order from localStorage
+function sidebarLoadOrder() {
+  try {
+    const saved = localStorage.getItem('sidebarMenuOrder');
+    if (!saved) return;
+    const order = JSON.parse(saved);
+    if (!Array.isArray(order) || order.length === 0) return;
+    // Rebuild SIDEBAR_MENU order based on saved category IDs, preserving items inside each
+    const byId = {};
+    SIDEBAR_MENU.forEach(function(entry) { byId[entry.id] = entry; });
+    const reordered = [];
+    order.forEach(function(savedEntry) {
+      if (!byId[savedEntry.id]) return;
+      const entry = byId[savedEntry.id];
+      // Reorder items within categories if saved
+      if (entry.type === 'category' && Array.isArray(savedEntry.itemOrder) && savedEntry.itemOrder.length > 0) {
+        const itemById = {};
+        entry.items.forEach(function(it) { itemById[it.id] = it; });
+        const reorderedItems = [];
+        savedEntry.itemOrder.forEach(function(iid) { if (itemById[iid]) reorderedItems.push(itemById[iid]); });
+        // Add any items not in saved order (newly added)
+        entry.items.forEach(function(it) { if (!savedEntry.itemOrder.includes(it.id)) reorderedItems.push(it); });
+        reordered.push(Object.assign({}, entry, { items: reorderedItems }));
+      } else {
+        reordered.push(entry);
+      }
+      delete byId[savedEntry.id];
+    });
+    // Append any entries not in saved order (newly added top-level)
+    Object.values(byId).forEach(function(e) { reordered.push(e); });
+    SIDEBAR_MENU = reordered;
+  } catch(e) {}
+}
+
+function sidebarSaveOrder() {
+  try {
+    const order = SIDEBAR_MENU.map(function(entry) {
+      const out = { id: entry.id };
+      if (entry.type === 'category' && Array.isArray(entry.items)) {
+        out.itemOrder = entry.items.map(function(it) { return it.id; });
+      }
+      return out;
+    });
+    localStorage.setItem('sidebarMenuOrder', JSON.stringify(order));
+  } catch(e) {}
+}
+
+// Renders the folder structure for Starken / Alpha
+function renderSidebarFolder(folderId) {
+  if (folderId === 'folder-starken') {
+    return '<div class="sidebar-folder" id="sidebarStarken">' +
+      '<button class="sidebar-folder-header" onclick="toggleSidebarFolder(\'starken\')">' +
+        '<span class="sidebar-folder-chevron" id="chevronStarken">&#9658;</span>' +
+        '<span style="color:#3b82f6">&#11088;</span> Starken Performance' +
+        '<span class="sidebar-folder-count" id="countStarken">25</span>' +
+      '</button>' +
+      '<div class="sidebar-folder-items" id="itemsStarken" style="display:none"></div>' +
+    '</div>';
+  }
+  if (folderId === 'folder-alpha') {
+    return '<div class="sidebar-folder" id="sidebarAlpha">' +
+      '<button class="sidebar-folder-header" onclick="toggleSidebarFolder(\'alpha\')">' +
+        '<span class="sidebar-folder-chevron" id="chevronAlpha">&#9658;</span>' +
+        '<span style="color:#f59e0b">&#128310;</span> Alpha Assessoria' +
+        '<span class="sidebar-folder-count" id="countAlpha">10</span>' +
+      '</button>' +
+      '<div class="sidebar-folder-items" id="itemsAlpha" style="display:none"></div>' +
+    '</div>';
+  }
+  return '';
+}
+
+function renderSidebarMenu() {
+  sidebarLoadOrder();
+  const nav = document.getElementById('sidebarNav');
+  if (!nav) return;
+
+  let html = '';
+  let isFirstCategory = true;
+
+  SIDEBAR_MENU.forEach(function(entry) {
+    if (entry.type === 'item') {
+      html += '<button onclick="switchTab(\'' + entry.tab + '\')"' +
+        ' data-sidebar-id="' + entry.id + '"' +
+        ' draggable="true">' +
+        '<span class="sidebar-drag-handle" title="Arrastar">&#8942;&#8942;</span>' +
+        '<span class="icon">' + entry.icon + '</span> ' + entry.label +
+      '</button>';
+    } else if (entry.type === 'category') {
+      const extraStyle = isFirstCategory ? ' style="border-top:none;padding-top:4px"' : '';
+      isFirstCategory = false;
+      html += '<div class="nav-category' +
+        (entry.items && entry.items.length > 0 ? ' nav-category-wrap' : '') +
+        '" data-sidebar-cat-id="' + entry.id + '" draggable="true"' + extraStyle + '>' +
+        '<span class="sidebar-drag-handle" title="Arrastar categoria">&#8942;&#8942;</span>' +
+        entry.label +
+      '</div>';
+      if (entry.items) {
+        entry.items.forEach(function(item) {
+          if (item.type === 'folder') {
+            html += renderSidebarFolder(item.id);
+          } else if (item.type === 'item') {
+            html += '<button class="sub" onclick="switchTab(\'' + item.tab + '\')"' +
+              ' data-sidebar-id="' + item.id + '"' +
+              ' data-sidebar-cat="' + entry.id + '"' +
+              ' draggable="true">' +
+              '<span class="sidebar-drag-handle" title="Arrastar">&#8942;&#8942;</span>' +
+              '<span class="icon">' + item.icon + '</span> ' + item.label +
+            '</button>';
+          }
+        });
+      }
+    }
+  });
+
+  nav.innerHTML = html;
+
+  // Restore active state
+  const activeTab = document.querySelector('.tab-content.active');
+  if (activeTab) {
+    const tabName = activeTab.id.replace('tab-', '');
+    nav.querySelectorAll('button').forEach(function(b) {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'" + tabName + "'")) {
+        b.classList.add('active');
+      }
+    });
+  } else {
+    // Default: dashboard active
+    const dashBtn = nav.querySelector('button[onclick*="dashboard"]');
+    if (dashBtn) dashBtn.classList.add('active');
+  }
+
+  sidebarSetupDragDrop();
+  populateSidebarClients();
+  restoreSidebarFolders();
+}
+
+// ============ SIDEBAR DRAG & DROP ============
+function sidebarSetupDragDrop() {
+  const nav = document.getElementById('sidebarNav');
+  if (!nav) return;
+
+  let dragSrcEl = null;
+  let dragSrcType = null; // 'item' | 'category'
+  let dragSrcCatId = null;
+  let dropIndicator = null;
+
+  function getDropIndicator() {
+    if (!dropIndicator) {
+      dropIndicator = document.createElement('div');
+      dropIndicator.className = 'drop-indicator';
+    }
+    return dropIndicator;
+  }
+
+  function removeDropIndicator() {
+    if (dropIndicator && dropIndicator.parentNode) {
+      dropIndicator.parentNode.removeChild(dropIndicator);
+    }
+  }
+
+  function findMenuItemById(id) {
+    for (var i = 0; i < SIDEBAR_MENU.length; i++) {
+      var entry = SIDEBAR_MENU[i];
+      if (entry.id === id) return { entry: entry, index: i, catIndex: -1, parentItems: null };
+      if (entry.type === 'category' && entry.items) {
+        for (var j = 0; j < entry.items.length; j++) {
+          if (entry.items[j].id === id) return { entry: entry.items[j], index: j, catIndex: i, parentItems: entry.items };
+        }
+      }
+    }
+    return null;
+  }
+
+  nav.querySelectorAll('[draggable="true"]').forEach(function(el) {
+    el.addEventListener('dragstart', function(e) {
+      dragSrcEl = el;
+      dragSrcType = el.getAttribute('data-sidebar-cat-id') ? 'category' : 'item';
+      dragSrcCatId = el.getAttribute('data-sidebar-cat') || null;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', el.getAttribute('data-sidebar-id') || el.getAttribute('data-sidebar-cat-id'));
+    });
+
+    el.addEventListener('dragend', function() {
+      el.classList.remove('dragging');
+      removeDropIndicator();
+      dragSrcEl = null;
+    });
+  });
+
+  nav.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (!dragSrcEl) return;
+
+    var target = e.target.closest('[draggable="true"]');
+    if (!target || target === dragSrcEl) { removeDropIndicator(); return; }
+
+    // Only allow same-level drops: category onto category, item onto item in same cat
+    var targetIsCat = !!target.getAttribute('data-sidebar-cat-id');
+    if (dragSrcType === 'category' && !targetIsCat) { removeDropIndicator(); return; }
+    if (dragSrcType === 'item') {
+      var targetCat = target.getAttribute('data-sidebar-cat');
+      if (targetCat !== dragSrcCatId && dragSrcCatId !== null) { removeDropIndicator(); return; }
+      if (targetIsCat) { removeDropIndicator(); return; }
+    }
+
+    var rect = target.getBoundingClientRect();
+    var mid = rect.top + rect.height / 2;
+    var ind = getDropIndicator();
+    if (e.clientY < mid) {
+      target.parentNode.insertBefore(ind, target);
+    } else {
+      target.parentNode.insertBefore(ind, target.nextSibling);
+    }
+  });
+
+  nav.addEventListener('dragleave', function(e) {
+    if (!nav.contains(e.relatedTarget)) removeDropIndicator();
+  });
+
+  nav.addEventListener('drop', function(e) {
+    e.preventDefault();
+    if (!dragSrcEl) return;
+    var srcId = dragSrcEl.getAttribute('data-sidebar-id') || dragSrcEl.getAttribute('data-sidebar-cat-id');
+    if (!srcId) return;
+
+    // Find where the indicator is placed to determine target position
+    var ind = getDropIndicator();
+    if (!ind.parentNode) { removeDropIndicator(); return; }
+
+    var siblings = Array.from(ind.parentNode.children).filter(function(c) { return c !== ind; });
+    var indIdx = Array.from(ind.parentNode.children).indexOf(ind);
+
+    if (dragSrcType === 'category') {
+      // Reorder top-level SIDEBAR_MENU categories
+      var srcIdx = -1;
+      var catEls = Array.from(nav.querySelectorAll('[data-sidebar-cat-id]'));
+      catEls.forEach(function(el, i) { if (el.getAttribute('data-sidebar-cat-id') === srcId) srcIdx = i; });
+      // Compute target index among categories based on indicator position
+      var allCatEls = Array.from(nav.children).filter(function(c) { return c.getAttribute && c.getAttribute('data-sidebar-cat-id'); });
+      var indicatorAmongCats = Array.from(nav.children).indexOf(ind);
+      var targetCatIdx = 0;
+      for (var ci = 0; ci < nav.children.length; ci++) {
+        if (ci >= indicatorAmongCats) break;
+        var ch = nav.children[ci];
+        if (ch.getAttribute && ch.getAttribute('data-sidebar-cat-id')) targetCatIdx++;
+      }
+      // Rebuild SIDEBAR_MENU order by extracting only categories
+      var nonDashboard = SIDEBAR_MENU.filter(function(e) { return e.type === 'category'; });
+      var dashboardEntry = SIDEBAR_MENU.find(function(e) { return e.type === 'item' && e.id === 'dashboard'; });
+      var removed = nonDashboard.splice(srcIdx, 1)[0];
+      var insertAt = Math.max(0, targetCatIdx);
+      if (insertAt > nonDashboard.length) insertAt = nonDashboard.length;
+      nonDashboard.splice(insertAt, 0, removed);
+      SIDEBAR_MENU = dashboardEntry ? [dashboardEntry].concat(nonDashboard) : nonDashboard;
+    } else {
+      // Reorder item within its category
+      var found = findMenuItemById(srcId);
+      if (!found || found.catIndex < 0) { removeDropIndicator(); return; }
+      var catItems = SIDEBAR_MENU[found.catIndex].items;
+      // Determine target index in catItems based on indicator
+      var itemEls = Array.from(nav.querySelectorAll('[data-sidebar-cat="' + dragSrcCatId + '"]'));
+      var indInNav = Array.from(nav.children).indexOf(ind);
+      var targetItemIdx = 0;
+      for (var ni = 0; ni < nav.children.length; ni++) {
+        if (ni >= indInNav) break;
+        var nc = nav.children[ni];
+        if (nc.getAttribute && nc.getAttribute('data-sidebar-cat') === dragSrcCatId) targetItemIdx++;
+      }
+      var removedItem = catItems.splice(found.index, 1)[0];
+      if (targetItemIdx > catItems.length) targetItemIdx = catItems.length;
+      catItems.splice(targetItemIdx, 0, removedItem);
+    }
+
+    removeDropIndicator();
+    sidebarSaveOrder();
+    renderSidebarMenu();
+  });
 }
 
 // ============ NAVIGATION ============
@@ -5483,11 +5803,13 @@ function activateSession(user) {
   document.getElementById('mainApp').classList.remove('hidden');
   document.getElementById('menuToggleBtn').classList.remove('hidden');
   Gestao.populateClientFilter();
+  // Render sidebar menu (data-driven, includes populateSidebarClients + restoreSidebarFolders)
+  renderSidebarMenu();
   // Persiste sessão
   try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, pin: user.pin })); } catch(e) {}
   // Pré-carrega meta clients para todas as abas
   metaClientsPreload();
-  // Fallback: tenta popular sidebar novamente após 3s (garante que carregou)
+  // Fallback: re-populate client lists after 3s (in case Supabase loads late)
   setTimeout(function() { populateSidebarClients(); restoreSidebarFolders(); }, 3000);
 }
 
@@ -5532,7 +5854,8 @@ function metaClientsPreload() {
   } catch(e) {}
 })();
 
-document.getElementById('gpLogoutBtn').addEventListener('click', () => {
+// ── Logout ──
+function gpLogout() {
   gpState.user = null;
   try { localStorage.removeItem('starkenSession'); } catch(e) {}
   document.getElementById('loginPage').classList.remove('hidden');
@@ -5541,16 +5864,36 @@ document.getElementById('gpLogoutBtn').addEventListener('click', () => {
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPin').value = '';
   document.getElementById('loginError').classList.remove('show');
+}
+
+// ── User popup menu ──
+function toggleUserMenu() {
+  var popup = document.getElementById('sbUserPopup');
+  if (popup) popup.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  var popup = document.getElementById('sbUserPopup');
+  var userArea = document.getElementById('sbUserArea');
+  if (popup && popup.classList.contains('open') && userArea && !userArea.contains(e.target) && !popup.contains(e.target)) {
+    popup.classList.remove('open');
+  }
 });
 
-// ── Space selector ──
-document.getElementById('gpSpaceSelector').addEventListener('change', e => {
-  gpState.space = e.target.value;
+// ── Space tabs ──
+function switchSpace(space) {
+  document.querySelectorAll('.sb-space-tab').forEach(function(t) {
+    t.classList.toggle('active', t.getAttribute('data-space') === space);
+  });
+  gpState.space = space;
+  if (typeof populateClientsForSpace === 'function') populateClientsForSpace(space);
+  if (typeof populateSidebarClients === 'function') populateSidebarClients();
+  if (typeof renderSidebarMenu === 'function') renderSidebarMenu();
+  localStorage.setItem('gpSpace', space);
   Gestao.populateClientFilter();
   if (document.getElementById('tab-gestao').classList.contains('active')) {
     Gestao.renderCurrentView();
   }
-});
+}
 
 // ── Gestão Module ──
 const Gestao = {

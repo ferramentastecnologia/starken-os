@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "starken-os",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "-l", "7000", "-s", "."],
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "7000", "--directory", "C:\\Users\\Juan\\Documents\\GitHub\\starken-performance"],
       "port": 7000
     }
   ]
