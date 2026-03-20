@@ -1,6 +1,6 @@
 // =============================================================================
 // Client Hub API — Multiplexed Vercel Serverless Function
-// POST endpoint with action-based routing (6 MVP actions)
+// POST endpoint with action-based routing
 //
 // Actions:
 //   hub_get        — Full client hub record with counts
@@ -9,36 +9,46 @@
 //   hub_delete     — Soft delete (status → encerrado)
 //   hub_activity   — Activity log for a hub
 //   hub_bulk_init  — Bootstrap hubs from existing meta_config
+//   hub_materials_list   — List materials
+//   hub_materials_delete — Delete material
+//   hub_materials_insert — Insert material record
 // =============================================================================
 
-const { createClient } = require('@supabase/supabase-js');
+// ─── Supabase REST helpers (same pattern as publish.js / content.js) ───
+const SUPABASE_URL = () => process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = () => process.env.SUPABASE_SERVICE_KEY || '';
 
-// Lazy-initialized Supabase client (reused across warm invocations)
-let _supabase;
-function supabase() {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_KEY
-    );
+function sbHeaders(prefer) {
+  const key = SUPABASE_KEY();
+  const h = {
+    'apikey': key,
+    'Authorization': `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  };
+  if (prefer) h['Prefer'] = prefer;
+  return h;
+}
+
+async function sbFetch(path, opts = {}) {
+  const url = SUPABASE_URL();
+  if (!url) throw new Error('SUPABASE_URL not configured');
+  const res = await fetch(`${url}${path}`, opts);
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(`Supabase ${res.status}: ${text.substring(0, 300)}`);
   }
-  return _supabase;
+  if (!text || text.length === 0) return null;
+  try { return JSON.parse(text); } catch { return text; }
 }
 
 // =============================================================================
-// Important fields used to compute hub completeness percentage
+// Completeness fields
 // =============================================================================
 
 const COMPLETENESS_FIELDS = [
-  'brand_name',
-  'segment',
-  'tone_of_voice',
-  'target_audience',
-  'brand_colors',
-  'logo_url',
-  'social_links',
-  'onboarding_date',
-  'contract_type',
+  'client_name', 'segment', 'responsible', 'tone_of_voice',
+  'brand_colors', 'logo_url', 'social_links', 'contract_start',
+  'contract_package', 'drive_folder_url',
 ];
 
 function computeCompleteness(row) {
@@ -47,7 +57,6 @@ function computeCompleteness(row) {
   for (const field of COMPLETENESS_FIELDS) {
     const val = row[field];
     if (val === null || val === undefined || val === '') continue;
-    // For JSONB columns, treat empty objects/arrays as incomplete
     if (typeof val === 'object' && Object.keys(val).length === 0) continue;
     filled++;
   }
@@ -55,78 +64,59 @@ function computeCompleteness(row) {
 }
 
 // =============================================================================
-// 1. hub_get — Full client hub record with material and post counts
+// 1. hub_get — Full client hub record
 // =============================================================================
 
 async function hubGet({ client_slug }) {
   if (!client_slug) return { error: true, message: 'client_slug is required' };
 
-  const sb = supabase();
+  const data = await sbFetch(
+    `/rest/v1/client_hub?client_slug=eq.${encodeURIComponent(client_slug)}&limit=1`,
+    { headers: sbHeaders() }
+  );
 
-  // Fetch the hub record
-  const { data: hub, error: hubErr } = await sb
-    .from('client_hub')
-    .select('*')
-    .eq('client_slug', client_slug)
-    .single();
+  const hub = Array.isArray(data) ? data[0] : data;
+  if (!hub) return { error: true, message: `Hub not found for slug: ${client_slug}` };
 
-  if (hubErr) {
-    if (hubErr.code === 'PGRST116') {
-      return { error: true, message: `Hub not found for slug: ${client_slug}` };
-    }
-    throw hubErr;
-  }
-
-  // Fetch related counts in parallel
-  const [materialsRes, postsRes] = await Promise.all([
-    sb
-      .from('client_hub_materials')
-      .select('id', { count: 'exact', head: true })
-      .eq('client_slug', client_slug),
-    sb
-      .from('publish_history')
-      .select('id', { count: 'exact', head: true })
-      .eq('client_slug', client_slug),
+  // Counts
+  const [matsRes, postsRes] = await Promise.all([
+    sbFetch(`/rest/v1/client_hub_materials?client_slug=eq.${encodeURIComponent(client_slug)}&select=id`, {
+      method: 'HEAD', headers: { ...sbHeaders(), 'Prefer': 'count=exact' }
+    }).catch(() => null),
+    sbFetch(`/rest/v1/publish_history?client_slug=eq.${encodeURIComponent(client_slug)}&select=id`, {
+      method: 'HEAD', headers: { ...sbHeaders(), 'Prefer': 'count=exact' }
+    }).catch(() => null),
   ]);
 
   return {
     ...hub,
-    materials_count: materialsRes.count ?? 0,
-    recent_posts_count: postsRes.count ?? 0,
+    materials_count: 0,
+    recent_posts_count: 0,
     completeness: computeCompleteness(hub),
   };
 }
 
 // =============================================================================
-// 2. hub_list — List all hubs with optional tenant filter and completeness
+// 2. hub_list — List all hubs
 // =============================================================================
 
 async function hubList({ tenant }) {
-  const sb = supabase();
+  let path = '/rest/v1/client_hub?select=*&order=client_name.asc';
+  if (tenant) path += `&tenant=eq.${encodeURIComponent(tenant)}`;
 
-  let query = sb.from('client_hub').select('*');
+  const data = await sbFetch(path, { headers: sbHeaders() });
 
-  if (tenant) {
-    query = query.eq('tenant', tenant);
-  }
-
-  const { data, error } = await query.order('brand_name', { ascending: true });
-
-  if (error) throw error;
-
-  // Return summary fields with computed completeness
-  const result = (data || []).map((row) => ({
+  return (data || []).map((row) => ({
     client_slug: row.client_slug,
-    brand_name: row.brand_name,
+    client_name: row.client_name,
     tenant: row.tenant,
     segment: row.segment,
     status: row.status,
-    onboarding_date: row.onboarding_date,
-    contract_type: row.contract_type,
+    responsible: row.responsible,
+    contract_start: row.contract_start,
+    contract_package: row.contract_package,
     completeness: computeCompleteness(row),
   }));
-
-  return result;
 }
 
 // =============================================================================
@@ -140,146 +130,112 @@ async function hubUpsert({ client_slug, user, data }) {
     return { error: true, message: 'data object is required' };
   }
 
-  const sb = supabase();
   const now = new Date().toISOString();
 
-  // Check if hub already exists (for accurate activity logging)
-  const { data: existing } = await sb
-    .from('client_hub')
-    .select('client_slug')
-    .eq('client_slug', client_slug)
-    .maybeSingle();
+  // Check if exists
+  const existing = await sbFetch(
+    `/rest/v1/client_hub?client_slug=eq.${encodeURIComponent(client_slug)}&select=client_slug&limit=1`,
+    { headers: sbHeaders() }
+  );
+  const isNew = !existing || (Array.isArray(existing) && existing.length === 0);
 
-  const isNew = !existing;
+  const record = { ...data, client_slug, updated_at: now };
+  if (isNew) record.created_at = now;
 
-  const record = {
-    ...data,
-    client_slug,
-    updated_at: now,
-  };
-
-  // Set created_at only for new records
-  if (isNew) {
-    record.created_at = now;
-  }
-
-  // Upsert on client_slug (must be unique / primary key)
-  const { data: upserted, error: upsertErr } = await sb
-    .from('client_hub')
-    .upsert(record, { onConflict: 'client_slug' })
-    .select('*')
-    .single();
-
-  if (upsertErr) throw upsertErr;
-
-  // Log activity
-  await sb.from('client_hub_activity').insert({
-    client_slug,
-    actor: user,
-    action: isNew ? 'hub_created' : 'hub_updated',
-    details: JSON.stringify({ fields: Object.keys(data) }),
-    created_at: now,
+  // Upsert
+  const upserted = await sbFetch('/rest/v1/client_hub', {
+    method: 'POST',
+    headers: sbHeaders('resolution=merge-duplicates,return=representation'),
+    body: JSON.stringify(record),
   });
 
-  return upserted;
+  // Log activity
+  await sbFetch('/rest/v1/client_hub_activity', {
+    method: 'POST',
+    headers: sbHeaders('return=minimal'),
+    body: JSON.stringify({
+      client_slug,
+      actor: user,
+      action: isNew ? 'hub_created' : 'hub_updated',
+      details: JSON.stringify({ fields: Object.keys(data) }),
+      created_at: now,
+    }),
+  });
+
+  return Array.isArray(upserted) ? upserted[0] : upserted;
 }
 
 // =============================================================================
-// 4. hub_delete — Soft delete by setting status to 'encerrado'
+// 4. hub_delete — Soft delete
 // =============================================================================
 
 async function hubDelete({ client_slug }) {
   if (!client_slug) return { error: true, message: 'client_slug is required' };
 
-  const sb = supabase();
+  const data = await sbFetch(
+    `/rest/v1/client_hub?client_slug=eq.${encodeURIComponent(client_slug)}`,
+    {
+      method: 'PATCH',
+      headers: sbHeaders('return=representation'),
+      body: JSON.stringify({ status: 'encerrado', updated_at: new Date().toISOString() }),
+    }
+  );
 
-  const { data, error } = await sb
-    .from('client_hub')
-    .update({ status: 'encerrado', updated_at: new Date().toISOString() })
-    .eq('client_slug', client_slug)
-    .select('client_slug, status')
-    .single();
-
-  if (error) throw error;
-
-  return { success: true, client_slug: data.client_slug, status: data.status };
+  const row = Array.isArray(data) ? data[0] : data;
+  return { success: true, client_slug: row?.client_slug, status: row?.status };
 }
 
 // =============================================================================
-// 5. hub_activity — Activity log for a specific hub
+// 5. hub_activity — Activity log
 // =============================================================================
 
 async function hubActivity({ client_slug, limit }) {
   if (!client_slug) return { error: true, message: 'client_slug is required' };
 
   const cap = Math.min(Number(limit) || 20, 200);
-  const sb = supabase();
 
-  const { data, error } = await sb
-    .from('client_hub_activity')
-    .select('*')
-    .eq('client_slug', client_slug)
-    .order('created_at', { ascending: false })
-    .limit(cap);
+  const data = await sbFetch(
+    `/rest/v1/client_hub_activity?client_slug=eq.${encodeURIComponent(client_slug)}&order=created_at.desc&limit=${cap}`,
+    { headers: sbHeaders() }
+  );
 
-  if (error) throw error;
-
-  // Parse stringified details for convenience
   return (data || []).map((row) => ({
     ...row,
-    details: typeof row.details === 'string'
-      ? JSON.parse(row.details)
-      : row.details,
+    details: typeof row.details === 'string' ? JSON.parse(row.details) : row.details,
   }));
 }
 
 // =============================================================================
-// 6. hub_bulk_init — Create hubs for all clients in meta_config that lack one
+// 6. hub_bulk_init — Bootstrap from meta_config
 // =============================================================================
 
 async function hubBulkInit({ user }) {
   if (!user) return { error: true, message: 'user is required' };
 
-  const sb = supabase();
   const now = new Date().toISOString();
 
-  // Fetch all clients from meta_config
-  const { data: clients, error: metaErr } = await sb
-    .from('meta_config')
-    .select('*');
-
-  if (metaErr) throw metaErr;
+  // Fetch all meta_config clients
+  const clients = await sbFetch('/rest/v1/meta_config?select=*', { headers: sbHeaders() });
   if (!clients || clients.length === 0) {
     return { created: 0, message: 'No clients found in meta_config' };
   }
 
-  // Fetch existing hub slugs so we skip them
-  const { data: existingHubs, error: hubErr } = await sb
-    .from('client_hub')
-    .select('client_slug');
-
-  if (hubErr) throw hubErr;
-
+  // Fetch existing hub slugs
+  const existingHubs = await sbFetch('/rest/v1/client_hub?select=client_slug', { headers: sbHeaders() });
   const existingSlugs = new Set((existingHubs || []).map((h) => h.client_slug));
 
-  // Build records for clients without a hub
   const newHubs = [];
   for (const client of clients) {
     const slug = client.client_slug || client.clientSlug || client.slug;
     if (!slug || existingSlugs.has(slug)) continue;
 
-    // Build social links from meta_config fields
     const socialLinks = {};
-    if (client.igUsername) {
-      socialLinks.instagram = `https://instagram.com/${client.igUsername}`;
-    }
-    if (client.pageId) {
-      socialLinks.facebook = `https://facebook.com/${client.pageId}`;
-    }
+    if (client.igUsername) socialLinks.instagram = `https://instagram.com/${client.igUsername}`;
+    if (client.pageId) socialLinks.facebook = `https://facebook.com/${client.pageId}`;
 
     newHubs.push({
       client_slug: slug,
-      brand_name: client.name || client.clientName || slug,
+      client_name: client.name || client.clientName || slug,
       tenant: client.tenant || null,
       status: 'ativo',
       social_links: Object.keys(socialLinks).length > 0 ? socialLinks : null,
@@ -292,101 +248,87 @@ async function hubBulkInit({ user }) {
     return { created: 0, message: 'All clients already have hubs' };
   }
 
-  const { error: insertErr } = await sb
-    .from('client_hub')
-    .insert(newHubs);
+  await sbFetch('/rest/v1/client_hub', {
+    method: 'POST',
+    headers: sbHeaders('return=minimal'),
+    body: JSON.stringify(newHubs),
+  });
 
-  if (insertErr) throw insertErr;
+  // Log activity
+  await sbFetch('/rest/v1/client_hub_activity', {
+    method: 'POST',
+    headers: sbHeaders('return=minimal'),
+    body: JSON.stringify(
+      newHubs.map((h) => ({
+        client_slug: h.client_slug,
+        actor: user,
+        action: 'hub_bulk_created',
+        details: JSON.stringify({ source: 'meta_config' }),
+        created_at: now,
+      }))
+    ),
+  });
 
-  // Log bulk activity
-  await sb.from('client_hub_activity').insert(
-    newHubs.map((h) => ({
-      client_slug: h.client_slug,
-      actor: user,
-      action: 'hub_bulk_created',
-      details: JSON.stringify({ source: 'meta_config' }),
-      created_at: now,
-    }))
-  );
-
-  return {
-    created: newHubs.length,
-    slugs: newHubs.map((h) => h.client_slug),
-  };
+  return { created: newHubs.length, slugs: newHubs.map((h) => h.client_slug) };
 }
 
 // =============================================================================
-// 7. hub_materials_list — List materials for a client hub
+// 7. hub_materials_list
 // =============================================================================
 
 async function hubMaterialsList({ client_slug, category }) {
   if (!client_slug) return { error: true, message: 'client_slug is required' };
 
-  const sb = supabase();
-  let query = sb
-    .from('client_hub_materials')
-    .select('*')
-    .eq('client_slug', client_slug)
-    .order('created_at', { ascending: false });
+  let path = `/rest/v1/client_hub_materials?client_slug=eq.${encodeURIComponent(client_slug)}&order=created_at.desc`;
+  if (category && category !== 'all') path += `&category=eq.${encodeURIComponent(category)}`;
 
-  if (category && category !== 'all') {
-    query = query.eq('category', category);
-  }
-
-  const { data, error } = await query;
-  if (error) throw error;
-
+  const data = await sbFetch(path, { headers: sbHeaders() });
   return data || [];
 }
 
 // =============================================================================
-// 8. hub_materials_delete — Delete a material record (file cleanup optional)
+// 8. hub_materials_delete
 // =============================================================================
 
 async function hubMaterialsDelete({ client_slug, material_id }) {
   if (!client_slug) return { error: true, message: 'client_slug is required' };
   if (!material_id) return { error: true, message: 'material_id is required' };
 
-  const sb = supabase();
+  // Fetch first
+  const mats = await sbFetch(
+    `/rest/v1/client_hub_materials?id=eq.${encodeURIComponent(material_id)}&client_slug=eq.${encodeURIComponent(client_slug)}&limit=1`,
+    { headers: sbHeaders() }
+  );
+  const mat = Array.isArray(mats) ? mats[0] : null;
+  if (!mat) return { error: true, message: 'Material not found' };
 
-  // Fetch the record first so we can get the storage path
-  const { data: mat, error: fetchErr } = await sb
-    .from('client_hub_materials')
-    .select('*')
-    .eq('id', material_id)
-    .eq('client_slug', client_slug)
-    .single();
-
-  if (fetchErr || !mat) {
-    return { error: true, message: 'Material not found' };
-  }
-
-  // Attempt to delete from storage if storage_path is set
+  // Delete storage file if path exists
   if (mat.storage_path) {
-    await sb.storage.from('client-hub-materials').remove([mat.storage_path]);
+    try {
+      await sbFetch(`/storage/v1/object/client-hub-materials/${mat.storage_path}`, {
+        method: 'DELETE',
+        headers: sbHeaders(),
+      });
+    } catch (e) { /* ignore storage errors */ }
   }
 
-  // Delete the DB record
-  const { error: delErr } = await sb
-    .from('client_hub_materials')
-    .delete()
-    .eq('id', material_id)
-    .eq('client_slug', client_slug);
-
-  if (delErr) throw delErr;
+  // Delete DB record
+  await sbFetch(
+    `/rest/v1/client_hub_materials?id=eq.${encodeURIComponent(material_id)}&client_slug=eq.${encodeURIComponent(client_slug)}`,
+    { method: 'DELETE', headers: sbHeaders() }
+  );
 
   return { success: true, deleted_id: material_id };
 }
 
 // =============================================================================
-// 9. hub_materials_insert — Insert a material record (upload done client-side)
+// 9. hub_materials_insert
 // =============================================================================
 
 async function hubMaterialsInsert({ client_slug, user, material }) {
   if (!client_slug) return { error: true, message: 'client_slug is required' };
   if (!material || !material.file_name) return { error: true, message: 'material.file_name is required' };
 
-  const sb = supabase();
   const now = new Date().toISOString();
 
   const record = {
@@ -395,21 +337,19 @@ async function hubMaterialsInsert({ client_slug, user, material }) {
     file_url:     material.file_url     || null,
     storage_path: material.storage_path || null,
     category:     material.category     || 'other',
-    mime_type:    material.mime_type    || null,
+    mime_type:    material.mime_type     || null,
     file_size:    material.file_size    || null,
     uploaded_by:  user || 'Sistema',
     created_at:   now,
   };
 
-  const { data, error } = await sb
-    .from('client_hub_materials')
-    .insert(record)
-    .select('*')
-    .single();
+  const data = await sbFetch('/rest/v1/client_hub_materials', {
+    method: 'POST',
+    headers: sbHeaders('return=representation'),
+    body: JSON.stringify(record),
+  });
 
-  if (error) throw error;
-
-  return data;
+  return Array.isArray(data) ? data[0] : data;
 }
 
 // =============================================================================
@@ -461,7 +401,6 @@ module.exports = async function handler(req, res) {
   try {
     const result = await fn(params);
 
-    // If the handler returned an error object, send 400
     if (result && result.error === true) {
       return res.status(400).json(result);
     }
