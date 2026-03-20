@@ -11721,8 +11721,16 @@ function clientNavSwitch(view) {
     }, 120);
   } else if (view === 'calendar') {
     switchTab('calendario');
-    document.querySelectorAll('#clientNavBtnCalendar').forEach(function(b) { b.classList.add('active'); });
-    clientNavShowBar('calendar');
+    // Auto-filter calendar to selected client
+    setTimeout(function() {
+      var calFilter = document.getElementById('calClientFilter');
+      if (calFilter && _hubCurrentSlug) {
+        calFilter.value = _hubCurrentSlug;
+        if (typeof calFilterClient === 'function') calFilterClient();
+      }
+      clientNavShowBar('calendar');
+    }, 150);
+    document.querySelectorAll('#clientNavBtnCalendarCal').forEach(function(b) { b.classList.add('active'); });
   } else if (view === 'info') {
     var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
     var clientName = clientData.name || _hubCurrentClientName || _hubCurrentSlug;
