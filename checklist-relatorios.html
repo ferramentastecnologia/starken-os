@@ -2064,6 +2064,25 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 [data-theme="dark"] .ch-btn-view { background: #1e293b; border-color: #334155; }
 [data-theme="dark"] .ch-btn-view:hover { background: #172554; color: #93c5fd; border-color: #1e3a8a; }
 
+/* Client Navigation Bar */
+.client-nav-btn {
+  background: var(--bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.client-nav-btn:hover { background: var(--starken-bg); color: var(--starken); border-color: var(--starken-border); }
+.client-nav-btn.active { background: var(--starken); color: #fff; border-color: var(--starken); }
+[data-theme="dark"] .client-nav-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+[data-theme="dark"] .client-nav-btn:hover { background: #172554; color: #93c5fd; border-color: #1e3a8a; }
+[data-theme="dark"] .client-nav-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
 /* Save indicator */
 .ch-save-indicator {
   font-size: 0.72rem;
@@ -3046,6 +3065,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
       <!-- ═══ GESTÃO DE CONTEÚDO ═══ -->
       <div id="tab-content" class="tab-content">
         <div style="padding:20px">
+          <!-- Client navigation bar (visible when client selected from sidebar) -->
+          <div id="clientNavBar" style="display:none;margin-bottom:16px;padding:10px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px">
+            <span id="clientNavName" style="font-weight:700;font-size:1rem;margin-right:auto"></span>
+            <button class="client-nav-btn active" onclick="clientNavSwitch('content')" id="clientNavBtnContent">📋 Conteúdo</button>
+            <button class="client-nav-btn" onclick="clientNavSwitch('calendar')" id="clientNavBtnCalendar">📅 Calendário</button>
+            <button class="client-nav-btn" onclick="clientNavSwitch('info')" id="clientNavBtnInfo">ℹ️ Infos</button>
+          </div>
           <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px">📋 Gestão de Conteúdo</h2>
 
           <!-- Toolbar -->
@@ -3249,6 +3275,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
       <!-- ═══ CALENDÁRIO DE POSTS ═══ -->
       <div id="tab-calendario" class="tab-content" style="padding:0!important">
+        <!-- Client navigation bar for calendar -->
+        <div id="clientNavBarCal" style="display:none;margin:12px 16px 0;padding:10px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:12px">
+          <span id="clientNavNameCal" style="font-weight:700;font-size:1rem;margin-right:auto"></span>
+          <button class="client-nav-btn" onclick="clientNavSwitch('content')" id="clientNavBtnContentCal">📋 Conteúdo</button>
+          <button class="client-nav-btn active" onclick="clientNavSwitch('calendar')" id="clientNavBtnCalendarCal">📅 Calendário</button>
+          <button class="client-nav-btn" onclick="clientNavSwitch('info')" id="clientNavBtnInfoCal">ℹ️ Infos</button>
+        </div>
         <div class="pc-wrap">
           <div class="pc-toolbar">
             <h2 class="pc-title">📅 Calendário de Posts</h2>
@@ -3304,8 +3337,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div class="ch-header-right">
               <span class="ch-save-indicator" id="chSaveIndicator"></span>
               <button class="ch-btn-save" id="chBtnSave" onclick="hubSave()">💾 Salvar</button>
-              <button class="ch-btn-view" onclick="hubSwitchView('content',null)" title="Ver Conteúdo">📝 Conteúdo</button>
-              <button class="ch-btn-view" onclick="hubSwitchView('calendar',null)" title="Ver Calendário">📅 Calendário</button>
+              <button class="client-nav-btn" onclick="clientNavSwitch('content')">📋 Conteúdo</button>
+              <button class="client-nav-btn" onclick="clientNavSwitch('calendar')">📅 Calendário</button>
             </div>
           </div>
 
@@ -4845,6 +4878,14 @@ function switchTab(tabName) {
   });
   document.getElementById('topbarTitle').textContent = TAB_TITLES[tabName] || '';
   document.getElementById('sidebar').classList.remove('open');
+  // Hide/show client nav bars based on context
+  var navBar = document.getElementById('clientNavBar');
+  var navBarCal = document.getElementById('clientNavBarCal');
+  if (tabName !== 'content' && tabName !== 'calendario' && tabName !== 'client-hub') {
+    // Navigated away from client context — hide nav bars
+    if (navBar) navBar.style.display = 'none';
+    if (navBarCal) navBarCal.style.display = 'none';
+  }
   if (tabName === 'content-approval') caInitTab();
   else if (tabName === 'asana-tasks') asanaInitTab();
   else if (tabName === 'gestao') { if (typeof Gestao !== 'undefined') { Gestao.populateClientFilter(); Gestao.renderCurrentView(); } }
@@ -4901,8 +4942,24 @@ function toggleSidebarFolder(folder) {
 function sidebarSelectClient(clientKey) {
   var clientData = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey] : {};
   var clientName = clientData.name || clientKey;
-  // Open Client Hub instead of raw content tab
-  hubOpen(clientKey, clientName);
+  // Store current client for hub/content/calendar navigation
+  _hubCurrentSlug = clientKey;
+  _hubCurrentClientName = clientName;
+  // Open Content tab filtered to this client (primary view)
+  switchTab('content');
+  setTimeout(function() {
+    var select = document.getElementById('ctClientFilter');
+    if (select) {
+      select.value = clientKey;
+      if (typeof ctLoadGroups === 'function') ctLoadGroups();
+    }
+    // Show client nav bar
+    clientNavShowBar('content');
+    // Set active state
+    document.querySelectorAll('.client-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    var contentBtn = document.getElementById('clientNavBtnContent');
+    if (contentBtn) contentBtn.classList.add('active');
+  }, 120);
   // Highlight selected client in sidebar
   document.querySelectorAll('.sidebar-client-btn').forEach(function(b) { b.classList.remove('active'); });
   var activeBtn = document.querySelector('.sidebar-client-btn[data-client="' + clientKey + '"]');
@@ -11644,22 +11701,56 @@ function hubSwitchInnerTab(tab, btn) {
   if (tab === 'links')     hubUpdateLinkAnchors();
 }
 
-// -- Navigate to other app tabs (Conteúdo / Calendário) --
-function hubSwitchView(view, evt) {
+// -- Client Navigation Bar: switch between Content / Calendar / Info --
+var _hubCurrentClientName = '';
+
+function clientNavSwitch(view) {
+  // Update nav buttons across all tabs
+  document.querySelectorAll('.client-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+
   if (view === 'content') {
-    if (typeof ctInit === 'function') {
-      switchTab('content');
-      setTimeout(function() {
-        var select = document.getElementById('ctClientFilter');
-        if (select && _hubCurrentSlug) {
-          select.value = _hubCurrentSlug;
-          if (typeof ctLoadGroups === 'function') ctLoadGroups();
-        }
-      }, 120);
-    }
+    switchTab('content');
+    document.querySelectorAll('#clientNavBtnContent').forEach(function(b) { b.classList.add('active'); });
+    setTimeout(function() {
+      var select = document.getElementById('ctClientFilter');
+      if (select && _hubCurrentSlug) {
+        select.value = _hubCurrentSlug;
+        if (typeof ctLoadGroups === 'function') ctLoadGroups();
+      }
+      clientNavShowBar('content');
+    }, 120);
   } else if (view === 'calendar') {
     switchTab('calendario');
+    document.querySelectorAll('#clientNavBtnCalendar').forEach(function(b) { b.classList.add('active'); });
+    clientNavShowBar('calendar');
+  } else if (view === 'info') {
+    var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
+    var clientName = clientData.name || _hubCurrentClientName || _hubCurrentSlug;
+    hubOpen(_hubCurrentSlug, clientName);
+    document.querySelectorAll('#clientNavBtnInfo').forEach(function(b) { b.classList.add('active'); });
   }
+}
+
+function clientNavShowBar(activeTab) {
+  var bar = document.getElementById('clientNavBar');
+  var calBar = document.getElementById('clientNavBarCal');
+  if (_hubCurrentSlug) {
+    var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
+    var name = clientData.name || _hubCurrentClientName || _hubCurrentSlug;
+    if (bar) {
+      bar.style.display = 'flex';
+      document.getElementById('clientNavName').textContent = name;
+    }
+    if (calBar) {
+      calBar.style.display = 'flex';
+      document.getElementById('clientNavNameCal').textContent = name;
+    }
+  }
+}
+
+// Legacy compatibility
+function hubSwitchView(view, evt) {
+  clientNavSwitch(view);
 }
 
 // -- Render the Quick Links card (Acesso Rápido) --
