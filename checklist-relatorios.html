@@ -1467,6 +1467,581 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   .pc-day-num { font-size:0.65rem; }
 }
 .pc-empty { text-align:center;color:var(--text-muted);font-size:0.82rem;padding:20px 0; }
+
+/* ═══════════════════════════════════════════════════════
+   CLIENT HUB MODULE — .ch-* prefix
+   ═══════════════════════════════════════════════════════ */
+
+/* Main wrapper */
+.ch-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 100px;
+}
+
+/* Header */
+.ch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.ch-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+.ch-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ch-client-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+.ch-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.ch-status-ativo    { background: #ecfdf5; color: #065f46; }
+.ch-status-standby  { background: #fffbeb; color: #92400e; }
+.ch-status-encerrado{ background: #fef2f2; color: #991b1b; }
+[data-theme="dark"] .ch-status-ativo    { background: #064e3b; color: #6ee7b7; }
+[data-theme="dark"] .ch-status-standby  { background: #422006; color: #fcd34d; }
+[data-theme="dark"] .ch-status-encerrado{ background: #450a0a; color: #fca5a5; }
+[data-theme="warm"] .ch-status-ativo    { background: #d1fae5; color: #065f46; }
+[data-theme="warm"] .ch-status-standby  { background: #fef3c7; color: #92400e; }
+[data-theme="warm"] .ch-status-encerrado{ background: #fee2e2; color: #991b1b; }
+
+/* Completeness bar */
+.ch-completeness {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.ch-completeness-bar-wrap {
+  width: 120px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ch-completeness-bar {
+  height: 100%;
+  background: var(--starken);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.ch-completeness-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Save button */
+.ch-btn-save {
+  background: var(--starken);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 18px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.ch-btn-save:hover  { opacity: 0.85; }
+.ch-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Sub-tabs inside hub */
+.ch-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.ch-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+.ch-tab:hover  { color: var(--text-secondary); }
+.ch-tab.active {
+  color: var(--starken);
+  border-bottom-color: var(--starken);
+}
+
+/* 2-column grid */
+.ch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .ch-grid { grid-template-columns: 1fr; }
+}
+.ch-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Collapsible card */
+.ch-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.ch-card:hover { box-shadow: var(--shadow-md); }
+.ch-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--card);
+  user-select: none;
+  transition: background 0.12s;
+}
+.ch-card-header:hover { background: var(--bg); }
+[data-theme="dark"] .ch-card-header:hover  { background: rgba(255,255,255,0.04); }
+[data-theme="warm"] .ch-card-header:hover  { background: rgba(0,0,0,0.04); }
+.ch-chevron {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  transition: transform 0.22s ease;
+  display: inline-block;
+}
+/* Expanded = chevron rotated down */
+.ch-card:not(.collapsed) .ch-chevron { transform: rotate(90deg); }
+.ch-card-body {
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: none;
+}
+/* Collapsed state */
+.ch-card.collapsed .ch-card-body  { display: none; }
+.ch-card.collapsed .ch-card-header { border-bottom: none; }
+
+/* Field */
+.ch-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ch-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ch-field-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+.ch-field-value {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+.ch-field-value:focus {
+  outline: none;
+  border-color: var(--starken);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+[data-theme="dark"] .ch-field-value {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+[data-theme="dark"] .ch-field-value:focus {
+  border-color: var(--starken);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.18);
+}
+[data-theme="warm"] .ch-field-value {
+  background: #faf7f2;
+  border-color: #d6c9a8;
+}
+select.ch-field-value { appearance: auto; cursor: pointer; }
+
+/* Textarea */
+.ch-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 72px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+  line-height: 1.5;
+}
+.ch-textarea:focus {
+  outline: none;
+  border-color: var(--starken);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+[data-theme="dark"] .ch-textarea {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+[data-theme="warm"] .ch-textarea {
+  background: #faf7f2;
+  border-color: #d6c9a8;
+}
+
+/* Tag / chip input */
+.ch-tag-input-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  padding: 6px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+  min-height: 38px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ch-tag-input-wrap:focus-within {
+  border-color: var(--starken);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+[data-theme="dark"] .ch-tag-input-wrap {
+  background: #0f172a;
+  border-color: #334155;
+}
+[data-theme="warm"] .ch-tag-input-wrap {
+  background: #faf7f2;
+  border-color: #d6c9a8;
+}
+.ch-tag-list {
+  display: contents;
+}
+.ch-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--starken-bg);
+  color: var(--starken-dark);
+  border: 1px solid var(--starken-border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+[data-theme="dark"] .ch-tag {
+  background: #172554;
+  color: #93c5fd;
+  border-color: #1e3a8a;
+}
+[data-theme="warm"] .ch-tag {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+.ch-tag button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  opacity: 0.6;
+}
+.ch-tag button:hover { opacity: 1; }
+.ch-tag-add {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+  padding: 2px 4px;
+}
+.ch-tag-add::placeholder { color: var(--text-muted); font-size: 0.75rem; }
+
+/* Color picker row */
+.ch-color-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ch-color-swatch {
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.ch-color-hex {
+  width: 90px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="dark"] .ch-color-hex {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+.ch-color-name {
+  flex: 1;
+  font-size: 0.8rem;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="dark"] .ch-color-name {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+.ch-color-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+}
+.ch-color-remove:hover { color: var(--danger); background: #fef2f2; }
+
+/* Social row */
+.ch-social-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ch-social-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+/* Link row */
+.ch-link-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ch-link-label {
+  width: 90px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="dark"] .ch-link-label {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+.ch-link-url {
+  flex: 1;
+  font-size: 0.78rem;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+}
+[data-theme="dark"] .ch-link-url {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+/* Add / remove buttons */
+.ch-btn-add {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ch-btn-add:hover {
+  background: var(--starken-bg);
+  color: var(--starken);
+  border-color: var(--starken-border);
+}
+[data-theme="dark"] .ch-btn-add:hover {
+  background: #172554;
+  color: #93c5fd;
+  border-color: #1e3a8a;
+}
+.ch-btn-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.ch-btn-remove:hover { color: var(--danger); background: #fef2f2; }
+
+/* Copy example card */
+.ch-copy-example {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+[data-theme="dark"] .ch-copy-example {
+  background: rgba(255,255,255,0.03);
+  border-color: #334155;
+}
+.ch-copy-example .ch-btn-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+
+/* Logo preview */
+.ch-logo-preview {
+  margin-top: 6px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+}
+.ch-logo-preview img {
+  max-height: 60px;
+  max-width: 180px;
+  border-radius: 4px;
+  object-fit: contain;
+  background: #fff;
+  padding: 4px;
+  border: 1px solid var(--border);
+}
+
+/* Toast notification */
+.ch-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #1e293b;
+  color: #f1f5f9;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: var(--shadow-lg);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  white-space: nowrap;
+}
+.ch-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+[data-theme="dark"] .ch-toast {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+[data-theme="warm"] .ch-toast {
+  background: #3b2f2f;
+  color: #faf7f2;
+}
+
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  .ch-wrap { padding: 16px 12px 100px; }
+  .ch-client-name { max-width: 160px; font-size: 1.1rem; }
+  .ch-field-row { grid-template-columns: 1fr; }
+  .ch-completeness-bar-wrap { width: 80px; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -2339,6 +2914,270 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
           </div>
         </div>
       </div>
+
+      <!-- ═══ CLIENT HUB ═══ -->
+      <div id="tab-client-hub" class="tab-content" style="padding:0!important">
+        <div class="ch-wrap">
+
+          <!-- Header: client name, status badge, completeness, save button -->
+          <div class="ch-header">
+            <div class="ch-header-left">
+              <h2 class="ch-client-name" id="chClientName">—</h2>
+              <span class="ch-status-badge ch-status-ativo" id="chStatusBadge">Ativo</span>
+              <div class="ch-completeness">
+                <div class="ch-completeness-bar-wrap">
+                  <div class="ch-completeness-bar" id="chCompletenessBar" style="width:0%"></div>
+                </div>
+                <span class="ch-completeness-text" id="chCompletenessText">0%</span>
+              </div>
+            </div>
+            <div class="ch-header-right">
+              <button class="ch-btn-save" id="chBtnSave" onclick="hubSave()">💾 Salvar</button>
+            </div>
+          </div>
+
+          <!-- Sub-tab toggle: Hub | Conteúdo | Calendário -->
+          <div class="ch-tabs">
+            <button class="ch-tab active" onclick="hubSwitchView('hub',event)">📋 Hub</button>
+            <button class="ch-tab" onclick="hubSwitchView('content',event)">📝 Conteúdo</button>
+            <button class="ch-tab" onclick="hubSwitchView('calendar',event)">📅 Calendário</button>
+          </div>
+
+          <!-- 2-column grid with collapsible cards -->
+          <div class="ch-grid" id="chGrid">
+
+            <!-- LEFT COLUMN -->
+            <div class="ch-col">
+
+              <!-- Card: Perfil do Cliente -->
+              <div class="ch-card" id="chCardProfile">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardProfile')">
+                  <span>👤 Perfil do Cliente</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field">
+                    <label class="ch-field-label">Segmento</label>
+                    <input type="text" class="ch-field-value" id="chSegment" placeholder="Ex: Gastronomia, Moda, Saúde...">
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Responsável</label>
+                    <select class="ch-field-value" id="chResponsible">
+                      <option value="">Selecione</option>
+                      <option value="Juan">Juan</option>
+                      <option value="Henrique">Henrique</option>
+                      <option value="Emily">Emily</option>
+                    </select>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Status</label>
+                    <select class="ch-field-value" id="chStatus" onchange="hubUpdateStatusBadge()">
+                      <option value="ativo">Ativo</option>
+                      <option value="standby">Standby</option>
+                      <option value="encerrado">Encerrado</option>
+                    </select>
+                  </div>
+                  <div class="ch-field-row">
+                    <div class="ch-field">
+                      <label class="ch-field-label">Telefone</label>
+                      <input type="text" class="ch-field-value" id="chPhone" placeholder="(47) 99999-9999">
+                    </div>
+                    <div class="ch-field">
+                      <label class="ch-field-label">Email</label>
+                      <input type="email" class="ch-field-value" id="chEmail" placeholder="cliente@email.com">
+                    </div>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Contato Principal</label>
+                    <input type="text" class="ch-field-value" id="chContactName" placeholder="Nome do contato no cliente">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Contrato -->
+              <div class="ch-card" id="chCardContract">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardContract')">
+                  <span>📄 Contrato</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field">
+                    <label class="ch-field-label">Data de Início</label>
+                    <input type="date" class="ch-field-value" id="chContractStart">
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Valor</label>
+                    <input type="text" class="ch-field-value" id="chContractValue" placeholder="R$ 2.500/mês">
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Pacote</label>
+                    <input type="text" class="ch-field-value" id="chContractPackage" placeholder="12 posts + 8 stories + tráfego">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Voz e Comunicação -->
+              <div class="ch-card" id="chCardVoice">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardVoice')">
+                  <span>🗣️ Voz e Comunicação</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field">
+                    <label class="ch-field-label">Tom de Voz</label>
+                    <textarea class="ch-textarea" id="chToneOfVoice" rows="3" placeholder="Ex: Informal, divertido, usa emojis, evita termos técnicos..."></textarea>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Persona / Público-alvo</label>
+                    <textarea class="ch-textarea" id="chPersona" rows="3" placeholder="Ex: Jovens 18-35, universitários, amantes de comida..."></textarea>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Palavras-chave</label>
+                    <div class="ch-tag-input-wrap">
+                      <div class="ch-tag-list" id="chKeywords"></div>
+                      <input type="text" class="ch-tag-add" id="chKeywordInput" placeholder="Adicionar palavra + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chKeywords','chKeywordInput');event.preventDefault();}">
+                    </div>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Palavras Proibidas</label>
+                    <div class="ch-tag-input-wrap">
+                      <div class="ch-tag-list" id="chForbiddenWords"></div>
+                      <input type="text" class="ch-tag-add" id="chForbiddenInput" placeholder="Adicionar palavra + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chForbiddenWords','chForbiddenInput');event.preventDefault();}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Exemplos de Copy -->
+              <div class="ch-card" id="chCardCopy">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopy')">
+                  <span>✍️ Exemplos de Copy</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div id="chCopyExamples"></div>
+                  <button class="ch-btn-add" onclick="hubAddCopyExample()">+ Adicionar Exemplo</button>
+                </div>
+              </div>
+
+            </div><!-- end .ch-col left -->
+
+            <!-- RIGHT COLUMN -->
+            <div class="ch-col">
+
+              <!-- Card: Identidade Visual -->
+              <div class="ch-card" id="chCardBrand">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardBrand')">
+                  <span>🎨 Identidade Visual</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field">
+                    <label class="ch-field-label">Cores da Marca</label>
+                    <div id="chColors"></div>
+                    <button class="ch-btn-add" onclick="hubAddColor()">+ Adicionar Cor</button>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Fontes</label>
+                    <div class="ch-field-row">
+                      <div class="ch-field" style="flex:1">
+                        <label class="ch-field-label" style="font-size:0.6rem">Título</label>
+                        <input type="text" class="ch-field-value" id="chFontTitle" placeholder="Montserrat">
+                      </div>
+                      <div class="ch-field" style="flex:1">
+                        <label class="ch-field-label" style="font-size:0.6rem">Corpo</label>
+                        <input type="text" class="ch-field-value" id="chFontBody" placeholder="Open Sans">
+                      </div>
+                    </div>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Estilo Visual</label>
+                    <div class="ch-tag-input-wrap">
+                      <div class="ch-tag-list" id="chStyleTags"></div>
+                      <input type="text" class="ch-tag-add" id="chStyleTagInput" placeholder="Ex: minimalista, moderno + Enter" onkeydown="if(event.key==='Enter'){hubAddTag('chStyleTags','chStyleTagInput');event.preventDefault();}">
+                    </div>
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Logo Principal</label>
+                    <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="URL do logo" oninput="hubUpdateLogoPreview()">
+                    <div id="chLogoPreview" class="ch-logo-preview"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Links e Recursos -->
+              <div class="ch-card" id="chCardLinks">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardLinks')">
+                  <span>🔗 Links e Recursos</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field">
+                    <label class="ch-field-label">Website</label>
+                    <input type="url" class="ch-field-value" id="chWebsite" placeholder="https://...">
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Google Drive</label>
+                    <input type="url" class="ch-field-value" id="chDriveUrl" placeholder="https://drive.google.com/...">
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Link de Aprovação</label>
+                    <input type="url" class="ch-field-value" id="chApprovalUrl" placeholder="https://...">
+                  </div>
+                  <div class="ch-field">
+                    <label class="ch-field-label">Links Adicionais</label>
+                    <div id="chExtraLinks"></div>
+                    <button class="ch-btn-add" onclick="hubAddExtraLink()">+ Adicionar Link</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Redes Sociais -->
+              <div class="ch-card" id="chCardSocial">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardSocial')">
+                  <span>📱 Redes Sociais</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-social-row">
+                    <span class="ch-social-icon">📷</span>
+                    <input type="url" class="ch-field-value" id="chSocialIg" placeholder="https://instagram.com/...">
+                  </div>
+                  <div class="ch-social-row">
+                    <span class="ch-social-icon">📘</span>
+                    <input type="url" class="ch-field-value" id="chSocialFb" placeholder="https://facebook.com/...">
+                  </div>
+                  <div class="ch-social-row">
+                    <span class="ch-social-icon">🎵</span>
+                    <input type="url" class="ch-field-value" id="chSocialTiktok" placeholder="https://tiktok.com/@...">
+                  </div>
+                  <div class="ch-social-row">
+                    <span class="ch-social-icon">💼</span>
+                    <input type="url" class="ch-field-value" id="chSocialLinkedin" placeholder="https://linkedin.com/company/...">
+                  </div>
+                  <div class="ch-social-row">
+                    <span class="ch-social-icon">▶️</span>
+                    <input type="url" class="ch-field-value" id="chSocialYoutube" placeholder="https://youtube.com/@...">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card: Notas -->
+              <div class="ch-card" id="chCardNotes">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardNotes')">
+                  <span>📝 Notas</span>
+                  <span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <textarea class="ch-textarea" id="chNotes" rows="5" placeholder="Anotações gerais, observações, instruções especiais..."></textarea>
+                </div>
+              </div>
+
+            </div><!-- end .ch-col right -->
+
+          </div><!-- end .ch-grid -->
+        </div><!-- end .ch-wrap -->
+      </div><!-- end #tab-client-hub -->
 
     </div>
   </div>
@@ -3495,7 +4334,8 @@ const TAB_TITLES = {
   'meta-balance':      'Saldo das Contas',
   'meta-bi':           'BI de Campanhas',
   'meta-publish':      'Agendamento de Posts',
-  'calendario':        'Calendário de Posts'
+  'calendario':        'Calendário de Posts',
+  'client-hub':        'Client Hub'
 };
 
 function switchTab(tabName) {
@@ -3520,6 +4360,7 @@ function switchTab(tabName) {
   else if (tabName === 'meta-publish') metaPublishInit();
   else if (tabName === 'content') ctInit();
   else if (tabName === 'calendario') calInit();
+  else if (tabName === 'client-hub') { /* hubOpen() handles init */ }
   else renderAll();
 }
 
@@ -3563,17 +4404,14 @@ function toggleSidebarFolder(folder) {
 }
 
 function sidebarSelectClient(clientKey) {
-  switchTab('content');
-  setTimeout(function() {
-    const select = document.getElementById('ctClientFilter');
-    if (select) {
-      select.value = clientKey;
-      if (typeof ctLoadGroups === 'function') ctLoadGroups();
-    }
-    document.querySelectorAll('.sidebar-client-btn').forEach(function(b) { b.classList.remove('active'); });
-    const activeBtn = document.querySelector('.sidebar-client-btn[data-client="' + clientKey + '"]');
-    if (activeBtn) activeBtn.classList.add('active');
-  }, 100);
+  var clientData = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey] : {};
+  var clientName = clientData.name || clientKey;
+  // Open Client Hub instead of raw content tab
+  hubOpen(clientKey, clientName);
+  // Highlight selected client in sidebar
+  document.querySelectorAll('.sidebar-client-btn').forEach(function(b) { b.classList.remove('active'); });
+  var activeBtn = document.querySelector('.sidebar-client-btn[data-client="' + clientKey + '"]');
+  if (activeBtn) activeBtn.classList.add('active');
 }
 
 function restoreSidebarFolders() {
@@ -9781,6 +10619,480 @@ function ctOpenLightbox(url) {
   }
 
 })(); // end CALENDARIO MODULE
+
+// ============================================================
+// CLIENT HUB MODULE
+// All functions prefixed with hub*, all CSS classes .ch-*
+// ============================================================
+
+// -- State --
+var _hubCurrentSlug = null;
+var _hubData        = {};
+var _hubDirty       = false;
+
+// -- API helper: routes to api/asana/tasks.js (multiplexed) --
+function hubApi(body) {
+  return fetch(metaApiBase() + '/api/asana/tasks', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+
+// -- Open hub for a given client --
+function hubOpen(clientSlug, clientName) {
+  _hubCurrentSlug = clientSlug;
+  _hubDirty       = false;
+  switchTab('client-hub');
+  document.getElementById('chClientName').textContent = clientName || clientSlug;
+
+  // Reset form while loading
+  _hubData = { client_slug: clientSlug, client_name: clientName || clientSlug };
+  hubPopulateForm();
+
+  // Fetch persisted data from API
+  hubApi({ action: 'hub_get', client_slug: clientSlug })
+    .then(function(data) {
+      if (data && !data.error && data.client_slug) {
+        _hubData = data;
+      }
+      hubPopulateForm();
+    })
+    .catch(function() {
+      // Network error: keep the blank form — user can still fill and save
+    });
+}
+
+// -- Populate all form fields from _hubData --
+function hubPopulateForm() {
+  // Simple scalar fields
+  var el = function(id) { return document.getElementById(id); };
+  el('chSegment').value      = _hubData.segment              || '';
+  el('chResponsible').value  = _hubData.responsible          || '';
+  el('chStatus').value       = _hubData.status               || 'ativo';
+  el('chPhone').value        = _hubData.client_phone         || '';
+  el('chEmail').value        = _hubData.client_email         || '';
+  el('chContactName').value  = _hubData.client_contact_name  || '';
+  el('chContractStart').value= _hubData.contract_start       || '';
+  el('chContractValue').value= _hubData.contract_value       || '';
+  el('chContractPackage').value = _hubData.contract_package  || '';
+  el('chToneOfVoice').value  = _hubData.tone_of_voice        || '';
+  el('chPersona').value      = _hubData.persona_description  || '';
+  el('chWebsite').value      = _hubData.website_url          || '';
+  el('chDriveUrl').value     = _hubData.drive_folder_url     || '';
+  el('chApprovalUrl').value  = _hubData.approval_url         || '';
+  el('chLogoUrl').value      = _hubData.logo_url             || '';
+  el('chNotes').value        = _hubData.notes                || '';
+
+  // Nested font object
+  var fonts = _hubData.brand_fonts || {};
+  el('chFontTitle').value = fonts.title || '';
+  el('chFontBody').value  = fonts.body  || '';
+
+  // Nested social links object
+  var social = _hubData.social_links || {};
+  el('chSocialIg').value       = social.instagram || '';
+  el('chSocialFb').value       = social.facebook  || '';
+  el('chSocialTiktok').value   = social.tiktok    || '';
+  el('chSocialLinkedin').value = social.linkedin  || '';
+  el('chSocialYoutube').value  = social.youtube   || '';
+
+  // Arrays
+  hubRenderTags('chKeywords',     _hubData.keywords         || []);
+  hubRenderTags('chForbiddenWords',_hubData.forbidden_words || []);
+  hubRenderTags('chStyleTags',    _hubData.brand_style_tags || []);
+
+  // Dynamic lists
+  hubRenderColors(_hubData.brand_colors  || []);
+  hubRenderCopyExamples(_hubData.copy_examples || []);
+  hubRenderExtraLinks(_hubData.extra_links     || []);
+
+  // Derived UI
+  hubUpdateLogoPreview();
+  hubUpdateStatusBadge();
+  hubUpdateCompleteness();
+  hubRestoreCardState();
+}
+
+// -- Collect all form fields into a plain object for saving --
+function hubCollectForm() {
+  var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
+  return {
+    client_name:          document.getElementById('chClientName').textContent,
+    tenant:               clientData.tenant || 'starken',
+    segment:              document.getElementById('chSegment').value,
+    responsible:          document.getElementById('chResponsible').value,
+    status:               document.getElementById('chStatus').value,
+    client_phone:         document.getElementById('chPhone').value,
+    client_email:         document.getElementById('chEmail').value,
+    client_contact_name:  document.getElementById('chContactName').value,
+    contract_start:       document.getElementById('chContractStart').value || null,
+    contract_value:       document.getElementById('chContractValue').value,
+    contract_package:     document.getElementById('chContractPackage').value,
+    tone_of_voice:        document.getElementById('chToneOfVoice').value,
+    persona_description:  document.getElementById('chPersona').value,
+    website_url:          document.getElementById('chWebsite').value,
+    drive_folder_url:     document.getElementById('chDriveUrl').value,
+    approval_url:         document.getElementById('chApprovalUrl').value,
+    logo_url:             document.getElementById('chLogoUrl').value,
+    notes:                document.getElementById('chNotes').value,
+    brand_fonts: {
+      title: document.getElementById('chFontTitle').value,
+      body:  document.getElementById('chFontBody').value
+    },
+    social_links: {
+      instagram: document.getElementById('chSocialIg').value,
+      facebook:  document.getElementById('chSocialFb').value,
+      tiktok:    document.getElementById('chSocialTiktok').value,
+      linkedin:  document.getElementById('chSocialLinkedin').value,
+      youtube:   document.getElementById('chSocialYoutube').value
+    },
+    keywords:         hubGetTags('chKeywords'),
+    forbidden_words:  hubGetTags('chForbiddenWords'),
+    brand_style_tags: hubGetTags('chStyleTags'),
+    brand_colors:     hubGetColors(),
+    copy_examples:    hubGetCopyExamples(),
+    extra_links:      hubGetExtraLinks()
+  };
+}
+
+// -- Save hub data to API --
+function hubSave() {
+  var btn = document.getElementById('chBtnSave');
+  btn.disabled    = true;
+  btn.textContent = 'Salvando...';
+
+  var data = hubCollectForm();
+  var user = (typeof gpState !== 'undefined' && gpState.user) ? gpState.user.name : 'Sistema';
+
+  hubApi({
+    action:      'hub_upsert',
+    client_slug: _hubCurrentSlug,
+    user:        user,
+    data:        data
+  }).then(function(res) {
+    btn.disabled    = false;
+    btn.textContent = '💾 Salvar';
+    if (res && res.error) {
+      alert('Erro ao salvar: ' + (res.message || res.error));
+    } else {
+      // Merge returned record back into state
+      if (res && res.client_slug) _hubData = res;
+      _hubDirty = false;
+      hubUpdateCompleteness();
+      hubToast('Hub salvo com sucesso!');
+    }
+  }).catch(function(err) {
+    btn.disabled    = false;
+    btn.textContent = '💾 Salvar';
+    alert('Erro de conexão: ' + (err && err.message ? err.message : 'desconhecido'));
+  });
+}
+
+// -- Toast notification (auto-removes after 2.5s) --
+function hubToast(msg) {
+  var toast        = document.createElement('div');
+  toast.className  = 'ch-toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  // Trigger reflow before adding show class so transition fires
+  void toast.offsetWidth;
+  toast.classList.add('show');
+  setTimeout(function() {
+    toast.classList.remove('show');
+    setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+  }, 2500);
+}
+
+// -- Tags / chips --
+function hubRenderTags(containerId, tags) {
+  var container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = tags.map(function(t, i) {
+    var safe = String(t).replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<span class="ch-tag" data-index="' + i + '">' + safe +
+      '<button type="button" onclick="hubRemoveTag(\'' + containerId + '\',' + i + ')" title="Remover">&times;</button></span>';
+  }).join('');
+}
+
+function hubAddTag(containerId, inputId) {
+  var input = document.getElementById(inputId);
+  var val   = input.value.trim();
+  if (!val) return;
+  var tags = hubGetTags(containerId);
+  tags.push(val);
+  hubRenderTags(containerId, tags);
+  input.value = '';
+  _hubDirty   = true;
+}
+
+function hubRemoveTag(containerId, index) {
+  var tags = hubGetTags(containerId);
+  tags.splice(index, 1);
+  hubRenderTags(containerId, tags);
+  _hubDirty = true;
+}
+
+function hubGetTags(containerId) {
+  var tags      = [];
+  var container = document.getElementById(containerId);
+  if (!container) return tags;
+  container.querySelectorAll('.ch-tag').forEach(function(el) {
+    // Remove the × button text before reading tag text
+    var btn  = el.querySelector('button');
+    var text = btn ? el.textContent.replace(btn.textContent, '').trim() : el.textContent.trim();
+    if (text) tags.push(text);
+  });
+  return tags;
+}
+
+// -- Brand colors --
+function hubRenderColors(colors) {
+  var container = document.getElementById('chColors');
+  if (!container) return;
+  container.innerHTML = colors.map(function(c, i) {
+    var hex  = (c.hex  || '#3b82f6').replace(/[^#0-9a-fA-F]/g,'');
+    var name = (c.name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="ch-color-row" data-index="' + i + '">' +
+      '<input type="color" value="' + hex + '" oninput="hubSyncColorHex(' + i + ',this.value)" class="ch-color-swatch">' +
+      '<input type="text" value="' + hex + '" onchange="hubSyncColorSwatch(' + i + ',this.value)" class="ch-color-hex" placeholder="#000000" maxlength="7">' +
+      '<input type="text" value="' + name + '" onchange="hubMarkDirty()" class="ch-color-name" placeholder="Nome da cor">' +
+      '<button type="button" class="ch-color-remove" onclick="hubRemoveColor(' + i + ')" title="Remover">&times;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function hubAddColor() {
+  var colors = hubGetColors();
+  colors.push({ name: '', hex: '#3b82f6' });
+  hubRenderColors(colors);
+  _hubDirty = true;
+}
+
+// Sync color picker → hex text input
+function hubSyncColorHex(i, hex) {
+  var rows = document.querySelectorAll('.ch-color-row');
+  if (rows[i]) rows[i].querySelector('.ch-color-hex').value = hex;
+  _hubDirty = true;
+}
+
+// Sync hex text → color picker
+function hubSyncColorSwatch(i, hex) {
+  var clean = hex.trim();
+  // Auto-prepend # if missing
+  if (clean && clean.charAt(0) !== '#') clean = '#' + clean;
+  var rows = document.querySelectorAll('.ch-color-row');
+  if (rows[i]) {
+    rows[i].querySelector('.ch-color-swatch').value = clean;
+    rows[i].querySelector('.ch-color-hex').value    = clean;
+  }
+  _hubDirty = true;
+}
+
+function hubRemoveColor(i) {
+  var colors = hubGetColors();
+  colors.splice(i, 1);
+  hubRenderColors(colors);
+  _hubDirty = true;
+}
+
+function hubGetColors() {
+  var colors = [];
+  document.querySelectorAll('.ch-color-row').forEach(function(row) {
+    colors.push({
+      hex:  row.querySelector('.ch-color-hex').value,
+      name: row.querySelector('.ch-color-name').value
+    });
+  });
+  return colors;
+}
+
+// -- Copy examples --
+function hubRenderCopyExamples(examples) {
+  var container = document.getElementById('chCopyExamples');
+  if (!container) return;
+  container.innerHTML = examples.map(function(ex, i) {
+    var text    = (ex.text    || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var context = (ex.context || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="ch-copy-example" data-index="' + i + '">' +
+      '<button type="button" class="ch-btn-remove" onclick="hubRemoveCopyExample(' + i + ')" title="Remover">&times;</button>' +
+      '<textarea class="ch-textarea" rows="2" placeholder="Texto da copy..." onchange="hubMarkDirty()">' + text + '</textarea>' +
+      '<input type="text" class="ch-field-value" placeholder="Contexto (ex: Post de promo)" value="' + context + '" onchange="hubMarkDirty()">' +
+    '</div>';
+  }).join('');
+}
+
+function hubAddCopyExample() {
+  var examples = hubGetCopyExamples();
+  examples.push({ text: '', context: '' });
+  hubRenderCopyExamples(examples);
+  _hubDirty = true;
+}
+
+function hubRemoveCopyExample(i) {
+  var examples = hubGetCopyExamples();
+  examples.splice(i, 1);
+  hubRenderCopyExamples(examples);
+  _hubDirty = true;
+}
+
+function hubGetCopyExamples() {
+  var examples = [];
+  document.querySelectorAll('.ch-copy-example').forEach(function(el) {
+    examples.push({
+      text:    el.querySelector('textarea').value,
+      context: el.querySelector('input').value
+    });
+  });
+  return examples;
+}
+
+// -- Extra links --
+function hubRenderExtraLinks(links) {
+  var container = document.getElementById('chExtraLinks');
+  if (!container) return;
+  container.innerHTML = links.map(function(l, i) {
+    var label = (l.label || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var url   = (l.url   || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<div class="ch-link-row" data-index="' + i + '">' +
+      '<input type="text" class="ch-link-label" placeholder="Nome" value="' + label + '" onchange="hubMarkDirty()">' +
+      '<input type="url"  class="ch-link-url"   placeholder="https://..." value="' + url + '" onchange="hubMarkDirty()">' +
+      '<button type="button" class="ch-btn-remove" onclick="hubRemoveExtraLink(' + i + ')" title="Remover">&times;</button>' +
+    '</div>';
+  }).join('');
+}
+
+function hubAddExtraLink() {
+  var links = hubGetExtraLinks();
+  links.push({ label: '', url: '' });
+  hubRenderExtraLinks(links);
+  _hubDirty = true;
+}
+
+function hubRemoveExtraLink(i) {
+  var links = hubGetExtraLinks();
+  links.splice(i, 1);
+  hubRenderExtraLinks(links);
+  _hubDirty = true;
+}
+
+function hubGetExtraLinks() {
+  var links = [];
+  document.querySelectorAll('.ch-link-row').forEach(function(el) {
+    links.push({
+      label: el.querySelector('.ch-link-label').value,
+      url:   el.querySelector('.ch-link-url').value
+    });
+  });
+  return links;
+}
+
+// -- Card collapse toggle --
+function hubToggleCard(cardId) {
+  var card = document.getElementById(cardId);
+  if (!card) return;
+  card.classList.toggle('collapsed');
+  // Persist per-card collapsed state to localStorage
+  try {
+    var state = JSON.parse(localStorage.getItem('hubCardState') || '{}');
+    state[cardId] = card.classList.contains('collapsed');
+    localStorage.setItem('hubCardState', JSON.stringify(state));
+  } catch(e) {}
+}
+
+// Restore card collapse states from localStorage
+function hubRestoreCardState() {
+  try {
+    var state = JSON.parse(localStorage.getItem('hubCardState') || '{}');
+    Object.keys(state).forEach(function(id) {
+      var card = document.getElementById(id);
+      if (card) {
+        if (state[id]) {
+          card.classList.add('collapsed');
+        } else {
+          card.classList.remove('collapsed');
+        }
+      }
+    });
+  } catch(e) {}
+}
+
+// -- Logo URL preview --
+function hubUpdateLogoPreview() {
+  var url     = document.getElementById('chLogoUrl').value.trim();
+  var preview = document.getElementById('chLogoPreview');
+  if (!preview) return;
+  if (url) {
+    preview.innerHTML = '<img src="' + url + '" alt="Logo" onerror="this.style.display=\'none\'">';
+  } else {
+    preview.innerHTML = '';
+  }
+}
+
+// -- Status badge color class --
+function hubUpdateStatusBadge() {
+  var status = document.getElementById('chStatus').value;
+  var badge  = document.getElementById('chStatusBadge');
+  if (!badge) return;
+  var labels = { ativo: 'Ativo', standby: 'Standby', encerrado: 'Encerrado' };
+  badge.textContent = labels[status] || status;
+  badge.className   = 'ch-status-badge ch-status-' + status;
+}
+
+// -- Completeness percentage --
+function hubUpdateCompleteness() {
+  // Fields evaluated from live form values (not _hubData) so it reflects current edits
+  var checks = [
+    document.getElementById('chSegment').value.trim(),
+    document.getElementById('chResponsible').value.trim(),
+    document.getElementById('chToneOfVoice').value.trim(),
+    document.getElementById('chPersona').value.trim(),
+    document.getElementById('chWebsite').value.trim(),
+    document.getElementById('chLogoUrl').value.trim(),
+    document.getElementById('chSocialIg').value.trim() || document.getElementById('chSocialFb').value.trim(),
+    hubGetTags('chKeywords').length > 0 ? 'ok' : '',
+    hubGetColors().length > 0 ? 'ok' : ''
+  ];
+  var filled = checks.filter(function(v) { return !!v; }).length;
+  var pct    = Math.round((filled / checks.length) * 100);
+  var bar    = document.getElementById('chCompletenessBar');
+  var text   = document.getElementById('chCompletenessText');
+  if (bar)  bar.style.width = pct + '%';
+  if (text) text.textContent = pct + '%';
+}
+
+// -- Mark data dirty (called by inline onchange handlers) --
+function hubMarkDirty() {
+  _hubDirty = true;
+}
+
+// -- Sub-view switcher: Hub / Conteúdo / Calendário --
+function hubSwitchView(view, evt) {
+  // Update active tab button
+  document.querySelectorAll('#tab-client-hub .ch-tab').forEach(function(t) {
+    t.classList.remove('active');
+  });
+  if (evt && evt.target) evt.target.classList.add('active');
+
+  if (view === 'content') {
+    // Switch to content management, pre-filtered to current client
+    if (typeof ctInit === 'function') {
+      switchTab('content');
+      setTimeout(function() {
+        var select = document.getElementById('ctClientFilter');
+        if (select && _hubCurrentSlug) {
+          select.value = _hubCurrentSlug;
+          if (typeof ctLoadGroups === 'function') ctLoadGroups();
+        }
+      }, 120);
+    }
+  } else if (view === 'calendar') {
+    switchTab('calendario');
+  }
+  // For 'hub' view we stay on current tab — nothing more to do
+}
+
+// ============ END CLIENT HUB MODULE ============
 </script>
 </body>
 </html>

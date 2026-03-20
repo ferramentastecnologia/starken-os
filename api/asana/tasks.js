@@ -1,158 +1,377 @@
-/**
- * /api/asana/tasks — CRUD de tarefas no Asana
- *
- * GET  — Lista tarefas de um projeto (ou workspace)
- *   Query: project (required), section (optional), completed (optional, default "false")
- *
- * POST — Cria uma tarefa
- *   Body: { name, project, section, assignee, due_on, notes, tags[] }
- *
- * PUT  — Atualiza uma tarefa
- *   Body: { task_gid, completed, name, due_on, notes }
- */
+// =============================================================================
+// Client Hub API — Multiplexed Vercel Serverless Function
+// POST endpoint with action-based routing (6 MVP actions)
+//
+// Actions:
+//   hub_get        — Full client hub record with counts
+//   hub_list       — List all hubs with completeness score
+//   hub_upsert     — Create or update a hub + log activity
+//   hub_delete     — Soft delete (status → encerrado)
+//   hub_activity   — Activity log for a hub
+//   hub_bulk_init  — Bootstrap hubs from existing meta_config
+// =============================================================================
 
-const ASANA_BASE = 'https://app.asana.com/api/1.0';
+const { createClient } = require('@supabase/supabase-js');
+
+// Lazy-initialized Supabase client (reused across warm invocations)
+let _supabase;
+function supabase() {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_KEY
+    );
+  }
+  return _supabase;
+}
+
+// =============================================================================
+// Important fields used to compute hub completeness percentage
+// =============================================================================
+
+const COMPLETENESS_FIELDS = [
+  'brand_name',
+  'segment',
+  'tone_of_voice',
+  'target_audience',
+  'brand_colors',
+  'logo_url',
+  'social_links',
+  'onboarding_date',
+  'contract_type',
+];
+
+function computeCompleteness(row) {
+  if (!row) return 0;
+  let filled = 0;
+  for (const field of COMPLETENESS_FIELDS) {
+    const val = row[field];
+    if (val === null || val === undefined || val === '') continue;
+    // For JSONB columns, treat empty objects/arrays as incomplete
+    if (typeof val === 'object' && Object.keys(val).length === 0) continue;
+    filled++;
+  }
+  return Math.round((filled / COMPLETENESS_FIELDS.length) * 100);
+}
+
+// =============================================================================
+// 1. hub_get — Full client hub record with material and post counts
+// =============================================================================
+
+async function hubGet({ client_slug }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+
+  const sb = supabase();
+
+  // Fetch the hub record
+  const { data: hub, error: hubErr } = await sb
+    .from('client_hub')
+    .select('*')
+    .eq('client_slug', client_slug)
+    .single();
+
+  if (hubErr) {
+    if (hubErr.code === 'PGRST116') {
+      return { error: true, message: `Hub not found for slug: ${client_slug}` };
+    }
+    throw hubErr;
+  }
+
+  // Fetch related counts in parallel
+  const [materialsRes, postsRes] = await Promise.all([
+    sb
+      .from('client_hub_materials')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_slug', client_slug),
+    sb
+      .from('publish_history')
+      .select('id', { count: 'exact', head: true })
+      .eq('client_slug', client_slug),
+  ]);
+
+  return {
+    ...hub,
+    materials_count: materialsRes.count ?? 0,
+    recent_posts_count: postsRes.count ?? 0,
+    completeness: computeCompleteness(hub),
+  };
+}
+
+// =============================================================================
+// 2. hub_list — List all hubs with optional tenant filter and completeness
+// =============================================================================
+
+async function hubList({ tenant }) {
+  const sb = supabase();
+
+  let query = sb.from('client_hub').select('*');
+
+  if (tenant) {
+    query = query.eq('tenant', tenant);
+  }
+
+  const { data, error } = await query.order('brand_name', { ascending: true });
+
+  if (error) throw error;
+
+  // Return summary fields with computed completeness
+  const result = (data || []).map((row) => ({
+    client_slug: row.client_slug,
+    brand_name: row.brand_name,
+    tenant: row.tenant,
+    segment: row.segment,
+    status: row.status,
+    onboarding_date: row.onboarding_date,
+    contract_type: row.contract_type,
+    completeness: computeCompleteness(row),
+  }));
+
+  return result;
+}
+
+// =============================================================================
+// 3. hub_upsert — Create or update hub + log activity
+// =============================================================================
+
+async function hubUpsert({ client_slug, user, data }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+  if (!user) return { error: true, message: 'user is required' };
+  if (!data || typeof data !== 'object') {
+    return { error: true, message: 'data object is required' };
+  }
+
+  const sb = supabase();
+  const now = new Date().toISOString();
+
+  // Check if hub already exists (for accurate activity logging)
+  const { data: existing } = await sb
+    .from('client_hub')
+    .select('client_slug')
+    .eq('client_slug', client_slug)
+    .maybeSingle();
+
+  const isNew = !existing;
+
+  const record = {
+    ...data,
+    client_slug,
+    updated_at: now,
+  };
+
+  // Set created_at only for new records
+  if (isNew) {
+    record.created_at = now;
+  }
+
+  // Upsert on client_slug (must be unique / primary key)
+  const { data: upserted, error: upsertErr } = await sb
+    .from('client_hub')
+    .upsert(record, { onConflict: 'client_slug' })
+    .select('*')
+    .single();
+
+  if (upsertErr) throw upsertErr;
+
+  // Log activity
+  await sb.from('client_hub_activity').insert({
+    client_slug,
+    actor: user,
+    action: isNew ? 'hub_created' : 'hub_updated',
+    details: JSON.stringify({ fields: Object.keys(data) }),
+    created_at: now,
+  });
+
+  return upserted;
+}
+
+// =============================================================================
+// 4. hub_delete — Soft delete by setting status to 'encerrado'
+// =============================================================================
+
+async function hubDelete({ client_slug }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+
+  const sb = supabase();
+
+  const { data, error } = await sb
+    .from('client_hub')
+    .update({ status: 'encerrado', updated_at: new Date().toISOString() })
+    .eq('client_slug', client_slug)
+    .select('client_slug, status')
+    .single();
+
+  if (error) throw error;
+
+  return { success: true, client_slug: data.client_slug, status: data.status };
+}
+
+// =============================================================================
+// 5. hub_activity — Activity log for a specific hub
+// =============================================================================
+
+async function hubActivity({ client_slug, limit }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+
+  const cap = Math.min(Number(limit) || 20, 200);
+  const sb = supabase();
+
+  const { data, error } = await sb
+    .from('client_hub_activity')
+    .select('*')
+    .eq('client_slug', client_slug)
+    .order('created_at', { ascending: false })
+    .limit(cap);
+
+  if (error) throw error;
+
+  // Parse stringified details for convenience
+  return (data || []).map((row) => ({
+    ...row,
+    details: typeof row.details === 'string'
+      ? JSON.parse(row.details)
+      : row.details,
+  }));
+}
+
+// =============================================================================
+// 6. hub_bulk_init — Create hubs for all clients in meta_config that lack one
+// =============================================================================
+
+async function hubBulkInit({ user }) {
+  if (!user) return { error: true, message: 'user is required' };
+
+  const sb = supabase();
+  const now = new Date().toISOString();
+
+  // Fetch all clients from meta_config
+  const { data: clients, error: metaErr } = await sb
+    .from('meta_config')
+    .select('*');
+
+  if (metaErr) throw metaErr;
+  if (!clients || clients.length === 0) {
+    return { created: 0, message: 'No clients found in meta_config' };
+  }
+
+  // Fetch existing hub slugs so we skip them
+  const { data: existingHubs, error: hubErr } = await sb
+    .from('client_hub')
+    .select('client_slug');
+
+  if (hubErr) throw hubErr;
+
+  const existingSlugs = new Set((existingHubs || []).map((h) => h.client_slug));
+
+  // Build records for clients without a hub
+  const newHubs = [];
+  for (const client of clients) {
+    const slug = client.client_slug || client.clientSlug || client.slug;
+    if (!slug || existingSlugs.has(slug)) continue;
+
+    // Build social links from meta_config fields
+    const socialLinks = {};
+    if (client.igUsername) {
+      socialLinks.instagram = `https://instagram.com/${client.igUsername}`;
+    }
+    if (client.pageId) {
+      socialLinks.facebook = `https://facebook.com/${client.pageId}`;
+    }
+
+    newHubs.push({
+      client_slug: slug,
+      brand_name: client.name || client.clientName || slug,
+      tenant: client.tenant || null,
+      status: 'ativo',
+      social_links: Object.keys(socialLinks).length > 0 ? socialLinks : null,
+      created_at: now,
+      updated_at: now,
+    });
+  }
+
+  if (newHubs.length === 0) {
+    return { created: 0, message: 'All clients already have hubs' };
+  }
+
+  const { error: insertErr } = await sb
+    .from('client_hub')
+    .insert(newHubs);
+
+  if (insertErr) throw insertErr;
+
+  // Log bulk activity
+  await sb.from('client_hub_activity').insert(
+    newHubs.map((h) => ({
+      client_slug: h.client_slug,
+      actor: user,
+      action: 'hub_bulk_created',
+      details: JSON.stringify({ source: 'meta_config' }),
+      created_at: now,
+    }))
+  );
+
+  return {
+    created: newHubs.length,
+    slugs: newHubs.map((h) => h.client_slug),
+  };
+}
+
+// =============================================================================
+// Action router
+// =============================================================================
+
+const ACTIONS = {
+  hub_get: hubGet,
+  hub_list: hubList,
+  hub_upsert: hubUpsert,
+  hub_delete: hubDelete,
+  hub_activity: hubActivity,
+  hub_bulk_init: hubBulkInit,
+};
+
+// =============================================================================
+// Main handler
+// =============================================================================
 
 module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const token = process.env.ASANA_PAT;
-  if (!token) {
-    return res.status(500).json({ error: 'ASANA_PAT not configured' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: true, message: 'Use POST' });
   }
 
-  const headers = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
+  const body = req.body || {};
+  const { action, ...params } = body;
 
-  // ─── GET: Lista tarefas ───────────────────────────────────
-  if (req.method === 'GET') {
-    const project = req.query.project;
-    const section = req.query.section;
-    const completed = req.query.completed || 'false';
-    const assignee = req.query.assignee;
-
-    if (!project && !section) {
-      return res.status(400).json({ error: 'project or section query param required' });
-    }
-
-    try {
-      const optFields = 'name,completed,completed_at,due_on,due_at,assignee.name,notes,created_at,modified_at,memberships.project.name,memberships.section.name,tags.name,custom_fields';
-
-      let url;
-      if (section) {
-        url = `${ASANA_BASE}/sections/${section}/tasks?opt_fields=${optFields}&completed_since=${completed === 'true' ? '' : 'now'}&limit=100`;
-      } else {
-        url = `${ASANA_BASE}/tasks?project=${project}&opt_fields=${optFields}&completed_since=${completed === 'true' ? '' : 'now'}&limit=100`;
-      }
-
-      // For listing incomplete tasks, use completed_since=now trick
-      // For listing all tasks, remove the filter
-      if (completed === 'all') {
-        url = `${ASANA_BASE}/tasks?project=${project}&opt_fields=${optFields}&limit=100`;
-      }
-
-      const response = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        return res.status(response.status).json({ error: 'Asana API error', details: err });
-      }
-
-      const data = await response.json();
-
-      // Filter by assignee client-side if needed
-      if (assignee && data.data) {
-        data.data = data.data.filter(t => t.assignee && t.assignee.gid === assignee);
-      }
-
-      return res.status(200).json(data);
-    } catch (e) {
-      return res.status(500).json({ error: 'Internal error', message: e.message });
-    }
+  if (!action) {
+    return res.status(400).json({ error: true, message: 'action field is required' });
   }
 
-  // ─── POST: Cria tarefa ────────────────────────────────────
-  if (req.method === 'POST') {
-    const { name, project, section, assignee, due_on, notes, tags } = req.body || {};
-
-    if (!name) {
-      return res.status(400).json({ error: 'name is required' });
-    }
-    if (!project) {
-      return res.status(400).json({ error: 'project is required' });
-    }
-
-    const taskData = {
-      name,
-      notes: notes || '',
-    };
-
-    // Assign to project + section via memberships
-    if (section) {
-      taskData.memberships = [{ project, section }];
-    } else {
-      taskData.projects = [project];
-    }
-
-    if (assignee) taskData.assignee = assignee;
-    if (due_on) taskData.due_on = due_on;
-
-    try {
-      const response = await fetch(`${ASANA_BASE}/tasks`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ data: taskData }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        return res.status(response.status).json({ error: 'Asana API error', details: err });
-      }
-
-      const data = await response.json();
-      return res.status(201).json(data);
-    } catch (e) {
-      return res.status(500).json({ error: 'Internal error', message: e.message });
-    }
+  const fn = ACTIONS[action];
+  if (!fn) {
+    return res.status(400).json({
+      error: true,
+      message: `Unknown action: ${action}. Valid: ${Object.keys(ACTIONS).join(', ')}`,
+    });
   }
 
-  // ─── PUT: Atualiza tarefa ─────────────────────────────────
-  if (req.method === 'PUT') {
-    const { task_gid, completed, name, due_on, notes } = req.body || {};
+  try {
+    const result = await fn(params);
 
-    if (!task_gid) {
-      return res.status(400).json({ error: 'task_gid is required' });
+    // If the handler returned an error object, send 400
+    if (result && result.error === true) {
+      return res.status(400).json(result);
     }
 
-    const updateData = {};
-    if (typeof completed === 'boolean') updateData.completed = completed;
-    if (name) updateData.name = name;
-    if (due_on) updateData.due_on = due_on;
-    if (typeof notes === 'string') updateData.notes = notes;
-
-    try {
-      const response = await fetch(`${ASANA_BASE}/tasks/${task_gid}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ data: updateData }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        return res.status(response.status).json({ error: 'Asana API error', details: err });
-      }
-
-      const data = await response.json();
-      return res.status(200).json(data);
-    } catch (e) {
-      return res.status(500).json({ error: 'Internal error', message: e.message });
-    }
+    return res.status(200).json(result);
+  } catch (err) {
+    console.error(`[client-hub] action=${action} error:`, err);
+    return res.status(500).json({
+      error: true,
+      message: err.message || 'Internal server error',
+    });
   }
-
-  return res.status(405).json({ error: 'Method not allowed' });
 };
