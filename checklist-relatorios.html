@@ -7971,8 +7971,10 @@ function metaConfigRenderClientList() {
       + '<label>Instagram</label>'
       + '<div class="mc-ig-wrapper" data-key="' + key + '">'
       + (function() {
-          // Se o cliente tem IG manual (não veio do discover), mostra input
-          var isManualIg = c.igUserId && igAccounts.length > 0 && !igAccounts.find(function(ig) { return ig.id === c.igUserId; });
+          // Se o cliente tem IG configurado manualmente (não veio do discover), mostra input
+          var hasIgData = c.igUserId || c.igUsername;
+          var igInDiscover = hasIgData && igAccounts.find(function(ig) { return ig.id === c.igUserId; });
+          var isManualIg = hasIgData && igAccounts.length > 0 && !igInDiscover;
           if (isManualIg || igAccounts.length === 0) {
             return '<input class="mc-ig-input" type="text" value="' + (c.igUsername || c.igUserId || '') + '" placeholder="@usuario ou ID do IG"'
               + ' oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
