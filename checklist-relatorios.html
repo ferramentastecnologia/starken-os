@@ -11962,7 +11962,6 @@ function hubDeleteMaterial(materialId) {
 
 function hubUploadMaterials(files) {
   if (!files || files.length === 0) return;
-  if (!_supabase) { alert('Supabase não inicializado. Recarregue a página.'); return; }
 
   var grid = document.getElementById('chMatGrid');
   var indicator = document.createElement('div');
@@ -11975,8 +11974,7 @@ function hubUploadMaterials(files) {
   var slug    = _hubCurrentSlug;
   var pending = Array.from(files);
   var done    = 0;
-
-  var CATEGORY_MAP = { logo: 'logo', photo: 'product_photo', template: 'template', ref: 'reference', doc: 'document' };
+  var errors  = 0;
 
   function guessCategory(file) {
     var name = file.name.toLowerCase();
@@ -11987,45 +11985,62 @@ function hubUploadMaterials(files) {
     return 'other';
   }
 
-  function uploadOne(file) {
-    var ext       = file.name.split('.').pop();
-    var safeName  = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    var storagePath = slug + '/' + Date.now() + '_' + safeName;
-
-    return _supabase.storage.from('client-hub-materials').upload(storagePath, file, { upsert: false })
-      .then(function(res) {
-        if (res.error) throw res.error;
-        var pubUrl = _supabase.storage.from('client-hub-materials').getPublicUrl(storagePath).data.publicUrl;
-        return hubApi({
-          action:       'hub_materials_insert',
-          client_slug:  slug,
-          user:         user,
-          material: {
-            file_name:    file.name,
-            file_url:     pubUrl,
-            storage_path: storagePath,
-            category:     guessCategory(file),
-            mime_type:    file.type || null,
-            file_size:    file.size || null
-          }
-        });
-      })
-      .then(function(record) {
-        if (record && record.id) _hubMaterials.unshift(record);
-        done++;
-        if (indicator) indicator.textContent = '⬆ Enviando... ' + done + '/' + pending.length;
-      })
-      .catch(function(err) {
-        done++;
-        hubToast('Falha ao enviar: ' + file.name);
-      });
+  function fileToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        // Remove data:xxx;base64, prefix
+        var base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   }
 
-  Promise.all(pending.map(uploadOne)).then(function() {
+  function uploadOne(file) {
+    // Max 10MB per file
+    if (file.size > 10 * 1024 * 1024) {
+      hubToast('Arquivo muito grande (max 10MB): ' + file.name);
+      done++;
+      errors++;
+      return Promise.resolve();
+    }
+
+    return fileToBase64(file).then(function(base64) {
+      return hubApi({
+        action:       'hub_materials_upload',
+        client_slug:  slug,
+        user:         user,
+        file_name:    file.name,
+        file_base64:  base64,
+        mime_type:    file.type || 'application/octet-stream',
+        category:     guessCategory(file),
+        file_size:    file.size || 0
+      });
+    }).then(function(record) {
+      if (record && record.id) _hubMaterials.unshift(record);
+      done++;
+      if (indicator) indicator.textContent = '⬆ Enviando... ' + done + '/' + pending.length;
+    }).catch(function(err) {
+      console.error('Upload error:', file.name, err);
+      done++;
+      errors++;
+      hubToast('Falha ao enviar: ' + file.name);
+    });
+  }
+
+  // Upload sequentially to avoid overloading
+  pending.reduce(function(chain, file) {
+    return chain.then(function() { return uploadOne(file); });
+  }, Promise.resolve()).then(function() {
     if (indicator && indicator.parentNode) indicator.parentNode.removeChild(indicator);
     hubRenderMaterials();
-    hubToast(done + ' arquivo(s) enviado(s) com sucesso!');
-    // Reset file input
+    if (errors > 0) {
+      hubToast((done - errors) + ' enviado(s), ' + errors + ' erro(s)');
+    } else {
+      hubToast(done + ' arquivo(s) enviado(s) com sucesso!');
+    }
     var input = document.getElementById('chMatFileInput');
     if (input) input.value = '';
   });

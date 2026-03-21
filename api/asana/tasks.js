@@ -12,6 +12,7 @@
 //   hub_materials_list   — List materials
 //   hub_materials_delete — Delete material
 //   hub_materials_insert — Insert material record
+//   hub_materials_upload — Upload file to Storage + insert record
 // =============================================================================
 
 // ─── Supabase REST helpers (same pattern as publish.js / content.js) ───
@@ -352,6 +353,76 @@ async function hubMaterialsInsert({ client_slug, user, material }) {
   return Array.isArray(data) ? data[0] : data;
 }
 
+// 10. hub_materials_upload — Upload file to Supabase Storage + insert record
+// =============================================================================
+
+async function hubMaterialsUpload({ client_slug, user, file_name, file_base64, mime_type, category, file_size }) {
+  if (!client_slug) return { error: true, message: 'client_slug is required' };
+  if (!file_base64) return { error: true, message: 'file_base64 is required' };
+  if (!file_name) return { error: true, message: 'file_name is required' };
+
+  const url = SUPABASE_URL();
+  const key = SUPABASE_KEY();
+  if (!url) throw new Error('SUPABASE_URL not configured');
+
+  // Generate unique storage path
+  const ext = file_name.split('.').pop() || 'bin';
+  const safeName = file_name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const storagePath = `${client_slug}/${Date.now()}_${safeName}`;
+
+  // Decode base64 to binary
+  const binaryStr = atob(file_base64);
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+
+  // Upload to Supabase Storage
+  const uploadRes = await fetch(
+    `${url}/storage/v1/object/client-hub-materials/${storagePath}`,
+    {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': mime_type || 'application/octet-stream',
+        'x-upsert': 'true',
+      },
+      body: bytes,
+    }
+  );
+
+  if (!uploadRes.ok) {
+    const errText = await uploadRes.text();
+    return { error: true, message: `Storage upload failed: ${errText.substring(0, 200)}` };
+  }
+
+  // Build public URL
+  const fileUrl = `${url}/storage/v1/object/public/client-hub-materials/${storagePath}`;
+
+  // Insert material record
+  const record = {
+    client_slug,
+    file_name,
+    file_url: fileUrl,
+    storage_path: storagePath,
+    category: category || 'other',
+    mime_type: mime_type || null,
+    file_size: file_size || bytes.length,
+    uploaded_by: user || 'Sistema',
+    created_at: new Date().toISOString(),
+  };
+
+  const data = await sbFetch('/rest/v1/client_hub_materials', {
+    method: 'POST',
+    headers: sbHeaders('return=representation'),
+    body: JSON.stringify(record),
+  });
+
+  const inserted = Array.isArray(data) ? data[0] : data;
+  return { ...inserted, file_url: fileUrl };
+}
+
 // =============================================================================
 // Action router
 // =============================================================================
@@ -366,6 +437,7 @@ const ACTIONS = {
   hub_materials_list:   hubMaterialsList,
   hub_materials_delete: hubMaterialsDelete,
   hub_materials_insert: hubMaterialsInsert,
+  hub_materials_upload: hubMaterialsUpload,
 };
 
 // =============================================================================
