@@ -9821,9 +9821,10 @@ function ctHideNewGroupModal() {
 
 function ctApplyTemplate(templateKey) {
   const templates = {
-    'posts-lancamento': 'Post 1 — Teaser\nPost 2 — Revelação / Lançamento\nPost 3 — Sabores (Cardápio)\nPost 4 — Bastidores / Produto\nPost 5 — Stories Interativos\nPost 6 — Reels Viral',
-    'semanal': 'Segunda — Post Feed\nTerça — Stories\nQuarta — Reels\nQuinta — Post Feed\nSexta — Stories',
-    'ads': 'Criativo 1 — Imagem\nCriativo 2 — Carrossel\nCriativo 3 — Vídeo\nCopy A — Teste\nCopy B — Teste'
+    'mensal-8': 'Post 01 — Feed\nPost 02 — Carrossel\nPost 03 — Reels\nPost 04 — Feed\nPost 05 — Stories (4 peças)\nPost 06 — Reels\nPost 07 — Carrossel\nPost 08 — Feed',
+    'mensal-12': 'Post 01 — Feed\nPost 02 — Carrossel\nPost 03 — Reels\nPost 04 — Stories (4 peças)\nPost 05 — Feed\nPost 06 — Carrossel\nPost 07 — Reels\nPost 08 — Feed\nPost 09 — Stories (4 peças)\nPost 10 — Carrossel\nPost 11 — Reels\nPost 12 — Feed',
+    'semanal': 'Segunda — Feed\nTerça — Stories\nQuarta — Reels\nQuinta — Feed\nSexta — Stories\nSábado — Reels',
+    'ads': 'Criativo 1 — Imagem\nCriativo 2 — Carrossel\nCriativo 3 — Vídeo\nCopy A — Variação\nCopy B — Variação'
   };
 
   const textarea = document.getElementById('ctNGMTasksTextarea');
@@ -12441,11 +12442,12 @@ async function ctAutoPopulateDilokas() {
     <div class="ct-ngm-field">
       <label>Tarefas para Adicionar (uma por linha)</label>
       <div class="ct-ngm-templates">
-        <button class="ct-ngm-tpl-btn" data-template="posts-lancamento" onclick="ctApplyTemplate('posts-lancamento')">📱 6 Posts Lançamento</button>
-        <button class="ct-ngm-tpl-btn" data-template="semanal" onclick="ctApplyTemplate('semanal')">📅 Conteúdo Semanal</button>
+        <button class="ct-ngm-tpl-btn" data-template="mensal-8" onclick="ctApplyTemplate('mensal-8')">📱 Mensal 8 posts</button>
+        <button class="ct-ngm-tpl-btn" data-template="mensal-12" onclick="ctApplyTemplate('mensal-12')">📅 Mensal 12 posts</button>
+        <button class="ct-ngm-tpl-btn" data-template="semanal" onclick="ctApplyTemplate('semanal')">🗓️ Semanal</button>
         <button class="ct-ngm-tpl-btn" data-template="ads" onclick="ctApplyTemplate('ads')">🚀 Campanha Ads</button>
       </div>
-      <textarea id="ctNGMTasksTextarea" placeholder="Post 1 — Teaser&#10;Post 2 — Revelação&#10;Post 3 — Sabores&#10;..."></textarea>
+      <textarea id="ctNGMTasksTextarea" placeholder="Post 01 — Feed&#10;Post 02 — Carrossel&#10;Post 03 — Reels&#10;..."></textarea>
       <div class="ct-ngm-hint">Deixe em branco para criar só o grupo, sem tarefas</div>
     </div>
 
