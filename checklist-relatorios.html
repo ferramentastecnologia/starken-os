@@ -1135,6 +1135,9 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 }
 .mc-field select:focus, .mc-field input:focus { outline: none; border-color: var(--starken); }
 .mc-field input[readonly] { opacity: 0.6; cursor: default; background: var(--border-light); }
+.mc-ig-wrapper { display: flex; align-items: center; gap: 4px; }
+.mc-ig-wrapper select, .mc-ig-wrapper input { flex: 1; min-width: 0; }
+.mc-ig-toggle { font-size: 1rem; text-decoration: none; cursor: pointer; flex-shrink: 0; line-height: 1; }
 .meta-client-empty {
   text-align: center; padding: 30px 20px;
   color: var(--text-secondary); font-size: 0.85rem;
@@ -7792,9 +7795,14 @@ function metaConfigClientPageChange(key, selectEl) {
   }
 }
 
-// Atualiza campo de cliente ao selecionar IG manualmente no dropdown
+// Atualiza campo de cliente ao selecionar IG no dropdown
 function metaConfigClientIgChange(key, selectEl) {
   const igId = selectEl.value;
+  // Opção "Digitar manualmente" — troca dropdown por input
+  if (igId === '__manual__') {
+    metaConfigIgToggle(key, 'input');
+    return;
+  }
   if (!igId) {
     // "Automático" — volta a usar o IG vinculado à página FB
     const pageId = _metaClients[key].pageId;
@@ -7812,6 +7820,34 @@ function metaConfigClientIgChange(key, selectEl) {
     _metaClients[key].igUsername = ig ? '@' + ig.username : igId;
   }
   metaConfigAutoSave();
+}
+
+// Alterna entre dropdown e input manual para o campo IG
+function metaConfigIgToggle(key, mode) {
+  const wrapper = document.querySelector('.mc-ig-wrapper[data-key="' + key + '"]');
+  if (!wrapper) return;
+  const igAccounts = _metaDiscoveredData?.ig_accounts || [];
+  const c = _metaClients[key] || {};
+
+  if (mode === 'input') {
+    // Troca para input manual
+    wrapper.innerHTML = '<input class="mc-ig-input" type="text" value="' + (c.igUsername || c.igUserId || '') + '" placeholder="@usuario ou ID do IG"'
+      + ' oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
+      + (igAccounts.length > 0 ? '<a href="#" class="mc-ig-toggle" onclick="metaConfigIgToggle(\'' + key + '\',\'select\');return false" title="Escolher da lista">&#128203;</a>' : '');
+    // Foca no input
+    var inp = wrapper.querySelector('input');
+    if (inp) inp.focus();
+  } else {
+    // Troca para dropdown
+    var igOpts = '<option value="">— Automático (via FB) —</option>';
+    igAccounts.forEach(function(ig) {
+      var sel = (ig.id === c.igUserId) ? ' selected' : '';
+      var label = '@' + ig.username + (ig.linked_page ? '' : ' (sem página)');
+      igOpts += '<option value="' + ig.id + '"' + sel + '>' + label + '</option>';
+    });
+    igOpts += '<option value="__manual__">&#9998; Digitar manualmente...</option>';
+    wrapper.innerHTML = '<select class="mc-ig-input" onchange="metaConfigClientIgChange(\'' + key + '\',this)">' + igOpts + '</select>';
+  }
 }
 
 // Atualiza campo de cliente ao digitar IG manualmente (quando não há discover)
@@ -7933,18 +7969,25 @@ function metaConfigRenderClientList() {
       + '</div>'
       + '<div class="mc-field">'
       + '<label>Instagram</label>'
-      + (igAccounts.length > 0
-        ? (function() {
-            var igOpts = '<option value="">— Automático (via FB) —</option>';
-            igAccounts.forEach(function(ig) {
-              var sel = (ig.id === c.igUserId) ? ' selected' : '';
-              var label = '@' + ig.username + (ig.linked_page ? '' : ' (sem página)');
-              igOpts += '<option value="' + ig.id + '"' + sel + '>' + label + '</option>';
-            });
-            return '<select class="mc-ig-input" onchange="metaConfigClientIgChange(\'' + key + '\',this)">' + igOpts + '</select>';
-          })()
-        : '<input class="mc-ig-input" type="text" value="' + (c.igUsername || '') + '" placeholder="@usuario ou ID" oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
-      )
+      + '<div class="mc-ig-wrapper" data-key="' + key + '">'
+      + (function() {
+          // Se o cliente tem IG manual (não veio do discover), mostra input
+          var isManualIg = c.igUserId && igAccounts.length > 0 && !igAccounts.find(function(ig) { return ig.id === c.igUserId; });
+          if (isManualIg || igAccounts.length === 0) {
+            return '<input class="mc-ig-input" type="text" value="' + (c.igUsername || c.igUserId || '') + '" placeholder="@usuario ou ID do IG"'
+              + ' oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
+              + (igAccounts.length > 0 ? '<a href="#" class="mc-ig-toggle" onclick="metaConfigIgToggle(\'' + key + '\',\'select\');return false" title="Escolher da lista">&#128203;</a>' : '');
+          }
+          var igOpts = '<option value="">— Automático (via FB) —</option>';
+          igAccounts.forEach(function(ig) {
+            var sel = (ig.id === c.igUserId) ? ' selected' : '';
+            var label = '@' + ig.username + (ig.linked_page ? '' : ' (sem página)');
+            igOpts += '<option value="' + ig.id + '"' + sel + '>' + label + '</option>';
+          });
+          igOpts += '<option value="__manual__">&#9998; Digitar manualmente...</option>';
+          return '<select class="mc-ig-input" onchange="metaConfigClientIgChange(\'' + key + '\',this)">' + igOpts + '</select>';
+        })()
+      + '</div>'
       + '</div>'
       + '</div>'
       // Linha 3: Conta de Anúncios (largura total)
