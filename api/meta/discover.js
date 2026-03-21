@@ -108,17 +108,33 @@ module.exports = async function handler(req, res) {
     }));
 
     // 2b. Contas do Instagram via Business Manager (inclui IGs sem página FB)
+    // Busca em 3 endpoints: instagram_accounts, owned_instagram_accounts, client_instagram_accounts
     let igAccounts = [];
+    const igFields = 'id,username,name,profile_picture_url,followers_count';
     try {
       const businesses = await fetchAllPages('/me/businesses', { fields: 'id,name', limit: '100' }).catch(() => []);
       for (const biz of businesses) {
+        // Endpoint 1: instagram_accounts (contas IG conectadas ao BM)
         try {
           const bizIgs = await fetchAllPages(`/${biz.id}/instagram_accounts`, {
-            fields: 'id,username,name,profile_picture_url,followers_count',
-            limit: '100',
+            fields: igFields, limit: '100',
           });
           igAccounts.push(...bizIgs);
-        } catch (e) { /* ignora business sem permissão */ }
+        } catch (e) { /* ignora */ }
+        // Endpoint 2: owned_instagram_accounts (contas IG de propriedade do BM)
+        try {
+          const ownedIgs = await fetchAllPages(`/${biz.id}/owned_instagram_accounts`, {
+            fields: igFields, limit: '100',
+          });
+          igAccounts.push(...ownedIgs);
+        } catch (e) { /* ignora */ }
+        // Endpoint 3: client_instagram_accounts (contas IG de clientes do BM)
+        try {
+          const clientIgs = await fetchAllPages(`/${biz.id}/client_instagram_accounts`, {
+            fields: igFields, limit: '100',
+          });
+          igAccounts.push(...clientIgs);
+        } catch (e) { /* ignora */ }
       }
     } catch (e) { /* sem acesso a businesses */ }
 
