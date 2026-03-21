@@ -107,6 +107,38 @@ module.exports = async function handler(req, res) {
       business: acc.business || null,
     }));
 
+    // 2b. Contas do Instagram via Business Manager (inclui IGs sem página FB)
+    let igAccounts = [];
+    try {
+      const businesses = await fetchAllPages('/me/businesses', { fields: 'id,name', limit: '100' }).catch(() => []);
+      for (const biz of businesses) {
+        try {
+          const bizIgs = await fetchAllPages(`/${biz.id}/instagram_accounts`, {
+            fields: 'id,username,name,profile_picture_url,followers_count',
+            limit: '100',
+          });
+          igAccounts.push(...bizIgs);
+        } catch (e) { /* ignora business sem permissão */ }
+      }
+    } catch (e) { /* sem acesso a businesses */ }
+
+    // Deduplica IGs (remove os que já vieram vinculados a uma página)
+    const pageIgIds = new Set(pages.filter(p => p.ig_account).map(p => p.ig_account.id));
+    const standaloneIgs = [];
+    const seenIgIds = new Set();
+    for (const ig of igAccounts) {
+      if (!seenIgIds.has(ig.id) && !pageIgIds.has(ig.id)) {
+        seenIgIds.add(ig.id);
+        standaloneIgs.push({
+          id: ig.id,
+          username: ig.username,
+          name: ig.name || ig.username,
+          profile_picture_url: ig.profile_picture_url || null,
+          followers_count: ig.followers_count || 0,
+        });
+      }
+    }
+
     // 3. Status do token
     let tokenStatus = null;
     try {
@@ -137,15 +169,29 @@ module.exports = async function handler(req, res) {
       // Ignora
     }
 
+    // Todas as contas IG (vinculadas a páginas + standalone)
+    const allIgAccounts = [
+      ...pages.filter(p => p.ig_account).map(p => ({
+        id: p.ig_account.id,
+        username: p.ig_account.username,
+        name: p.ig_account.name || p.ig_account.username,
+        profile_picture_url: p.ig_account.profile_picture_url || null,
+        followers_count: p.ig_account.followers_count || 0,
+        linked_page: { id: p.id, name: p.name },
+      })),
+      ...standaloneIgs.map(ig => ({ ...ig, linked_page: null })),
+    ];
+
     return res.status(200).json({
       connected: true,
       user,
       pages,
+      ig_accounts: allIgAccounts,
       ad_accounts: adAccounts,
       token_status: tokenStatus,
       summary: {
         total_pages: pages.length,
-        total_ig_accounts: pages.filter(p => p.ig_account).length,
+        total_ig_accounts: allIgAccounts.length,
         total_ad_accounts: adAccounts.length,
       },
     });

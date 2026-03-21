@@ -7757,29 +7757,80 @@ function metaConfigRemoveClient(key) {
 // Atualiza campo de cliente ao mudar página selecionada
 function metaConfigClientPageChange(key, selectEl) {
   const pageId = selectEl.value;
+  // Verifica se o IG foi selecionado manualmente (dropdown com valor específico)
+  const card = document.querySelector('[data-client-key="' + key + '"]');
+  const igSelect = card ? card.querySelector('select.mc-ig-input') : null;
+  const igIsManual = igSelect && igSelect.value !== '';
+
   if (!pageId) {
     _metaClients[key].pageId = '';
     _metaClients[key].pageName = '';
     _metaClients[key].pageAccessToken = '';
-    _metaClients[key].igUserId = '';
-    _metaClients[key].igUsername = '';
+    if (!igIsManual) {
+      _metaClients[key].igUserId = '';
+      _metaClients[key].igUsername = '';
+    }
   } else {
     const page = (_metaDiscoveredData?.pages || []).find(p => p.id === pageId);
     if (page) {
       _metaClients[key].pageId = page.id;
       _metaClients[key].pageName = page.name;
       _metaClients[key].pageAccessToken = page.access_token || '';
-      _metaClients[key].igUserId = page.ig_account?.id || '';
-      _metaClients[key].igUsername = page.ig_account ? '@' + page.ig_account.username : '';
+      // Só atualiza IG automaticamente se não foi selecionado manualmente
+      if (!igIsManual) {
+        _metaClients[key].igUserId = page.ig_account?.id || '';
+        _metaClients[key].igUsername = page.ig_account ? '@' + page.ig_account.username : '';
+      }
     }
   }
   metaConfigAutoSave();
-  // Atualiza campo IG no card (sem re-renderizar tudo)
-  const card = document.querySelector('[data-client-key="' + key + '"]');
-  if (card) {
+  // Atualiza campo IG no card apenas se automático
+  if (!igIsManual && card) {
     const igInput = card.querySelector('.mc-ig-input');
-    if (igInput) igInput.value = _metaClients[key].igUsername;
+    if (igInput && igInput.tagName === 'SELECT') igInput.value = '';
+    else if (igInput) igInput.value = _metaClients[key].igUsername;
   }
+}
+
+// Atualiza campo de cliente ao selecionar IG manualmente no dropdown
+function metaConfigClientIgChange(key, selectEl) {
+  const igId = selectEl.value;
+  if (!igId) {
+    // "Automático" — volta a usar o IG vinculado à página FB
+    const pageId = _metaClients[key].pageId;
+    if (pageId) {
+      const page = (_metaDiscoveredData?.pages || []).find(p => p.id === pageId);
+      _metaClients[key].igUserId = page?.ig_account?.id || '';
+      _metaClients[key].igUsername = page?.ig_account ? '@' + page.ig_account.username : '';
+    } else {
+      _metaClients[key].igUserId = '';
+      _metaClients[key].igUsername = '';
+    }
+  } else {
+    const ig = (_metaDiscoveredData?.ig_accounts || []).find(a => a.id === igId);
+    _metaClients[key].igUserId = igId;
+    _metaClients[key].igUsername = ig ? '@' + ig.username : igId;
+  }
+  metaConfigAutoSave();
+}
+
+// Atualiza campo de cliente ao digitar IG manualmente (quando não há discover)
+function metaConfigClientIgManual(key, value) {
+  const trimmed = (value || '').trim();
+  if (!trimmed) {
+    _metaClients[key].igUserId = '';
+    _metaClients[key].igUsername = '';
+  } else if (/^\d+$/.test(trimmed)) {
+    // É um ID numérico
+    _metaClients[key].igUserId = trimmed;
+    _metaClients[key].igUsername = '';
+  } else {
+    // É um username (pode ter @ ou não)
+    const username = trimmed.startsWith('@') ? trimmed : '@' + trimmed;
+    _metaClients[key].igUserId = '';
+    _metaClients[key].igUsername = username;
+  }
+  metaConfigAutoSave();
 }
 
 // Atualiza campo de cliente ao mudar conta de anúncios selecionada
@@ -7814,6 +7865,7 @@ function metaConfigRenderClientList() {
   const container = document.getElementById('metaConfigClientList');
   const pages = _metaDiscoveredData?.pages || [];
   const adAccounts = _metaDiscoveredData?.ad_accounts || [];
+  const igAccounts = _metaDiscoveredData?.ig_accounts || [];
 
   // Agrupa clientes por tenant
   const grouped = { starken: [], alpha: [] };
@@ -7881,7 +7933,18 @@ function metaConfigRenderClientList() {
       + '</div>'
       + '<div class="mc-field">'
       + '<label>Instagram</label>'
-      + '<input class="mc-ig-input" type="text" value="' + (c.igUsername || '') + '" placeholder="Automático" readonly>'
+      + (igAccounts.length > 0
+        ? (function() {
+            var igOpts = '<option value="">— Automático (via FB) —</option>';
+            igAccounts.forEach(function(ig) {
+              var sel = (ig.id === c.igUserId) ? ' selected' : '';
+              var label = '@' + ig.username + (ig.linked_page ? '' : ' (sem página)');
+              igOpts += '<option value="' + ig.id + '"' + sel + '>' + label + '</option>';
+            });
+            return '<select class="mc-ig-input" onchange="metaConfigClientIgChange(\'' + key + '\',this)">' + igOpts + '</select>';
+          })()
+        : '<input class="mc-ig-input" type="text" value="' + (c.igUsername || '') + '" placeholder="@usuario ou ID" oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
+      )
       + '</div>'
       + '</div>'
       // Linha 3: Conta de Anúncios (largura total)
