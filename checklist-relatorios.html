@@ -12350,14 +12350,28 @@ async function ctAutoPopulateDilokas() {
   const user = ctGetUser();
 
   try {
-    // Create group
-    const groupRes = await ctApi('upsert_group', { client_id: clientId, name: 'Conteúdo Março', user });
-    const groupId = groupRes?.id || groupRes?.[0]?.id;
+    // 1. Check if group already exists
+    const existingGroups = await ctApi('list_groups', { client_id: clientId });
+    const groups = Array.isArray(existingGroups) ? existingGroups : (existingGroups.groups || []);
+    let group = groups.find(g => g.name === 'Conteúdo Março');
+    let groupId;
+
+    if (group) {
+      groupId = group.id;
+      console.info('Grupo "Conteúdo Março" já existe, atualizando tasks...');
+    } else {
+      const groupRes = await ctApi('upsert_group', { client_id: clientId, name: 'Conteúdo Março', user });
+      groupId = groupRes?.id || groupRes?.[0]?.id;
+    }
 
     if (!groupId) {
-      alert('Erro ao criar grupo');
+      alert('Erro ao criar/encontrar grupo');
       return;
     }
+
+    // 2. Load existing tasks to update instead of duplicate
+    const existingTasksData = await ctApi('list_tasks', { group_id: groupId });
+    const existingTasks = Array.isArray(existingTasksData) ? existingTasksData : (existingTasksData.tasks || []);
 
     const tasks = [
       {
@@ -12411,16 +12425,39 @@ async function ctAutoPopulateDilokas() {
     ];
 
     for (let i = 0; i < tasks.length; i++) {
-      await ctApi('upsert_task', {
-        group_id: groupId,
-        client_id: clientId,
-        ...tasks[i],
-        user,
-        position: i
-      });
+      // Match by position or partial name match
+      const existing = existingTasks[i] || existingTasks.find(t =>
+        t.name && tasks[i].name && (
+          t.name.includes('Post ' + (i+1)) ||
+          t.name.toLowerCase().includes(tasks[i].name.toLowerCase().split('—')[0].trim())
+        )
+      );
+
+      if (existing && existing.id) {
+        // Update existing task with full data
+        await ctApi('upsert_task', {
+          id: existing.id,
+          ...tasks[i],
+          user,
+          position: i
+        });
+        console.info('✅ Atualizado:', tasks[i].name);
+      } else {
+        // Create new task
+        await ctApi('upsert_task', {
+          group_id: groupId,
+          client_id: clientId,
+          ...tasks[i],
+          user,
+          position: i
+        });
+        console.info('➕ Criado:', tasks[i].name);
+      }
     }
 
-    alert('✅ Dilokas: Grupo "Conteúdo Março" + 6 posts criados!');
+    // Reload if viewing this client
+    if (ctCurrentClient === clientId) ctLoadGroups();
+    alert('✅ Dilokas: 6 posts atualizados com briefing, copy e descrição!');
   } catch (err) {
     console.error('Erro ao popular Dilokas:', err);
     alert('Erro ao popular Dilokas: ' + err.message);
