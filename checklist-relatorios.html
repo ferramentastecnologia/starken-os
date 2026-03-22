@@ -995,7 +995,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 .meta-bi-period-btn { transition: all 0.2s ease; }
 .meta-bi-period-btn:hover { background: var(--bg-secondary); }
-.meta-bi-period-btn.active { background: var(--starken); color: #fff; border-color: var(--starken); }
+.meta-bi-period-btn.active { background: var(--starken) !important; color: #fff !important; border-color: var(--starken) !important; }
 
 .meta-bi-kpi-card { transition: all 0.2s ease; }
 .meta-bi-kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -2904,11 +2904,20 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </button>
               <h2 id="metaBiDashboardTitle" style="font-size:1.3rem;font-weight:800;color:var(--text);margin:0">—</h2>
               <!-- Period selector -->
-              <div style="margin-left:auto;display:flex;gap:6px">
-                <button class="meta-bi-period-btn active" data-preset="last_7d" onclick="metaBiSetPeriod('last_7d')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s">7 dias</button>
-                <button class="meta-bi-period-btn" data-preset="this_month" onclick="metaBiSetPeriod('this_month')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s">Este Mês</button>
-                <button class="meta-bi-period-btn" data-preset="last_month" onclick="metaBiSetPeriod('last_month')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s">Mês Anterior</button>
+              <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <button class="meta-bi-period-btn active" data-preset="last_7d" onclick="metaBiSetPeriod('last_7d')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:inherit">7 dias</button>
+                <button class="meta-bi-period-btn" data-preset="this_month" onclick="metaBiSetPeriod('this_month')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:inherit">Este Mês</button>
+                <button class="meta-bi-period-btn" data-preset="last_month" onclick="metaBiSetPeriod('last_month')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:inherit">Mês Anterior</button>
+                <button class="meta-bi-period-btn" data-preset="custom" onclick="metaBiToggleCustomDates()" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:inherit">Personalizado</button>
               </div>
+            </div>
+            <!-- Custom date range (hidden by default) -->
+            <div id="metaBiCustomDates" style="display:none;margin-bottom:16px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:0.8rem;font-weight:600;color:var(--text)">Período:</span>
+              <input type="date" id="metaBiDateStart" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;background:var(--card);color:var(--text);font-family:inherit">
+              <span style="font-size:0.8rem;color:var(--text-secondary)">até</span>
+              <input type="date" id="metaBiDateEnd" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;background:var(--card);color:var(--text);font-family:inherit">
+              <button onclick="metaBiApplyCustomDates()" style="padding:6px 16px;border:none;border-radius:6px;background:var(--starken);color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s">Aplicar</button>
             </div>
 
             <!-- KPI Cards (6-column consolidado) -->
@@ -2957,6 +2966,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div style="font-size:0.85rem;font-weight:700;margin-bottom:14px;color:var(--text)">Distribuição do Investimento</div>
                 <div style="position:relative;height:280px"><canvas id="metaBiDashboardChartSpend"></canvas></div>
               </div>
+            </div>
+
+            <!-- Generate PDF Report button -->
+            <div style="margin-top:20px;text-align:center">
+              <button onclick="metaBiGeneratePdfReport()" style="padding:12px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,#1877f2,#8b5cf6);color:#fff;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s;box-shadow:0 4px 12px rgba(24,119,242,0.3)" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 16px rgba(24,119,242,0.4)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(24,119,242,0.3)'">
+                📄 Gerar Relatório PDF
+              </button>
             </div>
           </div>
 
@@ -8440,8 +8456,130 @@ function metaBiSetPeriod(preset) {
   });
   document.querySelector('[data-preset="' + preset + '"]').classList.add('active');
 
+  // Hide custom dates if switching to preset
+  if (preset !== 'custom') {
+    document.getElementById('metaBiCustomDates').style.display = 'none';
+  }
+
   // Refetch data
   metaBiFetchDashboardData(_metaBiState.currentClient, preset);
+}
+
+function metaBiToggleCustomDates() {
+  var panel = document.getElementById('metaBiCustomDates');
+  var isVisible = panel.style.display === 'flex';
+  panel.style.display = isVisible ? 'none' : 'flex';
+
+  // Highlight custom button
+  document.querySelectorAll('.meta-bi-period-btn').forEach(function(btn) { btn.classList.remove('active'); });
+  if (!isVisible) {
+    document.querySelector('[data-preset="custom"]').classList.add('active');
+    // Default dates: last 30 days
+    var today = new Date();
+    var since = new Date(today); since.setDate(since.getDate() - 30);
+    document.getElementById('metaBiDateEnd').value = today.toISOString().slice(0,10);
+    document.getElementById('metaBiDateStart').value = since.toISOString().slice(0,10);
+  }
+}
+
+function metaBiApplyCustomDates() {
+  var start = document.getElementById('metaBiDateStart').value;
+  var end = document.getElementById('metaBiDateEnd').value;
+  if (!start || !end) { alert('Selecione as duas datas'); return; }
+  _metaBiState.currentPeriod = 'custom';
+  _metaBiState.customDateStart = start;
+  _metaBiState.customDateEnd = end;
+  metaBiFetchDashboardData(_metaBiState.currentClient, 'custom');
+}
+
+function metaBiGeneratePdfReport() {
+  var data = _metaBiState.dashboardData;
+  var client = _metaBiState.allClients[_metaBiState.currentClient];
+  if (!data || !client) { alert('Carregue os dados de um cliente primeiro'); return; }
+
+  // Calculate totals
+  var totals = { spend: 0, revenue: 0, conversions: 0 };
+  data.forEach(function(r) { totals.spend += r.spend; totals.revenue += r.revenue; totals.conversions += r.conversions; });
+  var roas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
+  var cpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
+  var ticket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+
+  // Period label
+  var periodLabel = '';
+  var preset = _metaBiState.currentPeriod;
+  if (preset === 'last_7d') periodLabel = 'Últimos 7 dias';
+  else if (preset === 'this_month') periodLabel = 'Este Mês';
+  else if (preset === 'last_month') periodLabel = 'Mês Anterior';
+  else if (preset === 'custom') periodLabel = (_metaBiState.customDateStart || '') + ' a ' + (_metaBiState.customDateEnd || '');
+
+  var fmt = function(v) { return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  var fmtN = function(v) { return v.toLocaleString('pt-BR'); };
+
+  // Build campaign rows
+  var campaignRows = '';
+  data.forEach(function(row) {
+    var badge = metaBiGetCampaignBadge(row.campaign_name);
+    var roasColor = row.roas >= 5 ? '#22c55e' : row.roas >= 2 ? '#f59e0b' : '#ef4444';
+    var roasText = row.roas > 0 ? row.roas.toFixed(2) + 'x' : '—';
+    campaignRows += '<div style="padding:18px 20px;background:#fff;border-radius:10px;border-left:4px solid ' + badge.color + ';margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+      + '<div style="font-size:14px;font-weight:700;color:#1a1a2e">' + row.campaign_name + '</div>'
+      + '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:' + badge.color + ';color:#fff;padding:4px 10px;border-radius:4px">' + badge.badge + '</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px">'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.reach) + '</div><div style="color:#64748b;margin-top:2px">Alcance</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.impressions) + '</div><div style="color:#64748b;margin-top:2px">Impressões</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.clicks) + '</div><div style="color:#64748b;margin-top:2px">Cliques</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpc) + '</div><div style="color:#64748b;margin-top:2px">CPC</div></div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px;margin-top:10px">'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">Compras</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.revenue) + '</div><div style="color:#64748b;margin-top:2px">Receita</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
+      + '</div>'
+      + '</div>';
+  });
+
+  // Build full HTML report
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório Performance - ' + (client.name || '') + '</title>'
+    + '<style>'
+    + '@page { size: A4; margin: 15mm; }'
+    + 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:0; background:#f8fafc; color:#1a1a2e; }'
+    + '.page { max-width:800px; margin:0 auto; padding:30px; }'
+    + '@media print { body { background:#fff; } .page { padding:0; } .no-print { display:none !important; } }'
+    + '</style></head><body>'
+    + '<div class="page">'
+    // Header
+    + '<div style="background:linear-gradient(135deg,#1877f2 0%,#8b5cf6 100%);border-radius:16px;padding:28px 32px;margin-bottom:28px;color:#fff;position:relative;overflow:hidden">'
+    + '<div style="position:absolute;top:-30px;right:-30px;width:150px;height:150px;background:rgba(255,255,255,0.08);border-radius:50%"></div>'
+    + '<div style="position:relative;z-index:1">'
+    + '<div style="font-size:22px;font-weight:800;margin-bottom:4px">Relatório de Performance</div>'
+    + '<div style="font-size:16px;font-weight:600;opacity:0.95">' + (client.name || '') + '</div>'
+    + '<div style="font-size:13px;opacity:0.8;margin-top:6px">Período: ' + periodLabel + ' · Gerado em ' + new Date().toLocaleDateString('pt-BR') + '</div>'
+    + '</div></div>'
+    // KPIs
+    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">'
+    + '<div style="padding:20px;text-align:center;border-left:4px solid #1877f2;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Investimento Total</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmt(totals.spend) + '</div></div>'
+    + '<div style="padding:20px;text-align:center;border-left:4px solid #00b894;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Receita Rastreada</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmt(totals.revenue) + '</div></div>'
+    + '<div style="padding:20px;text-align:center;border-left:4px solid #22c55e;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">ROAS Consolidado</div><div style="font-size:22px;font-weight:800;color:' + (roas >= 5 ? '#22c55e' : roas >= 2 ? '#f59e0b' : '#ef4444') + '">' + roas.toFixed(2) + 'x</div></div>'
+    + '<div style="padding:20px;text-align:center;border-left:4px solid #e84393;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">CPA Médio</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmt(cpa) + '</div></div>'
+    + '<div style="padding:20px;text-align:center;border-left:4px solid #6c5ce7;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Compras Rastreadas</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmtN(totals.conversions) + '</div></div>'
+    + '<div style="padding:20px;text-align:center;border-left:4px solid #fdcb6e;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Ticket Médio</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmt(ticket) + '</div></div>'
+    + '</div>'
+    // Campaigns
+    + '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">Desempenho das Campanhas — Meta Ads</div>'
+    + campaignRows + '</div>'
+    // Footer
+    + '<div style="text-align:center;padding:20px 0;border-top:1px solid #e2e8f0;margin-top:20px;font-size:11px;color:#94a3b8">Relatório gerado automaticamente por Starken OS · ' + new Date().toLocaleDateString('pt-BR') + '</div>'
+    // Print button
+    + '<div class="no-print" style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:12px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,#1877f2,#8b5cf6);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨️ Imprimir / Salvar PDF</button></div>'
+    + '</div></body></html>';
+
+  // Open in new window
+  var win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
 }
 
 function metaBiExtractAction(actions, types) {
@@ -8462,6 +8600,9 @@ async function metaBiFetchDashboardData(clientKey, preset) {
   try {
     // Fetch insights for this client's ad account
     var url = metaApiBase() + '/api/meta/insights?tenant=' + client.tenant + '&preset=' + preset + '&level=campaign';
+    if (preset === 'custom' && _metaBiState.customDateStart && _metaBiState.customDateEnd) {
+      url += '&date_start=' + _metaBiState.customDateStart + '&date_end=' + _metaBiState.customDateEnd;
+    }
     var res = await fetch(url);
     var json = await res.json();
 
