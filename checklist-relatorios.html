@@ -114,6 +114,11 @@
 [data-theme="dark"] .ct-pub-badge.scheduled { background:#422006;color:#fbbf24;border-color:#92400e; }
 [data-theme="dark"] .ct-pub-badge.published { background:#052e16;color:#4ade80;border-color:#166534; }
 [data-theme="dark"] .ct-pub-badge.failed { background:#450a0a;color:#fca5a5;border-color:#991b1b; }
+[data-theme="dark"] .ct-pub-pill.scheduled { background:#422006;color:#fbbf24;border-color:#92400e;box-shadow:0 1px 3px rgba(251,191,36,0.1); }
+[data-theme="dark"] .ct-pub-pill.published { background:#052e16;color:#4ade80;border-color:#166534;box-shadow:0 1px 3px rgba(16,185,129,0.1); }
+[data-theme="dark"] .ct-pub-pill.failed { background:#450a0a;color:#fca5a5;border-color:#991b1b;box-shadow:0 1px 3px rgba(239,68,68,0.1); }
+[data-theme="dark"] .ct-pub-pill.queued { background:#172554;color:#93c5fd;border-color:#1e40af;box-shadow:0 1px 3px rgba(59,130,246,0.1); }
+[data-theme="dark"] .ct-pub-pill.none { background:#1f2937;color:#6b7280;border-color:#374151; }
 [data-theme="dark"] .ct-ph-entry.scheduled { background:#422006; }
 [data-theme="dark"] .ct-ph-entry.published { background:#052e16; }
 [data-theme="dark"] .ct-ph-entry.failed { background:#450a0a; }
@@ -1212,8 +1217,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 /* List */
 .ct-list { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
-.ct-header-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 120px 80px 80px;gap:0;background:var(--bg-secondary);padding:10px 16px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;border-bottom:1px solid var(--border); }
-.ct-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 120px 80px 80px;gap:0;padding:8px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;align-items:center;transition:background 0.15s;cursor:pointer; }
+.ct-header-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 100px 140px 70px;gap:0;background:var(--bg-secondary);padding:10px 16px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;border-bottom:1px solid var(--border); }
+.ct-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 100px 140px 70px;gap:0;padding:8px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;align-items:center;transition:background 0.15s;cursor:pointer; }
 .ct-row:hover { background:var(--bg-secondary); }
 .ct-row.group { background:var(--bg-secondary);font-weight:700;font-size:0.88rem; }
 .ct-row.subtask { padding-left:56px;font-size:0.82rem;color:var(--text-secondary); }
@@ -1327,6 +1332,15 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-pub-badge { display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:0.65rem;font-weight:600;line-height:1.4;white-space:nowrap; }
 .ct-pub-badge.scheduled { background:#fffbeb;color:#b45309;border:1px solid #fde68a; }
 .ct-pub-badge.published { background:#ecfdf5;color:#059669;border:1px solid #a7f3d0; }
+
+/* Enhanced publish progress column badges */
+.ct-pub-col { display:flex;flex-direction:column;gap:3px;align-items:flex-start;justify-content:center;overflow:hidden; }
+.ct-pub-pill { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;line-height:1.3;white-space:nowrap;letter-spacing:-0.01em; }
+.ct-pub-pill.scheduled { background:linear-gradient(135deg,#fef3c7,#fffbeb);color:#92400e;border:1px solid #fcd34d;box-shadow:0 1px 2px rgba(251,191,36,0.15); }
+.ct-pub-pill.published { background:linear-gradient(135deg,#d1fae5,#ecfdf5);color:#065f46;border:1px solid #6ee7b7;box-shadow:0 1px 2px rgba(16,185,129,0.15); }
+.ct-pub-pill.failed { background:linear-gradient(135deg,#fee2e2,#fef2f2);color:#991b1b;border:1px solid #fca5a5;box-shadow:0 1px 2px rgba(239,68,68,0.15); }
+.ct-pub-pill.queued { background:linear-gradient(135deg,#dbeafe,#eff6ff);color:#1e40af;border:1px solid #93c5fd;box-shadow:0 1px 2px rgba(59,130,246,0.15); }
+.ct-pub-pill.none { background:var(--bg-secondary);color:var(--text-muted);border:1px solid var(--border);opacity:0.6;font-weight:500; }
 
 /* ─── New Group Modal ─── */
 #ctNewGroupModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
@@ -3122,7 +3136,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div>Status</div>
               <div>Responsável</div>
               <div>Data</div>
-              <div>💬</div>
+              <div>📱 Publicação</div>
               <div>Prioridade</div>
             </div>
             <div id="ctListBody">
@@ -9576,7 +9590,7 @@ async function ctLoadGroups() {
   ctRenderList();
 }
 
-// ─── PUBLISH BADGES (inline in task row) ───
+// ─── PUBLISH BADGES (inline in task name — legacy small) ───
 function ctRenderPublishBadges(publishConfig) {
   if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) return '';
   let html = '<div class="ct-pub-badges">';
@@ -9594,6 +9608,43 @@ function ctRenderPublishBadges(publishConfig) {
       label = 'Erro';
     }
     html += '<span class="ct-pub-badge ' + st + '">' + platIcon + ' ' + plat + (label ? ' ' + label : '') + '</span>';
+  });
+  html += '</div>';
+  return html;
+}
+
+// ─── PUBLISH PROGRESS COLUMN (enhanced visual) ───
+function ctRenderPublishColumn(publishConfig) {
+  if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) {
+    return '<div class="ct-pub-col"><span class="ct-pub-pill none">— Sem agenda</span></div>';
+  }
+  let html = '<div class="ct-pub-col">';
+  publishConfig.entries.forEach(e => {
+    const plat = e.platform === 'facebook' ? 'FB' : 'IG';
+    const platIcon = e.platform === 'facebook' ? '📘' : '📸';
+    const st = (e.status || 'scheduled').toLowerCase();
+    let label = '', icon = '';
+    if (st === 'published') {
+      icon = '✅';
+      label = 'Publicado';
+    } else if (st === 'scheduled' && e.scheduled_for) {
+      icon = '📅';
+      const d = new Date(e.scheduled_for);
+      label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    } else if (st === 'scheduled') {
+      icon = '📅';
+      label = 'Agendado';
+    } else if (st === 'failed') {
+      icon = '❌';
+      label = 'Erro';
+    } else if (st === 'queued') {
+      icon = '⏳';
+      label = 'Na fila';
+    } else {
+      icon = '📌';
+      label = st;
+    }
+    html += '<span class="ct-pub-pill ' + st + '" title="' + plat + ': ' + label + '">' + icon + ' ' + platIcon + plat + ' ' + label + '</span>';
   });
   html += '</div>';
   return html;
@@ -9748,7 +9799,6 @@ function ctRenderList() {
           + (depth > 0 ? '<span style="width:' + (depth * 24) + 'px;flex-shrink:0"></span>' : '')
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
           + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
-          + ctRenderPublishBadges(task.publish_config)
           + (canAddSub ? '<button onclick="event.stopPropagation();ctShowAddSubtask(\'' + task.id + '\',\'' + groupId + '\')" style="opacity:0;margin-left:6px;border:none;background:none;cursor:pointer;font-size:0.72rem;color:var(--text-muted);transition:opacity 0.15s" class="ct-add-sub-btn" title="Adicionar subtarefa">＋ sub</button>' : '')
           + '</div>'
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
@@ -9756,9 +9806,7 @@ function ctRenderList() {
           + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
           + '</div>'
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
-          + '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center;display:flex;gap:2px;justify-content:center" title="' + (task.copy_text ? '✓ Copy' : '✗ Sem copy') + '">'
-          + (task.copy_text ? '<span style="color:#10b981">✏️</span>' : '<span style="opacity:0.3">✏️</span>')
-          + '</div>'
+          + ctRenderPublishColumn(task.publish_config)
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')">' + priority.icon + '</div>'
           + '</div>';
 
