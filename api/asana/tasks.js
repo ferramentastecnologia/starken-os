@@ -144,7 +144,7 @@ async function hubUpsert({ client_slug, user, data }) {
   if (isNew) record.created_at = now;
 
   // Upsert
-  const upserted = await sbFetch('/rest/v1/client_hub', {
+  const upserted = await sbFetch('/rest/v1/client_hub?on_conflict=client_slug', {
     method: 'POST',
     headers: sbHeaders('resolution=merge-duplicates,return=representation'),
     body: JSON.stringify(record),
