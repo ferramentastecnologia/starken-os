@@ -8472,8 +8472,16 @@ async function metaBiFetchDashboardData(clientKey, preset) {
 
     // Filter data for this specific ad account
     var clientAdAccount = client.adAccountId || '';
+    if (!clientAdAccount) {
+      // No ad account configured — show warning instead of all data
+      document.getElementById('metaBiDashboardCampaigns').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);font-size:0.9rem">'
+        + '<div style="font-size:2rem;margin-bottom:12px">⚠️</div>'
+        + '<div style="font-weight:700;margin-bottom:6px;color:var(--text)">Conta de anúncios não configurada</div>'
+        + '<div>Vá em <strong>Configuração</strong> e vincule a Ad Account deste cliente para ver os dados.</div>'
+        + '</div>';
+      return;
+    }
     var filtered = (json.data || []).filter(function(row) {
-      if (!clientAdAccount) return true; // If no adAccountId configured, show all
       return row.ad_account_id === clientAdAccount;
     });
     var rows = filtered.map(function(row) {
