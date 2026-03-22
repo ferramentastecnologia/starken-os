@@ -12427,6 +12427,88 @@ async function ctAutoPopulateDilokas() {
   }
 }
 
+// ─── AUTO-POPULATE DILOKAS INFO (Client Hub) ───
+async function hubPopulateDilokas() {
+  var user = (typeof gpState !== 'undefined' && gpState.user) ? gpState.user.name : 'Sistema';
+  var data = {
+    client_name: 'Dilokas Pizzaria Delivery',
+    tenant: 'starken',
+    segment: 'Gastronomia — Pizzaria Delivery',
+    responsible: 'Juan',
+    status: 'ativo',
+    client_phone: '',
+    client_email: '',
+    client_contact_name: '',
+    contract_start: '2026-03-01',
+    contract_value: '',
+    contract_package: 'Social Media + Tráfego Pago',
+    tone_of_voice: 'Humano, divertido, com personalidade. Tom de quem ama pizza de verdade. Nunca corporativo ou formal. Fala de Itapoá com orgulho e pertencimento. Usa emojis com moderação (🍕🔥📲). Evitar: "nova gestão", "voltamos", "mudamos", "nova fase".',
+    persona_description: 'Morador de Itapoá (20-45 anos) que quer jantar algo gostoso sem complicação. Cansado de pedir sempre a mesma coisa. Quer pizza de verdade, artesanal, entregue na porta. Valoriza qualidade, praticidade e uma marca com personalidade.',
+    website_url: '',
+    drive_folder_url: '',
+    approval_url: '',
+    logo_url: '',
+    notes: 'POSICIONAMENTO:\n• Onlyness: "A única pizzaria delivery de Itapoá que entrega pizza artesanal de massa fresquinha diretamente na sua porta — com a personalidade de quem ama pizza de verdade."\n• Tagline: "Pizza de verdade. Entregue em Itapoá."\n• One-liner: "Pra quem mora em Itapoá e quer pizza de verdade — a Dilokas faz artesanal e entrega na sua porta."\n\nSTORYBRAND (SB7):\n• Herói: Morador de Itapoá que quer jantar gostoso\n• Problema externo: Não tem pizzaria boa de delivery\n• Problema interno: "Sempre peço a mesma coisa"\n• Guia: Dilokas (empatia + autoridade artesanal)\n• Plano: Cardápio → Escolhe sabor → Pizza na porta\n• CTA: "Faz seu pedido agora"\n• Sucesso: Pizza artesanal quentinha sem sair de casa\n\nREGRAS DA CAMPANHA:\n1. Nunca mencionar o passado\n2. Falar de Itapoá com orgulho\n3. Mostrar produto sem filtro\n4. Tom humano e divertido\n5. CTA sempre presente\n6. Consistência visual: verde + bege + rústico\n\nFOTOS: 324 fotos profissionais disponíveis (DILOKAS001-326.jpg)',
+    brand_fonts: {
+      title: 'Vintage / Serif Condensado (artesanal, tradição) — ex: Oswald, Playfair Display',
+      body: 'Sans-serif clean e legível — ex: Inter, Montserrat'
+    },
+    social_links: {
+      instagram: '@dilokaspizzaria',
+      facebook: '',
+      tiktok: '',
+      linkedin: '',
+      youtube: ''
+    },
+    keywords: ['pizza artesanal', 'delivery Itapoá', 'massa fresquinha', 'pizza de verdade', 'Dilokas', 'Itapoá SC', 'cheese pull', 'do forno à sua porta'],
+    forbidden_words: ['nova gestão', 'nova direção', 'voltamos', 'mudamos', 'nova fase', 'reabriu', 'reabertura', 'sob novos proprietários'],
+    brand_style_tags: ['rústico', 'artesanal', 'warm', 'humano', 'divertido', 'verde escuro', 'bege/creme', 'madeira'],
+    brand_colors: [
+      { hex: '#2D5016', label: 'Verde Marca' },
+      { hex: '#F5E6C8', label: 'Bege/Creme' },
+      { hex: '#1A1A1A', label: 'Preto Dark' },
+      { hex: '#D4A017', label: 'Dourado/Warm' }
+    ],
+    copy_examples: [
+      { title: 'Legenda Revelação', text: 'Itapoá ganhou a sua pizzaria. 🍕\n\nPizza artesanal, massa fresquinha, feita com cuidado — e entregue na sua porta.\n\n📲 Acesse o cardápio no link da bio e faz seu pedido.\n\nBora? 🔥' },
+      { title: 'Legenda Engajamento', text: 'Qual você pediria PRIMEIRO? 👇🤤\n\n1️⃣ Margherita\n2️⃣ Calabresa\n3️⃣ Frango Catupiry\n4️⃣ Carne\n5️⃣ Chocolate KitKat 🍫\n\nComenta o número e marca alguém que precisa ver isso. 😂🍕' },
+      { title: 'Legenda Bastidores', text: 'Do forno até a sua porta — com cuidado em cada etapa. 🍕📦\n\nNa Dilokas, a gente leva a sério cada pizza que sai daqui.\n\nJá pediu a sua hoje? 😋\n📲 Link na bio!' }
+    ],
+    extra_links: [],
+    drive_folders: []
+  };
+
+  try {
+    var res = await hubApi({
+      action: 'hub_upsert',
+      client_slug: 'dilokas-pizzaria-delivery',
+      user: user,
+      data: data
+    });
+    if (res && res.error) {
+      alert('Erro ao salvar info Dilokas: ' + (res.message || res.error));
+    } else {
+      alert('✅ Dilokas: Infos do cliente preenchidas com sucesso!');
+      // Se está visualizando o Dilokas, recarrega
+      if (_hubCurrentSlug === 'dilokas-pizzaria-delivery') {
+        _hubData = res && res.client_slug ? res : data;
+        hubPopulateForm();
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao popular info Dilokas:', err);
+    alert('Erro: ' + err.message);
+  }
+}
+
+// ─── EXECUTAR TUDO DO DILOKAS DE UMA VEZ ───
+async function setupDilokas() {
+  if (!confirm('Criar grupo "Conteúdo Março" + 6 posts + preencher Infos do Dilokas Pizzaria?')) return;
+  await hubPopulateDilokas();
+  await ctAutoPopulateDilokas();
+  alert('🎉 Dilokas Pizzaria configurado por completo!');
+}
+
 </script>
 
 <!-- ═══ NEW GROUP MODAL ═══ -->
