@@ -80,7 +80,7 @@ module.exports = async function handler(req, res) {
     // Consulta cada ad account do tenant
     for (const adAccountId of tenant.adAccountIds) {
       let params = {
-        fields: 'campaign_name,adset_name,ad_name,spend,impressions,clicks,cpc,cpm,ctr,actions',
+        fields: 'campaign_name,adset_name,ad_name,spend,impressions,reach,clicks,cpc,cpm,ctr,actions,action_values,cost_per_action_type',
         time_range: JSON.stringify(dateRange),
         level: level,
         limit: '500',

@@ -2470,6 +2470,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -2851,20 +2852,27 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
       <!-- META ADS: BI CAMPANHAS -->
       <div id="tab-meta-bi" class="tab-content">
         <div style="padding:20px">
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title">&#128202; BI de Campanhas</div>
-              <button class="btn-new-task" onclick="metaBiExportJson()" style="font-size:0.78rem;padding:6px 14px">&#128229; Exportar JSON</button>
-            </div>
-            <!-- Filtros -->
-            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+          <!-- Header com gradient -->
+          <div style="background:linear-gradient(135deg,#1877f2,#6c5ce7);border-radius:16px;padding:24px 28px;margin-bottom:20px;color:#fff;position:relative;overflow:hidden">
+            <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;background:rgba(255,255,255,0.08);border-radius:50%"></div>
+            <div style="position:absolute;bottom:-30px;right:60px;width:80px;height:80px;background:rgba(255,255,255,0.05);border-radius:50%"></div>
+            <div style="font-size:1.4rem;font-weight:800;margin-bottom:4px">&#128202; Dashboard Meta Ads</div>
+            <div style="font-size:0.82rem;opacity:0.85">Performance de campanhas — Gerenciador de Anúncios</div>
+          </div>
+
+          <!-- Filtros -->
+          <div class="card" style="margin-bottom:16px;padding:16px 20px">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+              <!-- Tenant -->
               <div style="display:flex;gap:4px">
                 <button class="view-tab active" onclick="metaBiSetTenant('starken',this)" data-bi-tenant="starken">Starken</button>
                 <button class="view-tab" onclick="metaBiSetTenant('alpha',this)" data-bi-tenant="alpha">Alpha</button>
                 <button class="view-tab" onclick="metaBiSetTenant('ambos',this)" data-bi-tenant="ambos">Ambos</button>
               </div>
+              <div style="width:1px;height:24px;background:var(--border)"></div>
+              <!-- Período -->
               <div style="display:flex;gap:4px">
-                <button class="view-tab active" onclick="metaBiSetPreset('last_7d',this)" data-bi-preset>&#128197; 7 dias</button>
+                <button class="view-tab active" onclick="metaBiSetPreset('last_7d',this)" data-bi-preset>7 dias</button>
                 <button class="view-tab" onclick="metaBiSetPreset('this_month',this)" data-bi-preset>Este Mês</button>
                 <button class="view-tab" onclick="metaBiSetPreset('last_month',this)" data-bi-preset>Mês Anterior</button>
                 <button class="view-tab" onclick="metaBiSetPreset('custom',this)" data-bi-preset>Personalizado</button>
@@ -2874,37 +2882,68 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <span style="color:var(--text-secondary)">até</span>
                 <input type="date" id="metaBiDateEnd" class="form-input" style="padding:4px 8px;font-size:0.82rem">
               </div>
-              <button class="btn-new-task" onclick="metaBiFetchInsights()" style="font-size:0.78rem;padding:6px 14px">&#128269; Consultar</button>
-            </div>
-            <!-- Summary Stats -->
-            <div id="metaBiSummary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px">
-              <div class="stat-card"><div class="stat-label">Investimento</div><div class="stat-value" id="metaBiTotalSpend">—</div></div>
-              <div class="stat-card"><div class="stat-label">Impressões</div><div class="stat-value" id="metaBiTotalImpressions">—</div></div>
-              <div class="stat-card"><div class="stat-label">Cliques</div><div class="stat-value" id="metaBiTotalClicks">—</div></div>
-              <div class="stat-card"><div class="stat-label">CPC Médio</div><div class="stat-value" id="metaBiAvgCpc">—</div></div>
-              <div class="stat-card"><div class="stat-label">CPM Médio</div><div class="stat-value" id="metaBiAvgCpm">—</div></div>
-              <div class="stat-card"><div class="stat-label">CTR Médio</div><div class="stat-value" id="metaBiAvgCtr">—</div></div>
-            </div>
-            <!-- Tabela -->
-            <div style="overflow-x:auto">
-              <table id="metaBiTable" style="width:100%;border-collapse:collapse;font-size:0.82rem">
-                <thead>
-                  <tr style="border-bottom:2px solid var(--border);text-align:left">
-                    <th style="padding:10px 8px;cursor:pointer" onclick="metaBiSort('campaign_name')">Campanha &#8597;</th>
-                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('spend')">Investimento &#8597;</th>
-                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('impressions')">Impressões &#8597;</th>
-                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('clicks')">Cliques &#8597;</th>
-                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('cpc')">CPC &#8597;</th>
-                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('cpm')">CPM &#8597;</th>
-                    <th style="padding:10px 8px;cursor:pointer;text-align:right" onclick="metaBiSort('ctr')">CTR &#8597;</th>
-                  </tr>
-                </thead>
-                <tbody id="metaBiTableBody">
-                  <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--text-secondary)">Selecione os filtros e clique em Consultar</td></tr>
-                </tbody>
-              </table>
+              <div style="width:1px;height:24px;background:var(--border)"></div>
+              <!-- Nível -->
+              <select id="metaBiLevel" onchange="_metaBiState.level=this.value" style="padding:5px 10px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.82rem;background:var(--card);color:var(--text)">
+                <option value="campaign">Campanhas</option>
+                <option value="adset">Conjuntos</option>
+                <option value="ad">Anúncios</option>
+              </select>
+              <!-- Botão consultar -->
+              <button class="btn-new-task" onclick="metaBiFetchInsights()" style="font-size:0.82rem;padding:8px 20px;border-radius:10px">&#128269; Consultar</button>
+              <button onclick="metaBiExportJson()" style="font-size:0.75rem;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-secondary);cursor:pointer;font-family:inherit" title="Exportar dados">&#128229; JSON</button>
             </div>
           </div>
+
+          <!-- CONSOLIDADO DO TRÁFEGO PAGO -->
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px;padding-left:4px">Consolidado do Tráfego Pago</div>
+          <div id="metaBiSummary" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+            <div class="card" style="padding:18px 16px;text-align:center;border-left:4px solid #1877f2">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Investimento Total</div>
+              <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="metaBiTotalSpend">—</div>
+            </div>
+            <div class="card" style="padding:18px 16px;text-align:center;border-left:4px solid #00b894">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Receita Rastreada</div>
+              <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="metaBiTotalRevenue">—</div>
+            </div>
+            <div class="card" style="padding:18px 16px;text-align:center;border-left:4px solid #22c55e">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">ROAS Consolidado</div>
+              <div style="font-size:1.6rem;font-weight:800;color:#22c55e" id="metaBiRoas">—</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
+            <div class="card" style="padding:18px 16px;text-align:center;border-left:4px solid #e84393">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">CPA Médio</div>
+              <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="metaBiAvgCpa">—</div>
+            </div>
+            <div class="card" style="padding:18px 16px;text-align:center;border-left:4px solid #6c5ce7">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Compras Rastreadas</div>
+              <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="metaBiTotalConversions">—</div>
+            </div>
+            <div class="card" style="padding:18px 16px;text-align:center;border-left:4px solid #fdcb6e">
+              <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:8px">Ticket Médio</div>
+              <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="metaBiAvgTicket">—</div>
+            </div>
+          </div>
+
+          <!-- Cards por Campanha (estilo relatório) -->
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:8px;padding-left:4px">Desempenho das Campanhas — Meta Ads</div>
+          <div id="metaBiCampaignCards" style="display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:20px">
+            <div style="text-align:center;padding:30px;color:var(--text-secondary);font-size:0.85rem">Clique em Consultar para ver os dados</div>
+          </div>
+
+          <!-- Gráficos -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" id="metaBiChartsGrid">
+            <div class="card" style="padding:20px">
+              <div style="font-size:0.82rem;font-weight:700;margin-bottom:12px">ROAS por Campanha</div>
+              <canvas id="metaBiChartRoas" height="220"></canvas>
+            </div>
+            <div class="card" style="padding:20px">
+              <div style="font-size:0.82rem;font-weight:700;margin-bottom:12px">Distribuição do Investimento</div>
+              <canvas id="metaBiChartPie" height="220"></canvas>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -8249,10 +8288,16 @@ function metaBalanceToggleAutoRefresh(enabled) {
 }
 
 // ============ META BI ============
-let _metaBiState = { tenant: 'starken', preset: 'last_7d', data: [], sortCol: null, sortAsc: true };
+let _metaBiState = { tenant: 'starken', preset: 'last_7d', level: 'campaign', data: [], sortCol: null, sortAsc: true, charts: {} };
 
 function metaBiInit() {
-  // Nada especial na init, filtros já estão prontos no HTML
+  // Set default dates for custom range
+  var today = new Date();
+  var weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+  var ds = document.getElementById('metaBiDateStart');
+  var de = document.getElementById('metaBiDateEnd');
+  if (ds && !ds.value) ds.value = weekAgo.toISOString().slice(0,10);
+  if (de && !de.value) de.value = today.toISOString().slice(0,10);
 }
 
 function metaBiSetTenant(tenant, btn) {
@@ -8268,66 +8313,222 @@ function metaBiSetPreset(preset, btn) {
   document.getElementById('metaBiCustomDates').style.display = preset === 'custom' ? 'flex' : 'none';
 }
 
+// Extrai valor de actions/action_values por tipo
+function metaBiExtractAction(actions, types) {
+  if (!actions || !Array.isArray(actions)) return 0;
+  for (var t of types) {
+    var found = actions.find(a => a.action_type === t);
+    if (found) return parseFloat(found.value) || 0;
+  }
+  return 0;
+}
+
 async function metaBiFetchInsights() {
-  const tbody = document.getElementById('metaBiTableBody');
-  tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text-secondary)">Carregando dados...</td></tr>';
+  var cardsDiv = document.getElementById('metaBiCampaignCards');
+  cardsDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">Carregando dados...</div>';
 
-  const tenants = _metaBiState.tenant === 'ambos' ? ['starken', 'alpha'] : [_metaBiState.tenant];
-  let allData = [];
-  let summaryAcc = { total_spend: 0, total_impressions: 0, total_clicks: 0 };
+  var level = document.getElementById('metaBiLevel').value || 'campaign';
+  _metaBiState.level = level;
+  var tenants = _metaBiState.tenant === 'ambos' ? ['starken', 'alpha'] : [_metaBiState.tenant];
+  var allData = [];
 
-  for (const tenant of tenants) {
-    let url = metaApiBase() + '/api/meta/insights?tenant=' + tenant + '&preset=' + _metaBiState.preset;
+  for (var ti = 0; ti < tenants.length; ti++) {
+    var tenant = tenants[ti];
+    var url = metaApiBase() + '/api/meta/insights?tenant=' + tenant + '&preset=' + _metaBiState.preset + '&level=' + level;
     if (_metaBiState.preset === 'custom') {
       url += '&date_start=' + document.getElementById('metaBiDateStart').value;
       url += '&date_end=' + document.getElementById('metaBiDateEnd').value;
     }
-
     try {
-      const res = await fetch(url);
-      const json = await res.json();
+      var res = await fetch(url);
+      var json = await res.json();
       if (json.error) {
-        tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--danger)">Erro: ' + json.message + '</td></tr>';
+        cardsDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--danger)">Erro: ' + json.message + '</div>';
         return;
       }
-      const rows = (json.data || []).map(row => ({
-        ...row,
-        tenant: tenant,
-        spend: parseFloat(row.spend || 0),
-        impressions: parseInt(row.impressions || 0),
-        clicks: parseInt(row.clicks || 0),
-        cpc: parseFloat(row.cpc || 0),
-        cpm: parseFloat(row.cpm || 0),
-        ctr: parseFloat(row.ctr || 0),
-      }));
+      var rows = (json.data || []).map(function(row) {
+        var purchases = metaBiExtractAction(row.actions, ['omni_purchase','purchase','offsite_conversion.fb_pixel_purchase']);
+        var revenue = metaBiExtractAction(row.action_values, ['omni_purchase','purchase','offsite_conversion.fb_pixel_purchase']);
+        var leads = metaBiExtractAction(row.actions, ['lead','onsite_conversion.messaging_first_reply','offsite_conversion.fb_pixel_lead']);
+        var addToCart = metaBiExtractAction(row.actions, ['omni_add_to_cart','add_to_cart','offsite_conversion.fb_pixel_add_to_cart']);
+        var conversions = purchases || leads || addToCart;
+        var spend = parseFloat(row.spend || 0);
+        var clicks = parseInt(row.clicks || 0);
+        var impressions = parseInt(row.impressions || 0);
+        var reach = parseInt(row.reach || 0);
+        return {
+          name: row.campaign_name || row.adset_name || row.ad_name || '—',
+          tenant: tenant,
+          spend: spend,
+          impressions: impressions,
+          reach: reach,
+          clicks: clicks,
+          cpc: parseFloat(row.cpc || 0),
+          cpm: parseFloat(row.cpm || 0),
+          ctr: parseFloat(row.ctr || 0),
+          purchases: purchases,
+          revenue: revenue,
+          leads: leads,
+          add_to_cart: addToCart,
+          conversions: conversions,
+          cpa: conversions > 0 ? spend / conversions : 0,
+          roas: spend > 0 ? revenue / spend : 0,
+          ticket: purchases > 0 ? revenue / purchases : 0,
+          actions: row.actions,
+          action_values: row.action_values,
+        };
+      });
       allData = allData.concat(rows);
-
-      if (json.summary) {
-        summaryAcc.total_spend += parseFloat(json.summary.total_spend || 0);
-        summaryAcc.total_impressions += parseInt(json.summary.total_impressions || 0);
-        summaryAcc.total_clicks += parseInt(json.summary.total_clicks || 0);
-      }
     } catch (e) {
-      tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--danger)">Erro: ' + e.message + '</td></tr>';
+      cardsDiv.innerHTML = '<div style="text-align:center;padding:30px;color:var(--danger)">Erro: ' + e.message + '</div>';
       return;
     }
   }
 
   _metaBiState.data = allData;
 
-  // Summary
-  const avgCpc = summaryAcc.total_clicks > 0 ? summaryAcc.total_spend / summaryAcc.total_clicks : 0;
-  const avgCpm = summaryAcc.total_impressions > 0 ? (summaryAcc.total_spend / summaryAcc.total_impressions) * 1000 : 0;
-  const avgCtr = summaryAcc.total_impressions > 0 ? (summaryAcc.total_clicks / summaryAcc.total_impressions) * 100 : 0;
+  // Consolidado
+  var totals = { spend: 0, revenue: 0, conversions: 0, impressions: 0, clicks: 0, reach: 0 };
+  allData.forEach(function(r) {
+    totals.spend += r.spend;
+    totals.revenue += r.revenue;
+    totals.conversions += r.conversions;
+    totals.impressions += r.impressions;
+    totals.clicks += r.clicks;
+    totals.reach += r.reach;
+  });
+  var consolidatedRoas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
+  var consolidatedCpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
+  var consolidatedTicket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
 
-  document.getElementById('metaBiTotalSpend').textContent = metaFormatBRL(summaryAcc.total_spend);
-  document.getElementById('metaBiTotalImpressions').textContent = metaFormatNumber(summaryAcc.total_impressions);
-  document.getElementById('metaBiTotalClicks').textContent = metaFormatNumber(summaryAcc.total_clicks);
-  document.getElementById('metaBiAvgCpc').textContent = metaFormatBRL(avgCpc);
-  document.getElementById('metaBiAvgCpm').textContent = metaFormatBRL(avgCpm);
-  document.getElementById('metaBiAvgCtr').textContent = metaFormatPercent(avgCtr);
+  document.getElementById('metaBiTotalSpend').textContent = metaFormatBRL(totals.spend);
+  document.getElementById('metaBiTotalRevenue').textContent = metaFormatBRL(totals.revenue);
+  document.getElementById('metaBiRoas').textContent = consolidatedRoas.toFixed(2) + 'x';
+  document.getElementById('metaBiRoas').style.color = consolidatedRoas >= 5 ? '#22c55e' : consolidatedRoas >= 2 ? '#f59e0b' : '#ef4444';
+  document.getElementById('metaBiAvgCpa').textContent = metaFormatBRL(consolidatedCpa);
+  document.getElementById('metaBiTotalConversions').textContent = metaFormatNumber(totals.conversions);
+  document.getElementById('metaBiAvgTicket').textContent = metaFormatBRL(consolidatedTicket);
 
-  metaBiRenderTable(allData);
+  // Render campaign cards (estilo relatório Mestre do Frango)
+  metaBiRenderCampaignCards(allData);
+  // Render charts
+  metaBiRenderCharts(allData);
+}
+
+function metaBiRenderCampaignCards(data) {
+  var container = document.getElementById('metaBiCampaignCards');
+  if (!data.length) {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">Nenhum dado para o período</div>';
+    return;
+  }
+  var html = '';
+  data.forEach(function(row) {
+    // Determine campaign type badge
+    var badge = '', badgeColor = '';
+    var nameLower = (row.name || '').toLowerCase();
+    if (nameLower.includes('aquisi') || nameLower.includes('perfil') || nameLower.includes('topo') || nameLower.includes('alcance') || nameLower.includes('reconhec')) {
+      badge = 'TOPO DE FUNIL'; badgeColor = '#8B7355';
+    } else if (nameLower.includes('convers') || nameLower.includes('venda') || nameLower.includes('performance') || nameLower.includes('compra')) {
+      badge = 'CONVERSÃO'; badgeColor = '#4a5568';
+    } else if (nameLower.includes('retarget') || nameLower.includes('remarketing')) {
+      badge = 'RETARGETING'; badgeColor = '#6c5ce7';
+    } else if (nameLower.includes('catálogo') || nameLower.includes('catalogo')) {
+      badge = 'CATÁLOGO'; badgeColor = '#0984e3';
+    } else {
+      badge = 'CAMPANHA'; badgeColor = '#1877f2';
+    }
+    // ROAS color
+    var roasColor = row.roas >= 5 ? '#22c55e' : row.roas >= 2 ? '#f59e0b' : row.roas > 0 ? '#ef4444' : 'var(--text-secondary)';
+    var roasText = row.roas > 0 ? row.roas.toFixed(2) + 'x' : '—';
+    var tenantTag = _metaBiState.tenant === 'ambos' ? '<span style="font-size:0.65rem;background:var(--bg-secondary);padding:2px 8px;border-radius:4px;margin-left:8px">' + row.tenant + '</span>' : '';
+
+    html += '<div class="card" style="padding:20px;border-left:4px solid ' + badgeColor + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+      + '<div style="font-size:0.92rem;font-weight:700">' + row.name + tenantTag + '</div>'
+      + '<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:' + badgeColor + ';color:#fff;padding:3px 10px;border-radius:4px">' + badge + '</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">'
+      + metaBiMetricCell(metaFormatNumber(row.reach), 'Alcance')
+      + metaBiMetricCell(metaFormatNumber(row.impressions), 'Impressões')
+      + metaBiMetricCell(metaFormatNumber(row.clicks), 'Cliques')
+      + metaBiMetricCell(metaFormatBRL(row.cpc), 'CPC')
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">'
+      + metaBiMetricCell(metaFormatNumber(row.conversions), 'Compras')
+      + metaBiMetricCell(metaFormatBRL(row.revenue), 'Receita')
+      + metaBiMetricCell(metaFormatBRL(row.cpa), 'CPA')
+      + '<div style="text-align:center"><div style="font-size:1.25rem;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="font-size:0.68rem;color:var(--text-secondary);text-transform:uppercase">ROAS</div></div>'
+      + '</div>'
+      + '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function metaBiMetricCell(value, label) {
+  return '<div style="text-align:center"><div style="font-size:1.25rem;font-weight:800">' + value + '</div><div style="font-size:0.68rem;color:var(--text-secondary);text-transform:uppercase">' + label + '</div></div>';
+}
+
+function metaBiRenderCharts(data) {
+  if (typeof Chart === 'undefined') return;
+  // Destroy existing
+  Object.values(_metaBiState.charts).forEach(function(c) { if (c) c.destroy(); });
+  _metaBiState.charts = {};
+
+  var labels = data.map(function(r) { return r.name.length > 25 ? r.name.substring(0, 25) + '...' : r.name; });
+  var colors = ['#1877f2','#00b894','#6c5ce7','#e84393','#fdcb6e','#0984e3','#e17055','#a855f7','#22c55e','#ff6b6b'];
+
+  // ROAS bar chart
+  var roasCtx = document.getElementById('metaBiChartRoas');
+  if (roasCtx) {
+    _metaBiState.charts.roas = new Chart(roasCtx.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'ROAS',
+          data: data.map(function(r) { return r.roas; }),
+          backgroundColor: data.map(function(r) { return r.roas >= 5 ? '#22c55e' : r.roas >= 2 ? '#f59e0b' : '#ef4444'; }),
+          borderRadius: 6,
+          barThickness: 40,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) { return 'ROAS: ' + ctx.raw.toFixed(2) + 'x'; } } }
+        },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Pie chart — spend distribution
+  var pieCtx = document.getElementById('metaBiChartPie');
+  if (pieCtx) {
+    _metaBiState.charts.pie = new Chart(pieCtx.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data.map(function(r) { return r.spend; }),
+          backgroundColor: colors.slice(0, data.length),
+          borderWidth: 2,
+          borderColor: 'var(--card, #fff)',
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { size: 11 }, padding: 12 } },
+          tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + metaFormatBRL(ctx.raw); } } }
+        }
+      }
+    });
+  }
 }
 
 function metaBiSort(col) {
@@ -8335,43 +8536,21 @@ function metaBiSort(col) {
     _metaBiState.sortAsc = !_metaBiState.sortAsc;
   } else {
     _metaBiState.sortCol = col;
-    _metaBiState.sortAsc = true;
+    _metaBiState.sortAsc = col === 'name' ? true : false;
   }
-  const sorted = [..._metaBiState.data].sort((a, b) => {
-    const va = a[col], vb = b[col];
+  var sorted = _metaBiState.data.slice().sort(function(a, b) {
+    var va = a[col], vb = b[col];
     if (typeof va === 'string') return _metaBiState.sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
     return _metaBiState.sortAsc ? va - vb : vb - va;
   });
-  metaBiRenderTable(sorted);
-}
-
-function metaBiRenderTable(data) {
-  const tbody = document.getElementById('metaBiTableBody');
-  if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text-secondary)">Nenhum dado encontrado para o período</td></tr>';
-    return;
-  }
-  let html = '';
-  data.forEach((row, i) => {
-    const bg = i % 2 === 0 ? '' : 'background:var(--bg-secondary,rgba(0,0,0,0.02))';
-    const label = (_metaBiState.tenant === 'ambos' ? '<span style="font-size:0.7rem;background:var(--bg-secondary);padding:2px 6px;border-radius:4px;margin-left:6px">' + row.tenant + '</span>' : '');
-    html += '<tr style="border-bottom:1px solid var(--border);' + bg + '">'
-      + '<td style="padding:8px">' + (row.campaign_name || '—') + label + '</td>'
-      + '<td style="padding:8px;text-align:right">' + metaFormatBRL(row.spend) + '</td>'
-      + '<td style="padding:8px;text-align:right">' + metaFormatNumber(row.impressions) + '</td>'
-      + '<td style="padding:8px;text-align:right">' + metaFormatNumber(row.clicks) + '</td>'
-      + '<td style="padding:8px;text-align:right">' + metaFormatBRL(row.cpc) + '</td>'
-      + '<td style="padding:8px;text-align:right">' + metaFormatBRL(row.cpm) + '</td>'
-      + '<td style="padding:8px;text-align:right">' + metaFormatPercent(row.ctr) + '</td>'
-      + '</tr>';
-  });
-  tbody.innerHTML = html;
+  _metaBiState.data = sorted;
+  metaBiRenderCampaignCards(sorted);
 }
 
 function metaBiExportJson() {
   if (!_metaBiState.data.length) { alert('Consulte os dados primeiro.'); return; }
-  const blob = new Blob([JSON.stringify({ tenant: _metaBiState.tenant, preset: _metaBiState.preset, data: _metaBiState.data, exported_at: new Date().toISOString() }, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
+  var blob = new Blob([JSON.stringify({ tenant: _metaBiState.tenant, preset: _metaBiState.preset, data: _metaBiState.data, exported_at: new Date().toISOString() }, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'meta-bi-' + _metaBiState.tenant + '-' + new Date().toISOString().slice(0, 10) + '.json';
   a.click();
