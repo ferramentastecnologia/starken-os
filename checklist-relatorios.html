@@ -3159,7 +3159,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
           <!-- Main Content -->
           <div class="ct-modal-main">
-            <input type="text" class="ct-modal-title" id="ctModalTitle" placeholder="Nome da tarefa..." onchange="ctSaveTaskField('name',this.value)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <input type="text" class="ct-modal-title" id="ctModalTitle" placeholder="Nome da tarefa..." style="flex:1" onchange="ctSaveTaskField('name',this.value)">
+              <button id="ctModalSaveBtn" onclick="ctSaveAllFields()" style="padding:8px 20px;background:#10b981;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s">💾 Salvar</button>
+              <span id="ctModalSaveStatus" style="font-size:0.75rem;color:#6b7280;min-width:60px;text-align:center"></span>
+            </div>
 
             <!-- Meta: Status, Assignee, Date, Priority -->
             <div class="ct-modal-meta">
@@ -10100,10 +10104,49 @@ async function ctOpenModal(taskId) {
 }
 
 function ctCloseModal() {
+  // Auto-save all text fields before closing
+  ctSaveAllFields(true);
   const overlay = document.getElementById('ctModalOverlay');
   overlay.classList.remove('open');
   setTimeout(() => { overlay.style.display = 'none'; ctModalTask = null; }, 200);
   ctLoadGroups(); // Refresh list
+}
+
+async function ctSaveAllFields(silent) {
+  if (!ctModalTask) return;
+  var btn = document.getElementById('ctModalSaveBtn');
+  var statusEl = document.getElementById('ctModalSaveStatus');
+  if (!silent && btn) { btn.disabled = true; btn.textContent = '⏳ Salvando...'; }
+
+  var fields = {};
+  var nameVal = document.getElementById('ctModalTitle').value;
+  var briefVal = document.getElementById('ctModalBriefing').value;
+  var copyVal = document.getElementById('ctModalCopy').value;
+  var descVal = document.getElementById('ctModalDescription').value;
+
+  if (nameVal !== (ctModalTask.name || '')) fields.name = nameVal;
+  if (briefVal !== (ctModalTask.briefing || '')) fields.briefing = briefVal;
+  if (copyVal !== (ctModalTask.copy_text || '')) fields.copy_text = copyVal;
+  if (descVal !== (ctModalTask.description || '')) fields.description = descVal;
+
+  if (Object.keys(fields).length === 0) {
+    if (!silent && btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
+    if (!silent && statusEl) { statusEl.textContent = '✅ Tudo salvo'; setTimeout(function() { statusEl.textContent = ''; }, 2000); }
+    return;
+  }
+
+  try {
+    fields.id = ctModalTask.id;
+    fields.user = ctGetUser();
+    await ctApi('upsert_task', fields);
+    // Update local cache
+    Object.keys(fields).forEach(function(k) { if (k !== 'id' && k !== 'user') ctModalTask[k] = fields[k]; });
+    if (!silent && btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
+    if (!silent && statusEl) { statusEl.textContent = '✅ Salvo!'; setTimeout(function() { statusEl.textContent = ''; }, 2500); }
+  } catch(e) {
+    if (!silent && btn) { btn.disabled = false; btn.textContent = '💾 Salvar'; }
+    if (!silent && statusEl) { statusEl.textContent = '❌ Erro'; setTimeout(function() { statusEl.textContent = ''; }, 3000); }
+  }
 }
 
 async function ctSaveTaskField(field, value) {
