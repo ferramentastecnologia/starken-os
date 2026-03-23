@@ -997,6 +997,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .meta-bi-period-btn:hover { background: var(--bg-secondary); }
 .meta-bi-period-btn.active { background: var(--starken) !important; color: #fff !important; border-color: var(--starken) !important; }
 
+.meta-bi-tpl-btn.active { background: var(--starken) !important; color: #fff !important; }
+
 .meta-bi-kpi-card { transition: all 0.2s ease; }
 .meta-bi-kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
@@ -2903,6 +2905,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 ← Voltar
               </button>
               <h2 id="metaBiDashboardTitle" style="font-size:1.3rem;font-weight:800;color:var(--text);margin:0">—</h2>
+              <!-- Template selector -->
+              <div style="display:flex;align-items:center;gap:6px;margin-left:12px;padding:4px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+                <button class="meta-bi-tpl-btn active" data-tpl="padrao" onclick="metaBiSetTemplate('padrao')" style="padding:5px 12px;border:none;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;background:var(--starken);color:#fff">Padrão</button>
+                <button class="meta-bi-tpl-btn" data-tpl="gastronomia" onclick="metaBiSetTemplate('gastronomia')" style="padding:5px 12px;border:none;border-radius:6px;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;background:transparent;color:var(--text-secondary)">🍽️ Gastronomia</button>
+              </div>
               <!-- Period selector -->
               <div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                 <button class="meta-bi-period-btn active" data-preset="last_7d" onclick="metaBiSetPeriod('last_7d')" style="padding:6px 12px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-family:inherit">7 dias</button>
@@ -2953,6 +2960,55 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <h3 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary);margin-bottom:12px">Campanhas</h3>
               <div id="metaBiDashboardCampaigns" style="display:grid;grid-template-columns:1fr;gap:12px">
                 <div style="text-align:center;padding:30px;color:var(--text-secondary);font-size:0.85rem">Carregando campanhas...</div>
+              </div>
+            </div>
+
+            <!-- Inteligência de Tráfego - Gastronomia only -->
+            <div class="meta-bi-gastro-only" id="metaBiIntelSection" style="display:none;margin-bottom:20px">
+              <div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:22px 24px;color:#fff">
+                <div style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">📊 Inteligência de Tráfego — Gastronomia</div>
+                <div id="metaBiIntelContent" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:0.8rem">
+                </div>
+              </div>
+            </div>
+
+            <!-- Dados do Sistema - Gastronomia only -->
+            <div class="meta-bi-gastro-only" id="metaBiSistemaSection" style="display:none;margin-bottom:20px">
+              <div style="background:var(--card);border-radius:12px;padding:22px 24px;box-shadow:var(--shadow);border:1px solid var(--border)">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                  <div style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-secondary)">📊 Dados do Sistema — Cardápio</div>
+                  <button id="metaBiSistemaSaveBtn" onclick="metaBiSaveSistemaData()" style="padding:6px 16px;border:none;border-radius:6px;background:var(--starken);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s">Salvar</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="metaBiSistemaFields">
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">💰 Faturamento Total</label>
+                    <input type="number" id="metaBiSistFaturamento" step="0.01" placeholder="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">📦 Total de Pedidos</label>
+                    <input type="number" id="metaBiSistPedidos" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">🚚 Faturamento Delivery</label>
+                    <input type="number" id="metaBiSistDelivery" step="0.01" placeholder="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">📦 Pedidos Delivery</label>
+                    <input type="number" id="metaBiSistPedidosDelivery" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">🏬 Faturamento Retirada</label>
+                    <input type="number" id="metaBiSistRetirada" step="0.01" placeholder="0.00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">👥 Novos Clientes</label>
+                    <input type="number" id="metaBiSistNovos" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                  <div>
+                    <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">🔁 Clientes Recorrentes</label>
+                    <input type="number" id="metaBiSistRecorrentes" placeholder="0" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.85rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box">
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -8331,6 +8387,7 @@ var _metaBiState = {
   currentTenant: 'starken',
   currentPeriod: 'last_7d',
   currentClient: null,
+  currentTemplate: 'padrao', // 'padrao' or 'gastronomia'
   clientsData: {}, // { "client-key": { spend, revenue, conversions, campaigns: [...] } }
   allClients: {}, // { "client-key": { name, tenant, ... } }
   dashboardData: null,
@@ -8453,6 +8510,33 @@ function metaBiBackToGrid() {
   _metaBiState.charts = {};
 }
 
+function metaBiSetTemplate(template) {
+  _metaBiState.currentTemplate = template;
+  document.querySelectorAll('.meta-bi-tpl-btn').forEach(function(btn) {
+    btn.classList.remove('active');
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--text-secondary)';
+  });
+  var activeBtn = document.querySelector('[data-tpl="' + template + '"]');
+  if (activeBtn) {
+    activeBtn.classList.add('active');
+    activeBtn.style.background = 'var(--starken)';
+    activeBtn.style.color = '#fff';
+  }
+  // Toggle gastronomia-only sections
+  var gastroSections = document.querySelectorAll('.meta-bi-gastro-only');
+  gastroSections.forEach(function(el) {
+    el.style.display = template === 'gastronomia' ? '' : 'none';
+  });
+  // Re-render with current data
+  if (_metaBiState.dashboardData) {
+    metaBiRenderDashboardKpis(_metaBiState.dashboardData);
+    metaBiRenderDashboardCampaigns(_metaBiState.dashboardData);
+    metaBiRenderIntelSection(_metaBiState.dashboardData);
+    metaBiLoadSistemaData();
+  }
+}
+
 function metaBiSetPeriod(preset) {
   _metaBiState.currentPeriod = preset;
 
@@ -8501,14 +8585,25 @@ function metaBiApplyCustomDates() {
 function metaBiGeneratePdfReport() {
   var data = _metaBiState.dashboardData;
   var client = _metaBiState.allClients[_metaBiState.currentClient];
+  var template = _metaBiState.currentTemplate;
   if (!data || !client) { alert('Carregue os dados de um cliente primeiro'); return; }
 
   // Calculate totals
-  var totals = { spend: 0, revenue: 0, conversions: 0 };
-  data.forEach(function(r) { totals.spend += r.spend; totals.revenue += r.revenue; totals.conversions += r.conversions; });
+  var totals = { spend: 0, revenue: 0, conversions: 0, reach: 0, impressions: 0, addToCart: 0, initiateCheckout: 0, landingPageViews: 0 };
+  data.forEach(function(r) {
+    totals.spend += r.spend;
+    totals.revenue += r.revenue;
+    totals.conversions += r.conversions;
+    totals.reach += r.reach || 0;
+    totals.impressions += r.impressions || 0;
+    totals.addToCart += r.addToCart || 0;
+    totals.initiateCheckout += r.initiateCheckout || 0;
+    totals.landingPageViews += r.landingPageViews || 0;
+  });
   var roas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
   var cpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
   var ticket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+  var costPerVisit = totals.landingPageViews > 0 ? totals.spend / totals.landingPageViews : 0;
 
   // Period label
   var periodLabel = '';
@@ -8531,20 +8626,51 @@ function metaBiGeneratePdfReport() {
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
       + '<div style="font-size:14px;font-weight:700;color:#1a1a2e">' + row.campaign_name + '</div>'
       + '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:' + badge.color + ';color:#fff;padding:4px 10px;border-radius:4px">' + badge.badge + '</span>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px">'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.reach) + '</div><div style="color:#64748b;margin-top:2px">Alcance</div></div>'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.impressions) + '</div><div style="color:#64748b;margin-top:2px">Impressões</div></div>'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.clicks) + '</div><div style="color:#64748b;margin-top:2px">Cliques</div></div>'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpc) + '</div><div style="color:#64748b;margin-top:2px">CPC</div></div>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px;margin-top:10px">'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">Compras</div></div>'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.revenue) + '</div><div style="color:#64748b;margin-top:2px">Receita</div></div>'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
-      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
-      + '</div>'
       + '</div>';
+
+    if (template === 'gastronomia') {
+      campaignRows += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.spend) + '</div><div style="color:#64748b;margin-top:2px">Investimento</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.reach) + '</div><div style="color:#64748b;margin-top:2px">Alcance</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.impressions) + '</div><div style="color:#64748b;margin-top:2px">Impressões</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.landingPageViews || 0) + '</div><div style="color:#64748b;margin-top:2px">Visitas</div></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px;margin-top:10px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.costPerVisit || 0) + '</div><div style="color:#64748b;margin-top:2px">Custo/Visita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.addToCart || 0) + '</div><div style="color:#64748b;margin-top:2px">🛒 Carrinho</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.initiateCheckout || 0) + '</div><div style="color:#64748b;margin-top:2px">💳 Checkouts</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">✅ Compras</div></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px;margin-top:10px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.revenue) + '</div><div style="color:#64748b;margin-top:2px">💰 Receita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.ticket) + '</div><div style="color:#64748b;margin-top:2px">Ticket Médio</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
+        + '</div>';
+
+      var interpretation = metaBiGetInterpretation(row, badge.badge);
+      if (interpretation) {
+        campaignRows += '<div style="background:#f8fafc;border-radius:8px;padding:12px 14px;font-size:13px;color:#64748b;line-height:1.5;border:1px solid #e2e8f0;margin-top:10px">'
+          + '<div style="font-weight:700;color:#1a1a2e;margin-bottom:4px">📌 Traduzindo isso:</div>'
+          + interpretation.replace(/<br>/g, '<br>')
+          + '</div>';
+      }
+    } else {
+      campaignRows += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.reach) + '</div><div style="color:#64748b;margin-top:2px">Alcance</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.impressions) + '</div><div style="color:#64748b;margin-top:2px">Impressões</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.clicks) + '</div><div style="color:#64748b;margin-top:2px">Cliques</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpc) + '</div><div style="color:#64748b;margin-top:2px">CPC</div></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px;margin-top:10px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">Compras</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.revenue) + '</div><div style="color:#64748b;margin-top:2px">Receita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
+        + '</div>';
+    }
+
+    campaignRows += '</div>';
   });
 
   // Build full HTML report
@@ -8572,9 +8698,45 @@ function metaBiGeneratePdfReport() {
     + '<div style="padding:20px;text-align:center;border-left:4px solid #e84393;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">CPA Médio</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmt(cpa) + '</div></div>'
     + '<div style="padding:20px;text-align:center;border-left:4px solid #6c5ce7;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Compras Rastreadas</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmtN(totals.conversions) + '</div></div>'
     + '<div style="padding:20px;text-align:center;border-left:4px solid #fdcb6e;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Ticket Médio</div><div style="font-size:22px;font-weight:800;color:#1a1a2e">' + fmt(ticket) + '</div></div>'
-    + '</div>'
-    // Campaigns
-    + '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">Desempenho das Campanhas — Meta Ads</div>'
+    + '</div>';
+
+  // Add Intel section for Gastronomia template
+  if (template === 'gastronomia') {
+    var funnelRate = totals.addToCart > 0 ? Math.round(totals.conversions / totals.addToCart * 100) : 0;
+    html += '<div style="background:linear-gradient(135deg,#1e293b,#334155);border-radius:12px;padding:20px 24px;color:#fff;margin-bottom:28px">'
+      + '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">📊 Inteligência de Tráfego — Gastronomia</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;font-size:12px">'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmt(totals.spend) + '</div><div style="opacity:0.7;margin-top:3px">Investimento total</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmtN(totals.impressions) + '</div><div style="opacity:0.7;margin-top:3px">Impressões</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmtN(totals.reach) + '</div><div style="opacity:0.7;margin-top:3px">Alcance</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmtN(totals.landingPageViews) + '</div><div style="opacity:0.7;margin-top:3px">Visitas ao perfil</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmt(costPerVisit) + '</div><div style="opacity:0.7;margin-top:3px">Custo por visita</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmtN(totals.conversions) + '</div><div style="opacity:0.7;margin-top:3px">Compras via pixel</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + fmt(cpa) + '</div><div style="opacity:0.7;margin-top:3px">CPA médio</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800">' + funnelRate + '%</div><div style="opacity:0.7;margin-top:3px">Funil (carrinho→compra)</div></div>'
+      + '</div>'
+      + '</div>';
+
+    // Add Sistema data if available
+    var sistemaData = localStorage.getItem(metaBiGetSistemaKey());
+    if (sistemaData) {
+      var sist = JSON.parse(sistemaData);
+      var ticketSistema = sist.pedidos > 0 ? sist.faturamento / sist.pedidos : 0;
+      html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px;margin-bottom:28px">'
+        + '<div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">📊 Dados do Sistema — Cardápio</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(sist.faturamento) + '</div><div style="color:#64748b;margin-top:2px">Faturamento Total</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(sist.pedidos) + '</div><div style="color:#64748b;margin-top:2px">Total de Pedidos</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(ticketSistema) + '</div><div style="color:#64748b;margin-top:2px">Ticket Médio</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(sist.delivery) + '</div><div style="color:#64748b;margin-top:2px">Faturamento Delivery</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(sist.pedidosDelivery) + '</div><div style="color:#64748b;margin-top:2px">Pedidos Delivery</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(sist.novos) + '</div><div style="color:#64748b;margin-top:2px">Novos Clientes</div></div>'
+        + '</div>'
+        + '</div>';
+    }
+  }
+
+  html += '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">Desempenho das Campanhas — Meta Ads</div>'
     + campaignRows + '</div>'
     // Footer
     + '<div style="text-align:center;padding:20px 0;border-top:1px solid #e2e8f0;margin-top:20px;font-size:11px;color:#94a3b8">Relatório gerado automaticamente por Starken OS · ' + new Date().toLocaleDateString('pt-BR') + '</div>'
@@ -8706,6 +8868,10 @@ async function metaBiFetchDashboardData(clientKey, preset) {
       var impressions = parseInt(row.impressions || 0);
       var clicks = parseInt(row.clicks || 0);
       var reach = parseInt(row.reach || 0);
+      var addToCart = metaBiExtractAction(row.actions, ['add_to_cart','offsite_conversion.fb_pixel_add_to_cart']);
+      var initiateCheckout = metaBiExtractAction(row.actions, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+      var landingPageViews = metaBiExtractAction(row.actions, ['landing_page_view']);
+      var linkClicks = metaBiExtractAction(row.actions, ['link_click']);
 
       return {
         campaign_name: row.campaign_name || '—',
@@ -8723,7 +8889,12 @@ async function metaBiFetchDashboardData(clientKey, preset) {
         conversions: purchases,
         cpa: purchases > 0 ? spend / purchases : 0,
         roas: spend > 0 ? revenue / spend : 0,
-        ticket: purchases > 0 ? revenue / purchases : 0
+        ticket: purchases > 0 ? revenue / purchases : 0,
+        addToCart: addToCart,
+        initiateCheckout: initiateCheckout,
+        landingPageViews: landingPageViews,
+        linkClicks: linkClicks,
+        costPerVisit: landingPageViews > 0 ? spend / landingPageViews : 0
       };
     });
 
@@ -8735,8 +8906,14 @@ async function metaBiFetchDashboardData(clientKey, preset) {
     // Render campaign cards
     metaBiRenderDashboardCampaigns(rows);
 
+    // Render Intel section
+    metaBiRenderIntelSection(rows);
+
     // Render charts
     metaBiRenderDashboardCharts(rows);
+
+    // Load manual data
+    metaBiLoadSistemaData();
 
   } catch (e) {
     alert('Erro ao carregar dados: ' + e.message);
@@ -8744,28 +8921,61 @@ async function metaBiFetchDashboardData(clientKey, preset) {
 }
 
 function metaBiRenderDashboardKpis(data) {
-  // Calculate consolidado
-  var totals = { spend: 0, revenue: 0, conversions: 0 };
+  var totals = { spend: 0, revenue: 0, conversions: 0, reach: 0, impressions: 0, addToCart: 0, initiateCheckout: 0, landingPageViews: 0, clicks: 0 };
   data.forEach(function(r) {
     totals.spend += r.spend;
     totals.revenue += r.revenue;
     totals.conversions += r.conversions;
+    totals.reach += r.reach || 0;
+    totals.impressions += r.impressions || 0;
+    totals.addToCart += r.addToCart || 0;
+    totals.initiateCheckout += r.initiateCheckout || 0;
+    totals.landingPageViews += r.landingPageViews || 0;
+    totals.clicks += r.clicks || 0;
   });
 
-  var consolidatedRoas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
-  var consolidatedCpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
-  var consolidatedTicket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+  var roas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
+  var cpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
+  var ticket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+  var costPerVisit = totals.landingPageViews > 0 ? totals.spend / totals.landingPageViews : 0;
 
-  var cards = document.querySelectorAll('.meta-bi-kpi-card .meta-bi-kpi-value');
-  if (cards[0]) cards[0].textContent = metaFormatBRL(totals.spend);
-  if (cards[1]) cards[1].textContent = metaFormatBRL(totals.revenue);
-  if (cards[2]) {
-    cards[2].textContent = consolidatedRoas.toFixed(2) + 'x';
-    cards[2].style.color = consolidatedRoas >= 5 ? '#22c55e' : consolidatedRoas >= 2 ? '#f59e0b' : '#ef4444';
+  var container = document.getElementById('metaBiDashboardKpis');
+  var template = _metaBiState.currentTemplate;
+
+  function kpiCard(label, value, borderColor, valueColor) {
+    return '<div style="padding:16px 14px;text-align:center;border-left:4px solid ' + borderColor + ';background:var(--card);border-radius:8px;box-shadow:var(--shadow)">'
+      + '<div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;margin-bottom:6px">' + label + '</div>'
+      + '<div style="font-size:1.35rem;font-weight:800;color:' + (valueColor || 'var(--text)') + '">' + value + '</div>'
+      + '</div>';
   }
-  if (cards[3]) cards[3].textContent = metaFormatBRL(consolidatedCpa);
-  if (cards[4]) cards[4].textContent = metaFormatNumber(totals.conversions);
-  if (cards[5]) cards[5].textContent = metaFormatBRL(consolidatedTicket);
+
+  var roasColor = roas >= 5 ? '#22c55e' : roas >= 2 ? '#f59e0b' : '#ef4444';
+
+  if (template === 'gastronomia') {
+    container.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    container.innerHTML = ''
+      + kpiCard('Investimento Total', metaFormatBRL(totals.spend), '#1877f2')
+      + kpiCard('Alcance Total', metaFormatNumber(totals.reach), '#00b894')
+      + kpiCard('Impressões', metaFormatNumber(totals.impressions), '#3b82f6')
+      + kpiCard('Visitas ao Perfil', metaFormatNumber(totals.landingPageViews), '#8b5cf6')
+      + kpiCard('🛒 Adições ao Carrinho', metaFormatNumber(totals.addToCart), '#f59e0b')
+      + kpiCard('💳 Checkouts Iniciados', metaFormatNumber(totals.initiateCheckout), '#e84393')
+      + kpiCard('✅ Compras', metaFormatNumber(totals.conversions), '#6c5ce7')
+      + kpiCard('💰 Receita Rastreada', metaFormatBRL(totals.revenue), '#00b894')
+      + kpiCard('ROAS Consolidado', roas.toFixed(2) + 'x', '#22c55e', roasColor)
+      + kpiCard('CPA Médio', metaFormatBRL(cpa), '#e84393')
+      + kpiCard('Ticket Médio', metaFormatBRL(ticket), '#fdcb6e')
+      + kpiCard('Custo por Visita', metaFormatBRL(costPerVisit), '#06b6d4');
+  } else {
+    container.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    container.innerHTML = ''
+      + kpiCard('Investimento Total', metaFormatBRL(totals.spend), '#1877f2')
+      + kpiCard('Receita Rastreada', metaFormatBRL(totals.revenue), '#00b894')
+      + kpiCard('ROAS Consolidado', roas.toFixed(2) + 'x', '#22c55e', roasColor)
+      + kpiCard('CPA Médio', metaFormatBRL(cpa), '#e84393')
+      + kpiCard('Compras Rastreadas', metaFormatNumber(totals.conversions), '#6c5ce7')
+      + kpiCard('Ticket Médio', metaFormatBRL(ticket), '#fdcb6e');
+  }
 }
 
 function metaBiGetCampaignBadge(name) {
@@ -8794,8 +9004,36 @@ function metaBiGetCampaignBadge(name) {
   return { badge: 'CAMPANHA', color: '#6c5ce7' };
 }
 
+function metaBiGetInterpretation(row, badge) {
+  var lines = [];
+  if (badge === 'AUDIÊNCIA') {
+    lines.push('Campanha voltada para aquisição de público e reconhecimento de marca na região, além de novos seguidores para a página.');
+    if (row.conversions > 0) {
+      lines.push('Obs: resultados em venda através dessa campanha são lucro na performance de tráfego.');
+    }
+  } else if (badge === 'VENDAS') {
+    if (row.roas >= 5) {
+      lines.push('ROAS acima de 5 já é considerado um ótimo resultado; cada 1x a mais é muito bom no nosso segmento.');
+    }
+    if (row.roas > 0) {
+      lines.push('Cada R$ 1 investido em anúncios retornou mais de R$ ' + Math.floor(row.roas) + ' em vendas.');
+    }
+    if (row.ticket > 0) {
+      lines.push('O ticket médio das compras foi de ' + metaFormatBRL(row.ticket) + '.');
+    }
+  } else if (badge === 'LEADS') {
+    if (row.conversions > 0) {
+      lines.push('Custo por lead dentro do esperado para o segmento gastronômico.');
+    }
+    lines.push('Campanha focada em captar contatos e interesse de potenciais clientes.');
+  }
+  if (!lines.length) return '';
+  return lines.join('<br>');
+}
+
 function metaBiRenderDashboardCampaigns(data) {
   var container = document.getElementById('metaBiDashboardCampaigns');
+  var template = _metaBiState.currentTemplate;
 
   if (!data.length) {
     container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary);font-size:0.85rem">Nenhuma campanha para o período</div>';
@@ -8810,27 +9048,151 @@ function metaBiRenderDashboardCampaigns(data) {
 
     html += '<div style="padding:18px;background:var(--card);border-radius:10px;box-shadow:var(--shadow);border-left:4px solid ' + badgeInfo.color + '">'
       + '<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:14px">'
-      + '<div style="flex:1">'
-      + '<div style="font-size:0.9rem;font-weight:700;color:var(--text)">' + row.campaign_name + '</div>'
-      + '</div>'
+      + '<div style="flex:1"><div style="font-size:0.9rem;font-weight:700;color:var(--text)">' + row.campaign_name + '</div></div>'
       + '<span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;background:' + badgeInfo.color + ';color:#fff;padding:4px 10px;border-radius:4px;white-space:nowrap;margin-left:8px">' + badgeInfo.badge + '</span>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;font-size:0.8rem">'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.reach) + '</div><div style="color:var(--text-secondary);margin-top:2px">Alcance</div></div>'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.impressions) + '</div><div style="color:var(--text-secondary);margin-top:2px">Impressões</div></div>'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.clicks) + '</div><div style="color:var(--text-secondary);margin-top:2px">Cliques</div></div>'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.cpc) + '</div><div style="color:var(--text-secondary);margin-top:2px">CPC</div></div>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:0.8rem">'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.conversions) + '</div><div style="color:var(--text-secondary);margin-top:2px">Compras</div></div>'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.revenue) + '</div><div style="color:var(--text-secondary);margin-top:2px">Receita</div></div>'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.cpa) + '</div><div style="color:var(--text-secondary);margin-top:2px">CPA</div></div>'
-      + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:var(--text-secondary);margin-top:2px">ROAS</div></div>'
-      + '</div>'
       + '</div>';
+
+    if (template === 'gastronomia') {
+      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;font-size:0.78rem">'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.spend) + '</div><div style="color:var(--text-secondary);margin-top:2px">Investimento</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.reach) + '</div><div style="color:var(--text-secondary);margin-top:2px">Alcance</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.impressions) + '</div><div style="color:var(--text-secondary);margin-top:2px">Impressões</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.landingPageViews || 0) + '</div><div style="color:var(--text-secondary);margin-top:2px">Visitas</div></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;font-size:0.78rem">'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.costPerVisit || 0) + '</div><div style="color:var(--text-secondary);margin-top:2px">Custo/Visita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.addToCart || 0) + '</div><div style="color:var(--text-secondary);margin-top:2px">🛒 Carrinho</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.initiateCheckout || 0) + '</div><div style="color:var(--text-secondary);margin-top:2px">💳 Checkouts</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.conversions) + '</div><div style="color:var(--text-secondary);margin-top:2px">✅ Compras</div></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;font-size:0.78rem">'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.revenue) + '</div><div style="color:var(--text-secondary);margin-top:2px">💰 Receita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.ticket) + '</div><div style="color:var(--text-secondary);margin-top:2px">Ticket Médio</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.cpa) + '</div><div style="color:var(--text-secondary);margin-top:2px">CPA</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.05rem;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:var(--text-secondary);margin-top:2px">ROAS</div></div>'
+        + '</div>';
+
+      var interpretation = metaBiGetInterpretation(row, badgeInfo.badge);
+      if (interpretation) {
+        html += '<div style="background:var(--bg);border-radius:8px;padding:12px 14px;font-size:0.78rem;color:var(--text-secondary);line-height:1.5;border:1px solid var(--border)">'
+          + '<div style="font-weight:700;color:var(--text);margin-bottom:4px">📌 Traduzindo isso:</div>'
+          + interpretation
+          + '</div>';
+      }
+    } else {
+      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;font-size:0.8rem">'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.reach) + '</div><div style="color:var(--text-secondary);margin-top:2px">Alcance</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.impressions) + '</div><div style="color:var(--text-secondary);margin-top:2px">Impressões</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.clicks) + '</div><div style="color:var(--text-secondary);margin-top:2px">Cliques</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.cpc) + '</div><div style="color:var(--text-secondary);margin-top:2px">CPC</div></div>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:0.8rem">'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatNumber(row.conversions) + '</div><div style="color:var(--text-secondary);margin-top:2px">Compras</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.revenue) + '</div><div style="color:var(--text-secondary);margin-top:2px">Receita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">' + metaFormatBRL(row.cpa) + '</div><div style="color:var(--text-secondary);margin-top:2px">CPA</div></div>'
+        + '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:var(--text-secondary);margin-top:2px">ROAS</div></div>'
+        + '</div>';
+    }
+
+    html += '</div>';
   });
 
   container.innerHTML = html;
+}
+
+function metaBiGetSistemaKey() {
+  return 'metaBiSistema_' + (_metaBiState.currentClient || '') + '_' + (_metaBiState.currentPeriod || '');
+}
+
+function metaBiSaveSistemaData() {
+  var data = {
+    faturamento: parseFloat(document.getElementById('metaBiSistFaturamento').value) || 0,
+    pedidos: parseInt(document.getElementById('metaBiSistPedidos').value) || 0,
+    delivery: parseFloat(document.getElementById('metaBiSistDelivery').value) || 0,
+    pedidosDelivery: parseInt(document.getElementById('metaBiSistPedidosDelivery').value) || 0,
+    retirada: parseFloat(document.getElementById('metaBiSistRetirada').value) || 0,
+    novos: parseInt(document.getElementById('metaBiSistNovos').value) || 0,
+    recorrentes: parseInt(document.getElementById('metaBiSistRecorrentes').value) || 0,
+    savedAt: new Date().toISOString()
+  };
+  localStorage.setItem(metaBiGetSistemaKey(), JSON.stringify(data));
+
+  var historyKey = 'metaBiSistemaHistory_' + (_metaBiState.currentClient || '');
+  var history = JSON.parse(localStorage.getItem(historyKey) || '{}');
+  history[_metaBiState.currentPeriod || 'unknown'] = data;
+  localStorage.setItem(historyKey, JSON.stringify(history));
+
+  var btn = document.getElementById('metaBiSistemaSaveBtn');
+  btn.textContent = '✅ Salvo!';
+  btn.style.background = '#22c55e';
+  setTimeout(function() { btn.textContent = 'Salvar'; btn.style.background = 'var(--starken)'; }, 2000);
+}
+
+function metaBiLoadSistemaData() {
+  var saved = localStorage.getItem(metaBiGetSistemaKey());
+  if (saved) {
+    var data = JSON.parse(saved);
+    document.getElementById('metaBiSistFaturamento').value = data.faturamento || '';
+    document.getElementById('metaBiSistPedidos').value = data.pedidos || '';
+    document.getElementById('metaBiSistDelivery').value = data.delivery || '';
+    document.getElementById('metaBiSistPedidosDelivery').value = data.pedidosDelivery || '';
+    document.getElementById('metaBiSistRetirada').value = data.retirada || '';
+    document.getElementById('metaBiSistNovos').value = data.novos || '';
+    document.getElementById('metaBiSistRecorrentes').value = data.recorrentes || '';
+  } else {
+    document.getElementById('metaBiSistFaturamento').value = '';
+    document.getElementById('metaBiSistPedidos').value = '';
+    document.getElementById('metaBiSistDelivery').value = '';
+    document.getElementById('metaBiSistPedidosDelivery').value = '';
+    document.getElementById('metaBiSistRetirada').value = '';
+    document.getElementById('metaBiSistNovos').value = '';
+    document.getElementById('metaBiSistRecorrentes').value = '';
+  }
+}
+
+function metaBiRenderIntelSection(data) {
+  var section = document.getElementById('metaBiIntelSection');
+  var content = document.getElementById('metaBiIntelContent');
+  if (!section || !content) return;
+
+  if (_metaBiState.currentTemplate !== 'gastronomia') {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+
+  var t = { spend: 0, impressions: 0, reach: 0, conversions: 0, revenue: 0, landingPageViews: 0, clicks: 0, addToCart: 0, initiateCheckout: 0 };
+  data.forEach(function(r) {
+    t.spend += r.spend; t.impressions += r.impressions; t.reach += r.reach || 0;
+    t.conversions += r.conversions; t.revenue += r.revenue;
+    t.landingPageViews += r.landingPageViews || 0;
+    t.clicks += r.clicks || 0;
+    t.addToCart += r.addToCart || 0;
+    t.initiateCheckout += r.initiateCheckout || 0;
+  });
+
+  var roas = t.spend > 0 ? t.revenue / t.spend : 0;
+  var cpa = t.conversions > 0 ? t.spend / t.conversions : 0;
+  var ticket = t.conversions > 0 ? t.revenue / t.conversions : 0;
+  var costPerVisit = t.landingPageViews > 0 ? t.spend / t.landingPageViews : 0;
+
+  function ic(label, value) {
+    return '<div style="text-align:center"><div style="font-size:1.1rem;font-weight:800">' + value + '</div><div style="opacity:0.7;margin-top:3px;font-size:0.72rem">' + label + '</div></div>';
+  }
+
+  content.innerHTML = ''
+    + ic('Investimento total', metaFormatBRL(t.spend))
+    + ic('Impressões', metaFormatNumber(t.impressions))
+    + ic('Alcance', metaFormatNumber(t.reach))
+    + ic('Resultados', metaFormatNumber(t.clicks))
+    + ic('Visitas ao perfil', metaFormatNumber(t.landingPageViews))
+    + ic('Custo por visita', metaFormatBRL(costPerVisit))
+    + ic('Compras via pixel', metaFormatNumber(t.conversions))
+    + ic('CPA médio', metaFormatBRL(cpa))
+    + ic('Receita rastreada', metaFormatBRL(t.revenue))
+    + ic('Ticket médio', metaFormatBRL(ticket))
+    + ic('ROAS', roas.toFixed(2) + 'x')
+    + ic('Funil (carrinho→compra)', t.addToCart > 0 ? Math.round(t.conversions / t.addToCart * 100) + '%' : '—');
 }
 
 function metaBiRenderDashboardCharts(data) {
