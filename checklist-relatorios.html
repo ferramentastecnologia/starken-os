@@ -2486,6 +2486,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 
@@ -8594,7 +8595,7 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       + '</div>'
       + '<div style="display:flex;gap:10px;margin-bottom:14px">'
       + '<button id="zappfyPreviewTabMsg" onclick="zappfyShowPreviewTab(\'msg\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:#25d366;color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer">📱 Mensagem WhatsApp</button>'
-      + '<button id="zappfyPreviewTabPdf" onclick="zappfyShowPreviewTab(\'pdf\')" style="flex:1;padding:8px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:transparent;color:var(--text,#1a1a2e);font-weight:700;font-size:0.82rem;cursor:pointer">📄 Relatório HTML</button>'
+      + '<button id="zappfyPreviewTabPdf" onclick="zappfyShowPreviewTab(\'pdf\')" style="flex:1;padding:8px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:transparent;color:var(--text,#1a1a2e);font-weight:700;font-size:0.82rem;cursor:pointer">📄 Relatório PDF</button>'
       + '</div>'
       + '<div id="zappfyPreviewContent" style="max-height:400px;overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:16px;background:var(--bg-secondary,#f8fafc);font-size:0.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
       + '<div id="zappfySendStatus2" style="display:none;padding:8px 12px;border-radius:8px;margin-top:12px;font-size:0.8rem;font-weight:600"></div>'
@@ -8679,17 +8680,47 @@ async function zappfyConfirmSend() {
   btn.innerHTML = '⏳ Enviando...';
 
   try {
-    // Upload HTML report to Supabase
+    // Generate PDF from HTML report
+    showStatus('📄 Gerando PDF do relatório...', 'blue');
+    btn.innerHTML = '📄 Gerando PDF...';
+    var pdfBlob = null;
+    try {
+      // Create a hidden container to render the report HTML
+      var pdfContainer = document.createElement('div');
+      pdfContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#f8fafc';
+      pdfContainer.innerHTML = p.reportHtml.replace(/<!DOCTYPE[^>]*>/i, '').replace(/<html[^>]*>/i, '').replace(/<\/html>/i, '').replace(/<head[^>]*>[\s\S]*?<\/head>/i, '').replace(/<\/?body[^>]*>/gi, '');
+      document.body.appendChild(pdfContainer);
+      pdfBlob = await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: 'relatorio.pdf',
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, width: 800, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      }).from(pdfContainer).outputPdf('blob');
+      document.body.removeChild(pdfContainer);
+    } catch (pdfErr) {
+      console.error('PDF generation failed, falling back to HTML:', pdfErr);
+      // Fallback to HTML if PDF generation fails
+      pdfBlob = null;
+    }
+
+    var isPdf = pdfBlob && pdfBlob.size > 0;
+    var fileExt = isPdf ? '.pdf' : '.html';
+    var contentType = isPdf ? 'application/pdf' : 'text/html';
+    var fileBlob = isPdf ? pdfBlob : new Blob([p.reportHtml], { type: 'text/html' });
+
+    // Upload to Supabase Storage
     showStatus('☁️ Fazendo upload do relatório...', 'blue');
-    var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + document.getElementById('zappfySendStart').value + '-' + Date.now() + '.html';
-    var fileBlob = new Blob([p.reportHtml], { type: 'text/html' });
+    btn.innerHTML = '☁️ Upload...';
+    var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + document.getElementById('zappfySendStart').value + '-' + Date.now() + fileExt;
     var uploadUrl = null;
 
     if (_supabase) {
-      var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: 'text/html', upsert: true });
+      var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
       if (upResult.error) {
         await _supabase.storage.createBucket('reports', { public: true });
-        upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: 'text/html', upsert: true });
+        upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
         if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
       }
       var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
@@ -8721,7 +8752,7 @@ async function zappfyConfirmSend() {
       await fetch('https://api.zappfy.io/send/media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'token': token },
-        body: JSON.stringify({ number: p.groupJid, type: 'document', file: uploadUrl, docName: 'Relatorio-' + (p.client.name || '').replace(/\s+/g, '-') + '-' + p.typeLabel + '.html', text: '📄 Relatório - ' + (p.client.name || '') })
+        body: JSON.stringify({ number: p.groupJid, type: 'document', file: uploadUrl, docName: 'Relatorio-' + (p.client.name || '').replace(/\s+/g, '-') + '-' + p.typeLabel + fileExt, text: '📄 Relatório - ' + (p.client.name || '') })
       });
     }
 
