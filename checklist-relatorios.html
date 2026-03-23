@@ -8439,14 +8439,14 @@ function zappfySelectGroup(clientKey, jid, name) {
 
 // ============ SEND REPORT VIA ZAPPFY ============
 
-async function zappfySendReport(clientId, type, periodKey) {
+// ──── ZAPPFY SEND: Modal flow ────
+function zappfySendReport(clientId, type, periodKey) {
   var token = zappfyGetToken();
   if (!token) { alert('Configure o token da Zappfy primeiro na seção de Configuração.'); return; }
 
   var client = data.clients.find(function(c) { return c.id === clientId; });
   if (!client) { alert('Cliente não encontrado'); return; }
 
-  // Find the meta client to get group JID
   var tenant = client.company === 'Starken' ? 'starken' : 'alpha';
   var metaKey = findMetaClientKey(client.name, tenant);
   var metaClient = metaKey ? _metaClients[metaKey] : null;
@@ -8457,106 +8457,218 @@ async function zappfySendReport(clientId, type, periodKey) {
     return;
   }
 
-  // Show sending state
-  showToast('⏳ Gerando relatório e enviando para WhatsApp...');
+  // Calculate default dates from week period
+  var defStart = '', defEnd = '';
+  try {
+    var monthKey = document.getElementById('weekMonth').value;
+    var weekNum = parseInt(document.getElementById('weekNumber').value) || 1;
+    var wk = getWeekInfo(monthKey, weekNum);
+    if (wk) { defStart = wk.periodStartISO; defEnd = wk.periodEndISO; }
+  } catch(e) {}
+  if (!defStart) {
+    var d = new Date(); d.setDate(d.getDate() - 7);
+    defStart = d.toISOString().slice(0,10);
+    defEnd = new Date().toISOString().slice(0,10);
+  }
+
+  // Build and show modal
+  var existing = document.getElementById('zappfySendModal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'zappfySendModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  modal.innerHTML = '<div style="background:var(--card-bg,#fff);border-radius:16px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);color:var(--text,#1a1a2e)">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    + '<div style="font-size:1.1rem;font-weight:800">📱 Enviar Relatório</div>'
+    + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#64748b)">✕</button>'
+    + '</div>'
+    + '<div style="background:var(--bg-secondary,#f1f5f9);padding:14px 16px;border-radius:10px;margin-bottom:18px">'
+    + '<div style="font-size:0.95rem;font-weight:700">' + (client.name || '') + '</div>'
+    + '<div style="font-size:0.78rem;color:var(--text-secondary,#64748b);margin-top:3px">Grupo: ' + (groupJid.split('@')[0].slice(-8)) + '...@g.us</div>'
+    + '</div>'
+    + '<div style="margin-bottom:16px">'
+    + '<label style="font-size:0.8rem;font-weight:700;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px">Período do relatório</label>'
+    + '<div style="display:flex;gap:10px;align-items:center">'
+    + '<input type="date" id="zappfySendStart" value="' + defStart + '" style="flex:1;padding:10px 12px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.88rem;font-family:inherit;background:var(--card-bg,#fff);color:var(--text,#1a1a2e)">'
+    + '<span style="color:var(--text-secondary,#64748b);font-size:0.82rem;font-weight:600">até</span>'
+    + '<input type="date" id="zappfySendEnd" value="' + defEnd + '" style="flex:1;padding:10px 12px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.88rem;font-family:inherit;background:var(--card-bg,#fff);color:var(--text,#1a1a2e)">'
+    + '</div></div>'
+    + '<div id="zappfySendStatus" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.82rem;font-weight:600"></div>'
+    + '<div style="display:flex;gap:10px">'
+    + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="flex:1;padding:12px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;background:transparent;color:var(--text,#1a1a2e);font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>'
+    + '<button id="zappfySendBtn" onclick="zappfyExecuteSend(\'' + clientId + '\',\'' + type + '\',\'' + periodKey + '\',\'' + metaKey + '\',\'' + groupJid + '\')" style="flex:2;padding:12px;border:none;border-radius:10px;background:#25d366;color:#fff;font-size:0.88rem;font-weight:800;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px">📱 Buscar dados e Enviar</button>'
+    + '</div></div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+}
+
+async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
+  var token = zappfyGetToken();
+  var client = data.clients.find(function(c) { return c.id === clientId; });
+  var metaClient = _metaClients[metaKey];
+  var tenant = metaClient ? metaClient.tenant : 'starken';
+  var statusEl = document.getElementById('zappfySendStatus');
+  var btn = document.getElementById('zappfySendBtn');
+  var dateStart = document.getElementById('zappfySendStart').value;
+  var dateEnd = document.getElementById('zappfySendEnd').value;
+
+  if (!dateStart || !dateEnd) { alert('Selecione o período'); return; }
+
+  function showStatus(msg, color) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = color === 'green' ? '#dcfce7' : color === 'red' ? '#fef2f2' : '#eff6ff';
+    statusEl.style.color = color === 'green' ? '#166534' : color === 'red' ? '#991b1b' : '#1e40af';
+    statusEl.textContent = msg;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Buscando dados...';
 
   try {
-    // Step 1: Generate HTML report content
-    var reportHtml = zappfyBuildReportHtml(client, type, periodKey, metaClient);
+    // STEP 1: Fetch Meta Ads data for this client's ad account
+    showStatus('⏳ Buscando dados da Meta Ads...', 'blue');
+    var adAccount = metaClient ? metaClient.adAccountId : '';
+    if (!adAccount || adAccount === 'act_000000000') {
+      throw new Error('Conta de anúncios não configurada para ' + (client.name || ''));
+    }
 
-    // Step 2: Upload HTML to Supabase Storage as a public file
-    var fileName = 'relatorio-' + (client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + periodKey + '-' + Date.now() + '.html';
+    var url = metaApiBase() + '/api/meta/insights?tenant=' + tenant + '&preset=custom&level=campaign&date_start=' + dateStart + '&date_end=' + dateEnd;
+    var res = await fetch(url);
+    var json = await res.json();
+    if (json.error) throw new Error('Meta API: ' + (json.message || json.error));
+
+    var filtered = (json.data || []).filter(function(row) { return row.ad_account_id === adAccount; });
+    var rows = filtered.map(function(row) {
+      var purchases = metaBiExtractAction(row.actions, ['omni_purchase','purchase','offsite_conversion.fb_pixel_purchase']);
+      var revenue = metaBiExtractAction(row.action_values, ['omni_purchase','purchase','offsite_conversion.fb_pixel_purchase']);
+      var spend = parseFloat(row.spend || 0);
+      var impressions = parseInt(row.impressions || 0);
+      var reach = parseInt(row.reach || 0);
+      var clicks = parseInt(row.clicks || 0);
+      var addToCart = metaBiExtractAction(row.actions, ['add_to_cart','offsite_conversion.fb_pixel_add_to_cart']);
+      var initiateCheckout = metaBiExtractAction(row.actions, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
+      var landingPageViews = metaBiExtractAction(row.actions, ['landing_page_view']);
+      var linkClicks = metaBiExtractAction(row.actions, ['link_click']);
+      return {
+        campaign_name: row.campaign_name || '—', spend: spend, impressions: impressions, reach: reach, clicks: clicks,
+        cpc: parseFloat(row.cpc || 0), cpm: parseFloat(row.cpm || 0), ctr: parseFloat(row.ctr || 0),
+        purchases: purchases, revenue: revenue, conversions: purchases,
+        cpa: purchases > 0 ? spend / purchases : 0, roas: spend > 0 ? revenue / spend : 0,
+        ticket: purchases > 0 ? revenue / purchases : 0, addToCart: addToCart,
+        initiateCheckout: initiateCheckout, landingPageViews: landingPageViews, linkClicks: linkClicks,
+        costPerVisit: landingPageViews > 0 ? spend / landingPageViews : 0
+      };
+    });
+
+    if (rows.length === 0) throw new Error('Nenhuma campanha encontrada para ' + (client.name || '') + ' nesse período');
+
+    // STEP 2: Generate HTML report
+    showStatus('📄 Gerando relatório (' + rows.length + ' campanhas)...', 'blue');
+    btn.innerHTML = '📄 Gerando relatório...';
+    var periodLabel = formatDateBR(dateStart) + ' a ' + formatDateBR(dateEnd);
+    var reportHtml = zappfyBuildReportHtml(client, type, periodLabel, metaClient, rows);
+
+    // STEP 3: Upload to Supabase Storage
+    showStatus('☁️ Fazendo upload do relatório...', 'blue');
+    btn.innerHTML = '☁️ Upload...';
+    var fileName = 'relatorio-' + (client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + dateStart + '-' + Date.now() + '.html';
     var fileBlob = new Blob([reportHtml], { type: 'text/html' });
-
     var uploadUrl = null;
+
     if (_supabase) {
-      var { data: uploadData, error: uploadError } = await _supabase.storage
-        .from('reports')
-        .upload('zappfy/' + fileName, fileBlob, { contentType: 'text/html', upsert: true });
-
-      if (uploadError) {
-        // Try creating bucket first
+      var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: 'text/html', upsert: true });
+      if (upResult.error) {
         await _supabase.storage.createBucket('reports', { public: true });
-        var retry = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: 'text/html', upsert: true });
-        if (retry.error) throw new Error('Erro no upload: ' + retry.error.message);
-        uploadData = retry.data;
+        upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: 'text/html', upsert: true });
+        if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
       }
-
-      var { data: urlData } = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
-      uploadUrl = urlData.publicUrl;
+      var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
+      uploadUrl = urlResult.data.publicUrl;
     }
 
-    // Step 3: Build text summary
+    // STEP 4: Build WhatsApp text summary with real KPIs
+    showStatus('📱 Enviando no WhatsApp...', 'blue');
+    btn.innerHTML = '📱 Enviando...';
+    var totals = { spend:0, revenue:0, conversions:0, reach:0, impressions:0, addToCart:0, initiateCheckout:0 };
+    rows.forEach(function(r) { totals.spend += r.spend; totals.revenue += r.revenue; totals.conversions += r.conversions; totals.reach += r.reach; totals.impressions += r.impressions; totals.addToCart += r.addToCart; totals.initiateCheckout += r.initiateCheckout; });
+    var tRoas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
+    var tCpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
+    var tTicket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+
+    var fmtBRL = function(v) { return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+    var fmtNum = function(v) { return (parseInt(v)||0).toLocaleString('pt-BR'); };
     var typeLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
-    var report = data.reports.find(function(r) { return r.clientId === clientId && r.type === type && r.period === periodKey; });
 
-    var textMsg = '📊 *RELATÓRIO DE PERFORMANCE ' + typeLabel.toUpperCase() + '*\n'
-      + '📋 *' + (client.name || '') + '*\n'
-      + '📅 Período: ' + periodKey + '\n'
-      + '📆 Data de geração: ' + new Date().toLocaleDateString('pt-BR') + '\n\n';
+    var textMsg = '📊 *RELATÓRIO ' + typeLabel.toUpperCase() + ' — ' + (client.name || '').toUpperCase() + '*\n'
+      + '📅 *' + periodLabel + '*\n\n'
+      + '💰 Investimento: *' + fmtBRL(totals.spend) + '*\n'
+      + '👥 Alcance: *' + fmtNum(totals.reach) + '*\n'
+      + '👁️ Impressões: *' + fmtNum(totals.impressions) + '*\n';
 
-    if (metaKey && _metaBiState && _metaBiState.allClients && _metaBiState.allClients[metaKey]) {
-      textMsg += '💡 _Relatório completo disponível no link abaixo._\n';
-    }
+    if (totals.addToCart > 0) textMsg += '🛒 Carrinho: *' + fmtNum(totals.addToCart) + '*\n';
+    if (totals.initiateCheckout > 0) textMsg += '📦 Checkouts: *' + fmtNum(totals.initiateCheckout) + '*\n';
+    if (totals.conversions > 0) textMsg += '✅ Compras: *' + fmtNum(totals.conversions) + '*\n';
+    if (totals.revenue > 0) textMsg += '💵 Receita: *' + fmtBRL(totals.revenue) + '*\n';
+    if (tRoas > 0) textMsg += '🔥 ROAS: *' + tRoas.toFixed(2) + 'x*\n';
+    if (tCpa > 0) textMsg += '📉 CPA: *' + fmtBRL(tCpa) + '*\n';
+    if (tTicket > 0) textMsg += '🎫 Ticket Médio: *' + fmtBRL(tTicket) + '*\n';
 
-    if (uploadUrl) {
-      textMsg += '\n🔗 *Relatório completo:*\n' + uploadUrl;
-    }
+    if (uploadUrl) textMsg += '\n🔗 *Relatório completo:*\n' + uploadUrl;
+    textMsg += '\n\n_Starken Performance_';
 
-    textMsg += '\n\n_Gerado automaticamente por Starken OS_';
-
-    // Step 4: Send via Zappfy - first send text, then document if URL available
+    // Send text
     var sendRes = await fetch('https://api.zappfy.io/send/text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'token': token },
       body: JSON.stringify({ number: groupJid, text: textMsg })
     });
-    var sendData = await sendRes.json();
+    var sendJson = await sendRes.json();
+    if (sendJson.error) throw new Error('Zappfy: ' + (sendJson.message || JSON.stringify(sendJson)));
 
-    if (sendData.error) {
-      throw new Error('Erro ao enviar: ' + (sendData.message || JSON.stringify(sendData)));
-    }
-
-    // Step 5: Send document if we have a URL
+    // Send document
     if (uploadUrl) {
-      await new Promise(function(r) { setTimeout(r, 1500); }); // Small delay between messages
-
-      var docRes = await fetch('https://api.zappfy.io/send/media', {
+      await new Promise(function(r) { setTimeout(r, 1500); });
+      await fetch('https://api.zappfy.io/send/media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'token': token },
-        body: JSON.stringify({
-          number: groupJid,
-          type: 'document',
-          file: uploadUrl,
-          docName: 'Relatorio-' + typeLabel + '-' + (client.name || '').replace(/\s+/g, '-') + '.html',
-          text: '📄 Relatório de Performance - ' + (client.name || '')
-        })
+        body: JSON.stringify({ number: groupJid, type: 'document', file: uploadUrl, docName: 'Relatorio-' + (client.name || '').replace(/\s+/g, '-') + '-' + typeLabel + '.html', text: '📄 Relatório completo - ' + (client.name || '') })
       });
     }
 
-    // Step 6: Update report status to "Enviado"
+    // STEP 5: Update status
     var r = data.reports.find(function(x) { return x.clientId === clientId && x.type === type && x.period === periodKey; });
     if (!r) {
-      r = { id: gid(), clientId: clientId, type: type, period: periodKey, status: 2, sent: true, sentDate: new Date().toISOString(), notes: 'Enviado via Zappfy WhatsApp', createdAt: new Date().toISOString() };
+      r = { id: gid(), clientId: clientId, type: type, period: periodKey, status: 2, sent: true, sentDate: new Date().toISOString(), notes: 'Zappfy: ' + periodLabel, createdAt: new Date().toISOString() };
       data.reports.push(r);
     } else {
-      r.status = 2;
-      r.sent = true;
-      r.sentDate = new Date().toISOString();
-      if (!r.notes) r.notes = 'Enviado via Zappfy WhatsApp';
+      r.status = 2; r.sent = true; r.sentDate = new Date().toISOString();
     }
     saveData(data);
     renderAll();
 
-    showToast('✅ Relatório enviado no grupo WhatsApp!');
+    showStatus('✅ Relatório enviado com sucesso!', 'green');
+    btn.innerHTML = '✅ Enviado!';
+    btn.style.background = '#16a34a';
+    setTimeout(function() { var m = document.getElementById('zappfySendModal'); if (m) m.remove(); }, 2000);
+    showToast('✅ Relatório de ' + (client.name || '') + ' enviado no WhatsApp!');
 
   } catch (e) {
-    showToast('❌ Erro: ' + e.message);
+    showStatus('❌ ' + e.message, 'red');
+    btn.disabled = false;
+    btn.innerHTML = '📱 Tentar novamente';
+    btn.style.background = '#25d366';
     console.error('Zappfy send error:', e);
   }
 }
 
-function zappfyBuildReportHtml(client, type, periodKey, metaClient) {
+function formatDateBR(isoDate) {
+  if (!isoDate) return '';
+  var parts = isoDate.split('-');
+  return parts[2] + '/' + parts[1] + '/' + parts[0];
+}
+
+function zappfyBuildReportHtml(client, type, periodLabel, metaClient, biData) {
   var typeLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
   var today = new Date().toLocaleDateString('pt-BR');
 
@@ -8566,8 +8678,7 @@ function zappfyBuildReportHtml(client, type, periodKey, metaClient) {
   var campaignRows = '';
   var totals = { spend: 0, revenue: 0, conversions: 0, reach: 0, impressions: 0, addToCart: 0, initiateCheckout: 0, landingPageViews: 0, clicks: 0 };
 
-  // Try to get BI data if available
-  var biData = (_metaBiState && _metaBiState.dashboardData) || [];
+  biData = biData || [];
   if (biData.length > 0) {
     biData.forEach(function(row) {
       totals.spend += row.spend || 0;
@@ -8583,6 +8694,7 @@ function zappfyBuildReportHtml(client, type, periodKey, metaClient) {
       var badge = metaBiGetCampaignBadge(row.campaign_name);
       var roasColor = row.roas >= 5 ? '#22c55e' : row.roas >= 2 ? '#f59e0b' : '#ef4444';
       var roasText = row.roas > 0 ? row.roas.toFixed(2) + 'x' : '—';
+      var interpretation = metaBiGetInterpretation(row, badge.badge);
 
       campaignRows += '<div style="padding:18px 20px;background:#fff;border-radius:10px;border-left:4px solid ' + badge.color + ';margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
@@ -8593,15 +8705,26 @@ function zappfyBuildReportHtml(client, type, periodKey, metaClient) {
         + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.spend) + '</div><div style="color:#64748b;margin-top:2px">Investimento</div></div>'
         + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.reach) + '</div><div style="color:#64748b;margin-top:2px">Alcance</div></div>'
         + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.impressions) + '</div><div style="color:#64748b;margin-top:2px">Impressões</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">Compras</div></div>'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.landingPageViews || 0) + '</div><div style="color:#64748b;margin-top:2px">Visitas</div></div>'
         + '</div>'
         + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-top:8px">'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.addToCart || 0) + '</div><div style="color:#64748b;margin-top:2px">Carrinho</div></div>'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.initiateCheckout || 0) + '</div><div style="color:#64748b;margin-top:2px">Checkouts</div></div>'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">Compras</div></div>'
         + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.revenue) + '</div><div style="color:#64748b;margin-top:2px">Receita</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.ticket) + '</div><div style="color:#64748b;margin-top:2px">Ticket Médio</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
         + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-top:8px">'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.ticket) + '</div><div style="color:#64748b;margin-top:2px">Ticket</div></div>'
+        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.costPerVisit || 0) + '</div><div style="color:#64748b;margin-top:2px">Custo/Visita</div></div>'
         + '</div>';
+
+      if (interpretation) {
+        campaignRows += '<div style="margin-top:12px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;line-height:1.5">'
+          + '<strong>📌 Traduzindo isso:</strong><br>' + interpretation + '</div>';
+      }
+      campaignRows += '</div>';
     });
   }
 
@@ -8609,7 +8732,7 @@ function zappfyBuildReportHtml(client, type, periodKey, metaClient) {
   var cpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
   var ticket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
 
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório ' + typeLabel + ' - ' + (client.name || '') + '</title>'
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Relatório ' + typeLabel + ' - ' + (client.name || '') + '</title>'
     + '<style>'
     + '@page { size: A4; margin: 15mm; }'
     + 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:0; background:#f8fafc; color:#1a1a2e; }'
@@ -8622,20 +8745,25 @@ function zappfyBuildReportHtml(client, type, periodKey, metaClient) {
     + '<div style="position:relative;z-index:1">'
     + '<div style="font-size:22px;font-weight:800;margin-bottom:4px">RELATÓRIO DE PERFORMANCE ' + typeLabel.toUpperCase() + '</div>'
     + '<div style="font-size:16px;font-weight:600;opacity:0.95">' + (client.name || '') + '</div>'
-    + '<div style="font-size:13px;opacity:0.8;margin-top:6px">Período: ' + periodKey + ' · Gerado em ' + today + '</div>'
+    + '<div style="font-size:13px;opacity:0.8;margin-top:6px">Período: ' + periodLabel + ' · Gerado em ' + today + '</div>'
     + '</div></div>';
 
-  // KPIs summary
+  // KPIs
   if (biData.length > 0) {
-    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">'
-      + '<div style="padding:20px;text-align:center;border-left:4px solid #1877f2;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Investimento Total</div><div style="font-size:22px;font-weight:800">' + fmt(totals.spend) + '</div></div>'
-      + '<div style="padding:20px;text-align:center;border-left:4px solid #00b894;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">Receita Rastreada</div><div style="font-size:22px;font-weight:800">' + fmt(totals.revenue) + '</div></div>'
-      + '<div style="padding:20px;text-align:center;border-left:4px solid #22c55e;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:8px">ROAS Consolidado</div><div style="font-size:22px;font-weight:800;color:' + (roas >= 5 ? '#22c55e' : roas >= 2 ? '#f59e0b' : '#ef4444') + '">' + roas.toFixed(2) + 'x</div></div>'
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #1877f2;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Investimento</div><div style="font-size:18px;font-weight:800">' + fmt(totals.spend) + '</div></div>'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #6366f1;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Alcance</div><div style="font-size:18px;font-weight:800">' + fmtN(totals.reach) + '</div></div>'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #f59e0b;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Compras</div><div style="font-size:18px;font-weight:800">' + fmtN(totals.conversions) + '</div></div>'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #00b894;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Receita</div><div style="font-size:18px;font-weight:800">' + fmt(totals.revenue) + '</div></div>'
       + '</div>'
-      + '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">Desempenho das Campanhas — Meta Ads</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px">'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #22c55e;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">ROAS</div><div style="font-size:18px;font-weight:800;color:' + (roas >= 5 ? '#22c55e' : roas >= 2 ? '#f59e0b' : '#ef4444') + '">' + roas.toFixed(2) + 'x</div></div>'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #ef4444;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">CPA</div><div style="font-size:18px;font-weight:800">' + fmt(cpa) + '</div></div>'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #8b5cf6;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Ticket</div><div style="font-size:18px;font-weight:800">' + fmt(ticket) + '</div></div>'
+      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #0ea5e9;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">🛒 Carrinho</div><div style="font-size:18px;font-weight:800">' + fmtN(totals.addToCart) + '</div></div>'
+      + '</div>'
+      + '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">Campanhas — Meta Ads</div>'
       + campaignRows + '</div>';
-  } else {
-    html += '<div style="padding:30px;text-align:center;color:#64748b;font-size:14px">Dados de campanha não carregados no BI. Abra o cliente no BI Campanhas para preencher os dados.</div>';
   }
 
   html += '<div style="text-align:center;padding:20px 0;border-top:1px solid #e2e8f0;margin-top:20px;font-size:11px;color:#94a3b8">Relatório gerado automaticamente por Starken OS · ' + today + '</div>'
