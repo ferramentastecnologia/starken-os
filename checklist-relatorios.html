@@ -8644,14 +8644,19 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       var initiateCheckout = metaBiExtractAction(row.actions, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
       var landingPageViews = metaBiExtractAction(row.actions, ['landing_page_view']);
       var linkClicks = metaBiExtractAction(row.actions, ['link_click']);
+      // Determine badge to choose correct "visitas" metric
+      var _badge = metaBiGetCampaignBadge(row.campaign_name || '');
+      // AUDIÊNCIA campaigns: "Visitas perfil" = clicks (matches Ads Manager "Resultados")
+      // VENDAS campaigns: "Visitas" = landing_page_view
+      var visitasMetric = _badge.badge === 'AUDIÊNCIA' ? clicks : landingPageViews;
       return {
         campaign_name: row.campaign_name || '—', spend: spend, impressions: impressions, reach: reach, clicks: clicks,
         cpc: parseFloat(row.cpc || 0), cpm: parseFloat(row.cpm || 0), ctr: parseFloat(row.ctr || 0),
         purchases: purchases, revenue: revenue, conversions: purchases,
         cpa: purchases > 0 ? spend / purchases : 0, roas: spend > 0 ? revenue / spend : 0,
         ticket: purchases > 0 ? revenue / purchases : 0, addToCart: addToCart,
-        initiateCheckout: initiateCheckout, landingPageViews: landingPageViews, linkClicks: linkClicks,
-        costPerVisit: landingPageViews > 0 ? spend / landingPageViews : 0
+        initiateCheckout: initiateCheckout, landingPageViews: visitasMetric, linkClicks: linkClicks,
+        costPerVisit: visitasMetric > 0 ? spend / visitasMetric : 0
       };
     });
 
@@ -10011,6 +10016,9 @@ async function metaBiFetchDashboardData(clientKey, preset) {
       var initiateCheckout = metaBiExtractAction(row.actions, ['initiate_checkout','offsite_conversion.fb_pixel_initiate_checkout']);
       var landingPageViews = metaBiExtractAction(row.actions, ['landing_page_view']);
       var linkClicks = metaBiExtractAction(row.actions, ['link_click']);
+      // AUDIÊNCIA campaigns: "Visitas perfil" = clicks (matches Ads Manager "Resultados")
+      var _badge = metaBiGetCampaignBadge(row.campaign_name || '');
+      var visitasMetric = _badge.badge === 'AUDIÊNCIA' ? clicks : landingPageViews;
 
       return {
         campaign_name: row.campaign_name || '—',
@@ -10031,9 +10039,9 @@ async function metaBiFetchDashboardData(clientKey, preset) {
         ticket: purchases > 0 ? revenue / purchases : 0,
         addToCart: addToCart,
         initiateCheckout: initiateCheckout,
-        landingPageViews: landingPageViews,
+        landingPageViews: visitasMetric,
         linkClicks: linkClicks,
-        costPerVisit: landingPageViews > 0 ? spend / landingPageViews : 0
+        costPerVisit: visitasMetric > 0 ? spend / visitasMetric : 0
       };
     });
 
@@ -10313,6 +10321,7 @@ function metaBiRenderIntelSection(data) {
   var roas = t.spend > 0 ? t.revenue / t.spend : 0;
   var cpa = t.conversions > 0 ? t.spend / t.conversions : 0;
   var ticket = t.conversions > 0 ? t.revenue / t.conversions : 0;
+  // For consolidated: use landingPageViews which already has the correct metric per campaign type
   var costPerVisit = t.landingPageViews > 0 ? t.spend / t.landingPageViews : 0;
 
   function ic(label, value) {
@@ -10323,9 +10332,9 @@ function metaBiRenderIntelSection(data) {
     + ic('Investimento total', metaFormatBRL(t.spend))
     + ic('Impressões', metaFormatNumber(t.impressions))
     + ic('Alcance', metaFormatNumber(t.reach))
-    + ic('Resultados', metaFormatNumber(t.clicks))
     + ic('Visitas ao perfil', metaFormatNumber(t.landingPageViews))
     + ic('Custo por visita', metaFormatBRL(costPerVisit))
+    + ic('Resultados', metaFormatNumber(t.clicks))
     + ic('Compras via pixel', metaFormatNumber(t.conversions))
     + ic('CPA médio', metaFormatBRL(cpa))
     + ic('Receita rastreada', metaFormatBRL(t.revenue))
@@ -14833,14 +14842,15 @@ function gadsRenderKeywords(keywords) {
   document.getElementById('gadsKeywordsSection').style.display = 'block';
 }
 
-// Auto-load when tab is opened
-const _origSwitchTab = switchTab;
-function switchTab(tabName) {
-  _origSwitchTab(tabName);
-  if (tabName === 'google-ads' && !gadsData.audit) {
-    gadsLoad();
-  }
-}
+// Auto-load when google-ads tab is opened
+window.switchTab = (function(orig) {
+  return function(tabName) {
+    orig(tabName);
+    if (tabName === 'google-ads' && !gadsData.audit) {
+      gadsLoad();
+    }
+  };
+})(window.switchTab);
 
 </script>
 
