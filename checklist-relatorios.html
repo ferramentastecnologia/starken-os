@@ -8512,6 +8512,7 @@ function zappfySendReport(clientId, type, periodKey) {
   modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
 }
 
+// STEP 1: Fetch data and show preview
 async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
   var token = zappfyGetToken();
   var client = data.clients.find(function(c) { return c.id === clientId; });
@@ -8535,7 +8536,6 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
   btn.innerHTML = '⏳ Buscando dados...';
 
   try {
-    // STEP 1: Fetch Meta Ads data for this client's ad account
     showStatus('⏳ Buscando dados da Meta Ads...', 'blue');
     var adAccount = metaClient ? metaClient.adAccountId : '';
     if (!adAccount || adAccount === 'act_000000000') {
@@ -8572,17 +8572,117 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
 
     if (rows.length === 0) throw new Error('Nenhuma campanha encontrada para ' + (client.name || '') + ' nesse período');
 
-    // STEP 2: Generate HTML report
-    showStatus('📄 Gerando relatório (' + rows.length + ' campanhas)...', 'blue');
-    btn.innerHTML = '📄 Gerando relatório...';
     var periodLabel = formatDateBR(dateStart) + ' a ' + formatDateBR(dateEnd);
+    var typeLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
+
+    // Build text message
+    var textMsg = zappfyBuildTextMessage(client, rows, periodLabel, typeLabel);
+
+    // Build HTML report
     var reportHtml = zappfyBuildReportHtml(client, type, periodLabel, metaClient, rows);
 
-    // STEP 3: Upload to Supabase Storage
+    // Store data for the confirm step
+    window._zappfyPending = { clientId: clientId, type: type, periodKey: periodKey, metaKey: metaKey, groupJid: groupJid, textMsg: textMsg, reportHtml: reportHtml, periodLabel: periodLabel, typeLabel: typeLabel, rows: rows, client: client };
+
+    // Show preview modal (replace current modal content)
+    var modal = document.getElementById('zappfySendModal');
+    if (!modal) return;
+    modal.querySelector('div').innerHTML = ''
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+      + '<div style="font-size:1.1rem;font-weight:800">👁️ Preview — ' + (client.name || '') + '</div>'
+      + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#64748b)">✕</button>'
+      + '</div>'
+      + '<div style="display:flex;gap:10px;margin-bottom:14px">'
+      + '<button id="zappfyPreviewTabMsg" onclick="zappfyShowPreviewTab(\'msg\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:#25d366;color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer">📱 Mensagem WhatsApp</button>'
+      + '<button id="zappfyPreviewTabPdf" onclick="zappfyShowPreviewTab(\'pdf\')" style="flex:1;padding:8px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:transparent;color:var(--text,#1a1a2e);font-weight:700;font-size:0.82rem;cursor:pointer">📄 Relatório HTML</button>'
+      + '</div>'
+      + '<div id="zappfyPreviewContent" style="max-height:400px;overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:16px;background:var(--bg-secondary,#f8fafc);font-size:0.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
+      + '<div id="zappfySendStatus2" style="display:none;padding:8px 12px;border-radius:8px;margin-top:12px;font-size:0.8rem;font-weight:600"></div>'
+      + '<div style="display:flex;gap:10px;margin-top:14px">'
+      + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="flex:1;padding:12px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;background:transparent;color:var(--text,#1a1a2e);font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>'
+      + '<button onclick="zappfyEditMessage()" style="flex:1;padding:12px;border:1.5px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>'
+      + '<button id="zappfyConfirmBtn" onclick="zappfyConfirmSend()" style="flex:2;padding:12px;border:none;border-radius:10px;background:#25d366;color:#fff;font-size:0.88rem;font-weight:800;cursor:pointer;font-family:inherit">📱 Confirmar e Enviar</button>'
+      + '</div>';
+
+  } catch (e) {
+    showStatus('❌ ' + e.message, 'red');
+    btn.disabled = false;
+    btn.innerHTML = '📱 Tentar novamente';
+    btn.style.background = '#25d366';
+    console.error('Zappfy fetch error:', e);
+  }
+}
+
+function zappfyFormatPreview(text) {
+  // Convert WhatsApp formatting to HTML for preview
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*([^*]+)\*/g, '<strong>$1</strong>')
+    .replace(/_([^_]+)_/g, '<em>$1</em>')
+    .replace(/━/g, '<span style="color:#cbd5e1">━</span>');
+}
+
+function zappfyShowPreviewTab(tab) {
+  var p = window._zappfyPending;
+  if (!p) return;
+  var content = document.getElementById('zappfyPreviewContent');
+  var btnMsg = document.getElementById('zappfyPreviewTabMsg');
+  var btnPdf = document.getElementById('zappfyPreviewTabPdf');
+  if (tab === 'msg') {
+    content.style.whiteSpace = 'pre-wrap';
+    content.innerHTML = zappfyFormatPreview(p.textMsg);
+    btnMsg.style.background = '#25d366'; btnMsg.style.color = '#fff'; btnMsg.style.border = 'none';
+    btnPdf.style.background = 'transparent'; btnPdf.style.color = 'var(--text,#1a1a2e)'; btnPdf.style.border = '1.5px solid var(--border,#e2e8f0)';
+  } else {
+    content.style.whiteSpace = 'normal';
+    content.innerHTML = '<iframe srcdoc="' + p.reportHtml.replace(/"/g, '&quot;') + '" style="width:100%;height:380px;border:none;border-radius:8px"></iframe>';
+    btnPdf.style.background = '#1877f2'; btnPdf.style.color = '#fff'; btnPdf.style.border = 'none';
+    btnMsg.style.background = 'transparent'; btnMsg.style.color = 'var(--text,#1a1a2e)'; btnMsg.style.border = '1.5px solid var(--border,#e2e8f0)';
+  }
+}
+
+function zappfyEditMessage() {
+  var p = window._zappfyPending;
+  if (!p) return;
+  var content = document.getElementById('zappfyPreviewContent');
+  content.innerHTML = '<textarea id="zappfyEditTextarea" style="width:100%;min-height:350px;border:none;background:transparent;font-size:0.8rem;line-height:1.6;resize:vertical;font-family:inherit;color:var(--text,#1a1a2e);outline:none">' + p.textMsg.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</textarea>';
+  // Replace edit button with save button
+  var editBtn = document.querySelector('[onclick="zappfyEditMessage()"]');
+  if (editBtn) {
+    editBtn.textContent = '💾 Salvar';
+    editBtn.onclick = function() {
+      var ta = document.getElementById('zappfyEditTextarea');
+      if (ta) { p.textMsg = ta.value; window._zappfyPending = p; }
+      zappfyShowPreviewTab('msg');
+      editBtn.textContent = '✏️ Editar';
+      editBtn.onclick = zappfyEditMessage;
+    };
+  }
+}
+
+// STEP 2: Confirm and send
+async function zappfyConfirmSend() {
+  var p = window._zappfyPending;
+  if (!p) return;
+  var token = zappfyGetToken();
+  var btn = document.getElementById('zappfyConfirmBtn');
+  var statusEl = document.getElementById('zappfySendStatus2');
+
+  function showStatus(msg, color) {
+    statusEl.style.display = 'block';
+    statusEl.style.background = color === 'green' ? '#dcfce7' : color === 'red' ? '#fef2f2' : '#eff6ff';
+    statusEl.style.color = color === 'green' ? '#166534' : color === 'red' ? '#991b1b' : '#1e40af';
+    statusEl.textContent = msg;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Enviando...';
+
+  try {
+    // Upload HTML report to Supabase
     showStatus('☁️ Fazendo upload do relatório...', 'blue');
-    btn.innerHTML = '☁️ Upload...';
-    var fileName = 'relatorio-' + (client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + dateStart + '-' + Date.now() + '.html';
-    var fileBlob = new Blob([reportHtml], { type: 'text/html' });
+    var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + document.getElementById('zappfySendStart').value + '-' + Date.now() + '.html';
+    var fileBlob = new Blob([p.reportHtml], { type: 'text/html' });
     var uploadUrl = null;
 
     if (_supabase) {
@@ -8596,59 +8696,39 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       uploadUrl = urlResult.data.publicUrl;
     }
 
-    // STEP 4: Build WhatsApp text summary with real KPIs
-    showStatus('📱 Enviando no WhatsApp...', 'blue');
-    btn.innerHTML = '📱 Enviando...';
-    var totals = { spend:0, revenue:0, conversions:0, reach:0, impressions:0, addToCart:0, initiateCheckout:0 };
-    rows.forEach(function(r) { totals.spend += r.spend; totals.revenue += r.revenue; totals.conversions += r.conversions; totals.reach += r.reach; totals.impressions += r.impressions; totals.addToCart += r.addToCart; totals.initiateCheckout += r.initiateCheckout; });
-    var tRoas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
-    var tCpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
-    var tTicket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+    // Append report link to message if available
+    var finalMsg = p.textMsg;
+    if (uploadUrl && !finalMsg.includes(uploadUrl)) {
+      finalMsg = finalMsg.replace(/\n\n_Starken Performance_/, '\n🔗 *Relatório completo:*\n' + uploadUrl + '\n\n_Starken Performance_');
+    }
 
-    var fmtBRL = function(v) { return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
-    var fmtNum = function(v) { return (parseInt(v)||0).toLocaleString('pt-BR'); };
-    var typeLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
-
-    var textMsg = '📊 *RELATÓRIO ' + typeLabel.toUpperCase() + ' — ' + (client.name || '').toUpperCase() + '*\n'
-      + '📅 *' + periodLabel + '*\n\n'
-      + '💰 Investimento: *' + fmtBRL(totals.spend) + '*\n'
-      + '👥 Alcance: *' + fmtNum(totals.reach) + '*\n'
-      + '👁️ Impressões: *' + fmtNum(totals.impressions) + '*\n';
-
-    if (totals.addToCart > 0) textMsg += '🛒 Carrinho: *' + fmtNum(totals.addToCart) + '*\n';
-    if (totals.initiateCheckout > 0) textMsg += '📦 Checkouts: *' + fmtNum(totals.initiateCheckout) + '*\n';
-    if (totals.conversions > 0) textMsg += '✅ Compras: *' + fmtNum(totals.conversions) + '*\n';
-    if (totals.revenue > 0) textMsg += '💵 Receita: *' + fmtBRL(totals.revenue) + '*\n';
-    if (tRoas > 0) textMsg += '🔥 ROAS: *' + tRoas.toFixed(2) + 'x*\n';
-    if (tCpa > 0) textMsg += '📉 CPA: *' + fmtBRL(tCpa) + '*\n';
-    if (tTicket > 0) textMsg += '🎫 Ticket Médio: *' + fmtBRL(tTicket) + '*\n';
-
-    if (uploadUrl) textMsg += '\n🔗 *Relatório completo:*\n' + uploadUrl;
-    textMsg += '\n\n_Starken Performance_';
-
-    // Send text
+    // Send text message
+    showStatus('📱 Enviando mensagem no WhatsApp...', 'blue');
+    btn.innerHTML = '📱 Enviando mensagem...';
     var sendRes = await fetch('https://api.zappfy.io/send/text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'token': token },
-      body: JSON.stringify({ number: groupJid, text: textMsg })
+      body: JSON.stringify({ number: p.groupJid, text: finalMsg })
     });
     var sendJson = await sendRes.json();
     if (sendJson.error) throw new Error('Zappfy: ' + (sendJson.message || JSON.stringify(sendJson)));
 
-    // Send document
+    // Send document file
     if (uploadUrl) {
+      showStatus('📄 Enviando documento...', 'blue');
+      btn.innerHTML = '📄 Enviando relatório...';
       await new Promise(function(r) { setTimeout(r, 1500); });
       await fetch('https://api.zappfy.io/send/media', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'token': token },
-        body: JSON.stringify({ number: groupJid, type: 'document', file: uploadUrl, docName: 'Relatorio-' + (client.name || '').replace(/\s+/g, '-') + '-' + typeLabel + '.html', text: '📄 Relatório completo - ' + (client.name || '') })
+        body: JSON.stringify({ number: p.groupJid, type: 'document', file: uploadUrl, docName: 'Relatorio-' + (p.client.name || '').replace(/\s+/g, '-') + '-' + p.typeLabel + '.html', text: '📄 Relatório - ' + (p.client.name || '') })
       });
     }
 
-    // STEP 5: Update status
-    var r = data.reports.find(function(x) { return x.clientId === clientId && x.type === type && x.period === periodKey; });
+    // Update report status
+    var r = data.reports.find(function(x) { return x.clientId === p.clientId && x.type === p.type && x.period === p.periodKey; });
     if (!r) {
-      r = { id: gid(), clientId: clientId, type: type, period: periodKey, status: 2, sent: true, sentDate: new Date().toISOString(), notes: 'Zappfy: ' + periodLabel, createdAt: new Date().toISOString() };
+      r = { id: gid(), clientId: p.clientId, type: p.type, period: p.periodKey, status: 2, sent: true, sentDate: new Date().toISOString(), notes: 'Zappfy: ' + p.periodLabel, createdAt: new Date().toISOString() };
       data.reports.push(r);
     } else {
       r.status = 2; r.sent = true; r.sentDate = new Date().toISOString();
@@ -8660,7 +8740,8 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
     btn.innerHTML = '✅ Enviado!';
     btn.style.background = '#16a34a';
     setTimeout(function() { var m = document.getElementById('zappfySendModal'); if (m) m.remove(); }, 2000);
-    showToast('✅ Relatório de ' + (client.name || '') + ' enviado no WhatsApp!');
+    showToast('✅ Relatório de ' + (p.client.name || '') + ' enviado no WhatsApp!');
+    window._zappfyPending = null;
 
   } catch (e) {
     showStatus('❌ ' + e.message, 'red');
@@ -8669,6 +8750,72 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
     btn.style.background = '#25d366';
     console.error('Zappfy send error:', e);
   }
+}
+
+// Build the rich WhatsApp text message
+function zappfyBuildTextMessage(client, rows, periodLabel, typeLabel) {
+  var fmtBRL = function(v) { return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+  var fmtNum = function(v) { return (parseInt(v)||0).toLocaleString('pt-BR'); };
+
+  var totals = { spend:0, revenue:0, conversions:0, reach:0, impressions:0, addToCart:0, initiateCheckout:0, landingPageViews:0 };
+  rows.forEach(function(r) { totals.spend += r.spend; totals.revenue += r.revenue; totals.conversions += r.conversions; totals.reach += r.reach; totals.impressions += r.impressions; totals.addToCart += r.addToCart || 0; totals.initiateCheckout += r.initiateCheckout || 0; totals.landingPageViews += r.landingPageViews || 0; });
+  var tRoas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
+  var tCpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
+  var tTicket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+
+  var msg = '📊 *RELATÓRIO DE PERFORMANCE ' + typeLabel.toUpperCase() + '*\n'
+    + '📋 *' + (client.name || '').toUpperCase() + '*\n'
+    + '📅 ' + periodLabel + '\n'
+    + '━━━━━━━━━━━━━━━━━━━━\n\n';
+
+  msg += '🔢 *RESULTADOS CONSOLIDADOS*\n\n'
+    + '💰 Investimento: *' + fmtBRL(totals.spend) + '*\n'
+    + '👥 Alcance: *' + fmtNum(totals.reach) + '*\n'
+    + '👁️ Impressões: *' + fmtNum(totals.impressions) + '*\n';
+  if (totals.landingPageViews > 0) msg += '🔗 Visitas: *' + fmtNum(totals.landingPageViews) + '*\n';
+  msg += '\n';
+
+  if (totals.addToCart > 0 || totals.conversions > 0) {
+    msg += '🛒 *FUNIL DE COMPRA*\n\n';
+    if (totals.addToCart > 0) msg += '   🛒 Carrinho: *' + fmtNum(totals.addToCart) + '*\n';
+    if (totals.initiateCheckout > 0) msg += '   📦 Checkout: *' + fmtNum(totals.initiateCheckout) + '*\n';
+    if (totals.conversions > 0) msg += '   ✅ Compras: *' + fmtNum(totals.conversions) + '*\n';
+    if (totals.revenue > 0) msg += '   💵 Receita: *' + fmtBRL(totals.revenue) + '*\n';
+    msg += '\n';
+  }
+
+  msg += '📈 *MÉTRICAS-CHAVE*\n\n';
+  if (tRoas > 0) msg += '   🔥 ROAS: *' + tRoas.toFixed(2) + 'x*\n';
+  if (tCpa > 0) msg += '   📉 CPA: *' + fmtBRL(tCpa) + '*\n';
+  if (tTicket > 0) msg += '   🎫 Ticket Médio: *' + fmtBRL(tTicket) + '*\n';
+  if (totals.landingPageViews > 0) msg += '   💲 Custo/Visita: *' + fmtBRL(totals.spend / totals.landingPageViews) + '*\n';
+  msg += '\n━━━━━━━━━━━━━━━━━━━━\n\n';
+
+  msg += '📣 *CAMPANHAS (' + rows.length + ')*\n\n';
+  rows.forEach(function(row) {
+    var badge = metaBiGetCampaignBadge(row.campaign_name);
+    var badgeEmoji = badge.badge === 'VENDAS' ? '💰' : badge.badge === 'AUDIÊNCIA' ? '📢' : badge.badge === 'LEADS' ? '🎯' : '📊';
+    msg += badgeEmoji + ' *' + row.campaign_name + '* [' + badge.badge + ']\n';
+    msg += '   Invest: ' + fmtBRL(row.spend) + ' · Alcance: ' + fmtNum(row.reach) + '\n';
+    if (row.landingPageViews > 0) msg += '   Visitas: ' + fmtNum(row.landingPageViews) + ' · Custo/Visita: ' + fmtBRL(row.costPerVisit) + '\n';
+    if (row.addToCart > 0 || row.conversions > 0) msg += '   🛒 ' + fmtNum(row.addToCart) + ' → 📦 ' + fmtNum(row.initiateCheckout) + ' → ✅ ' + fmtNum(row.conversions) + '\n';
+    if (row.revenue > 0) msg += '   Receita: ' + fmtBRL(row.revenue) + ' · ROAS: *' + row.roas.toFixed(2) + 'x* · CPA: ' + fmtBRL(row.cpa) + '\n';
+
+    var interp = metaBiGetInterpretation(row, badge.badge);
+    if (interp) msg += '   📌 _' + interp.replace(/<br>/g, ' ').replace(/<[^>]+>/g, '') + '_\n';
+    msg += '\n';
+  });
+
+  msg += '━━━━━━━━━━━━━━━━━━━━\n';
+  if (tRoas > 0) {
+    msg += '\n💡 *RESUMO:* ';
+    if (tRoas >= 5) msg += 'Cada R$ 1 investido retornou R$ ' + Math.floor(tRoas) + ' em vendas. Excelente resultado!';
+    else if (tRoas >= 2) msg += 'Cada R$ 1 investido retornou R$ ' + tRoas.toFixed(1) + ' em vendas. Resultado positivo.';
+    else msg += 'Cada R$ 1 investido retornou R$ ' + tRoas.toFixed(1) + ' em vendas. Em fase de otimização.';
+    msg += '\n';
+  }
+  msg += '\n_Starken Performance_';
+  return msg;
 }
 
 function formatDateBR(isoDate) {
