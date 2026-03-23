@@ -4571,10 +4571,14 @@ function loadData() {
   d.reports.forEach(r => { if (typeof r.status === 'undefined') r.status = r.sent ? 2 : 0; });
 
   // Seed: add new clients; also update segment if blank
+  // Respect previously deleted clients so they don't reappear
+  var deletedSeeds = [];
+  try { deletedSeeds = JSON.parse(localStorage.getItem('deleted_seed_clients') || '[]'); } catch(e) {}
   const existingNames = d.clients.map(c => c.name.toLowerCase());
   for (const seed of SEED_CLIENTS) {
     const idx = d.clients.findIndex(c => c.name.toLowerCase() === seed.name.toLowerCase());
     if (idx === -1) {
+      if (deletedSeeds.includes(seed.name.toLowerCase())) continue; // skip re-adding deleted clients
       d.clients.push({ id: gid(), name: seed.name, company: seed.company, phone: '', customPeriod: '', segment: seed.segment || '', active: true });
     } else if (!d.clients[idx].segment && seed.segment) {
       d.clients[idx].segment = seed.segment;
@@ -5787,6 +5791,12 @@ function deleteClient(id) {
   const c = data.clients.find(x => x.id === id);
   if (!c) return;
   if (!confirm('Remover "' + c.name + '"?')) return;
+  // Track deleted seed clients so they don't get re-added on reload
+  try {
+    var deleted = JSON.parse(localStorage.getItem('deleted_seed_clients') || '[]');
+    if (!deleted.includes(c.name.toLowerCase())) deleted.push(c.name.toLowerCase());
+    localStorage.setItem('deleted_seed_clients', JSON.stringify(deleted));
+  } catch(e) {}
   data.clients = data.clients.filter(x => x.id !== id);
   data.reports = data.reports.filter(x => x.clientId !== id);
   saveData(data);
@@ -7262,10 +7272,13 @@ renderAll(); // render imediato com dados do localStorage
       cloudData.reports.forEach(r => {
         if (typeof r.status === 'undefined') r.status = r.sent ? 2 : 0;
       });
-      // Seed de novos clientes
+      // Seed de novos clientes (respecting deleted ones)
+      var _delSeeds = [];
+      try { _delSeeds = JSON.parse(localStorage.getItem('deleted_seed_clients') || '[]'); } catch(e) {}
       for (const seed of SEED_CLIENTS) {
         const idx = cloudData.clients.findIndex(c => c.name.toLowerCase() === seed.name.toLowerCase());
         if (idx === -1) {
+          if (_delSeeds.includes(seed.name.toLowerCase())) continue;
           cloudData.clients.push({ id: gid(), name: seed.name, company: seed.company, phone: '', customPeriod: '', segment: seed.segment || '', active: true });
         } else if (!cloudData.clients[idx].segment && seed.segment) {
           cloudData.clients[idx].segment = seed.segment;
