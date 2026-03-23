@@ -14857,13 +14857,12 @@ function gadsCampaignCard(c, accentColor) {
       </div>
     </div>
     <!-- Ad preview toggle -->
-    ${c.type === 'SEARCH' ? `
     <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;padding-left:8px">
       <button onclick="gadsToggleAds(this,'${c.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.74rem;color:var(--text-secondary);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all 0.2s">
         <span style="font-size:0.8rem">📋</span> Ver anúncios
       </button>
       <div id="gadsAdPreview-${c.id}" style="display:none;margin-top:12px"></div>
-    </div>` : ''}
+    </div>
   </div>`;
 }
 
