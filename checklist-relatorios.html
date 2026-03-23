@@ -8253,13 +8253,7 @@ function metaConfigRenderClientList() {
       + '</div>'
       + '</div>'
       + '</div>'
-      // Linha 5: Cardápio Digital
-      + '<div class="mc-field-row">'
-      + '<div class="mc-field full">'
-      + '<label>🍽️ Cardápio Digital (URL)</label>'
-      + '<input type="text" value="' + (c.cardapioUrl || '') + '" placeholder="https://cardapio.exemplo.com/cliente" oninput="_metaClients[\'' + key + '\'].cardapioUrl=this.value">'
-      + '</div>'
-      + '</div>'
+      // (Cardápio data is now in BI Sistema section, not here)
       + '</div>'
       + '</div>';
   }
@@ -8583,44 +8577,77 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
     var periodLabel = formatDateBR(dateStart) + ' a ' + formatDateBR(dateEnd);
     var typeLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
 
-    // Build text message
-    var textMsg = zappfyBuildTextMessage(client, rows, periodLabel, typeLabel);
+    // Load sistema/cardápio data from localStorage
+    var sistemaData = { faturamento:0, pedidos:0, delivery:0, pedidosDelivery:0, retirada:0, novos:0, recorrentes:0 };
+    var biPeriod = type === 'weekly' ? 'last_7d' : 'this_month';
+    var sistemaKey = 'metaBiSistema_' + (metaKey || '') + '_' + biPeriod;
+    try {
+      var savedSist = localStorage.getItem(sistemaKey);
+      if (savedSist) sistemaData = Object.assign(sistemaData, JSON.parse(savedSist));
+    } catch(e) {}
 
-    // Build HTML report
-    var reportHtml = zappfyBuildReportHtml(client, type, periodLabel, metaClient, rows);
+    // Build text message (with sistema data)
+    var textMsg = zappfyBuildTextMessage(client, rows, periodLabel, typeLabel, sistemaData);
+
+    // Build HTML report (with sistema data)
+    var reportHtml = zappfyBuildReportHtml(client, type, periodLabel, metaClient, rows, sistemaData);
 
     // Store data for the confirm step
-    window._zappfyPending = { clientId: clientId, type: type, periodKey: periodKey, metaKey: metaKey, groupJid: groupJid, textMsg: textMsg, reportHtml: reportHtml, periodLabel: periodLabel, typeLabel: typeLabel, rows: rows, client: client };
+    window._zappfyPending = { clientId: clientId, type: type, periodKey: periodKey, metaKey: metaKey, groupJid: groupJid, textMsg: textMsg, reportHtml: reportHtml, periodLabel: periodLabel, typeLabel: typeLabel, rows: rows, client: client, sistemaData: sistemaData };
 
     // Show preview modal (replace current modal content — make it bigger)
     var modal = document.getElementById('zappfySendModal');
     if (!modal) return;
     var innerDiv = modal.querySelector('div');
-    innerDiv.style.maxWidth = '900px';
+    innerDiv.style.maxWidth = '960px';
     innerDiv.style.width = '96%';
-    innerDiv.style.maxHeight = '92vh';
+    innerDiv.style.maxHeight = '94vh';
+    innerDiv.style.overflowY = 'auto';
     innerDiv.style.padding = '32px 36px';
 
-    // Check if client has cardápio URL
-    var metaClient = metaKey ? _metaClients[metaKey] : null;
-    var hasCardapio = metaClient && metaClient.cardapioUrl;
+    var s = sistemaData;
+    var fmtBRL = function(v) { return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
+    var hasSistData = s.faturamento > 0 || s.pedidos > 0;
 
     innerDiv.innerHTML = ''
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'
       + '<div style="font-size:1.25rem;font-weight:800">👁️ Preview — ' + (client.name || '') + '</div>'
       + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-secondary,#64748b)">✕</button>'
       + '</div>'
+
+      // === DADOS DO SISTEMA — CARDÁPIO (collapsible, always shown) ===
+      + '<div style="margin-bottom:16px;border:1.5px solid var(--border,#e2e8f0);border-radius:12px;overflow:hidden">'
+      + '<div onclick="var c=this.nextElementSibling;c.style.display=c.style.display===\'none\'?\'block\':\'none\';this.querySelector(\'span:last-child\').textContent=c.style.display===\'none\'?\'▸\':\'▾\'" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg-secondary,#f1f5f9);cursor:pointer;user-select:none">'
+      + '<div style="font-size:0.88rem;font-weight:700;color:var(--text,#1a1a2e)">📊 Dados do Sistema — Cardápio' + (hasSistData ? ' <span style=\'font-size:0.72rem;color:#22c55e;font-weight:600\'>(preenchido)</span>' : ' <span style=\'font-size:0.72rem;color:#f59e0b;font-weight:600\'>(preencha para incluir)</span>') + '</div>'
+      + '<span style="font-size:1.1rem;color:var(--text-secondary,#64748b)">▾</span>'
+      + '</div>'
+      + '<div style="display:block;padding:16px">'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">💰 Faturamento Total</label><input type="number" id="zappfySistFat" step="0.01" value="' + (s.faturamento || '') + '" placeholder="0.00" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">📦 Total de Pedidos</label><input type="number" id="zappfySistPed" value="' + (s.pedidos || '') + '" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">🚚 Fat. Delivery</label><input type="number" id="zappfySistDel" step="0.01" value="' + (s.delivery || '') + '" placeholder="0.00" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">📦 Ped. Delivery</label><input type="number" id="zappfySistPedDel" value="' + (s.pedidosDelivery || '') + '" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px">'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">🏬 Fat. Retirada</label><input type="number" id="zappfySistRet" step="0.01" value="' + (s.retirada || '') + '" placeholder="0.00" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">👥 Novos Clientes</label><input type="number" id="zappfySistNovos" value="' + (s.novos || '') + '" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '<div><label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary,#64748b);margin-bottom:4px">🔁 Recorrentes</label><input type="number" id="zappfySistRec" value="' + (s.recorrentes || '') + '" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.85rem;background:var(--card-bg,#fff);color:var(--text,#1a1a2e);font-family:inherit;box-sizing:border-box"></div>'
+      + '<div style="display:flex;align-items:flex-end"><button onclick="zappfyRefreshPreviewMsg()" style="width:100%;padding:8px 10px;border:none;border-radius:8px;background:var(--starken,#1877f2);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit">🔄 Atualizar msg</button></div>'
+      + '</div>'
+      + '</div>'
+      + '</div>'
+
+      // === TABS ===
       + '<div style="display:flex;gap:10px;margin-bottom:16px">'
       + '<button id="zappfyPreviewTabMsg" onclick="zappfyShowPreviewTab(\'msg\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#25d366;color:#fff;font-weight:700;font-size:0.88rem;cursor:pointer">📱 Mensagem WhatsApp</button>'
       + '<button id="zappfyPreviewTabPdf" onclick="zappfyShowPreviewTab(\'pdf\')" style="flex:1;padding:10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:transparent;color:var(--text,#1a1a2e);font-weight:700;font-size:0.88rem;cursor:pointer">📄 Relatório PDF</button>'
       + '</div>'
-      + (hasCardapio ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px">'
-        + '<input type="checkbox" id="zappfyIncludeCardapio" checked style="width:18px;height:18px;accent-color:#f59e0b">'
-        + '<label for="zappfyIncludeCardapio" style="font-size:0.85rem;font-weight:600;color:#92400e;cursor:pointer">🍽️ Incluir link do cardápio digital na mensagem</label>'
-        + '<a href="' + metaClient.cardapioUrl + '" target="_blank" style="margin-left:auto;font-size:0.75rem;color:#1877f2;text-decoration:underline">Abrir</a>'
-        + '</div>' : '')
-      + '<div id="zappfyPreviewContent" style="min-height:350px;max-height:calc(92vh - 280px);overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:20px;background:var(--bg-secondary,#f8fafc);font-size:0.85rem;line-height:1.7;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
+
+      // === PREVIEW CONTENT ===
+      + '<div id="zappfyPreviewContent" style="min-height:350px;max-height:calc(94vh - 420px);overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:20px;background:var(--bg-secondary,#f8fafc);font-size:0.85rem;line-height:1.7;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
       + '<div id="zappfySendStatus2" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:0.85rem;font-weight:600"></div>'
+
+      // === BUTTONS ===
       + '<div style="display:flex;gap:12px;margin-top:16px">'
       + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="flex:1;padding:14px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;background:transparent;color:var(--text,#1a1a2e);font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>'
       + '<button onclick="zappfyEditMessage()" style="flex:1;padding:14px;border:1.5px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>'
@@ -8749,15 +8776,8 @@ async function zappfyConfirmSend() {
       uploadUrl = urlResult.data.publicUrl;
     }
 
-    // Build final message with optional links
+    // Build final message with report link
     var finalMsg = p.textMsg;
-
-    // Append cardápio link if checkbox is checked
-    var cardapioCheck = document.getElementById('zappfyIncludeCardapio');
-    var metaClient = p.metaKey ? _metaClients[p.metaKey] : null;
-    if (cardapioCheck && cardapioCheck.checked && metaClient && metaClient.cardapioUrl) {
-      finalMsg = finalMsg.replace(/\n\n_Starken Performance_/, '\n🍽️ *Cardápio Digital:*\n' + metaClient.cardapioUrl + '\n\n_Starken Performance_');
-    }
 
     // Append report link
     if (uploadUrl && !finalMsg.includes(uploadUrl)) {
@@ -8815,9 +8835,10 @@ async function zappfyConfirmSend() {
 }
 
 // Build the rich WhatsApp text message
-function zappfyBuildTextMessage(client, rows, periodLabel, typeLabel) {
+function zappfyBuildTextMessage(client, rows, periodLabel, typeLabel, sistemaData) {
   var fmtBRL = function(v) { return 'R$ ' + (parseFloat(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
   var fmtNum = function(v) { return (parseInt(v)||0).toLocaleString('pt-BR'); };
+  var sist = sistemaData || {};
 
   var totals = { spend:0, revenue:0, conversions:0, reach:0, impressions:0, addToCart:0, initiateCheckout:0, landingPageViews:0 };
   rows.forEach(function(r) { totals.spend += r.spend; totals.revenue += r.revenue; totals.conversions += r.conversions; totals.reach += r.reach; totals.impressions += r.impressions; totals.addToCart += r.addToCart || 0; totals.initiateCheckout += r.initiateCheckout || 0; totals.landingPageViews += r.landingPageViews || 0; });
@@ -8830,7 +8851,19 @@ function zappfyBuildTextMessage(client, rows, periodLabel, typeLabel) {
     + '📅 ' + periodLabel + '\n'
     + '━━━━━━━━━━━━━━━━━━━━\n\n';
 
-  msg += '🔢 *RESULTADOS CONSOLIDADOS*\n\n'
+  // Sistema / Cardápio digital
+  if (sist.faturamento > 0 || sist.pedidos > 0) {
+    msg += '🍽️ *CARDÁPIO DIGITAL*\n\n'
+      + '💰 Faturamento: *' + fmtBRL(sist.faturamento) + '*\n'
+      + '📦 Pedidos: *' + fmtNum(sist.pedidos) + '*\n';
+    if (sist.delivery > 0) msg += '🚚 Delivery: *' + fmtBRL(sist.delivery) + '*\n';
+    if (sist.retirada > 0) msg += '🏬 Retirada: *' + fmtBRL(sist.retirada) + '*\n';
+    if (sist.novos > 0) msg += '👥 Novos clientes: *' + fmtNum(sist.novos) + '*\n';
+    if (sist.recorrentes > 0) msg += '🔁 Recorrentes: *' + fmtNum(sist.recorrentes) + '*\n';
+    msg += '\n━━━━━━━━━━━━━━━━━━━━\n\n';
+  }
+
+  msg += '🔢 *TRÁFEGO PAGO — CONSOLIDADO*\n\n'
     + '💰 Investimento: *' + fmtBRL(totals.spend) + '*\n'
     + '👥 Alcance: *' + fmtNum(totals.reach) + '*\n'
     + '👁️ Impressões: *' + fmtNum(totals.impressions) + '*\n';
@@ -8842,7 +8875,7 @@ function zappfyBuildTextMessage(client, rows, periodLabel, typeLabel) {
     if (totals.addToCart > 0) msg += '   🛒 Carrinho: *' + fmtNum(totals.addToCart) + '*\n';
     if (totals.initiateCheckout > 0) msg += '   📦 Checkout: *' + fmtNum(totals.initiateCheckout) + '*\n';
     if (totals.conversions > 0) msg += '   ✅ Compras: *' + fmtNum(totals.conversions) + '*\n';
-    if (totals.revenue > 0) msg += '   💵 Receita: *' + fmtBRL(totals.revenue) + '*\n';
+    if (totals.revenue > 0) msg += '   💵 Receita rastreada: *' + fmtBRL(totals.revenue) + '*\n';
     msg += '\n';
   }
 
@@ -8874,10 +8907,38 @@ function zappfyBuildTextMessage(client, rows, periodLabel, typeLabel) {
     if (tRoas >= 5) msg += 'Cada R$ 1 investido retornou R$ ' + Math.floor(tRoas) + ' em vendas. Excelente resultado!';
     else if (tRoas >= 2) msg += 'Cada R$ 1 investido retornou R$ ' + tRoas.toFixed(1) + ' em vendas. Resultado positivo.';
     else msg += 'Cada R$ 1 investido retornou R$ ' + tRoas.toFixed(1) + ' em vendas. Em fase de otimização.';
+    if (sist.faturamento > 0 && totals.revenue > 0) {
+      var revPct = Math.round(totals.revenue / sist.faturamento * 100);
+      msg += ' A receita rastreada representa ' + revPct + '% do faturamento real.';
+    }
     msg += '\n';
   }
   msg += '\n_Starken Performance_';
   return msg;
+}
+
+// Refresh preview message when sistema fields are updated
+function zappfyRefreshPreviewMsg() {
+  var p = window._zappfyPending;
+  if (!p) return;
+  // Read updated values from modal fields
+  var sist = {
+    faturamento: parseFloat(document.getElementById('zappfySistFat').value) || 0,
+    pedidos: parseInt(document.getElementById('zappfySistPed').value) || 0,
+    delivery: parseFloat(document.getElementById('zappfySistDel').value) || 0,
+    pedidosDelivery: parseInt(document.getElementById('zappfySistPedDel').value) || 0,
+    retirada: parseFloat(document.getElementById('zappfySistRet').value) || 0,
+    novos: parseInt(document.getElementById('zappfySistNovos').value) || 0,
+    recorrentes: parseInt(document.getElementById('zappfySistRec').value) || 0
+  };
+  // Update pending data
+  p.sistemaData = sist;
+  p.textMsg = zappfyBuildTextMessage(p.client, p.rows, p.periodLabel, p.typeLabel, sist);
+  p.reportHtml = zappfyBuildReportHtml(p.client, p.type, p.periodLabel, p.metaKey ? _metaClients[p.metaKey] : null, p.rows, sist);
+  window._zappfyPending = p;
+  // Refresh visible preview
+  zappfyShowPreviewTab('msg');
+  showToast('✅ Mensagem e relatório atualizados!');
 }
 
 function formatDateBR(isoDate) {
@@ -8886,106 +8947,261 @@ function formatDateBR(isoDate) {
   return parts[2] + '/' + parts[1] + '/' + parts[0];
 }
 
-function zappfyBuildReportHtml(client, type, periodLabel, metaClient, biData) {
+function zappfyBuildReportHtml(client, type, periodLabel, metaClient, biData, sistemaData) {
   var typeLabel = type === 'weekly' ? 'Semanal' : 'Mensal';
   var today = new Date().toLocaleDateString('pt-BR');
+  var sist = sistemaData || { faturamento:0, pedidos:0, delivery:0, pedidosDelivery:0, retirada:0, novos:0, recorrentes:0 };
 
   var fmt = function(v) { return 'R$ ' + (parseFloat(v) || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
   var fmtN = function(v) { return (parseInt(v) || 0).toLocaleString('pt-BR'); };
-
-  var campaignRows = '';
-  var totals = { spend: 0, revenue: 0, conversions: 0, reach: 0, impressions: 0, addToCart: 0, initiateCheckout: 0, landingPageViews: 0, clicks: 0 };
+  var fmtDec = function(v) { return (parseFloat(v) || 0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}); };
 
   biData = biData || [];
-  if (biData.length > 0) {
-    biData.forEach(function(row) {
-      totals.spend += row.spend || 0;
-      totals.revenue += row.revenue || 0;
-      totals.conversions += row.conversions || 0;
-      totals.reach += row.reach || 0;
-      totals.impressions += row.impressions || 0;
-      totals.addToCart += row.addToCart || 0;
-      totals.initiateCheckout += row.initiateCheckout || 0;
-      totals.landingPageViews += row.landingPageViews || 0;
-      totals.clicks += row.clicks || 0;
-
-      var badge = metaBiGetCampaignBadge(row.campaign_name);
-      var roasColor = row.roas >= 5 ? '#22c55e' : row.roas >= 2 ? '#f59e0b' : '#ef4444';
-      var roasText = row.roas > 0 ? row.roas.toFixed(2) + 'x' : '—';
-      var interpretation = metaBiGetInterpretation(row, badge.badge);
-
-      campaignRows += '<div style="padding:18px 20px;background:#fff;border-radius:10px;border-left:4px solid ' + badge.color + ';margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-        + '<div style="font-size:14px;font-weight:700;color:#1a1a2e">' + row.campaign_name + '</div>'
-        + '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;background:' + badge.color + ';color:#fff;padding:4px 10px;border-radius:4px">' + badge.badge + '</span>'
-        + '</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px">'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.spend) + '</div><div style="color:#64748b;margin-top:2px">Investimento</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.reach) + '</div><div style="color:#64748b;margin-top:2px">Alcance</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.impressions) + '</div><div style="color:#64748b;margin-top:2px">Impressões</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.landingPageViews || 0) + '</div><div style="color:#64748b;margin-top:2px">Visitas</div></div>'
-        + '</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-top:8px">'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.addToCart || 0) + '</div><div style="color:#64748b;margin-top:2px">Carrinho</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.initiateCheckout || 0) + '</div><div style="color:#64748b;margin-top:2px">Checkouts</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmtN(row.conversions) + '</div><div style="color:#64748b;margin-top:2px">Compras</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.revenue) + '</div><div style="color:#64748b;margin-top:2px">Receita</div></div>'
-        + '</div>'
-        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-top:8px">'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800;color:' + roasColor + '">' + roasText + '</div><div style="color:#64748b;margin-top:2px">ROAS</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.cpa) + '</div><div style="color:#64748b;margin-top:2px">CPA</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.ticket) + '</div><div style="color:#64748b;margin-top:2px">Ticket</div></div>'
-        + '<div style="text-align:center"><div style="font-size:15px;font-weight:800">' + fmt(row.costPerVisit || 0) + '</div><div style="color:#64748b;margin-top:2px">Custo/Visita</div></div>'
-        + '</div>';
-
-      if (interpretation) {
-        campaignRows += '<div style="margin-top:12px;padding:10px 14px;background:#f0fdf4;border-radius:8px;font-size:12px;color:#166534;line-height:1.5">'
-          + '<strong>📌 Traduzindo isso:</strong><br>' + interpretation + '</div>';
-      }
-      campaignRows += '</div>';
-    });
-  }
-
+  var totals = { spend:0, revenue:0, conversions:0, reach:0, impressions:0, addToCart:0, initiateCheckout:0, landingPageViews:0, clicks:0 };
+  biData.forEach(function(row) {
+    totals.spend += row.spend||0; totals.revenue += row.revenue||0; totals.conversions += row.conversions||0;
+    totals.reach += row.reach||0; totals.impressions += row.impressions||0; totals.addToCart += row.addToCart||0;
+    totals.initiateCheckout += row.initiateCheckout||0; totals.landingPageViews += row.landingPageViews||0; totals.clicks += row.clicks||0;
+  });
   var roas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
   var cpa = totals.conversions > 0 ? totals.spend / totals.conversions : 0;
   var ticket = totals.conversions > 0 ? totals.revenue / totals.conversions : 0;
+  var revPct = sist.faturamento > 0 ? Math.round(totals.revenue / sist.faturamento * 100) : 0;
 
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Relatório ' + typeLabel + ' - ' + (client.name || '') + '</title>'
-    + '<style>'
-    + '@page { size: A4; margin: 15mm; }'
-    + 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:0; background:#f8fafc; color:#1a1a2e; }'
-    + '.page { max-width:800px; margin:0 auto; padding:30px; }'
-    + '@media print { body { background:#fff; } .page { padding:0; } .no-print { display:none !important; } }'
-    + '</style></head><body>'
-    + '<div class="page">'
-    + '<div style="background:linear-gradient(135deg,#1877f2 0%,#8b5cf6 100%);border-radius:16px;padding:28px 32px;margin-bottom:28px;color:#fff;position:relative;overflow:hidden">'
-    + '<div style="position:absolute;top:-30px;right:-30px;width:150px;height:150px;background:rgba(255,255,255,0.08);border-radius:50%"></div>'
-    + '<div style="position:relative;z-index:1">'
-    + '<div style="font-size:22px;font-weight:800;margin-bottom:4px">RELATÓRIO DE PERFORMANCE ' + typeLabel.toUpperCase() + '</div>'
-    + '<div style="font-size:16px;font-weight:600;opacity:0.95">' + (client.name || '') + '</div>'
-    + '<div style="font-size:13px;opacity:0.8;margin-top:6px">Período: ' + periodLabel + ' · Gerado em ' + today + '</div>'
-    + '</div></div>';
+  // Determine special badges per campaign
+  var lowestCpa = Infinity; var lowestCpaIdx = -1;
+  biData.forEach(function(r, i) { if (r.conversions > 0 && r.cpa < lowestCpa) { lowestCpa = r.cpa; lowestCpaIdx = i; } });
 
-  // KPIs
-  if (biData.length > 0) {
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #1877f2;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Investimento</div><div style="font-size:18px;font-weight:800">' + fmt(totals.spend) + '</div></div>'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #6366f1;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Alcance</div><div style="font-size:18px;font-weight:800">' + fmtN(totals.reach) + '</div></div>'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #f59e0b;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Compras</div><div style="font-size:18px;font-weight:800">' + fmtN(totals.conversions) + '</div></div>'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #00b894;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Receita</div><div style="font-size:18px;font-weight:800">' + fmt(totals.revenue) + '</div></div>'
+  // Build campaign cards
+  var campaignCards = '';
+  biData.forEach(function(row, idx) {
+    var badge = metaBiGetCampaignBadge(row.campaign_name);
+    // Map to PDF badge labels
+    var badgeLabel = badge.badge === 'AUDIÊNCIA' ? 'TOPO DE FUNIL' : badge.badge === 'VENDAS' ? 'CONVERSÃO' : badge.badge === 'LEADS' ? 'CAPTAÇÃO' : badge.badge;
+    var badgeColor = badge.badge === 'AUDIÊNCIA' ? '#8B7355' : badge.badge === 'VENDAS' ? '#5c6b3c' : badge.badge === 'LEADS' ? '#3b82f6' : '#6c5ce7';
+    // Override if lowest CPA and is conversion campaign
+    if (idx === lowestCpaIdx && badge.badge === 'VENDAS' && biData.length > 1) { badgeLabel = 'MENOR CPA · ESCALA'; badgeColor = '#5c6b3c'; }
+
+    var interpretation = metaBiGetInterpretation(row, badge.badge);
+    // Determine which metrics to show based on campaign type
+    var isAud = badge.badge === 'AUDIÊNCIA';
+    var row1 = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.reach) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">Alcance</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.impressions) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">Impressões</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmtN(row.landingPageViews || 0) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">Visitas perfil</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.costPerVisit || 0) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">Custo/visita</div></div>'
+      + '</div>';
+    var row2 = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + (isAud ? fmtN(row.conversions) : fmtN(row.addToCart || 0)) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">' + (isAud ? 'Compras' : 'Carrinhos') + '</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + (isAud ? fmt(row.revenue) : fmtN(row.conversions)) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">' + (isAud ? 'Receita' : 'Compras') + '</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + (isAud ? fmt(row.cpa) : fmt(row.revenue)) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">' + (isAud ? 'CPA' : (row.conversions > 0 ? 'Ticket médio' : 'Receita')) + '</div></div>'
+      + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:' + (row.roas >= 5 ? '#5c6b3c' : row.roas >= 2 ? '#c17f24' : '#b91c1c') + '">' + (row.roas > 0 ? fmtDec(row.roas) + 'x' : '—') + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">' + (isAud ? 'ROAS' : (row.conversions > 0 ? 'CPA' : 'ROAS')) + '</div></div>'
+      + '</div>';
+    // For non-audience campaigns, show different row2
+    if (!isAud) {
+      row2 = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.revenue) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">Receita</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.ticket || 0) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">Ticket médio</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:#1a1a2e">' + fmt(row.cpa) + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">CPA</div></div>'
+        + '<div style="text-align:center"><div style="font-size:16px;font-weight:800;color:' + (row.roas >= 5 ? '#5c6b3c' : row.roas >= 2 ? '#c17f24' : '#b91c1c') + '">' + (row.roas > 0 ? fmtDec(row.roas) + 'x' : '—') + '</div><div style="font-size:11px;color:#6b7280;margin-top:2px">ROAS</div></div>'
+        + '</div>';
+    }
+
+    campaignCards += '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:20px 22px;margin-bottom:14px;background:#fff">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+      + '<div style="font-size:14px;font-weight:700;color:#1a1a2e">' + row.campaign_name + '</div>'
+      + '<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;background:' + badgeColor + ';color:#fff;padding:5px 12px;border-radius:4px">' + badgeLabel + '</span>'
       + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px">'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #22c55e;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">ROAS</div><div style="font-size:18px;font-weight:800;color:' + (roas >= 5 ? '#22c55e' : roas >= 2 ? '#f59e0b' : '#ef4444') + '">' + roas.toFixed(2) + 'x</div></div>'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #ef4444;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">CPA</div><div style="font-size:18px;font-weight:800">' + fmt(cpa) + '</div></div>'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #8b5cf6;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">Ticket</div><div style="font-size:18px;font-weight:800">' + fmt(ticket) + '</div></div>'
-      + '<div style="padding:16px 10px;text-align:center;border-left:4px solid #0ea5e9;background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,0.06)"><div style="font-size:9px;font-weight:700;text-transform:uppercase;color:#64748b;letter-spacing:0.5px;margin-bottom:6px">🛒 Carrinho</div><div style="font-size:18px;font-weight:800">' + fmtN(totals.addToCart) + '</div></div>'
-      + '</div>'
-      + '<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#64748b;margin-bottom:14px">Campanhas — Meta Ads</div>'
-      + campaignRows + '</div>';
+      + row1 + row2;
+
+    if (interpretation) {
+      campaignCards += '<div style="margin-top:14px;padding:10px 14px;background:#f9fafb;border-radius:6px;font-size:12px;color:#4b5563;line-height:1.6">'
+        + interpretation.replace(/<br>/g, ' ') + '</div>';
+    }
+    campaignCards += '</div>';
+  });
+
+  // ========== SVG CHARTS FOR PAGE 2 ==========
+  // ROAS Bar Chart
+  var maxRoas = 0;
+  biData.forEach(function(r) { if (r.roas > maxRoas) maxRoas = r.roas; });
+  maxRoas = Math.max(maxRoas, 6); // ensure min scale
+  var barWidth = biData.length > 0 ? Math.min(80, Math.floor(300 / biData.length)) : 80;
+  var chartW = Math.max(400, biData.length * (barWidth + 40) + 60);
+  var chartH = 220;
+  var roasChartSvg = '<svg width="' + chartW + '" height="' + (chartH + 40) + '" viewBox="0 0 ' + chartW + ' ' + (chartH + 40) + '" xmlns="http://www.w3.org/2000/svg">';
+  // Dashed line at 5x
+  var y5 = chartH - (5 / maxRoas * (chartH - 20));
+  roasChartSvg += '<line x1="30" y1="' + y5 + '" x2="' + (chartW - 10) + '" y2="' + y5 + '" stroke="#8B7355" stroke-dasharray="6,4" stroke-width="1.5"/>';
+  roasChartSvg += '<text x="' + (chartW - 8) + '" y="' + (y5 - 5) + '" font-size="10" fill="#8B7355" text-anchor="end" font-family="sans-serif">Mínimo saudável (5×)</text>';
+  biData.forEach(function(r, i) {
+    var barH = r.roas / maxRoas * (chartH - 20);
+    var x = 50 + i * (barWidth + 40);
+    var y = chartH - barH;
+    var color = r.roas >= 5 ? '#5c6b3c' : '#c17f24';
+    roasChartSvg += '<rect x="' + x + '" y="' + y + '" width="' + barWidth + '" height="' + barH + '" fill="' + color + '" rx="3"/>';
+    roasChartSvg += '<text x="' + (x + barWidth/2) + '" y="' + (y - 6) + '" font-size="13" fill="' + color + '" text-anchor="middle" font-weight="bold" font-family="sans-serif">' + fmtDec(r.roas) + '×</text>';
+    // Label
+    var shortName = r.campaign_name.length > 18 ? r.campaign_name.substring(0, 18) + '...' : r.campaign_name;
+    roasChartSvg += '<text x="' + (x + barWidth/2) + '" y="' + (chartH + 16) + '" font-size="9" fill="#6b7280" text-anchor="middle" font-family="sans-serif">' + shortName + '</text>';
+  });
+  roasChartSvg += '</svg>';
+
+  // Donut Chart helper
+  function donutSvg(data, colors, size) {
+    var total = 0; data.forEach(function(d) { total += d.value; });
+    if (total === 0) return '<svg width="' + size + '" height="' + size + '"></svg>';
+    var cx = size/2, cy = size/2, r = size*0.38, r2 = size*0.22;
+    var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" xmlns="http://www.w3.org/2000/svg">';
+    var angle = -Math.PI/2;
+    data.forEach(function(d, i) {
+      var pct = d.value / total;
+      var a1 = angle; var a2 = angle + pct * 2 * Math.PI;
+      var large = pct > 0.5 ? 1 : 0;
+      var x1o = cx + r * Math.cos(a1), y1o = cy + r * Math.sin(a1);
+      var x2o = cx + r * Math.cos(a2), y2o = cy + r * Math.sin(a2);
+      var x1i = cx + r2 * Math.cos(a2), y1i = cy + r2 * Math.sin(a2);
+      var x2i = cx + r2 * Math.cos(a1), y2i = cy + r2 * Math.sin(a1);
+      svg += '<path d="M' + x1o + ',' + y1o + ' A' + r + ',' + r + ' 0 ' + large + ',1 ' + x2o + ',' + y2o + ' L' + x1i + ',' + y1i + ' A' + r2 + ',' + r2 + ' 0 ' + large + ',0 ' + x2i + ',' + y2i + ' Z" fill="' + colors[i % colors.length] + '"/>';
+      angle = a2;
+    });
+    svg += '</svg>';
+    return svg;
   }
 
-  html += '<div style="text-align:center;padding:20px 0;border-top:1px solid #e2e8f0;margin-top:20px;font-size:11px;color:#94a3b8">Relatório gerado automaticamente por Starken OS · ' + today + '</div>'
-    + '<div class="no-print" style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:12px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,#1877f2,#8b5cf6);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨️ Imprimir / Salvar PDF</button></div>'
+  // Canais donut
+  var canaisData = [{ value: sist.delivery||0, label: 'Delivery' }, { value: sist.retirada||0, label: 'Retirada' }];
+  var canaisColors = ['#4a90a4', '#c17f24'];
+  var canaisSvg = donutSvg(canaisData, canaisColors, 140);
+
+  // Clientes donut
+  var clientesData = [{ value: sist.novos||0, label: 'Novos' }, { value: sist.recorrentes||0, label: 'Recorrentes' }];
+  var clientesColors = ['#5c6b3c', '#c17f24'];
+  var clientesSvg = donutSvg(clientesData, clientesColors, 140);
+
+  // Rastreado vs Faturamento real bar
+  var maxBar = Math.max(sist.faturamento || 0, totals.revenue || 0, 1);
+  var fatW = Math.round((sist.faturamento || 0) / maxBar * 260);
+  var recW = Math.round(totals.revenue / maxBar * 260);
+
+  // Delivery % and Retirada %
+  var delPct = sist.faturamento > 0 ? ((sist.delivery||0) / sist.faturamento * 100).toFixed(1) : '0.0';
+  var retPct = sist.faturamento > 0 ? ((sist.retirada||0) / sist.faturamento * 100).toFixed(1) : '0.0';
+  var pedDel = sist.pedidosDelivery || 0;
+  var pedRet = (sist.pedidos || 0) - pedDel;
+
+  // ========== BUILD HTML ==========
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Relatório ' + typeLabel + ' - ' + (client.name || '') + '</title>'
+    + '<style>'
+    + '@page{size:A4;margin:12mm}'
+    + '*{box-sizing:border-box}'
+    + 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:0;padding:0;background:#fff;color:#1a1a2e;font-size:13px;line-height:1.5}'
+    + '.page{max-width:760px;margin:0 auto;padding:30px 24px}'
+    + '.section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#5c6b3c;margin:28px 0 14px;padding-bottom:6px;border-bottom:2px solid #e5e7eb}'
+    + '.kpi-grid{display:grid;gap:0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#fff}'
+    + '.kpi-cell{padding:16px 12px;text-align:center;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}'
+    + '.kpi-cell:last-child{border-right:none}'
+    + '.kpi-val{font-size:22px;font-weight:800;color:#1a1a2e}'
+    + '.kpi-label{font-size:10px;color:#6b7280;margin-top:4px}'
+    + '.kpi-sub{font-size:10px;color:#6b7280}'
+    + '.split-row{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;overflow:hidden}'
+    + '.split-cell{padding:14px 18px}'
+    + '.split-cell+.split-cell{border-left:1px solid #e5e7eb}'
+    + '.split-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}'
+    + '.page-break{page-break-before:always;margin-top:30px}'
+    + '@media print{.no-print{display:none!important}.page{padding:0}}'
+    + '</style></head><body><div class="page">';
+
+  // ===== HEADER =====
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'
+    + '<div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:#6b7280">ASSESSORIA DE MARKETING · RELATÓRIO ' + typeLabel.toUpperCase() + '</div>'
+    + '<div style="font-size:10px;color:#6b7280">' + periodLabel + '</div>'
+    + '</div>'
+    + '<div style="font-size:28px;font-weight:800;color:#1a1a2e;margin-bottom:2px">' + (client.name || '') + '</div>'
+    + '<div style="font-size:13px;color:#6b7280;margin-bottom:4px">' + (client.segment === 'Gastronomia' && client.company ? client.company : '') + '</div>'
+    + '<hr style="border:none;border-top:1.5px solid #d1d5db;margin:12px 0 0">';
+
+  // ===== RESUMO DO CARDÁPIO DIGITAL =====
+  if (sist.faturamento > 0 || sist.pedidos > 0) {
+    html += '<div class="section-title">RESUMO DO CARDÁPIO DIGITAL</div>'
+      + '<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">'
+      + '<div class="kpi-cell"><div class="kpi-val">' + fmt(sist.faturamento) + '</div><div class="kpi-label">Faturamento real</div><div class="kpi-sub">Sistema de pedidos</div></div>'
+      + '<div class="kpi-cell"><div class="kpi-val">' + fmtN(sist.pedidos) + '</div><div class="kpi-label">Total de pedidos</div><div class="kpi-sub">0 cancelamentos</div></div>'
+      + '<div class="kpi-cell"><div class="kpi-val">' + fmtN(sist.novos) + '</div><div class="kpi-label">Novos clientes</div><div class="kpi-sub">Aquisição ativa</div></div>'
+      + '<div class="kpi-cell" style="border-right:none"><div class="kpi-val">' + fmtN(sist.recorrentes) + '</div><div class="kpi-label">Recorrentes</div><div class="kpi-sub">Base fidelizada</div></div>'
+      + '</div>'
+      + '<div class="split-row">'
+      + '<div class="split-cell"><div class="split-title" style="color:#5c6b3c">DELIVERY</div><div style="font-size:18px;font-weight:800">' + fmt(sist.delivery) + '</div><div style="font-size:11px;color:#6b7280">' + pedDel + ' pedidos · ' + delPct + '% do faturamento</div></div>'
+      + '<div class="split-cell"><div class="split-title" style="color:#c17f24">RETIRADA</div><div style="font-size:18px;font-weight:800">' + fmt(sist.retirada) + '</div><div style="font-size:11px;color:#6b7280">' + pedRet + ' pedidos · ' + retPct + '% do faturamento</div></div>'
+      + '</div>';
+  }
+
+  // ===== DESEMPENHO DAS CAMPANHAS =====
+  if (biData.length > 0) {
+    html += '<div class="section-title">DESEMPENHO DAS CAMPANHAS — META ADS</div>'
+      + campaignCards;
+  }
+
+  // ===== PAGE 2: CONSOLIDADO =====
+  html += '<div class="page-break"></div>'
+    + '<div class="section-title" style="margin-top:0">CONSOLIDADO DO TRÁFEGO PAGO</div>'
+    + '<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">'
+    + '<div class="kpi-cell"><div class="kpi-val" style="color:#1a1a2e">' + fmt(totals.spend) + '</div><div class="kpi-label">Investimento total</div></div>'
+    + '<div class="kpi-cell"><div class="kpi-val" style="color:#1a1a2e">' + fmt(totals.revenue) + '</div><div class="kpi-label">Receita rastreada</div>' + (revPct > 0 ? '<div class="kpi-sub">' + revPct + '% do fat. real</div>' : '') + '</div>'
+    + '<div class="kpi-cell" style="border-right:none"><div class="kpi-val" style="color:#5c6b3c">' + fmtDec(roas) + 'x</div><div class="kpi-label">ROAS consolidado</div><div class="kpi-sub">Melhor da operação</div></div>'
+    + '</div>'
+    + '<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);border-top:none;border-radius:0 0 8px 8px">'
+    + '<div class="kpi-cell" style="border-bottom:none"><div class="kpi-val">' + fmt(cpa) + '</div><div class="kpi-label">CPA médio</div></div>'
+    + '<div class="kpi-cell" style="border-bottom:none"><div class="kpi-val">' + fmtN(totals.conversions) + '</div><div class="kpi-label">Compras rastreadas</div></div>'
+    + '<div class="kpi-cell" style="border-right:none;border-bottom:none"><div class="kpi-val">' + fmt(ticket) + '</div><div class="kpi-label">Ticket médio</div></div>'
+    + '</div>';
+
+  // ROAS chart
+  html += '<div style="margin-top:24px;font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:10px">ROAS por campanha</div>'
+    + '<div style="overflow-x:auto">' + roasChartSvg + '</div>';
+
+  // Charts row: Canais + Clientes + Rastreado vs Real
+  if (sist.faturamento > 0 || sist.novos > 0) {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:20px;margin-top:24px;align-items:start">';
+
+    // Canais de venda
+    html += '<div>'
+      + '<div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:8px">Canais de venda</div>'
+      + '<div style="display:flex;justify-content:center">' + canaisSvg + '</div>'
+      + '<div style="display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:10px">'
+      + '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#4a90a4;display:inline-block"></span>Delivery ' + fmtDec(sist.delivery) + '</span>'
+      + '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#c17f24;display:inline-block"></span>Retirada ' + fmtDec(sist.retirada) + '</span>'
+      + '</div></div>';
+
+    // Clientes
+    html += '<div>'
+      + '<div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:8px">Clientes</div>'
+      + '<div style="display:flex;justify-content:center">' + clientesSvg + '</div>'
+      + '<div style="display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:10px">'
+      + '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#5c6b3c;display:inline-block"></span>Novos ' + fmtN(sist.novos) + '</span>'
+      + '<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#c17f24;display:inline-block"></span>Recorrentes ' + fmtN(sist.recorrentes) + '</span>'
+      + '</div></div>';
+
+    // Rastreado vs Real
+    html += '<div>'
+      + '<div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:14px">Rastreado vs faturamento real</div>'
+      + '<div style="margin-bottom:10px">'
+      + '<div style="font-size:10px;color:#6b7280;margin-bottom:4px">Faturamento real</div>'
+      + '<div style="display:flex;align-items:center;gap:8px"><div style="width:' + fatW + 'px;height:28px;background:#4a90a4;border-radius:4px"></div><span style="font-size:14px;font-weight:800">' + fmt(sist.faturamento) + '</span></div>'
+      + '</div>'
+      + '<div>'
+      + '<div style="font-size:10px;color:#6b7280;margin-bottom:4px">Receita rastreada</div>'
+      + '<div style="display:flex;align-items:center;gap:8px"><div style="width:' + recW + 'px;height:28px;background:#5c6b3c;border-radius:4px"></div><span style="font-size:14px;font-weight:800">' + fmt(totals.revenue) + '</span></div>'
+      + '</div>'
+      + '</div>';
+
+    html += '</div>';
+  }
+
+  // Footer
+  html += '<div style="text-align:center;padding:24px 0 10px;margin-top:30px;border-top:1px solid #e5e7eb;font-size:10px;color:#9ca3af">'
+    + 'Dados: Meta Ads' + (sist.faturamento > 0 ? ' + sistema de cardápio digital' : '') + ' · Período: ' + periodLabel + ' · Gerado em ' + today
+    + '</div>'
     + '</div></body></html>';
 
   return html;
