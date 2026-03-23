@@ -8717,50 +8717,23 @@ function zappfyEditMessage() {
   }
 }
 
-// Upload file to Supabase Storage (SDK or REST fallback)
+// Upload file to Supabase Storage via /api/meta/media serverless (uses SERVICE_KEY)
 async function zappfyUploadToStorage(path, blob, contentType) {
-  // Try SDK first
-  if (_supabase && _supabase.storage) {
-    try {
-      var upResult = await _supabase.storage.from('reports').upload(path, blob, { contentType: contentType, upsert: true });
-      if (upResult.error && upResult.error.message && upResult.error.message.includes('not found')) {
-        await _supabase.storage.createBucket('reports', { public: true });
-        upResult = await _supabase.storage.from('reports').upload(path, blob, { contentType: contentType, upsert: true });
-      }
-      if (!upResult.error) {
-        var urlResult = _supabase.storage.from('reports').getPublicUrl(path);
-        return urlResult.data.publicUrl;
-      }
-      console.warn('SDK upload failed, trying REST:', upResult.error.message);
-    } catch(e) {
-      console.warn('SDK upload error, trying REST:', e.message);
-    }
-  }
-  // Fallback: direct REST API
-  var baseUrl = SUPABASE_URL + '/storage/v1/object/reports/' + path;
-  var res = await fetch(baseUrl, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': contentType, 'x-upsert': 'true' },
-    body: blob
+  // Convert blob to base64 data URI
+  var base64 = await new Promise(function(resolve) {
+    var reader = new FileReader();
+    reader.onloadend = function() { resolve(reader.result); };
+    reader.readAsDataURL(blob);
   });
-  if (!res.ok) {
-    // Try creating bucket first
-    await fetch(SUPABASE_URL + '/storage/v1/bucket', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: 'reports', name: 'reports', public: true })
-    });
-    res = await fetch(baseUrl, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': contentType, 'x-upsert': 'true' },
-      body: blob
-    });
-    if (!res.ok) {
-      var errText = await res.text();
-      throw new Error('Upload falhou: ' + errText);
-    }
-  }
-  return SUPABASE_URL + '/storage/v1/object/public/reports/' + path;
+  var fileName = path.replace(/^zappfy\//, '').replace(/\.[^.]+$/, '');
+  var res = await fetch('/api/meta/media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ destination: 'report', source_base64: base64, filename: fileName, client: 'system', tenant: 'starken' })
+  });
+  var json = await res.json();
+  if (json.error) throw new Error('Upload falhou: ' + (json.message || JSON.stringify(json)));
+  return json.publicUrl;
 }
 
 // Generate PDF blob from pending report HTML

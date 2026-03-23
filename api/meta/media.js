@@ -132,13 +132,27 @@ async function createBucket() {
       name: SUPABASE_BUCKET,
       public: true,
       file_size_limit: 10485760, // 10MB
-      allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime'],
+      allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'application/pdf', 'text/html'],
     }),
   });
-  // Ignore "already exists" errors
+  // If bucket already exists, update its config to include new mime types
   if (!createRes.ok) {
     const body = await createRes.text();
-    if (!body.includes('already exists')) {
+    if (body.includes('already exists')) {
+      // Update bucket to ensure allowed_mime_types includes pdf/html
+      await fetch(`${supabaseUrl}/storage/v1/bucket/${SUPABASE_BUCKET}`, {
+        method: 'PUT',
+        headers: {
+          ...getSupabaseHeaders(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          public: true,
+          file_size_limit: 10485760,
+          allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'application/pdf', 'text/html'],
+        }),
+      });
+    } else {
       console.warn('Bucket creation warning:', body);
     }
   }
@@ -168,14 +182,60 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: true, code: 'METHOD_NOT_ALLOWED', message: 'Use POST' });
   }
 
-  const tenant = await validateTenant(req, res);
-  if (!tenant) return;
-
   const { destination, image_url, source_base64, filename, media_type, caption, children } = req.body || {};
 
-  if (!destination || !['ig', 'fb'].includes(destination)) {
-    return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'destination deve ser "ig" ou "fb"' });
+  if (!destination || !['ig', 'fb', 'report'].includes(destination)) {
+    return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'destination deve ser "ig", "fb" ou "report"' });
   }
+
+  // ─── REPORT UPLOAD (Supabase Storage only, no Meta API — skip tenant validation) ───
+  if (destination === 'report') {
+    if (!source_base64) {
+      return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'source_base64 obrigatório para report upload' });
+    }
+    try {
+      // Parse base64
+      let buffer, contentType2;
+      if (source_base64.startsWith('data:')) {
+        const m = source_base64.match(/^data:([^;]+);base64,(.+)$/);
+        if (!m) return res.status(400).json({ error: true, code: 'INVALID_DATA', message: 'Formato base64 inválido' });
+        contentType2 = m[1];
+        buffer = Buffer.from(m[2], 'base64');
+      } else {
+        buffer = Buffer.from(source_base64, 'base64');
+        contentType2 = 'application/pdf';
+      }
+      const supabaseUrl = getSupabaseUrl();
+      const ext = contentType2.includes('pdf') ? 'pdf' : 'html';
+      const storagePath = 'reports/' + (filename || ('relatorio-' + Date.now())) + '.' + ext;
+      const uploadUrl2 = supabaseUrl + '/storage/v1/object/media-uploads/' + storagePath;
+      let upRes = await fetch(uploadUrl2, {
+        method: 'POST',
+        headers: { ...getSupabaseHeaders(), 'Content-Type': contentType2, 'x-upsert': 'true' },
+        body: buffer,
+      });
+      if (!upRes.ok) {
+        await createBucket();
+        upRes = await fetch(uploadUrl2, {
+          method: 'POST',
+          headers: { ...getSupabaseHeaders(), 'Content-Type': contentType2, 'x-upsert': 'true' },
+          body: buffer,
+        });
+        if (!upRes.ok) {
+          const errText = await upRes.text();
+          return res.status(500).json({ error: true, code: 'STORAGE_ERROR', message: 'Upload failed: ' + errText });
+        }
+      }
+      const publicUrl = supabaseUrl + '/storage/v1/object/public/media-uploads/' + storagePath;
+      return res.status(201).json({ publicUrl, storagePath, size: buffer.length });
+    } catch (err) {
+      return res.status(500).json({ error: true, code: 'UPLOAD_ERROR', message: err.message || 'Erro no upload' });
+    }
+  }
+
+  // ─── IG / FB paths require tenant validation ───
+  const tenant = await validateTenant(req, res);
+  if (!tenant) return;
 
   // Resolve image URL: either direct URL or upload base64 to Supabase Storage
   let resolvedImageUrl = image_url;
