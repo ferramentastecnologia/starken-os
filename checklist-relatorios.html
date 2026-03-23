@@ -13999,6 +13999,9 @@ async function hubUploadLogo(files) {
   if (label) { label.textContent = '⏳ Enviando...'; label.style.opacity = '0.6'; }
 
   try {
+    // Ensure client exists in client_hub before uploading material
+    await hubSave();
+
     // Convert to base64
     var base64 = await new Promise(function(resolve, reject) {
       var reader = new FileReader();
