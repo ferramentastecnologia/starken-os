@@ -2835,7 +2835,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div style="display:flex;gap:10px;align-items:end">
                   <div style="flex:1">
                     <label style="display:block;font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">API Token</label>
-                    <input id="zappfyTokenInput" type="password" placeholder="Cole seu token da Zappfy aqui" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box" oninput="localStorage.setItem('zappfy_token',this.value)">
+                    <input id="zappfyTokenInput" type="password" placeholder="Cole seu token da Zappfy aqui" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:0.82rem;background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box" oninput="localStorage.setItem('zappfy_token',this.value);if(typeof _metaTenants!=='undefined')_metaTenants._zappfyToken=this.value">
                   </div>
                   <button onclick="zappfyTestConnection()" style="padding:8px 14px;border:none;border-radius:6px;background:#25d366;color:#fff;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.2s">✓ Testar</button>
                 </div>
@@ -7852,6 +7852,15 @@ function metaConfigInit() {
       const local = metaConfigRestoreFromLocal();
       if (local) _metaClients = local;
     }
+    // Sync Zappfy token from Supabase -> localStorage
+    if (data.config?.tenants?._zappfyToken) {
+      _metaTenants._zappfyToken = data.config.tenants._zappfyToken;
+      if (!localStorage.getItem('zappfy_token')) {
+        localStorage.setItem('zappfy_token', data.config.tenants._zappfyToken);
+      }
+      var el = document.getElementById('zappfyTokenInput');
+      if (el && !el.value) el.value = data.config.tenants._zappfyToken;
+    }
     metaConfigRenderClientList();
     if (Object.keys(_metaClients).length > 0) {
       document.getElementById('metaConfigAddClientRow').style.display = 'block';
@@ -8333,7 +8342,7 @@ async function metaConfigSave() {
 // ============ ZAPPFY INTEGRATION ============
 
 function zappfyGetToken() {
-  return localStorage.getItem('zappfy_token') || '';
+  return localStorage.getItem('zappfy_token') || (_metaTenants && _metaTenants._zappfyToken) || '';
 }
 
 async function zappfyTestConnection() {
