@@ -67,7 +67,7 @@ function dateRange(range: string): string {
   return rangeMap[range] || "segments.date DURING LAST_7_DAYS";
 }
 
-// Campaigns: status, budget, spend, impressions, clicks, conversions, CPA
+// Campaigns: full metrics including competitive and efficiency data
 async function getCampaigns(customerId: string, range: string, token: string) {
   const query = `
     SELECT
@@ -75,25 +75,63 @@ async function getCampaigns(customerId: string, range: string, token: string) {
       campaign.advertising_channel_type,
       campaign_budget.amount_micros,
       metrics.cost_micros, metrics.impressions, metrics.clicks,
-      metrics.conversions, metrics.cost_per_conversion
+      metrics.conversions, metrics.cost_per_conversion,
+      metrics.average_cpc,
+      metrics.ctr,
+      metrics.conversions_from_interactions_rate,
+      metrics.conversions_value,
+      metrics.search_impression_share,
+      metrics.search_top_impression_share,
+      metrics.search_absolute_top_impression_share,
+      metrics.search_budget_lost_impression_share,
+      metrics.search_rank_lost_impression_share,
+      metrics.content_impression_share,
+      metrics.content_budget_lost_impression_share,
+      metrics.content_rank_lost_impression_share,
+      metrics.view_through_conversions,
+      metrics.all_conversions
     FROM campaign
     WHERE campaign.status IN ('ENABLED', 'PAUSED')
     AND ${dateRange(range)}
     ORDER BY metrics.cost_micros DESC
   `;
   const results = await gadsQuery(customerId, query, token);
-  return results.map((r: any) => ({
-    id: r.campaign?.id,
-    name: r.campaign?.name,
-    status: r.campaign?.status,
-    type: r.campaign?.advertisingChannelType,
-    budget_brl: (r.campaignBudget?.amountMicros || 0) / 1e6,
-    spend_brl: (r.metrics?.costMicros || 0) / 1e6,
-    impressions: r.metrics?.impressions || 0,
-    clicks: r.metrics?.clicks || 0,
-    conversions: parseFloat(r.metrics?.conversions || '0'),
-    cpa_brl: (r.metrics?.costPerConversion || 0) / 1e6,
-  }));
+  return results.map((r: any) => {
+    const m = r.metrics || {};
+    const spend = (m.costMicros || 0) / 1e6;
+    const convVal = parseFloat(m.conversionsValue || '0');
+    const conv = parseFloat(m.conversions || '0');
+    return {
+      id: r.campaign?.id,
+      name: r.campaign?.name,
+      status: r.campaign?.status,
+      type: r.campaign?.advertisingChannelType,
+      budget_brl: (r.campaignBudget?.amountMicros || 0) / 1e6,
+      spend_brl: spend,
+      impressions: m.impressions || 0,
+      clicks: m.clicks || 0,
+      conversions: conv,
+      cpa_brl: (m.costPerConversion || 0) / 1e6,
+      avg_cpc_brl: (m.averageCpc || 0) / 1e6,
+      ctr_pct: parseFloat(m.ctr || '0') * 100,
+      conv_rate_pct: parseFloat(m.conversionsFromInteractionsRate || '0') * 100,
+      conv_value_brl: convVal,
+      roas: spend > 0 ? convVal / spend : 0,
+      // Competitive: Search IS (values come as 0.0-1.0 doubles)
+      search_is_pct: m.searchImpressionShare != null ? parseFloat(m.searchImpressionShare) * 100 : null,
+      search_top_is_pct: m.searchTopImpressionShare != null ? parseFloat(m.searchTopImpressionShare) * 100 : null,
+      search_abs_top_is_pct: m.searchAbsoluteTopImpressionShare != null ? parseFloat(m.searchAbsoluteTopImpressionShare) * 100 : null,
+      search_budget_lost_is_pct: m.searchBudgetLostImpressionShare != null ? parseFloat(m.searchBudgetLostImpressionShare) * 100 : null,
+      search_rank_lost_is_pct: m.searchRankLostImpressionShare != null ? parseFloat(m.searchRankLostImpressionShare) * 100 : null,
+      // Display IS
+      content_is_pct: m.contentImpressionShare != null ? parseFloat(m.contentImpressionShare) * 100 : null,
+      content_budget_lost_is_pct: m.contentBudgetLostImpressionShare != null ? parseFloat(m.contentBudgetLostImpressionShare) * 100 : null,
+      content_rank_lost_is_pct: m.contentRankLostImpressionShare != null ? parseFloat(m.contentRankLostImpressionShare) * 100 : null,
+      // Extra
+      view_through_conv: parseInt(m.viewThroughConversions || '0'),
+      all_conversions: parseFloat(m.allConversions || '0'),
+    };
+  });
 }
 
 // Audit summary: total spend, conversions, CPA, waste
@@ -108,6 +146,30 @@ async function getAudit(customerId: string, range: string, token: string) {
   const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions) * 100 : 0;
   const budgetUtilization = totalBudget > 0 ? (totalSpend / totalBudget) * 100 : 0;
 
+  const totalConvValue = campaigns.reduce((s, c) => s + c.conv_value_brl, 0);
+  const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
+  const convRate = totalClicks > 0 ? (totalConversions / totalClicks) * 100 : 0;
+  const roas = totalSpend > 0 ? totalConvValue / totalSpend : 0;
+
+  // Weighted avg impression share for enabled Search campaigns
+  const searchCamps = campaigns.filter(c => c.type === 'SEARCH' && c.status === 'ENABLED' && c.search_is_pct != null);
+  const totalSearchImpr = searchCamps.reduce((s, c) => s + Number(c.impressions), 0);
+  const avgSearchIS = totalSearchImpr > 0
+    ? searchCamps.reduce((s, c) => s + (c.search_is_pct || 0) * Number(c.impressions), 0) / totalSearchImpr
+    : null;
+  const avgSearchTopIS = totalSearchImpr > 0
+    ? searchCamps.reduce((s, c) => s + (c.search_top_is_pct || 0) * Number(c.impressions), 0) / totalSearchImpr
+    : null;
+  const avgSearchAbsTopIS = totalSearchImpr > 0
+    ? searchCamps.reduce((s, c) => s + (c.search_abs_top_is_pct || 0) * Number(c.impressions), 0) / totalSearchImpr
+    : null;
+  const avgBudgetLostIS = totalSearchImpr > 0
+    ? searchCamps.reduce((s, c) => s + (c.search_budget_lost_is_pct || 0) * Number(c.impressions), 0) / totalSearchImpr
+    : null;
+  const avgRankLostIS = totalSearchImpr > 0
+    ? searchCamps.reduce((s, c) => s + (c.search_rank_lost_is_pct || 0) * Number(c.impressions), 0) / totalSearchImpr
+    : null;
+
   return {
     total_spend_brl: totalSpend,
     total_budget_brl: totalBudget,
@@ -116,9 +178,19 @@ async function getAudit(customerId: string, range: string, token: string) {
     total_impressions: totalImpressions,
     total_clicks: totalClicks,
     avg_cpa_brl: avgCpa,
+    avg_cpc_brl: avgCpc,
     ctr_pct: ctr,
+    conv_rate_pct: convRate,
+    total_conv_value_brl: totalConvValue,
+    roas: roas,
     campaign_count: campaigns.length,
     enabled_count: campaigns.filter(c => c.status === 'ENABLED').length,
+    // Competitive
+    search_is_pct: avgSearchIS,
+    search_top_is_pct: avgSearchTopIS,
+    search_abs_top_is_pct: avgSearchAbsTopIS,
+    search_budget_lost_is_pct: avgBudgetLostIS,
+    search_rank_lost_is_pct: avgRankLostIS,
   };
 }
 
