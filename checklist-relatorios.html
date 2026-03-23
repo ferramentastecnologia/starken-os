@@ -3786,7 +3786,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                   <div class="ch-card-body">
                     <div class="ch-field">
                       <label class="ch-field-label">Logo Principal</label>
-                      <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="URL do logo" oninput="hubUpdateLogoPreview();hubMarkDirty()">
+                      <div style="display:flex;gap:8px;align-items:center">
+                        <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="URL do logo ou faça upload →" oninput="hubUpdateLogoPreview();hubMarkDirty()" style="flex:1">
+                        <label for="chLogoFileInput" style="padding:8px 14px;background:var(--starken,#3b82f6);color:#fff;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">⬆ Upload</label>
+                        <input type="file" id="chLogoFileInput" accept="image/*" style="display:none" onchange="hubUploadLogo(this.files)">
+                      </div>
                       <div id="chLogoPreview" class="ch-logo-preview"></div>
                     </div>
                     <div class="ch-field">
@@ -13978,10 +13982,65 @@ function hubUpdateLogoPreview() {
   var preview = document.getElementById('chLogoPreview');
   if (!preview) return;
   if (url) {
-    preview.innerHTML = '<img src="' + url + '" alt="Logo" onerror="this.style.display=\'none\'">';
+    preview.innerHTML = '<img src="' + url + '" alt="Logo" style="max-width:200px;max-height:150px;object-fit:contain;border-radius:8px;border:1px solid var(--border,#e2e8f0);padding:8px;background:#fff" onerror="this.style.display=\'none\'">';
   } else {
-    preview.innerHTML = '';
+    preview.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary,#64748b);font-size:0.8rem;border:2px dashed var(--border,#e2e8f0);border-radius:8px">Nenhum logo configurado</div>';
   }
+}
+
+// -- Logo file upload --
+async function hubUploadLogo(files) {
+  if (!files || !files.length) return;
+  var file = files[0];
+  if (!file.type.startsWith('image/')) { alert('Selecione uma imagem'); return; }
+  if (!_hubCurrentSlug) { alert('Nenhum cliente selecionado'); return; }
+
+  var label = document.querySelector('label[for="chLogoFileInput"]');
+  if (label) { label.textContent = '⏳ Enviando...'; label.style.opacity = '0.6'; }
+
+  try {
+    // Convert to base64
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Upload via hub materials API
+    var res = await hubApi({
+      action: 'hub_materials_upload',
+      client_slug: _hubCurrentSlug,
+      user: (typeof gpState !== 'undefined' && gpState.user) ? gpState.user.name : 'Sistema',
+      file_name: 'logo_' + _hubCurrentSlug + '.' + file.name.split('.').pop(),
+      file_base64: base64.split(',')[1],
+      mime_type: file.type,
+      category: 'logo',
+      file_size: file.size
+    });
+
+    if (res && res.file_url) {
+      // Set the URL field and update preview
+      document.getElementById('chLogoUrl').value = res.file_url;
+      hubUpdateLogoPreview();
+      hubMarkDirty();
+
+      // Auto-save
+      hubSave();
+
+      if (label) { label.textContent = '✅ Enviado!'; label.style.opacity = '1'; }
+      setTimeout(function() { if (label) label.textContent = '⬆ Upload'; }, 2000);
+    } else {
+      throw new Error('Upload não retornou URL');
+    }
+  } catch(err) {
+    console.error('Logo upload error:', err);
+    alert('Erro ao enviar logo: ' + err.message);
+    if (label) { label.textContent = '⬆ Upload'; label.style.opacity = '1'; }
+  }
+
+  // Reset file input
+  document.getElementById('chLogoFileInput').value = '';
 }
 
 // -- Status badge color class --
