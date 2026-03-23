@@ -3262,6 +3262,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="">Selecione o cliente...</option>
             </select>
             <button class="ct-add-btn" onclick="ctShowNewGroupModal()" id="ctAddGroupBtn" style="display:none">+ Novo Grupo</button>
+            <button class="ct-add-btn" onclick="cronogramaGenerate()" id="ctCronoBtn" style="display:none;background:#8B7355;border-color:#8B7355">📄 Cronograma PDF</button>
             <div style="flex:1"></div>
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
@@ -3540,16 +3541,18 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <div id="gadsAlerts" style="margin-bottom:20px"></div>
 
           <!-- Ad Preview Modal -->
-          <div id="gadsAdModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);overflow-y:auto;padding:24px" onclick="if(event.target===this)this.style.display='none'">
-            <div style="max-width:720px;margin:0 auto;background:var(--card);border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25)">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);background:var(--bg)">
+          <div id="gadsAdModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.55);backdrop-filter:blur(5px);overflow-y:auto;padding:20px" onclick="if(event.target===this)this.style.display='none'">
+            <div style="max-width:960px;margin:0 auto;background:var(--card);border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.3)">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 28px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#4285f4 0%,#34a853 100%)">
                 <div>
-                  <div id="gadsAdModalTitle" style="font-size:1rem;font-weight:700;color:var(--text)"></div>
-                  <div id="gadsAdModalSub" style="font-size:0.78rem;color:var(--text-secondary);margin-top:3px"></div>
+                  <div id="gadsAdModalTitle" style="font-size:1.1rem;font-weight:800;color:#fff"></div>
+                  <div id="gadsAdModalSub" style="font-size:0.8rem;color:rgba(255,255,255,0.85);margin-top:4px"></div>
                 </div>
-                <button onclick="document.getElementById('gadsAdModal').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);padding:4px 8px;border-radius:8px;line-height:1">✕</button>
+                <button onclick="document.getElementById('gadsAdModal').style.display='none'" style="background:rgba(255,255,255,0.15);border:none;font-size:1.1rem;cursor:pointer;color:#fff;padding:6px 10px;border-radius:8px;line-height:1;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">✕</button>
               </div>
-              <div id="gadsAdModalBody" style="padding:20px 24px;max-height:70vh;overflow-y:auto"></div>
+              <!-- Modal KPI row -->
+              <div id="gadsAdModalKpis" style="display:none;padding:16px 28px;background:var(--bg);border-bottom:1px solid var(--border)"></div>
+              <div id="gadsAdModalBody" style="padding:24px 28px;max-height:68vh;overflow-y:auto"></div>
             </div>
           </div>
 
@@ -11632,6 +11635,7 @@ async function ctLoadGroups() {
 
   ctGroups = groups;
   ctRenderList();
+  cronogramaUpdateButton();
 }
 
 // ─── PUBLISH BADGES (inline in task name — legacy small) ───
@@ -14914,15 +14918,34 @@ async function gadsOpenAdModal(campaignId, campaignName, campaignType) {
       const count = ads.length;
       const totalImpr = ads.reduce((s, a) => s + (a.impressions || 0), 0);
       const totalClicks = ads.reduce((s, a) => s + (a.clicks || 0), 0);
-      sub.textContent = (typeLabels[campaignType] || campaignType) + ` · ${count} anúncio(s)${totalImpr ? ` · ${fmtNum(totalImpr)} impr · ${fmtNum(totalClicks)} cliques` : ''}`;
-      body.innerHTML = ads.map(ad => gadsAdPreviewCard(ad)).join('');
+      sub.textContent = (typeLabels[campaignType] || campaignType) + ` · ${count} anúncio(s)`;
+
+      // Modal KPI row
+      const kpisEl = document.getElementById('gadsAdModalKpis');
+      if (totalImpr > 0 || ads.some(a => a.conversions > 0)) {
+        const totalConv = ads.reduce((s, a) => s + (a.conversions || 0), 0);
+        const totalSpend = ads.reduce((s, a) => s + (a.spend_brl || 0), 0);
+        const avgCtr = totalImpr > 0 ? (totalClicks / totalImpr * 100).toFixed(1) : '0.0';
+        kpisEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
+          <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">${fmtNum(totalImpr)}</div><div style="font-size:0.7rem;color:var(--text-secondary)">Impressões</div></div>
+          <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">${fmtNum(totalClicks)}</div><div style="font-size:0.7rem;color:var(--text-secondary)">Cliques</div></div>
+          <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">${avgCtr}%</div><div style="font-size:0.7rem;color:var(--text-secondary)">CTR</div></div>
+          <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:${totalConv > 0 ? '#10b981' : 'var(--text)'}">${totalConv.toFixed(1)}</div><div style="font-size:0.7rem;color:var(--text-secondary)">Conversões</div></div>
+          <div style="text-align:center"><div style="font-size:1.1rem;font-weight:800;color:var(--text)">${fmtBrl(totalSpend)}</div><div style="font-size:0.7rem;color:var(--text-secondary)">Gasto</div></div>
+        </div>`;
+        kpisEl.style.display = 'block';
+      } else {
+        kpisEl.style.display = 'none';
+      }
+
+      body.innerHTML = ads.map((ad, idx) => gadsAdPreviewCard(ad, idx + 1, count)).join('');
     }
   } catch (err) {
     body.innerHTML = `<div style="text-align:center;padding:40px;color:#dc2626"><div style="font-size:1.5rem;margin-bottom:8px">⚠️</div>${err.message}</div>`;
   }
 }
 
-function gadsAdPreviewCard(ad) {
+function gadsAdPreviewCard(ad, num) {
   const url = ad.final_urls?.[0] || '';
   const displayUrl = ad.display_url || url.replace(/^https?:\/\//, '').split('/')[0];
   const headlines = ad.headlines || [];
@@ -14930,59 +14953,92 @@ function gadsAdPreviewCard(ad) {
   const isRsa = ad.ad_type === 'RESPONSIVE_SEARCH_AD';
   const isPmax = ad.ad_type === 'PERFORMANCE_MAX';
   const statusColor = ad.status === 'ENABLED' ? '#10b981' : '#9ca3af';
+  const statusLabel = ad.status === 'ENABLED' ? 'Ativo' : 'Pausado';
 
   if (!isRsa && !isPmax) {
-    return `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px;font-size:0.78rem">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-        <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div>
-        <span style="color:var(--text-secondary)">${ad.ad_type || 'Anúncio'}</span>
-        <span style="margin-left:auto;color:var(--text-secondary)">${ad.ad_group_name || ''}</span>
+    return `<div style="background:var(--bg);border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:7px;height:7px;border-radius:50%;background:${statusColor}"></div>
+        <span style="font-size:0.82rem;font-weight:600;color:var(--text)">${ad.ad_type || 'Anúncio'}</span>
+        <span style="margin-left:auto;font-size:0.78rem;color:var(--text-secondary)">${ad.ad_group_name || ''}</span>
       </div>
-      <div style="color:var(--text-secondary);font-size:0.75rem">${fmtNum(ad.impressions)} impr · ${fmtNum(ad.clicks)} cliques · ${ad.ctr_pct.toFixed(1)}% CTR</div>
+      ${ad.impressions > 0 ? `<div style="margin-top:8px;font-size:0.8rem;color:var(--text-secondary)">${fmtNum(ad.impressions)} impr · ${fmtNum(ad.clicks)} cliques · ${ad.ctr_pct.toFixed(1)}% CTR</div>` : ''}
     </div>`;
   }
 
-  // Google Search preview mockup
-  const h1 = headlines[0] || 'Headline 1';
+  const h1 = headlines[0] || '';
   const h2 = headlines[1] || '';
   const h3 = headlines[2] || '';
   const titleLine = [h1, h2, h3].filter(Boolean).join(' | ');
   const desc = descriptions.slice(0, 2).join(' ');
+  const typeBadge = isPmax
+    ? `<span style="background:#f59e0b18;color:#b45309;padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:600">PMax Asset Group</span>`
+    : `<span style="background:#4285f418;color:#1a56db;padding:2px 8px;border-radius:5px;font-size:0.72rem;font-weight:600">RSA</span>`;
 
-  return `<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
-    <!-- Google preview -->
-    <div style="margin-bottom:10px">
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-        <div style="width:20px;height:20px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:0.6rem">🌐</div>
-        <div>
-          <div style="font-size:0.72rem;color:var(--text-secondary)">${displayUrl}</div>
+  return `<div style="background:var(--bg);border-radius:14px;margin-bottom:16px;border:1px solid var(--border);overflow:hidden">
+    <!-- Card header -->
+    <div style="display:flex;align-items:center;gap:8px;padding:12px 18px;background:var(--card);border-bottom:1px solid var(--border)">
+      <div style="width:24px;height:24px;border-radius:6px;background:${statusColor}18;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:${statusColor}">${num || ''}</div>
+      <span style="font-size:0.82rem;font-weight:700;color:var(--text)">${ad.ad_group_name || ad.ad_name || 'Anúncio'}</span>
+      ${typeBadge}
+      <div style="margin-left:auto;display:flex;align-items:center;gap:5px">
+        <div style="width:7px;height:7px;border-radius:50%;background:${statusColor}"></div>
+        <span style="font-size:0.72rem;color:var(--text-secondary)">${statusLabel}</span>
+      </div>
+    </div>
+
+    <!-- Two-column layout -->
+    <div style="display:grid;grid-template-columns:1fr 280px">
+      <!-- Left: Google preview -->
+      <div style="padding:18px 20px;border-right:1px solid var(--border)">
+        <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Preview do Google</div>
+        <div style="background:var(--card);border-radius:10px;padding:16px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="width:22px;height:22px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:0.65rem">🌐</div>
+            <div style="font-size:0.75rem;color:var(--text)">${displayUrl || 'mortadella.com.br'}</div>
+            <span style="font-size:0.67rem;background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 8px;border-radius:4px;color:#64748b;margin-left:auto;font-weight:600">Patrocinado</span>
+          </div>
+          <div style="font-size:1rem;font-weight:600;color:#1a0dab;line-height:1.35;margin-bottom:6px">${titleLine}</div>
+          <div style="font-size:0.82rem;color:#4d5156;line-height:1.5">${desc}</div>
         </div>
-        <span style="font-size:0.65rem;background:var(--card);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--text-secondary);margin-left:auto">Patrocinado</span>
       </div>
-      <div style="font-size:0.88rem;font-weight:600;color:#1a0dab;line-height:1.3;margin-bottom:4px;cursor:default">${titleLine}</div>
-      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4">${desc}</div>
+
+      <!-- Right: Stats + Assets -->
+      <div style="padding:18px 20px">
+        ${ad.impressions > 0 ? `
+        <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Performance</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+          <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">
+            <div style="font-size:1rem;font-weight:800;color:var(--text)">${fmtNum(ad.impressions)}</div>
+            <div style="font-size:0.67rem;color:var(--text-secondary)">Impressões</div>
+          </div>
+          <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">
+            <div style="font-size:1rem;font-weight:800;color:var(--text)">${fmtNum(ad.clicks)}</div>
+            <div style="font-size:0.67rem;color:var(--text-secondary)">Cliques</div>
+          </div>
+          <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">
+            <div style="font-size:1rem;font-weight:800;color:var(--text)">${ad.ctr_pct.toFixed(1)}%</div>
+            <div style="font-size:0.67rem;color:var(--text-secondary)">CTR</div>
+          </div>
+          <div style="background:var(--card);border-radius:8px;padding:10px;text-align:center;border:1px solid var(--border)">
+            <div style="font-size:1rem;font-weight:800;color:${ad.conversions > 0 ? '#10b981' : 'var(--text-secondary)'}">${ad.conversions > 0 ? ad.conversions.toFixed(1) : '—'}</div>
+            <div style="font-size:0.67rem;color:var(--text-secondary)">Conversões</div>
+          </div>
+        </div>` : ''}
+
+        <div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Assets (${headlines.length}h + ${descriptions.length}d)</div>
+        <div style="max-height:220px;overflow-y:auto;padding-right:4px">
+          <div style="font-size:0.72rem;font-weight:600;color:#4285f4;margin-bottom:4px">Headlines</div>
+          ${headlines.map((h, i) => `<div style="font-size:0.78rem;color:var(--text);padding:3px 0;display:flex;gap:6px">
+            <span style="color:var(--text-secondary);min-width:16px">${i + 1}.</span><span>${h}</span>
+          </div>`).join('')}
+          <div style="font-size:0.72rem;font-weight:600;color:#34a853;margin-bottom:4px;margin-top:10px">Descriptions</div>
+          ${descriptions.map((d, i) => `<div style="font-size:0.78rem;color:var(--text);padding:3px 0;display:flex;gap:6px">
+            <span style="color:var(--text-secondary);min-width:16px">${i + 1}.</span><span>${d}</span>
+          </div>`).join('')}
+        </div>
+      </div>
     </div>
-    <!-- Ad meta -->
-    <div style="display:flex;align-items:center;gap:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-secondary);flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:4px">
-        <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div>
-        ${ad.status === 'ENABLED' ? 'Ativo' : 'Pausado'}
-      </div>
-      ${isPmax ? `<span>·</span><span style="background:#f59e0b20;color:#b45309;padding:1px 7px;border-radius:4px;font-weight:600">PMax Asset Group</span>` : ''}
-      ${ad.ad_group_name ? `<span>·</span><span>${ad.ad_group_name}</span>` : ''}
-      ${ad.impressions > 0 ? `<span>·</span><span>${fmtNum(ad.impressions)} impr</span><span>·</span><span>${fmtNum(ad.clicks)} cliques</span><span>·</span><span>${ad.ctr_pct.toFixed(1)}% CTR</span>` : ''}
-      ${ad.conversions > 0 ? `<span>·</span><span style="color:#10b981;font-weight:600">${ad.conversions.toFixed(1)} conv</span>` : ''}
-    </div>
-    <!-- All headlines/descriptions -->
-    <details style="margin-top:8px">
-      <summary style="font-size:0.72rem;color:var(--text-secondary);cursor:pointer">Ver todos os assets (${headlines.length}h + ${descriptions.length}d)</summary>
-      <div style="margin-top:8px;font-size:0.72rem">
-        <div style="color:var(--text-secondary);font-weight:600;margin-bottom:4px">Headlines:</div>
-        ${headlines.map((h,i) => `<div style="color:var(--text);padding:2px 0">${i+1}. ${h}</div>`).join('')}
-        <div style="color:var(--text-secondary);font-weight:600;margin-bottom:4px;margin-top:8px">Descriptions:</div>
-        ${descriptions.map((d,i) => `<div style="color:var(--text);padding:2px 0">${i+1}. ${d}</div>`).join('')}
-      </div>
-    </details>
   </div>`;
 }
 
@@ -15089,6 +15145,315 @@ window.switchTab = (function(orig) {
     }
   };
 })(window.switchTab);
+
+// ═══ CRONOGRAMA PDF GENERATOR ═══
+
+// Show/hide cronograma button when client is selected
+function cronogramaUpdateButton() {
+  var btn = document.getElementById('ctCronoBtn');
+  if (btn) btn.style.display = document.getElementById('ctClientFilter').value ? '' : 'none';
+}
+
+// Main generate function
+async function cronogramaGenerate() {
+  var clientId = document.getElementById('ctClientFilter').value;
+  if (!clientId) { alert('Selecione um cliente primeiro'); return; }
+
+  try {
+    // Show loading
+    var btn = document.getElementById('ctCronoBtn');
+    var origText = btn.innerHTML;
+    btn.innerHTML = '⏳ Gerando...';
+    btn.disabled = true;
+
+    // 1. Fetch tasks for this client
+    var tasksRes = await ctApi('list_tasks', { client_id: clientId });
+    var tasks = (tasksRes.data || tasksRes || []).filter(function(t) {
+      return t.due_date && (t.status !== 'backlog');
+    });
+
+    // Sort by due_date
+    tasks.sort(function(a, b) { return (a.due_date || '').localeCompare(b.due_date || ''); });
+
+    if (tasks.length === 0) {
+      alert('Nenhuma task com data encontrada para este cliente');
+      btn.innerHTML = origText;
+      btn.disabled = false;
+      return;
+    }
+
+    // 2. Fetch attachments for each task
+    for (var i = 0; i < tasks.length; i++) {
+      try {
+        var attRes = await ctApi('list_attachments', { task_id: tasks[i].id });
+        tasks[i]._attachments = attRes.data || attRes || [];
+      } catch(e) { tasks[i]._attachments = []; }
+    }
+
+    // 3. Get client info
+    var clientName = '';
+    var clientLogo = '';
+    var tenant = '';
+    // Try from _metaClients
+    if (typeof _metaClients !== 'undefined') {
+      var mc = _metaClients[clientId];
+      if (mc) { clientName = mc.name || clientId; tenant = mc.tenant || ''; }
+    }
+    if (!clientName) clientName = clientId.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+
+    // Try to get logo from client_hub
+    try {
+      var hubRes = await fetch(metaApiBase().replace('/api/meta','') + '/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_client_hub', client_id: clientId })
+      });
+      // Fallback - try direct Supabase
+    } catch(e) {}
+
+    // Try Supabase direct for logo
+    if (typeof _supabase !== 'undefined') {
+      try {
+        var hubData = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientId).single();
+        if (hubData.data) {
+          if (hubData.data.logo_url) clientLogo = hubData.data.logo_url;
+          if (hubData.data.client_name) clientName = hubData.data.client_name;
+        }
+      } catch(e) {}
+    }
+
+    // 4. Build HTML
+    var html = cronogramaBuildHtml(clientName, clientLogo, tenant, tasks);
+
+    // 5. Generate PDF
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1280px;';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    var weekLabel = cronogramaGetWeekLabel(tasks);
+    var filename = 'CRONOGRAMA_' + clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
+
+    await html2pdf().set({
+      margin: 0,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, width: 1280, height: 720, scrollY: 0 },
+      jsPDF: { unit: 'px', format: [1280, 720], orientation: 'landscape', hotfixes: ['px_scaling'] },
+      pagebreak: { mode: ['css'] }
+    }).from(container).save();
+
+    document.body.removeChild(container);
+    btn.innerHTML = origText;
+    btn.disabled = false;
+
+  } catch(err) {
+    console.error('Cronograma error:', err);
+    alert('Erro ao gerar cronograma: ' + err.message);
+    var btn2 = document.getElementById('ctCronoBtn');
+    if (btn2) { btn2.innerHTML = '📄 Cronograma PDF'; btn2.disabled = false; }
+  }
+}
+
+function cronogramaGetWeekLabel(tasks) {
+  if (!tasks.length) return 'SEM_DATA';
+  var first = tasks[0].due_date || '';
+  var d = new Date(first + 'T12:00:00');
+  var months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  var weekNum = Math.ceil(d.getDate() / 7);
+  return months[d.getMonth()] + '_' + weekNum + 'SEMANA';
+}
+
+function cronogramaClassifyPost(task) {
+  var name = (task.name || '').toLowerCase();
+  if (name.includes('carrossel') || name.includes('carousel') || name.includes('album')) return 'carrossel';
+  if (name.includes('reels') || name.includes('reel') || name.includes('video') || name.includes('vídeo')) return 'reels';
+  if (name.includes('story') || name.includes('stories')) return 'story';
+  return 'feed';
+}
+
+function cronogramaFormatDate(dateStr) {
+  if (!dateStr) return '';
+  var d = new Date(dateStr + 'T12:00:00');
+  var dias = ['DOMINGO','SEGUNDA','TERÇA','QUARTA','QUINTA','SEXTA','SÁBADO'];
+  var day = d.getDate().toString().padStart(2, '0');
+  var month = (d.getMonth() + 1).toString().padStart(2, '0');
+  return dias[d.getDay()] + ' (' + day + '/' + month + ')';
+}
+
+function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
+  var tenantLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
+  var tenantColor = tenant === 'alpha' ? '#10b981' : '#3b82f6';
+
+  // Common page style
+  var pageStyle = 'width:1280px;height:720px;overflow:hidden;position:relative;box-sizing:border-box;';
+  var bgColor = '#b5aa9a';
+  var darkBg = '#2d2d2d';
+
+  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;">';
+
+  // ═══ PAGE 1: COVER ═══
+  html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;padding:80px;">';
+  // Starken badge top-right
+  html += '<div style="position:absolute;top:20px;right:20px;background:' + tenantColor + ';color:#fff;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">' + tenantLabel + '</div>';
+  // Left text
+  html += '<div style="flex:1;text-align:left">';
+  html += '<div style="font-size:48px;font-weight:300;color:rgba(255,255,255,0.8);line-height:1.2;font-family:Georgia,serif;">Aprovação de</div>';
+  html += '<div style="font-size:56px;font-weight:700;color:#fff;line-height:1.2;font-family:Georgia,serif;">conteúdos</div>';
+  html += '</div>';
+  // Right logo
+  if (clientLogo) {
+    html += '<div style="flex:0 0 auto;margin-left:60px">';
+    html += '<img src="' + clientLogo + '" style="max-width:320px;max-height:320px;object-fit:contain" crossorigin="anonymous">';
+    html += '</div>';
+  } else {
+    html += '<div style="flex:0 0 auto;margin-left:60px;background:rgba(255,255,255,0.15);border-radius:20px;padding:40px 50px;text-align:center">';
+    html += '<div style="font-size:36px;font-weight:800;color:#fff">' + clientName + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  // Page break
+  html += '<div style="page-break-after:always"></div>';
+
+  // ═══ PAGE 2: SEPARATOR "conteúdo feed" ═══
+  html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;">';
+  html += '<div style="text-align:center">';
+  html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.7);font-family:Georgia,serif;line-height:1">conteúdo</div>';
+  html += '<div style="font-size:80px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;line-height:1;margin-top:-10px">feed</div>';
+  html += '</div></div>';
+  html += '<div style="page-break-after:always"></div>';
+
+  // ═══ PAGES 3-N: ONE POST PER PAGE ═══
+  var feedImages = []; // Collect for grid preview
+
+  tasks.forEach(function(task) {
+    var postType = cronogramaClassifyPost(task);
+    var typeLabel = postType === 'reels' ? 'FEED REELS' : postType === 'carrossel' ? 'CARROSSEL DE FOTOS' : 'FEED CRIATIVO';
+    var dateLabel = cronogramaFormatDate(task.due_date);
+
+    // Get best image (prefer 'final' then 'creative' then any)
+    var attachments = task._attachments || [];
+    var img = null;
+    var allImages = [];
+    for (var a = 0; a < attachments.length; a++) {
+      var att = attachments[a];
+      if (att.file_type && att.file_type.startsWith('image/')) {
+        allImages.push(att);
+        if (!img && (att.category === 'final' || att.category === 'creative')) img = att;
+      }
+    }
+    if (!img && allImages.length > 0) img = allImages[0];
+    if (img) feedImages.push(img.file_url);
+
+    // Post page
+    html += '<div style="' + pageStyle + 'background:' + darkBg + ';padding:0;">';
+
+    // Header bar
+    html += '<div style="background:#1a1a1a;padding:18px 40px;border-bottom:3px solid ' + bgColor + '">';
+    html += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
+    if (dateLabel) html += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
+    html += '</div>';
+
+    // Content area: image left, copy right
+    html += '<div style="display:flex;height:640px;padding:30px 40px;gap:40px">';
+
+    // LEFT: Image
+    html += '<div style="flex:0 0 420px;display:flex;align-items:center;justify-content:center">';
+    if (img) {
+      if (postType === 'reels') {
+        // Phone mockup for reels
+        html += '<div style="width:280px;height:560px;background:#000;border-radius:30px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.4);position:relative;overflow:hidden">';
+        html += '<img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:24px" crossorigin="anonymous">';
+        // Instagram bottom bar dots
+        html += '<div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px">';
+        html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.9)"></div>';
+        html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>';
+        html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>';
+        html += '</div></div>';
+      } else if (postType === 'carrossel' && allImages.length > 1) {
+        // Carousel grid
+        html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%">';
+        for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) {
+          html += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:200px;object-fit:cover;border-radius:10px" crossorigin="anonymous">';
+          if (ci === 0) feedImages.push(allImages[ci].file_url); // Only first for grid
+        }
+        html += '</div>';
+      } else {
+        // Standard feed image
+        html += '<img src="' + img.file_url + '" style="max-width:400px;max-height:560px;object-fit:contain;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.3)" crossorigin="anonymous">';
+      }
+    } else {
+      html += '<div style="width:350px;height:350px;background:rgba(255,255,255,0.05);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.15)">';
+      html += '<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:14px">📷<br>Criativo pendente</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // RIGHT: Copy/Legend
+    html += '<div style="flex:1;overflow:hidden;padding-top:10px">';
+    html += '<div style="font-size:20px;font-weight:700;color:#d4c8b8;font-style:italic;margin-bottom:16px;font-family:Georgia,serif">Legenda:</div>';
+
+    var copy = task.copy_text || task.description || task.briefing || '';
+    if (copy) {
+      // Preserve line breaks and emojis
+      var copyHtml = copy.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      html += '<div style="font-size:15px;color:rgba(255,255,255,0.85);line-height:1.7;max-height:480px;overflow:hidden">' + copyHtml + '</div>';
+    } else {
+      html += '<div style="font-size:14px;color:rgba(255,255,255,0.3);font-style:italic">Legenda pendente...</div>';
+    }
+
+    html += '</div>'; // end right
+    html += '</div>'; // end content area
+    html += '</div>'; // end page
+    html += '<div style="page-break-after:always"></div>';
+  });
+
+  // ═══ PAGE N+1: FEED PREVIEW (Grid 3x3) ═══
+  if (feedImages.length > 0) {
+    html += '<div style="' + pageStyle + 'background:' + darkBg + ';display:flex;align-items:center;justify-content:center;gap:60px;padding:40px;">';
+
+    // Left: IG profile mockup
+    html += '<div style="width:500px;background:#000;border-radius:12px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,0.4)">';
+    // Profile header
+    html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">';
+    if (clientLogo) {
+      html += '<img src="' + clientLogo + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #e91e63" crossorigin="anonymous">';
+    } else {
+      html += '<div style="width:56px;height:56px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:800">' + (clientName[0] || '?') + '</div>';
+    }
+    html += '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#fff">' + clientName.toLowerCase().replace(/\s+/g, '') + '</div>';
+    html += '<div style="font-size:11px;color:#8e8e8e">Instagram</div></div></div>';
+    // Grid
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px">';
+    for (var gi = 0; gi < Math.min(feedImages.length, 9); gi++) {
+      html += '<img src="' + feedImages[gi] + '" style="width:100%;aspect-ratio:1;object-fit:cover" crossorigin="anonymous">';
+    }
+    // Fill empty slots
+    for (var ei = feedImages.length; ei < 9; ei++) {
+      html += '<div style="width:100%;aspect-ratio:1;background:#1a1a1a"></div>';
+    }
+    html += '</div></div>';
+
+    // Right: "PRÉVIA feed" text
+    html += '<div style="text-align:center">';
+    html += '<div style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.9);text-transform:uppercase;letter-spacing:4px;font-family:Georgia,serif">PRÉVIA</div>';
+    html += '<div style="font-size:56px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;font-style:italic;margin-top:-10px">feed</div>';
+    html += '</div>';
+
+    html += '</div>';
+    html += '<div style="page-break-after:always"></div>';
+  }
+
+  // ═══ LAST PAGE: "aguardamos aprovação!" ═══
+  html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;">';
+  html += '<div style="text-align:center">';
+  html += '<div style="font-size:64px;font-weight:300;color:rgba(255,255,255,0.8);font-family:Georgia,serif;line-height:1.1">aguardamos</div>';
+  html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.3);font-family:Georgia,serif;line-height:1;margin-top:-5px">aprovação!</div>';
+  html += '</div></div>';
+
+  html += '</div>'; // end wrapper
+  return html;
+}
 
 </script>
 
