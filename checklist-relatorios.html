@@ -14856,11 +14856,130 @@ function gadsCampaignCard(c, accentColor) {
         <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">${c.conversions > 0 ? `CPA ${fmtBrl(c.cpa_brl)}` : 'Conv.'}</div>
       </div>
     </div>
+    <!-- Ad preview toggle -->
+    ${c.type === 'SEARCH' ? `
+    <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;padding-left:8px">
+      <button onclick="gadsToggleAds(this,'${c.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.74rem;color:var(--text-secondary);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all 0.2s">
+        <span style="font-size:0.8rem">📋</span> Ver anúncios
+      </button>
+      <div id="gadsAdPreview-${c.id}" style="display:none;margin-top:12px"></div>
+    </div>` : ''}
   </div>`;
 }
 
 function gadsApplyFilter() {
   gadsRenderCampaigns(gadsData.campaigns);
+}
+
+// Ad preview cache
+const gadsAdCache = {};
+
+async function gadsToggleAds(btn, campaignId) {
+  const container = document.getElementById('gadsAdPreview-' + campaignId);
+  if (!container) return;
+
+  // Toggle visibility
+  if (container.style.display !== 'none' && container.innerHTML) {
+    container.style.display = 'none';
+    btn.innerHTML = '<span style="font-size:0.8rem">📋</span> Ver anúncios';
+    return;
+  }
+
+  btn.innerHTML = '<span style="font-size:0.8rem">⏳</span> Carregando...';
+  btn.disabled = true;
+
+  try {
+    let ads = gadsAdCache[campaignId];
+    if (!ads) {
+      const resp = await fetch(`${GADS_EDGE_URL}?customerId=${GADS_CUSTOMER_ID}&resource=ads&range=${gadsCurrentRange}&campaignId=${campaignId}`);
+      const json = await resp.json();
+      if (!json.ok) throw new Error(json.error || 'Erro');
+      ads = json.data || [];
+      gadsAdCache[campaignId] = ads;
+    }
+
+    if (!ads.length) {
+      container.innerHTML = '<div style="font-size:0.8rem;color:var(--text-secondary);padding:8px 0">Nenhum anúncio encontrado para este período.</div>';
+    } else {
+      container.innerHTML = ads.map(ad => gadsAdPreviewCard(ad)).join('');
+    }
+    container.style.display = 'block';
+    btn.innerHTML = '<span style="font-size:0.8rem">📋</span> Ocultar anúncios';
+  } catch (err) {
+    container.innerHTML = `<div style="font-size:0.8rem;color:#dc2626;padding:8px 0">Erro: ${err.message}</div>`;
+    container.style.display = 'block';
+    btn.innerHTML = '<span style="font-size:0.8rem">📋</span> Ver anúncios';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function gadsAdPreviewCard(ad) {
+  const url = ad.final_urls?.[0] || '';
+  const displayUrl = ad.display_url || url.replace(/^https?:\/\//, '').split('/')[0];
+  const headlines = ad.headlines || [];
+  const descriptions = ad.descriptions || [];
+  const isRsa = ad.ad_type === 'RESPONSIVE_SEARCH_AD';
+  const statusColor = ad.status === 'ENABLED' ? '#10b981' : '#9ca3af';
+
+  if (!isRsa) {
+    return `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px;font-size:0.78rem">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div>
+        <span style="color:var(--text-secondary)">${ad.ad_type || 'Anúncio'}</span>
+        <span style="margin-left:auto;color:var(--text-secondary)">${ad.ad_group_name || ''}</span>
+      </div>
+      <div style="color:var(--text-secondary);font-size:0.75rem">${fmtNum(ad.impressions)} impr · ${fmtNum(ad.clicks)} cliques · ${ad.ctr_pct.toFixed(1)}% CTR</div>
+    </div>`;
+  }
+
+  // Google Search preview mockup
+  const h1 = headlines[0] || 'Headline 1';
+  const h2 = headlines[1] || '';
+  const h3 = headlines[2] || '';
+  const titleLine = [h1, h2, h3].filter(Boolean).join(' | ');
+  const desc = descriptions.slice(0, 2).join(' ');
+
+  return `<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+    <!-- Google preview -->
+    <div style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+        <div style="width:20px;height:20px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-size:0.6rem">🌐</div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-secondary)">${displayUrl}</div>
+        </div>
+        <span style="font-size:0.65rem;background:var(--card);border:1px solid var(--border);padding:1px 6px;border-radius:4px;color:var(--text-secondary);margin-left:auto">Patrocinado</span>
+      </div>
+      <div style="font-size:0.88rem;font-weight:600;color:#1a0dab;line-height:1.3;margin-bottom:4px;cursor:default">${titleLine}</div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.4">${desc}</div>
+    </div>
+    <!-- Ad meta -->
+    <div style="display:flex;align-items:center;gap:8px;padding-top:8px;border-top:1px solid var(--border);font-size:0.72rem;color:var(--text-secondary);flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:4px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div>
+        ${ad.status === 'ENABLED' ? 'Ativo' : 'Pausado'}
+      </div>
+      <span>·</span>
+      <span>${ad.ad_group_name || ''}</span>
+      <span>·</span>
+      <span>${fmtNum(ad.impressions)} impr</span>
+      <span>·</span>
+      <span>${fmtNum(ad.clicks)} cliques</span>
+      <span>·</span>
+      <span>${ad.ctr_pct.toFixed(1)}% CTR</span>
+      ${ad.conversions > 0 ? `<span>·</span><span style="color:#10b981;font-weight:600">${ad.conversions.toFixed(1)} conv</span>` : ''}
+    </div>
+    <!-- All headlines/descriptions -->
+    <details style="margin-top:8px">
+      <summary style="font-size:0.72rem;color:var(--text-secondary);cursor:pointer">Ver todos os assets (${headlines.length}h + ${descriptions.length}d)</summary>
+      <div style="margin-top:8px;font-size:0.72rem">
+        <div style="color:var(--text-secondary);font-weight:600;margin-bottom:4px">Headlines:</div>
+        ${headlines.map((h,i) => `<div style="color:var(--text);padding:2px 0">${i+1}. ${h}</div>`).join('')}
+        <div style="color:var(--text-secondary);font-weight:600;margin-bottom:4px;margin-top:8px">Descriptions:</div>
+        ${descriptions.map((d,i) => `<div style="color:var(--text);padding:2px 0">${i+1}. ${d}</div>`).join('')}
+      </div>
+    </details>
+  </div>`;
 }
 
 function gadsRenderCampaigns(campaigns) {

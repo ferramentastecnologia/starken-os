@@ -166,6 +166,58 @@ async function getKeywords(customerId: string, range: string, token: string) {
   });
 }
 
+// Ads: RSA headlines, descriptions, final URLs, performance per campaign
+async function getAds(customerId: string, range: string, token: string, campaignId?: string) {
+  const campaignFilter = campaignId
+    ? `AND campaign.id = ${campaignId}`
+    : '';
+  const query = `
+    SELECT
+      campaign.id, campaign.name,
+      ad_group.id, ad_group.name,
+      ad_group_ad.ad.id,
+      ad_group_ad.ad.type,
+      ad_group_ad.ad.responsive_search_ad.headlines,
+      ad_group_ad.ad.responsive_search_ad.descriptions,
+      ad_group_ad.ad.final_urls,
+      ad_group_ad.ad.name,
+      ad_group_ad.status,
+      ad_group_ad.ad.display_url,
+      metrics.impressions, metrics.clicks, metrics.conversions, metrics.cost_micros,
+      metrics.ctr
+    FROM ad_group_ad
+    WHERE campaign.status IN ('ENABLED', 'PAUSED')
+    AND ad_group_ad.status != 'REMOVED'
+    ${campaignFilter}
+    AND ${dateRange(range)}
+    ORDER BY metrics.impressions DESC
+    LIMIT 50
+  `;
+  const results = await gadsQuery(customerId, query, token);
+  return results.map((r: any) => {
+    const ad = r.adGroupAd?.ad || {};
+    const rsa = ad.responsiveSearchAd || {};
+    return {
+      campaign_id: r.campaign?.id,
+      campaign_name: r.campaign?.name,
+      ad_group_name: r.adGroup?.name,
+      ad_id: ad.id,
+      ad_type: ad.type,
+      ad_name: ad.name || '',
+      status: r.adGroupAd?.status,
+      headlines: (rsa.headlines || []).map((h: any) => h.text),
+      descriptions: (rsa.descriptions || []).map((d: any) => d.text),
+      final_urls: ad.finalUrls || [],
+      display_url: ad.displayUrl || '',
+      impressions: parseInt(r.metrics?.impressions || '0'),
+      clicks: parseInt(r.metrics?.clicks || '0'),
+      conversions: parseFloat(r.metrics?.conversions || '0'),
+      spend_brl: (r.metrics?.costMicros || 0) / 1e6,
+      ctr_pct: parseFloat(r.metrics?.ctr || '0') * 100,
+    };
+  });
+}
+
 Deno.serve(async (req: Request) => {
   // CORS
   if (req.method === 'OPTIONS') {
@@ -189,10 +241,13 @@ Deno.serve(async (req: Request) => {
     const token = await getAccessToken();
     let data: any;
 
+    const campaignId = url.searchParams.get('campaignId') || undefined;
+
     switch (resource) {
       case 'campaigns': data = await getCampaigns(customerId, range, token); break;
       case 'audit':     data = await getAudit(customerId, range, token); break;
       case 'keywords':  data = await getKeywords(customerId, range, token); break;
+      case 'ads':       data = await getAds(customerId, range, token, campaignId); break;
       default: return new Response(JSON.stringify({ error: 'Unknown resource' }), { status: 400, headers: corsHeaders });
     }
 
