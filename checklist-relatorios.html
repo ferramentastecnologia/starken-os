@@ -15229,9 +15229,22 @@ async function cronogramaGenerate() {
 
     // 5. Generate PDF
     var container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1280px;';
+    container.style.cssText = 'position:absolute;left:0;top:0;width:1280px;z-index:-1;opacity:0;';
     container.innerHTML = html;
     document.body.appendChild(container);
+
+    // Wait for images to load
+    var imgs = container.querySelectorAll('img');
+    if (imgs.length > 0) {
+      await Promise.all(Array.from(imgs).map(function(img) {
+        return new Promise(function(resolve) {
+          if (img.complete) return resolve();
+          img.onload = resolve;
+          img.onerror = resolve;
+          setTimeout(resolve, 5000);
+        });
+      }));
+    }
 
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
@@ -15240,9 +15253,9 @@ async function cronogramaGenerate() {
       margin: 0,
       filename: filename,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, width: 1280, height: 720, scrollY: 0 },
+      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: null, scrollY: -window.scrollY },
       jsPDF: { unit: 'px', format: [1280, 720], orientation: 'landscape', hotfixes: ['px_scaling'] },
-      pagebreak: { mode: ['css'] }
+      pagebreak: { mode: ['css'], before: '.crono-page-break' }
     }).from(container).save();
 
     document.body.removeChild(container);
@@ -15292,7 +15305,7 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   var bgColor = '#b5aa9a';
   var darkBg = '#2d2d2d';
 
-  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;">';
+  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;"><style>.crono-page-break{page-break-after:always;break-after:page;height:0;}</style>';
 
   // ═══ PAGE 1: COVER ═══
   html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;padding:80px;">';
@@ -15315,7 +15328,7 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   }
   html += '</div>';
   // Page break
-  html += '<div style="page-break-after:always"></div>';
+  html += '<div class="crono-page-break"></div>';
 
   // ═══ PAGE 2: SEPARATOR "conteúdo feed" ═══
   html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;">';
@@ -15323,7 +15336,7 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.7);font-family:Georgia,serif;line-height:1">conteúdo</div>';
   html += '<div style="font-size:80px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;line-height:1;margin-top:-10px">feed</div>';
   html += '</div></div>';
-  html += '<div style="page-break-after:always"></div>';
+  html += '<div class="crono-page-break"></div>';
 
   // ═══ PAGES 3-N: ONE POST PER PAGE ═══
   var feedImages = []; // Collect for grid preview
@@ -15407,7 +15420,7 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
     html += '</div>'; // end right
     html += '</div>'; // end content area
     html += '</div>'; // end page
-    html += '<div style="page-break-after:always"></div>';
+    html += '<div class="crono-page-break"></div>';
   });
 
   // ═══ PAGE N+1: FEED PREVIEW (Grid 3x3) ═══
@@ -15443,7 +15456,7 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
     html += '</div>';
 
     html += '</div>';
-    html += '<div style="page-break-after:always"></div>';
+    html += '<div class="crono-page-break"></div>';
   }
 
   // ═══ LAST PAGE: "aguardamos aprovação!" ═══
