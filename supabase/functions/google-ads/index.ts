@@ -355,6 +355,106 @@ async function getAds(customerId: string, range: string, token: string, campaign
   return Object.values(groups);
 }
 
+// Funnel: conversions segmented by conversion action (VIEW_ITEM, ADD_TO_CART, BEGIN_CHECKOUT, PURCHASE)
+async function getFunnel(customerId: string, range: string, token: string, campaignId?: string) {
+  const campaignFilter = campaignId ? `AND campaign.id = ${campaignId}` : '';
+  const query = `
+    SELECT
+      campaign.id, campaign.name,
+      segments.conversion_action_name,
+      segments.conversion_action_category,
+      metrics.conversions,
+      metrics.conversions_value,
+      metrics.all_conversions,
+      metrics.all_conversions_value
+    FROM campaign
+    WHERE campaign.status = 'ENABLED'
+    ${campaignFilter}
+    AND ${dateRange(range)}
+    ORDER BY segments.conversion_action_name
+  `;
+  const results = await gadsQuery(customerId, query, token);
+
+  // Aggregate by conversion action
+  const actions: Record<string, any> = {};
+  for (const r of results) {
+    const name = r.segments?.conversionActionName || 'Unknown';
+    const category = r.segments?.conversionActionCategory || '';
+    if (!actions[name]) {
+      actions[name] = {
+        name,
+        category,
+        conversions: 0,
+        value: 0,
+        all_conversions: 0,
+        all_value: 0,
+        campaigns: [],
+      };
+    }
+    const conv = parseFloat(r.metrics?.conversions || '0');
+    const val = parseFloat(r.metrics?.conversionsValue || '0');
+    const allConv = parseFloat(r.metrics?.allConversions || '0');
+    const allVal = parseFloat(r.metrics?.allConversionsValue || '0');
+    actions[name].conversions += conv;
+    actions[name].value += val;
+    actions[name].all_conversions += allConv;
+    actions[name].all_value += allVal;
+    actions[name].campaigns.push({
+      id: r.campaign?.id,
+      name: r.campaign?.name,
+      conversions: conv,
+      value: val,
+    });
+  }
+
+  // Map to funnel stages (match by common naming patterns)
+  const allActions = Object.values(actions);
+  const funnel_stages = ['VIEW_ITEM', 'ADD_TO_CART', 'BEGIN_CHECKOUT', 'PURCHASE'];
+  const stagePatterns: Record<string, RegExp> = {
+    VIEW_ITEM: /view.?item|acesso.?card|visualiza/i,
+    ADD_TO_CART: /add.?to.?cart|carrinho|adição/i,
+    BEGIN_CHECKOUT: /begin.?checkout|checkout|finaliza/i,
+    PURCHASE: /purchase|compra/i,
+  };
+
+  const funnel = funnel_stages.map(stage => {
+    const pattern = stagePatterns[stage];
+    const matched = allActions.filter(a => pattern.test(a.name) || pattern.test(a.category));
+    const totalConv = matched.reduce((s, a) => s + a.conversions, 0);
+    const totalVal = matched.reduce((s, a) => s + a.value, 0);
+    const totalAllConv = matched.reduce((s, a) => s + a.all_conversions, 0);
+    const totalAllVal = matched.reduce((s, a) => s + a.all_value, 0);
+    // Per-campaign breakdown for this stage
+    const campMap: Record<string, { name: string; conversions: number; value: number }> = {};
+    for (const a of matched) {
+      for (const c of a.campaigns) {
+        if (!campMap[c.id]) campMap[c.id] = { name: c.name, conversions: 0, value: 0 };
+        campMap[c.id].conversions += c.conversions;
+        campMap[c.id].value += c.value;
+      }
+    }
+    return {
+      stage,
+      action_names: matched.map(a => a.name),
+      conversions: totalConv,
+      value_brl: totalVal,
+      all_conversions: totalAllConv,
+      all_value_brl: totalAllVal,
+      per_campaign: Object.values(campMap).filter(c => c.conversions > 0),
+    };
+  });
+
+  return {
+    funnel,
+    all_actions: allActions.map(a => ({
+      name: a.name,
+      category: a.category,
+      conversions: a.conversions,
+      value: a.value,
+    })),
+  };
+}
+
 Deno.serve(async (req: Request) => {
   // CORS
   if (req.method === 'OPTIONS') {
@@ -385,6 +485,7 @@ Deno.serve(async (req: Request) => {
       case 'audit':     data = await getAudit(customerId, range, token); break;
       case 'keywords':  data = await getKeywords(customerId, range, token); break;
       case 'ads':       data = await getAds(customerId, range, token, campaignId); break;
+      case 'funnel':    data = await getFunnel(customerId, range, token, campaignId); break;
       default: return new Response(JSON.stringify({ error: 'Unknown resource' }), { status: 400, headers: corsHeaders });
     }
 

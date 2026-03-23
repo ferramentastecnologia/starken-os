@@ -3567,6 +3567,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <!-- Competitividade (Impression Share) Section -->
           <div id="gadsCompetitividadeSection" style="display:none;margin-bottom:24px"></div>
 
+          <!-- Funnel Section -->
+          <div id="gadsFunnelSection" style="display:none;margin-bottom:24px"></div>
+
           <!-- Campaign Cards by Type -->
           <div id="gadsCampaignCards" style="display:none"></div>
 
@@ -14731,6 +14734,7 @@ async function gadsLoad() {
   document.getElementById('gadsCampaignFilter').style.display = 'none';
   document.getElementById('gadsKeywordsSection').style.display = 'none';
   document.getElementById('gadsCompetitividadeSection').style.display = 'none';
+  document.getElementById('gadsFunnelSection').style.display = 'none';
   document.getElementById('gadsAlerts').innerHTML = '';
 
   try {
@@ -14753,6 +14757,7 @@ async function gadsLoad() {
     gadsRenderKpis(gadsData.audit);
     gadsRenderAlerts(gadsData.audit, gadsData.campaigns);
     gadsRenderCompetitividade(gadsData.audit, gadsData.campaigns);
+    gadsLoadFunnel();
     gadsRenderCampaigns(gadsData.campaigns);
     gadsRenderKeywords(gadsData.keywords);
   } catch (err) {
@@ -14918,6 +14923,142 @@ function gadsCampaignShortName(name) {
     .replace(/\s*\|\s*BNU\s*$/i, '')
     .replace(/\s*\|\s*TIS\d+\s*$/i, '')
     .trim();
+}
+
+async function gadsLoadFunnel() {
+  const el = document.getElementById('gadsFunnelSection');
+  el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-secondary)">Carregando funil...</div>';
+  el.style.display = 'block';
+
+  try {
+    const resp = await fetch(`${GADS_EDGE_URL}?customerId=${GADS_CUSTOMER_ID}&resource=funnel&range=${gadsCurrentRange}`);
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error);
+    gadsRenderFunnel(json.data);
+  } catch (err) {
+    el.innerHTML = `<div style="padding:20px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;color:#dc2626;font-size:0.85rem">Erro ao carregar funil: ${err.message}</div>`;
+  }
+}
+
+function gadsRenderFunnel(data) {
+  const el = document.getElementById('gadsFunnelSection');
+  const { funnel, all_actions } = data;
+
+  const stageLabels = {
+    VIEW_ITEM: { label: 'Visualização do Cardápio', icon: '👁️', color: '#8b5cf6' },
+    ADD_TO_CART: { label: 'Adição ao Carrinho', icon: '🛒', color: '#f59e0b' },
+    BEGIN_CHECKOUT: { label: 'Finalização de Compra', icon: '💳', color: '#3b82f6' },
+    PURCHASE: { label: 'Compras', icon: '✅', color: '#10b981' },
+  };
+
+  // Find max conversions for bar width scaling
+  const maxConv = Math.max(...funnel.map(s => s.all_conversions), 1);
+
+  // Build funnel bars
+  const funnelBars = funnel.map((s, idx) => {
+    const meta = stageLabels[s.stage];
+    const pct = (s.all_conversions / maxConv * 100).toFixed(1);
+    const hasData = s.all_conversions > 0;
+
+    // Drop-off from previous stage
+    let dropOff = '';
+    if (idx > 0) {
+      const prev = funnel[idx - 1];
+      if (prev.all_conversions > 0 && hasData) {
+        const rate = (s.all_conversions / prev.all_conversions * 100).toFixed(1);
+        dropOff = `<div style="text-align:center;padding:4px 0;font-size:0.72rem;color:var(--text-secondary)">↓ ${rate}% converteu</div>`;
+      } else if (prev.all_conversions > 0 && !hasData) {
+        dropOff = `<div style="text-align:center;padding:4px 0;font-size:0.72rem;color:#ef4444">↓ 0% — sem dados nesta etapa</div>`;
+      } else {
+        dropOff = `<div style="text-align:center;padding:4px 0;font-size:0.72rem;color:var(--text-secondary)">↓</div>`;
+      }
+    }
+
+    // Per-campaign breakdown
+    const campBreakdown = s.per_campaign.length > 0
+      ? s.per_campaign.map(c => {
+          const shortName = gadsCampaignShortName(c.name);
+          return `<span style="font-size:0.72rem;color:var(--text-secondary);background:var(--bg);padding:2px 8px;border-radius:5px;display:inline-block;margin:2px">${shortName}: ${c.conversions.toFixed(0)}${c.value > 0 ? ' · ' + fmtBrl(c.value) : ''}</span>`;
+        }).join('')
+      : '';
+
+    return `${dropOff}
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 0;${!hasData ? 'opacity:0.4' : ''}">
+      <div style="width:42px;height:42px;border-radius:10px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0">${meta.icon}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:0.88rem;font-weight:700;color:var(--text)">${meta.label}</span>
+          <div style="display:flex;gap:16px;align-items:baseline">
+            <span style="font-size:1.1rem;font-weight:800;color:${meta.color}">${hasData ? s.all_conversions.toFixed(0) : '—'}</span>
+            ${s.all_value_brl > 0 ? `<span style="font-size:0.85rem;font-weight:600;color:var(--text)">${fmtBrl(s.all_value_brl)}</span>` : ''}
+          </div>
+        </div>
+        <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${hasData ? pct : 0}%;background:${meta.color};border-radius:4px;transition:width 0.6s ease"></div>
+        </div>
+        ${campBreakdown ? `<div style="margin-top:6px">${campBreakdown}</div>` : ''}
+        ${s.action_names.length > 0 ? `<div style="font-size:0.68rem;color:var(--text-secondary);margin-top:4px">Tags: ${s.action_names.join(', ')}</div>` : `<div style="font-size:0.68rem;color:#ef4444;margin-top:4px">Nenhuma tag mapeada para esta etapa</div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Other conversion actions (not in funnel)
+  const funnelActionNames = funnel.flatMap(s => s.action_names);
+  const otherActions = all_actions.filter(a => !funnelActionNames.includes(a.name) && a.conversions > 0);
+  const otherHtml = otherActions.length > 0
+    ? `<div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px">
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">Outras Conversões</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          ${otherActions.map(a => `<div style="background:var(--bg);border-radius:10px;padding:10px 16px;border:1px solid var(--border)">
+            <div style="font-size:0.82rem;font-weight:700;color:var(--text)">${a.conversions.toFixed(0)}</div>
+            <div style="font-size:0.72rem;color:var(--text-secondary)">${a.name}</div>
+            ${a.value > 0 ? `<div style="font-size:0.72rem;color:#10b981;font-weight:600">${fmtBrl(a.value)}</div>` : ''}
+          </div>`).join('')}
+        </div>
+      </div>`
+    : '';
+
+  // Summary KPIs
+  const totalPurchases = funnel.find(s => s.stage === 'PURCHASE')?.all_conversions || 0;
+  const totalRevenue = funnel.find(s => s.stage === 'PURCHASE')?.all_value_brl || 0;
+  const viewItems = funnel.find(s => s.stage === 'VIEW_ITEM')?.all_conversions || 0;
+  const overallRate = viewItems > 0 && totalPurchases > 0 ? (totalPurchases / viewItems * 100).toFixed(1) : null;
+  const ticketMedio = totalPurchases > 0 ? totalRevenue / totalPurchases : 0;
+
+  const summaryKpis = totalPurchases > 0
+    ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <div style="text-align:center;background:var(--bg);border-radius:10px;padding:14px">
+          <div style="font-size:1.2rem;font-weight:800;color:#10b981">${totalPurchases.toFixed(0)}</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px">Compras</div>
+        </div>
+        <div style="text-align:center;background:var(--bg);border-radius:10px;padding:14px">
+          <div style="font-size:1.2rem;font-weight:800;color:var(--text)">${fmtBrl(totalRevenue)}</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px">Receita</div>
+        </div>
+        <div style="text-align:center;background:var(--bg);border-radius:10px;padding:14px">
+          <div style="font-size:1.2rem;font-weight:800;color:var(--text)">${fmtBrl(ticketMedio)}</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px">Ticket Médio</div>
+        </div>
+        ${overallRate ? `<div style="text-align:center;background:var(--bg);border-radius:10px;padding:14px">
+          <div style="font-size:1.2rem;font-weight:800;color:#3b82f6">${overallRate}%</div>
+          <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px">View→Compra</div>
+        </div>` : ''}
+      </div>`
+    : '';
+
+  el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <div style="width:38px;height:38px;border-radius:10px;background:#10b98118;display:flex;align-items:center;justify-content:center;font-size:1.15rem">🔻</div>
+      <div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text)">Funil de Conversões — Cardápio Digital</div>
+        <div style="font-size:0.78rem;color:var(--text-secondary)">Dados rastreados via Google Ads tags</div>
+      </div>
+    </div>
+    ${summaryKpis}
+    ${funnelBars}
+    ${otherHtml}
+  </div>`;
+  el.style.display = 'block';
 }
 
 function gadsCampaignCard(c, accentColor) {
