@@ -4403,8 +4403,8 @@ let _supabase = null;
 
 function initSupabase() {
   if (SUPABASE_URL.includes('SEU_PROJETO') || SUPABASE_KEY.includes('sua_anon')) return false;
-  // Valida formato da chave anon (deve começar com eyJ)
-  if (!SUPABASE_KEY.startsWith('eyJ')) {
+  // Valida formato da chave anon (aceita JWT eyJ... ou sb_publishable_...)
+  if (!SUPABASE_KEY.startsWith('eyJ') && !SUPABASE_KEY.startsWith('sb_')) {
     console.info('Supabase: chave anon inválida (checklist sync desativado). Meta Config usa API serverless separada.');
     return false;
   }
@@ -8717,6 +8717,52 @@ function zappfyEditMessage() {
   }
 }
 
+// Upload file to Supabase Storage (SDK or REST fallback)
+async function zappfyUploadToStorage(path, blob, contentType) {
+  // Try SDK first
+  if (_supabase && _supabase.storage) {
+    try {
+      var upResult = await _supabase.storage.from('reports').upload(path, blob, { contentType: contentType, upsert: true });
+      if (upResult.error && upResult.error.message && upResult.error.message.includes('not found')) {
+        await _supabase.storage.createBucket('reports', { public: true });
+        upResult = await _supabase.storage.from('reports').upload(path, blob, { contentType: contentType, upsert: true });
+      }
+      if (!upResult.error) {
+        var urlResult = _supabase.storage.from('reports').getPublicUrl(path);
+        return urlResult.data.publicUrl;
+      }
+      console.warn('SDK upload failed, trying REST:', upResult.error.message);
+    } catch(e) {
+      console.warn('SDK upload error, trying REST:', e.message);
+    }
+  }
+  // Fallback: direct REST API
+  var baseUrl = SUPABASE_URL + '/storage/v1/object/reports/' + path;
+  var res = await fetch(baseUrl, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': contentType, 'x-upsert': 'true' },
+    body: blob
+  });
+  if (!res.ok) {
+    // Try creating bucket first
+    await fetch(SUPABASE_URL + '/storage/v1/bucket', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'reports', name: 'reports', public: true })
+    });
+    res = await fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': contentType, 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!res.ok) {
+      var errText = await res.text();
+      throw new Error('Upload falhou: ' + errText);
+    }
+  }
+  return SUPABASE_URL + '/storage/v1/object/public/reports/' + path;
+}
+
 // Generate PDF blob from pending report HTML
 async function zappfyGeneratePdfBlob() {
   var p = window._zappfyPending;
@@ -8786,15 +8832,7 @@ async function zappfyUploadAndGetUrl() {
     var fileBlob = isPdf ? blob : new Blob([p.reportHtml], { type: 'text/html' });
     var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now() + fileExt;
 
-    if (!_supabase) throw new Error('Supabase não conectado');
-    var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
-    if (upResult.error) {
-      await _supabase.storage.createBucket('reports', { public: true });
-      upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
-      if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
-    }
-    var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
-    var publicUrl = urlResult.data.publicUrl;
+    var publicUrl = await zappfyUploadToStorage('zappfy/' + fileName, fileBlob, contentType);
 
     // Save URL in pending so confirm send can reuse it
     p._uploadedUrl = publicUrl;
@@ -8860,16 +8898,7 @@ async function zappfyConfirmSend() {
       btn.innerHTML = '☁️ Upload...';
       var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now() + fileExt;
 
-      if (_supabase) {
-        var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
-        if (upResult.error) {
-          await _supabase.storage.createBucket('reports', { public: true });
-          upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
-          if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
-        }
-        var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
-        uploadUrl = urlResult.data.publicUrl;
-      }
+      uploadUrl = await zappfyUploadToStorage('zappfy/' + fileName, fileBlob, contentType);
     }
 
     // Build final message with report link
