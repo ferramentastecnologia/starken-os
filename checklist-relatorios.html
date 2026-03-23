@@ -8647,8 +8647,15 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       + '<div id="zappfyPreviewContent" style="min-height:350px;max-height:calc(94vh - 420px);overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:20px;background:var(--bg-secondary,#f8fafc);font-size:0.85rem;line-height:1.7;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
       + '<div id="zappfySendStatus2" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:0.85rem;font-weight:600"></div>'
 
+      // === ACTION ROW: Download PDF ===
+      + '<div style="display:flex;gap:10px;margin-top:14px">'
+      + '<button onclick="zappfyDownloadPdf()" id="zappfyDownloadBtn" style="flex:1;padding:10px;border:1.5px solid #6366f1;border-radius:10px;background:#eef2ff;color:#4338ca;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Baixar PDF</button>'
+      + '<button onclick="zappfyUploadAndGetUrl()" id="zappfyGetUrlBtn" style="flex:1;padding:10px;border:1.5px solid #0ea5e9;border-radius:10px;background:#f0f9ff;color:#0369a1;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit">🔗 Gerar URL pública</button>'
+      + '</div>'
+      + '<div id="zappfyPublicUrl" style="display:none;margin-top:10px;padding:10px 14px;background:#f0f9ff;border:1.5px solid #0ea5e9;border-radius:10px;font-size:0.8rem;word-break:break-all"></div>'
+
       // === BUTTONS ===
-      + '<div style="display:flex;gap:12px;margin-top:16px">'
+      + '<div style="display:flex;gap:12px;margin-top:12px">'
       + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="flex:1;padding:14px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;background:transparent;color:var(--text,#1a1a2e);font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>'
       + '<button onclick="zappfyEditMessage()" style="flex:1;padding:14px;border:1.5px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>'
       + '<button id="zappfyConfirmBtn" onclick="zappfyConfirmSend()" style="flex:2;padding:14px;border:none;border-radius:10px;background:#25d366;color:#fff;font-size:0.92rem;font-weight:800;cursor:pointer;font-family:inherit">📱 Confirmar e Enviar</button>'
@@ -8710,6 +8717,107 @@ function zappfyEditMessage() {
   }
 }
 
+// Generate PDF blob from pending report HTML
+async function zappfyGeneratePdfBlob() {
+  var p = window._zappfyPending;
+  if (!p || !p.reportHtml) return null;
+  var container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#fff';
+  container.innerHTML = p.reportHtml.replace(/<!DOCTYPE[^>]*>/i, '').replace(/<html[^>]*>/i, '').replace(/<\/html>/i, '').replace(/<head[^>]*>[\s\S]*?<\/head>/i, '').replace(/<\/?body[^>]*>/gi, '');
+  document.body.appendChild(container);
+  try {
+    var blob = await html2pdf().set({
+      margin: [10, 10, 10, 10],
+      filename: 'relatorio.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, width: 800, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    }).from(container).outputPdf('blob');
+    document.body.removeChild(container);
+    return blob;
+  } catch(e) {
+    document.body.removeChild(container);
+    console.error('PDF gen error:', e);
+    return null;
+  }
+}
+
+// Download PDF locally
+async function zappfyDownloadPdf() {
+  var btn = document.getElementById('zappfyDownloadBtn');
+  var p = window._zappfyPending;
+  if (!p) return;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Gerando PDF...';
+  try {
+    var blob = await zappfyGeneratePdfBlob();
+    if (!blob) throw new Error('Falha ao gerar PDF');
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'Relatorio-' + (p.client.name || '').replace(/\s+/g, '-') + '-' + p.typeLabel + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    btn.innerHTML = '✅ Baixado!';
+    setTimeout(function() { btn.innerHTML = '⬇️ Baixar PDF'; btn.disabled = false; }, 2000);
+  } catch(e) {
+    btn.innerHTML = '❌ Erro';
+    setTimeout(function() { btn.innerHTML = '⬇️ Baixar PDF'; btn.disabled = false; }, 2000);
+    console.error(e);
+  }
+}
+
+// Upload and show public URL
+async function zappfyUploadAndGetUrl() {
+  var btn = document.getElementById('zappfyGetUrlBtn');
+  var urlDiv = document.getElementById('zappfyPublicUrl');
+  var p = window._zappfyPending;
+  if (!p) return;
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Gerando e enviando...';
+  try {
+    var blob = await zappfyGeneratePdfBlob();
+    var isPdf = blob && blob.size > 0;
+    var fileExt = isPdf ? '.pdf' : '.html';
+    var contentType = isPdf ? 'application/pdf' : 'text/html';
+    var fileBlob = isPdf ? blob : new Blob([p.reportHtml], { type: 'text/html' });
+    var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now() + fileExt;
+
+    if (!_supabase) throw new Error('Supabase não conectado');
+    var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
+    if (upResult.error) {
+      await _supabase.storage.createBucket('reports', { public: true });
+      upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
+      if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
+    }
+    var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
+    var publicUrl = urlResult.data.publicUrl;
+
+    // Save URL in pending so confirm send can reuse it
+    p._uploadedUrl = publicUrl;
+    p._uploadedExt = fileExt;
+    window._zappfyPending = p;
+
+    urlDiv.style.display = 'block';
+    urlDiv.innerHTML = '<div style="font-weight:700;margin-bottom:6px;color:#0369a1">🔗 URL pública do relatório:</div>'
+      + '<a href="' + publicUrl + '" target="_blank" style="color:#1877f2;text-decoration:underline;word-break:break-all">' + publicUrl + '</a>'
+      + '<button onclick="navigator.clipboard.writeText(\'' + publicUrl + '\');this.textContent=\'✅ Copiado!\';setTimeout(()=>{this.textContent=\'📋 Copiar\'},1500)" style="margin-left:10px;padding:4px 10px;border:1px solid #0ea5e9;border-radius:6px;background:#fff;color:#0369a1;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar</button>';
+
+    btn.innerHTML = '✅ URL gerada!';
+    btn.style.background = '#dcfce7';
+    btn.style.color = '#166534';
+    btn.style.borderColor = '#86efac';
+    setTimeout(function() { btn.innerHTML = '🔗 Gerar URL pública'; btn.disabled = false; btn.style.background = '#f0f9ff'; btn.style.color = '#0369a1'; btn.style.borderColor = '#0ea5e9'; }, 3000);
+  } catch(e) {
+    btn.innerHTML = '❌ ' + e.message;
+    setTimeout(function() { btn.innerHTML = '🔗 Gerar URL pública'; btn.disabled = false; }, 2000);
+    console.error(e);
+  }
+}
+
 // STEP 2: Confirm and send
 async function zappfyConfirmSend() {
   var p = window._zappfyPending;
@@ -8729,51 +8837,39 @@ async function zappfyConfirmSend() {
   btn.innerHTML = '⏳ Enviando...';
 
   try {
-    // Generate PDF from HTML report
-    showStatus('📄 Gerando PDF do relatório...', 'blue');
-    btn.innerHTML = '📄 Gerando PDF...';
-    var pdfBlob = null;
-    try {
-      // Create a hidden container to render the report HTML
-      var pdfContainer = document.createElement('div');
-      pdfContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;background:#f8fafc';
-      pdfContainer.innerHTML = p.reportHtml.replace(/<!DOCTYPE[^>]*>/i, '').replace(/<html[^>]*>/i, '').replace(/<\/html>/i, '').replace(/<head[^>]*>[\s\S]*?<\/head>/i, '').replace(/<\/?body[^>]*>/gi, '');
-      document.body.appendChild(pdfContainer);
-      pdfBlob = await html2pdf().set({
-        margin: [10, 10, 10, 10],
-        filename: 'relatorio.pdf',
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true, width: 800, scrollY: 0 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-      }).from(pdfContainer).outputPdf('blob');
-      document.body.removeChild(pdfContainer);
-    } catch (pdfErr) {
-      console.error('PDF generation failed, falling back to HTML:', pdfErr);
-      // Fallback to HTML if PDF generation fails
-      pdfBlob = null;
-    }
-
-    var isPdf = pdfBlob && pdfBlob.size > 0;
-    var fileExt = isPdf ? '.pdf' : '.html';
-    var contentType = isPdf ? 'application/pdf' : 'text/html';
-    var fileBlob = isPdf ? pdfBlob : new Blob([p.reportHtml], { type: 'text/html' });
-
-    // Upload to Supabase Storage
-    showStatus('☁️ Fazendo upload do relatório...', 'blue');
-    btn.innerHTML = '☁️ Upload...';
-    var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + document.getElementById('zappfySendStart').value + '-' + Date.now() + fileExt;
     var uploadUrl = null;
+    var fileExt = '.pdf';
 
-    if (_supabase) {
-      var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
-      if (upResult.error) {
-        await _supabase.storage.createBucket('reports', { public: true });
-        upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
-        if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
+    // Reuse already uploaded URL if user clicked "Gerar URL pública" before
+    if (p._uploadedUrl) {
+      uploadUrl = p._uploadedUrl;
+      fileExt = p._uploadedExt || '.pdf';
+      showStatus('☁️ Usando relatório já enviado...', 'blue');
+    } else {
+      // Generate PDF from HTML report
+      showStatus('📄 Gerando PDF do relatório...', 'blue');
+      btn.innerHTML = '📄 Gerando PDF...';
+      var pdfBlob = await zappfyGeneratePdfBlob();
+      var isPdf = pdfBlob && pdfBlob.size > 0;
+      fileExt = isPdf ? '.pdf' : '.html';
+      var contentType = isPdf ? 'application/pdf' : 'text/html';
+      var fileBlob = isPdf ? pdfBlob : new Blob([p.reportHtml], { type: 'text/html' });
+
+      // Upload to Supabase Storage
+      showStatus('☁️ Fazendo upload do relatório...', 'blue');
+      btn.innerHTML = '☁️ Upload...';
+      var fileName = 'relatorio-' + (p.client.name || '').toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Date.now() + fileExt;
+
+      if (_supabase) {
+        var upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
+        if (upResult.error) {
+          await _supabase.storage.createBucket('reports', { public: true });
+          upResult = await _supabase.storage.from('reports').upload('zappfy/' + fileName, fileBlob, { contentType: contentType, upsert: true });
+          if (upResult.error) throw new Error('Upload falhou: ' + upResult.error.message);
+        }
+        var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
+        uploadUrl = urlResult.data.publicUrl;
       }
-      var urlResult = _supabase.storage.from('reports').getPublicUrl('zappfy/' + fileName);
-      uploadUrl = urlResult.data.publicUrl;
     }
 
     // Build final message with report link
@@ -8821,8 +8917,19 @@ async function zappfyConfirmSend() {
     showStatus('✅ Relatório enviado com sucesso!', 'green');
     btn.innerHTML = '✅ Enviado!';
     btn.style.background = '#16a34a';
-    setTimeout(function() { var m = document.getElementById('zappfySendModal'); if (m) m.remove(); }, 2000);
     showToast('✅ Relatório de ' + (p.client.name || '') + ' enviado no WhatsApp!');
+
+    // Show URL and close button instead of auto-closing
+    var urlDiv = document.getElementById('zappfyPublicUrl');
+    if (uploadUrl && urlDiv) {
+      urlDiv.style.display = 'block';
+      urlDiv.innerHTML = '<div style="font-weight:700;margin-bottom:6px;color:#166534">✅ Enviado! URL pública do relatório:</div>'
+        + '<a href="' + uploadUrl + '" target="_blank" style="color:#1877f2;text-decoration:underline;word-break:break-all">' + uploadUrl + '</a>'
+        + '<button onclick="navigator.clipboard.writeText(\'' + uploadUrl + '\');this.textContent=\'✅ Copiado!\';setTimeout(()=>{this.textContent=\'📋 Copiar\'},1500)" style="margin-left:10px;padding:4px 10px;border:1px solid #22c55e;border-radius:6px;background:#fff;color:#166534;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar</button>';
+    }
+    btn.textContent = '✅ Fechar';
+    btn.onclick = function() { document.getElementById('zappfySendModal').remove(); };
+    btn.disabled = false;
     window._zappfyPending = null;
 
   } catch (e) {
