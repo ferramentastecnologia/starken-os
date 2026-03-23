@@ -15596,26 +15596,34 @@ async function cronogramaDownload() {
     var s = _cronoState;
     var html = cronogramaBuildHtml(s.clientName, s.clientLogo, s.tenant, tasks);
 
-    // Use same pattern as working report PDF: fixed offscreen div with explicit width
+    // Close modal to avoid z-index conflicts with html2canvas
+    var modal = document.getElementById('cronoModal');
+    if (modal) modal.style.display = 'none';
+
+    // Create visible container (html2canvas needs it on-screen)
     var container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff';
+    container.id = 'cronoPdfContainer';
+    container.style.cssText = 'position:fixed;left:0;top:0;width:1100px;z-index:99999;background:#fff;overflow:visible;';
     container.innerHTML = html;
     document.body.appendChild(container);
+
+    // Small delay to ensure DOM render
+    await new Promise(function(r) { setTimeout(r, 300); });
 
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // Use proven config from working report generator
     await html2pdf().set({
       margin: [0, 0, 0, 0],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, width: 1100, scrollY: 0 },
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 1.5, useCORS: true, width: 1100, scrollY: 0, logging: false },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     }).from(container).save();
 
     document.body.removeChild(container);
+    if (modal) { modal.style.display = 'flex'; }
     if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
   } catch(err) {
     console.error('Cronograma PDF error:', err);
