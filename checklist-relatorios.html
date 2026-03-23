@@ -15596,33 +15596,26 @@ async function cronogramaDownload() {
     var s = _cronoState;
     var html = cronogramaBuildHtml(s.clientName, s.clientLogo, s.tenant, tasks);
 
-    // Close modal to avoid z-index conflicts with html2canvas
+    // Close modal during generation
     var modal = document.getElementById('cronoModal');
     if (modal) modal.style.display = 'none';
-
-    // Create visible container (html2canvas needs it on-screen)
-    var container = document.createElement('div');
-    container.id = 'cronoPdfContainer';
-    container.style.cssText = 'position:fixed;left:0;top:0;width:1100px;z-index:99999;background:#fff;overflow:visible;';
-    container.innerHTML = html;
-    document.body.appendChild(container);
-
-    // Small delay to ensure DOM render
-    await new Promise(function(r) { setTimeout(r, 300); });
 
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
+    // Wrap HTML in a full document with explicit width for html2canvas
+    var fullHtml = '<div style="width:1100px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif">' + html + '</div>';
+
+    // Use .from(string, 'string') to bypass all DOM positioning issues
     await html2pdf().set({
       margin: [0, 0, 0, 0],
       filename: filename,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 1.5, useCORS: true, width: 1100, scrollY: 0, logging: false },
+      html2canvas: { scale: 1.5, useCORS: true, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    }).from(container).save();
+    }).from(fullHtml, 'string').save();
 
-    document.body.removeChild(container);
     if (modal) { modal.style.display = 'flex'; }
     if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
   } catch(err) {
