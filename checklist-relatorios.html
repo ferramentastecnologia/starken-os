@@ -14019,9 +14019,22 @@ async function hubUploadLogo(files) {
       file_size: file.size
     });
 
-    if (res && res.file_url) {
+    console.log('Logo upload response:', JSON.stringify(res));
+
+    if (res && res.error) {
+      throw new Error(res.message || 'Erro no servidor');
+    }
+
+    // Extract file_url from response (may be nested)
+    var fileUrl = res.file_url || (res.data && res.data.file_url) || '';
+    if (!fileUrl && res.storage_path) {
+      // Build URL from storage path
+      fileUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + res.storage_path;
+    }
+
+    if (fileUrl) {
       // Set the URL field and update preview
-      document.getElementById('chLogoUrl').value = res.file_url;
+      document.getElementById('chLogoUrl').value = fileUrl;
       hubUpdateLogoPreview();
       hubMarkDirty();
 
@@ -14031,7 +14044,8 @@ async function hubUploadLogo(files) {
       if (label) { label.textContent = '✅ Enviado!'; label.style.opacity = '1'; }
       setTimeout(function() { if (label) label.textContent = '⬆ Upload'; }, 2000);
     } else {
-      throw new Error('Upload não retornou URL');
+      console.error('Logo upload: no file_url in response:', res);
+      throw new Error('Upload concluído mas URL não encontrada. Verifique o console.');
     }
   } catch(err) {
     console.error('Logo upload error:', err);
