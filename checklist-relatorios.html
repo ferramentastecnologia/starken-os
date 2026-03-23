@@ -3539,6 +3539,14 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <!-- Alerts -->
           <div id="gadsAlerts" style="margin-bottom:20px"></div>
 
+          <!-- Campaign filter -->
+          <div id="gadsCampaignFilter" style="display:none;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none">
+              <input type="checkbox" id="gadsFilterActive" onchange="gadsApplyFilter()" style="width:16px;height:16px;accent-color:#4285f4;cursor:pointer">
+              Apenas campanhas ativas
+            </label>
+          </div>
+
           <!-- Campaign Cards by Type -->
           <div id="gadsCampaignCards" style="display:none"></div>
 
@@ -14699,6 +14707,7 @@ async function gadsLoad() {
   errorEl.style.display = 'none';
   kpiRow.innerHTML = '';
   document.getElementById('gadsCampaignCards').style.display = 'none';
+  document.getElementById('gadsCampaignFilter').style.display = 'none';
   document.getElementById('gadsKeywordsSection').style.display = 'none';
   document.getElementById('gadsAlerts').innerHTML = '';
 
@@ -14850,8 +14859,15 @@ function gadsCampaignCard(c, accentColor) {
   </div>`;
 }
 
+function gadsApplyFilter() {
+  gadsRenderCampaigns(gadsData.campaigns);
+}
+
 function gadsRenderCampaigns(campaigns) {
   if (!campaigns.length) return;
+  const onlyActive = document.getElementById('gadsFilterActive') && document.getElementById('gadsFilterActive').checked;
+  if (onlyActive) campaigns = campaigns.filter(c => c.status === 'ENABLED');
+  document.getElementById('gadsCampaignFilter').style.display = 'flex';
 
   const TYPE_META = {
     PERFORMANCE_MAX: { label: 'Performance Max', icon: '⚡', color: '#f59e0b' },
