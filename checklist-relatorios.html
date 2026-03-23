@@ -4216,6 +4216,24 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 </div>
 
 <script>
+// ─── HELPER: Find meta client key by name + tenant ───
+if (typeof _metaClients === 'undefined') var _metaClients = {};
+function findMetaClientKey(clientName, tenant) {
+  if (!_metaClients || Object.keys(_metaClients).length === 0) return null;
+  var nameLower = (clientName || '').toLowerCase().trim();
+  var found = null;
+  Object.entries(_metaClients).forEach(function(entry) {
+    var key = entry[0];
+    var mc = entry[1];
+    if (mc.tenant !== tenant) return;
+    var mcName = (mc.name || key).toLowerCase().trim();
+    if (mcName === nameLower || mcName.includes(nameLower) || nameLower.includes(mcName)) {
+      found = key;
+    }
+  });
+  return found;
+}
+
 // ─── THEME SYSTEM ───
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
