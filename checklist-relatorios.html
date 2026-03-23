@@ -4321,6 +4321,12 @@ document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
 
+  // Restore last active tab on reload
+  const lastTab = localStorage.getItem('starken_last_tab');
+  if (lastTab && document.getElementById('tab-' + lastTab)) {
+    switchTab(lastTab);
+  }
+
   restoreSidebarFolders();
 
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
@@ -5151,6 +5157,8 @@ function switchTab(tabName) {
   });
   document.getElementById('topbarTitle').textContent = TAB_TITLES[tabName] || '';
   document.getElementById('sidebar').classList.remove('open');
+  // Persist last active tab
+  try { localStorage.setItem('starken_last_tab', tabName); } catch(e) {}
   // Hide/show client nav bars based on context
   var navBar = document.getElementById('clientNavBar');
   var navBarCal = document.getElementById('clientNavBarCal');
