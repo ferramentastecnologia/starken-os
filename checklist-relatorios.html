@@ -15171,7 +15171,7 @@ async function cronogramaGenerate() {
     // 1. Fetch tasks for this client
     var tasksRes = await ctApi('list_tasks', { client_id: clientId });
     var tasks = (tasksRes.data || tasksRes || []).filter(function(t) {
-      return t.due_date && (t.status !== 'backlog');
+      return t.due_date;
     });
 
     // Sort by due_date
