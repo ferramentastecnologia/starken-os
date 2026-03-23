@@ -14730,6 +14730,7 @@ async function gadsLoad() {
   document.getElementById('gadsCampaignCards').style.display = 'none';
   document.getElementById('gadsCampaignFilter').style.display = 'none';
   document.getElementById('gadsKeywordsSection').style.display = 'none';
+  document.getElementById('gadsCompetitividadeSection').style.display = 'none';
   document.getElementById('gadsAlerts').innerHTML = '';
 
   try {
@@ -14751,6 +14752,7 @@ async function gadsLoad() {
 
     gadsRenderKpis(gadsData.audit);
     gadsRenderAlerts(gadsData.audit, gadsData.campaigns);
+    gadsRenderCompetitividade(gadsData.audit, gadsData.campaigns);
     gadsRenderCampaigns(gadsData.campaigns);
     gadsRenderKeywords(gadsData.keywords);
   } catch (err) {
@@ -14785,10 +14787,12 @@ function gadsRenderKpis(a) {
   const html = [
     gadsKpiCard('💸', 'Gasto', fmtBrl(a.total_spend_brl), `Budget: ${fmtBrl(a.total_budget_brl)}`, budgetColor),
     gadsKpiCard('🎯', 'Conversões', fmtNum(a.total_conversions), `CPA: ${fmtBrl(a.avg_cpa_brl)}`, '#4285f4'),
-    gadsKpiCard('👁️', 'Impressões', fmtNum(a.total_impressions), `Cliques: ${fmtNum(a.total_clicks)}`, '#8b5cf6'),
-    gadsKpiCard('🖱️', 'CTR', fmtPct(a.ctr_pct), `${fmtNum(a.total_clicks)} cliques`, '#34a853'),
-    gadsKpiCard('📊', 'Campanhas', `${a.enabled_count}/${a.campaign_count}`, 'ativas / total', '#6b7280'),
-    gadsKpiCard('💰', 'Uso de Budget', fmtPct(a.budget_utilization_pct), `${fmtBrl(a.total_spend_brl)} de ${fmtBrl(a.total_budget_brl)}`, budgetColor),
+    gadsKpiCard('🖱️', 'CPC Médio', fmtBrl(a.avg_cpc_brl), `CTR: ${fmtPct(a.ctr_pct)}`, '#8b5cf6'),
+    gadsKpiCard('🔄', 'Taxa Conversão', fmtPct(a.conv_rate_pct), `${fmtNum(a.total_clicks)} cliques`, '#34a853'),
+    gadsKpiCard('💰', 'ROAS', a.roas > 0 ? a.roas.toFixed(2) + 'x' : '—', a.total_conv_value_brl > 0 ? `Receita: ${fmtBrl(a.total_conv_value_brl)}` : 'Sem receita', a.roas >= 3 ? '#10b981' : a.roas >= 1 ? '#f59e0b' : '#ef4444'),
+    gadsKpiCard('📊', 'Uso Budget', fmtPct(a.budget_utilization_pct), `${a.enabled_count} ativas de ${a.campaign_count}`, budgetColor),
+    gadsKpiCard('👁️', 'Impressões', fmtNum(a.total_impressions), `${fmtNum(a.total_clicks)} cliques`, '#34a853'),
+    gadsKpiCard('🏆', 'IS Search', a.search_is_pct != null ? fmtPct(a.search_is_pct) : '—', a.search_top_is_pct != null ? `Topo: ${fmtPct(a.search_top_is_pct)}` : 'N/A', a.search_is_pct != null ? (a.search_is_pct >= 70 ? '#10b981' : a.search_is_pct >= 40 ? '#f59e0b' : '#ef4444') : '#6b7280'),
   ].join('');
   document.getElementById('gadsKpiRow').innerHTML = html;
 }
@@ -14805,6 +14809,26 @@ function gadsRenderAlerts(audit, campaigns) {
   if (searchZero.length > 0) {
     alerts.push({ type: 'warn', msg: `⚠️ ${searchZero.length} campanha(s) SEARCH ativas sem impressões: ${searchZero.map(c => c.name.replace('SEARCH | ', '')).join(', ')}` });
   }
+  // IS lost by budget > 20%
+  if (audit.search_budget_lost_is_pct != null && audit.search_budget_lost_is_pct > 20) {
+    alerts.push({ type: 'warn', msg: `⚠️ Perdendo ${audit.search_budget_lost_is_pct.toFixed(0)}% de IS por orçamento — considere aumentar budget das campanhas Search` });
+  }
+  // IS lost by ranking > 30%
+  if (audit.search_rank_lost_is_pct != null && audit.search_rank_lost_is_pct > 30) {
+    alerts.push({ type: 'warn', msg: `⚠️ Perdendo ${audit.search_rank_lost_is_pct.toFixed(0)}% de IS por ranking — melhore Quality Score e lances` });
+  }
+  // Low IS overall
+  if (audit.search_is_pct != null && audit.search_is_pct < 30) {
+    alerts.push({ type: 'error', msg: `🚨 IS Search muito baixo: ${audit.search_is_pct.toFixed(0)}% — suas campanhas Search estão aparecendo em menos de 1/3 das buscas` });
+  }
+  // High CPC alert
+  if (audit.avg_cpc_brl > 5) {
+    alerts.push({ type: 'warn', msg: `⚠️ CPC médio alto: ${fmtBrl(audit.avg_cpc_brl)} — revise Quality Score e lances` });
+  }
+  // Low conv rate
+  if (audit.conv_rate_pct < 1 && audit.total_clicks > 100) {
+    alerts.push({ type: 'warn', msg: `⚠️ Taxa de conversão baixa: ${audit.conv_rate_pct.toFixed(2)}% — revise landing pages e público-alvo` });
+  }
   // Good news
   if (alerts.length === 0 && audit.enabled_count > 0) {
     alerts.push({ type: 'ok', msg: '✅ Tudo certo — sem alertas de performance.' });
@@ -14815,6 +14839,75 @@ function gadsRenderAlerts(audit, campaigns) {
     const c = colors[a.type];
     return `<div style="padding:12px 16px;background:${c.bg};border:1px solid ${c.border};border-radius:10px;color:${c.text};font-size:0.88rem;font-weight:500;margin-bottom:10px">${a.msg}</div>`;
   }).join('');
+}
+
+function gadsRenderCompetitividade(audit, campaigns) {
+  const el = document.getElementById('gadsCompetitividadeSection');
+  if (audit.search_is_pct == null) { el.style.display = 'none'; return; }
+
+  function isBar(label, pct, color) {
+    if (pct == null) return '';
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:5px">
+        <span style="color:var(--text);font-weight:600">${label}</span>
+        <span style="font-weight:800;color:${color}">${pct.toFixed(1)}%</span>
+      </div>
+      <div style="height:8px;background:var(--bg);border-radius:4px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(pct, 100).toFixed(1)}%;background:${color};border-radius:4px;transition:width 0.6s ease"></div>
+      </div>
+    </div>`;
+  }
+
+  const isGreen = '#10b981', isYellow = '#f59e0b', isRed = '#ef4444', isGray = '#94a3b8';
+  const isColor = v => v >= 70 ? isGreen : v >= 40 ? isYellow : isRed;
+
+  // Per-campaign IS breakdown (Search only)
+  const searchCamps = campaigns.filter(c => c.type === 'SEARCH' && c.status === 'ENABLED' && c.search_is_pct != null);
+  const campRows = searchCamps.map(c => {
+    const shortName = gadsCampaignShortName(c.name);
+    const lost = [];
+    if (c.search_budget_lost_is_pct > 0) lost.push(`<span style="color:#ef4444">${c.search_budget_lost_is_pct.toFixed(0)}% budget</span>`);
+    if (c.search_rank_lost_is_pct > 0) lost.push(`<span style="color:#f59e0b">${c.search_rank_lost_is_pct.toFixed(0)}% ranking</span>`);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1;font-size:0.82rem;font-weight:600;color:var(--text)">${shortName}</div>
+      <div style="width:120px">
+        <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${Math.min(c.search_is_pct, 100).toFixed(1)}%;background:${isColor(c.search_is_pct)};border-radius:3px"></div>
+        </div>
+      </div>
+      <div style="width:50px;text-align:right;font-size:0.85rem;font-weight:800;color:${isColor(c.search_is_pct)}">${c.search_is_pct.toFixed(0)}%</div>
+      <div style="width:180px;font-size:0.72rem;color:var(--text-secondary)">${lost.length ? 'Perdido: ' + lost.join(', ') : '—'}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <div style="width:38px;height:38px;border-radius:10px;background:#4285f418;display:flex;align-items:center;justify-content:center;font-size:1.15rem">🏆</div>
+      <div>
+        <div style="font-size:1rem;font-weight:700;color:var(--text)">Competitividade — Impression Share</div>
+        <div style="font-size:0.78rem;color:var(--text-secondary)">Quanto das buscas elegíveis seus anúncios aparecem</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <!-- Left: IS bars -->
+      <div>
+        ${isBar('IS Search (geral)', audit.search_is_pct, isColor(audit.search_is_pct))}
+        ${isBar('Topo da Página', audit.search_top_is_pct, audit.search_top_is_pct != null ? isColor(audit.search_top_is_pct) : isGray)}
+        ${isBar('1ª Posição Absoluta', audit.search_abs_top_is_pct, audit.search_abs_top_is_pct != null ? isColor(audit.search_abs_top_is_pct) : isGray)}
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">IS Perdido</div>
+          ${isBar('Perdido por Orçamento', audit.search_budget_lost_is_pct, isRed)}
+          ${isBar('Perdido por Ranking', audit.search_rank_lost_is_pct, isYellow)}
+        </div>
+      </div>
+      <!-- Right: per-campaign breakdown -->
+      <div>
+        <div style="font-size:0.78rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">IS por Campanha Search</div>
+        ${campRows || '<div style="color:var(--text-secondary);font-size:0.82rem;padding:16px 0">Nenhuma campanha Search com dados de IS</div>'}
+      </div>
+    </div>
+  </div>`;
+  el.style.display = 'block';
 }
 
 function gadsCampaignShortName(name) {
@@ -14877,6 +14970,44 @@ function gadsCampaignCard(c, accentColor) {
         <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">${c.conversions > 0 ? `CPA ${fmtBrl(c.cpa_brl)}` : 'Conv.'}</div>
       </div>
     </div>
+    <!-- Extra metrics row -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--border);padding-top:10px;margin-top:10px;padding-left:8px">
+      <div style="text-align:center">
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text)">${fmtBrl(c.avg_cpc_brl)}</div>
+        <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:2px">CPC</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text)">${c.conv_rate_pct != null ? c.conv_rate_pct.toFixed(1) + '%' : '—'}</div>
+        <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:2px">Tx Conv.</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.85rem;font-weight:700;color:${c.roas >= 3 ? '#10b981' : c.roas >= 1 ? '#f59e0b' : 'var(--text-secondary)'}">${c.roas > 0 ? c.roas.toFixed(2) + 'x' : '—'}</div>
+        <div style="font-size:0.65rem;color:var(--text-secondary);margin-top:2px">ROAS</div>
+      </div>
+    </div>
+    ${c.search_is_pct != null ? `
+    <!-- IS bar -->
+    <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;padding-left:8px">
+      <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-secondary);margin-bottom:4px">
+        <span>IS Search</span>
+        <span style="font-weight:700;color:${c.search_is_pct >= 70 ? '#10b981' : c.search_is_pct >= 40 ? '#f59e0b' : '#ef4444'}">${c.search_is_pct.toFixed(0)}%</span>
+      </div>
+      <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;position:relative">
+        <div style="position:absolute;height:100%;width:${Math.min(c.search_is_pct, 100).toFixed(1)}%;background:${c.search_is_pct >= 70 ? '#10b981' : c.search_is_pct >= 40 ? '#f59e0b' : '#ef4444'};border-radius:3px"></div>
+      </div>
+      ${c.search_budget_lost_is_pct != null && c.search_budget_lost_is_pct > 0 ? `<div style="font-size:0.63rem;color:#ef4444;margin-top:3px">${c.search_budget_lost_is_pct.toFixed(0)}% perdido por budget</div>` : ''}
+      ${c.search_rank_lost_is_pct != null && c.search_rank_lost_is_pct > 0 ? `<div style="font-size:0.63rem;color:#f59e0b;margin-top:2px">${c.search_rank_lost_is_pct.toFixed(0)}% perdido por ranking</div>` : ''}
+    </div>` : (c.content_is_pct != null ? `
+    <!-- Content IS bar (PMax/Display) -->
+    <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;padding-left:8px">
+      <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-secondary);margin-bottom:4px">
+        <span>IS Display</span>
+        <span style="font-weight:700;color:${c.content_is_pct >= 70 ? '#10b981' : c.content_is_pct >= 40 ? '#f59e0b' : '#ef4444'}">${c.content_is_pct.toFixed(0)}%</span>
+      </div>
+      <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${Math.min(c.content_is_pct, 100).toFixed(1)}%;background:${c.content_is_pct >= 70 ? '#10b981' : c.content_is_pct >= 40 ? '#f59e0b' : '#ef4444'};border-radius:3px"></div>
+      </div>
+    </div>` : '')}
     <!-- Ad preview button -->
     <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;padding-left:8px">
       <button onclick="gadsOpenAdModal('${c.id}','${shortName.replace(/'/g,"\\'")}','${c.type}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.74rem;color:var(--text-secondary);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all 0.2s;width:100%;justify-content:center" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
@@ -15083,9 +15214,13 @@ function gadsRenderCampaigns(campaigns) {
     const totalBudget = list.reduce((s, c) => s + c.budget_brl, 0);
     const totalConv   = list.reduce((s, c) => s + c.conversions, 0);
     const totalImpr   = list.reduce((s, c) => s + Number(c.impressions), 0);
+    const totalClicks = list.reduce((s, c) => s + Number(c.clicks), 0);
+    const totalConvValue = list.reduce((s, c) => s + (c.conv_value_brl || 0), 0);
     const activeCount = list.filter(c => c.status === 'ENABLED').length;
     const isOver      = totalBudget > 0 && totalSpend > totalBudget * 1.1;
     const utilPct     = totalBudget > 0 ? (totalSpend / totalBudget * 100).toFixed(0) : null;
+    const groupCpc    = totalClicks > 0 ? totalSpend / totalClicks : 0;
+    const groupRoas   = totalSpend > 0 ? totalConvValue / totalSpend : 0;
 
     html += `<div style="margin-bottom:28px">
       <!-- Section header -->
@@ -15095,18 +15230,26 @@ function gadsRenderCampaigns(campaigns) {
           <div style="font-size:0.95rem;font-weight:700;color:var(--text)">${meta.label}</div>
           <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">${activeCount} ativa(s) de ${list.length} · ${fmtBrl(totalSpend)} gasto${utilPct ? ` · ${utilPct}% do budget` : ''}</div>
         </div>
-        <div style="display:flex;gap:20px;flex-shrink:0">
+        <div style="display:flex;gap:16px;flex-shrink:0">
           <div style="text-align:center">
-            <div style="font-size:1rem;font-weight:800;color:${isOver ? '#ef4444' : 'var(--text)'}">${fmtBrl(totalSpend)}</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">Gasto</div>
+            <div style="font-size:0.95rem;font-weight:800;color:${isOver ? '#ef4444' : 'var(--text)'}">${fmtBrl(totalSpend)}</div>
+            <div style="font-size:0.66rem;color:var(--text-secondary)">Gasto</div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:1rem;font-weight:800;color:var(--text)">${fmtNum(totalImpr)}</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">Impressões</div>
+            <div style="font-size:0.95rem;font-weight:800;color:var(--text)">${fmtNum(totalImpr)}</div>
+            <div style="font-size:0.66rem;color:var(--text-secondary)">Impressões</div>
           </div>
           <div style="text-align:center">
-            <div style="font-size:1rem;font-weight:800;color:${totalConv > 0 ? '#10b981' : 'var(--text-secondary)'}">${totalConv.toFixed(1)}</div>
-            <div style="font-size:0.68rem;color:var(--text-secondary)">Conversões</div>
+            <div style="font-size:0.95rem;font-weight:800;color:${totalConv > 0 ? '#10b981' : 'var(--text-secondary)'}">${totalConv.toFixed(1)}</div>
+            <div style="font-size:0.66rem;color:var(--text-secondary)">Conv.</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.95rem;font-weight:800;color:var(--text)">${fmtBrl(groupCpc)}</div>
+            <div style="font-size:0.66rem;color:var(--text-secondary)">CPC</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:0.95rem;font-weight:800;color:${groupRoas >= 3 ? '#10b981' : groupRoas >= 1 ? '#f59e0b' : 'var(--text-secondary)'}">${groupRoas > 0 ? groupRoas.toFixed(2) + 'x' : '—'}</div>
+            <div style="font-size:0.66rem;color:var(--text-secondary)">ROAS</div>
           </div>
           ${isOver ? `<div style="background:#fef2f2;color:#dc2626;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;align-self:center">Acima do budget</div>` : ''}
         </div>
@@ -15242,7 +15385,7 @@ function cronogramaShowModal() {
       + '</label>';
   });
 
-  modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:700px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25)">'
+  modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:860px;max-width:95vw;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25)">'
     // Header
     + '<div style="background:linear-gradient(135deg,#8B7355,#a89070);padding:20px 24px;color:#fff">'
     + '<div style="display:flex;justify-content:space-between;align-items:center">'
@@ -15272,7 +15415,7 @@ function cronogramaShowModal() {
     // Actions
     + '<div style="padding:16px 20px;border-top:1px solid var(--border,#e5e7eb);display:flex;gap:10px">'
     + '<button onclick="cronogramaPreview()" style="flex:1;padding:12px;border:1.5px solid #8B7355;border-radius:10px;background:transparent;color:#8B7355;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">👁️ Preview</button>'
-    + '<button onclick="cronogramaDownload()" style="flex:1;padding:12px;border:none;border-radius:10px;background:#8B7355;color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Baixar PDF</button>'
+    + '<button id="cronoDlBtn" onclick="cronogramaDownload()" style="flex:1;padding:12px;border:none;border-radius:10px;background:#8B7355;color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Baixar PDF</button>'
     + '</div>'
     + '</div>';
 
@@ -15305,40 +15448,30 @@ async function cronogramaDownload() {
   var tasks = cronogramaGetSelectedTasks();
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
 
-  var dlBtn = document.querySelector('#cronoModal button:last-child');
+  var dlBtn = document.getElementById('cronoDlBtn');
   if (dlBtn) { dlBtn.innerHTML = '⏳ Gerando PDF...'; dlBtn.disabled = true; }
 
   try {
     var s = _cronoState;
     var html = cronogramaBuildHtml(s.clientName, s.clientLogo, s.tenant, tasks);
 
+    // Use same pattern as working report PDF: fixed offscreen div with explicit width
     var container = document.createElement('div');
-    container.style.cssText = 'position:absolute;left:0;top:0;width:1280px;z-index:-1;opacity:0;pointer-events:none;';
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;background:#fff';
     container.innerHTML = html;
     document.body.appendChild(container);
-
-    // Wait for images
-    var imgs = container.querySelectorAll('img');
-    if (imgs.length > 0) {
-      await Promise.all(Array.from(imgs).map(function(img) {
-        return new Promise(function(resolve) {
-          if (img.complete) return resolve();
-          img.onload = resolve; img.onerror = resolve;
-          setTimeout(resolve, 5000);
-        });
-      }));
-    }
 
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
+    // Use proven config from working report generator
     await html2pdf().set({
-      margin: 0,
+      margin: [0, 0, 0, 0],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: null, scrollY: -window.scrollY },
-      jsPDF: { unit: 'px', format: [1280, 720], orientation: 'landscape', hotfixes: ['px_scaling'] },
-      pagebreak: { mode: ['css'], before: '.crono-page-break' }
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, width: 1100, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     }).from(container).save();
 
     document.body.removeChild(container);
@@ -15380,12 +15513,13 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   var tenantLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
   var tenantColor = tenant === 'alpha' ? '#10b981' : '#3b82f6';
 
-  // Common page style
-  var pageStyle = 'width:1280px;height:720px;overflow:hidden;position:relative;box-sizing:border-box;';
+  // A4 landscape: 297mm x 210mm at 96dpi ≈ 1100px x 780px
+  var pageStyle = 'width:1100px;min-height:750px;overflow:hidden;position:relative;box-sizing:border-box;';
   var bgColor = '#b5aa9a';
   var darkBg = '#2d2d2d';
 
-  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;"><style>.crono-page-break{page-break-after:always;break-after:page;height:0;}</style>';
+  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;">'
+    + '<style>.crono-page{' + pageStyle + '} .crono-page-break{page-break-after:always;break-after:page;height:0;display:block;clear:both;}</style>';
 
   // ═══ PAGE 1: COVER ═══
   html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;padding:80px;">';
