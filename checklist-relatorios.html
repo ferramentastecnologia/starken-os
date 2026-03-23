@@ -5326,6 +5326,12 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
         html += '<button class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:4px 8px" onclick="openClientReports(\'' + c.id + '\')" title="Ver relatórios gerados">&#128196; ' + pdfCount + '</button>';
       }
 
+      // BI link button - find matching meta client
+      var metaKey = findMetaClientKey(c.name, co.key === 'Starken' ? 'starken' : 'alpha');
+      if (metaKey) {
+        html += '<button class="btn btn-sm" style="background:#eff6ff;color:#1877f2;border:1px solid #bfdbfe;padding:4px 8px" onclick="metaBiOpenFromReport(\'' + metaKey + '\',\'' + (co.key === 'Starken' ? 'starken' : 'alpha') + '\')" title="Ver no BI Campanhas">📊</button>';
+      }
+
       // WhatsApp
       if (c.phone) {
         html += '<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar WhatsApp">&#9993; Zap</button>';
@@ -8576,10 +8582,78 @@ function metaBiGeneratePdfReport() {
     + '<div class="no-print" style="text-align:center;margin-top:20px"><button onclick="window.print()" style="padding:12px 28px;border:none;border-radius:10px;background:linear-gradient(135deg,#1877f2,#8b5cf6);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">🖨️ Imprimir / Salvar PDF</button></div>'
     + '</div></body></html>';
 
+  // Save report to data.reports
+  if (data && data.clients && data.reports && client) {
+    var clientNameLower = (client.name || '').toLowerCase().trim();
+    var matchedClient = data.clients.find(function(c) {
+      var cName = (c.name || '').toLowerCase().trim();
+      return cName === clientNameLower || cName.includes(clientNameLower) || clientNameLower.includes(cName);
+    });
+
+    if (matchedClient) {
+      var reportType = _metaBiState.currentPeriod === 'last_7d' ? 'weekly' : 'monthly';
+      var periodKey = reportType === 'weekly' ? getWeekPeriodKey() : getCurrentMonthKey();
+      var dateStr = new Date().toISOString().split('T')[0];
+      var clientSlug = (client.name || '').toLowerCase().replace(/\s+/g, '-');
+
+      var existingIndex = data.reports.findIndex(function(r) {
+        return r.clientId === matchedClient.id && r.type === reportType && r.period === periodKey;
+      });
+
+      var reportData = {
+        id: existingIndex >= 0 ? data.reports[existingIndex].id : 'report-' + Date.now() + '-' + Math.random(),
+        clientId: matchedClient.id,
+        type: reportType,
+        period: periodKey,
+        status: 1,
+        pdfFilename: 'relatorio-bi-' + clientSlug + '-' + dateStr + '.pdf',
+        notes: 'Gerado via BI Campanhas',
+        createdAt: new Date().toISOString()
+      };
+
+      if (existingIndex >= 0) {
+        data.reports[existingIndex] = reportData;
+      } else {
+        data.reports.push(reportData);
+      }
+
+      saveData(data);
+    }
+  }
+
   // Open in new window
   var win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
+}
+
+function findMetaClientKey(clientName, tenant) {
+  if (!_metaClients) return null;
+  var nameLower = (clientName || '').toLowerCase().trim();
+  var found = null;
+  Object.entries(_metaClients).forEach(function(entry) {
+    var key = entry[0];
+    var mc = entry[1];
+    if (mc.tenant !== tenant) return;
+    var mcName = (mc.name || key).toLowerCase().trim();
+    if (mcName === nameLower || mcName.includes(nameLower) || nameLower.includes(mcName)) {
+      found = key;
+    }
+  });
+  return found;
+}
+
+function metaBiOpenFromReport(clientKey, tenant) {
+  // Switch to BI tab
+  switchTab('meta-bi');
+  // Select correct tenant
+  setTimeout(function() {
+    metaBiSelectTenant(tenant);
+    // Drill down after a small delay
+    setTimeout(function() {
+      metaBiDrillDown(clientKey);
+    }, 300);
+  }, 200);
 }
 
 function metaBiExtractAction(actions, types) {
