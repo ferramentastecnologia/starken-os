@@ -14919,9 +14919,10 @@ function gadsAdPreviewCard(ad) {
   const headlines = ad.headlines || [];
   const descriptions = ad.descriptions || [];
   const isRsa = ad.ad_type === 'RESPONSIVE_SEARCH_AD';
+  const isPmax = ad.ad_type === 'PERFORMANCE_MAX';
   const statusColor = ad.status === 'ENABLED' ? '#10b981' : '#9ca3af';
 
-  if (!isRsa) {
+  if (!isRsa && !isPmax) {
     return `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px;font-size:0.78rem">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
         <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div>
@@ -14958,14 +14959,9 @@ function gadsAdPreviewCard(ad) {
         <div style="width:6px;height:6px;border-radius:50%;background:${statusColor}"></div>
         ${ad.status === 'ENABLED' ? 'Ativo' : 'Pausado'}
       </div>
-      <span>·</span>
-      <span>${ad.ad_group_name || ''}</span>
-      <span>·</span>
-      <span>${fmtNum(ad.impressions)} impr</span>
-      <span>·</span>
-      <span>${fmtNum(ad.clicks)} cliques</span>
-      <span>·</span>
-      <span>${ad.ctr_pct.toFixed(1)}% CTR</span>
+      ${isPmax ? `<span>·</span><span style="background:#f59e0b20;color:#b45309;padding:1px 7px;border-radius:4px;font-weight:600">PMax Asset Group</span>` : ''}
+      ${ad.ad_group_name ? `<span>·</span><span>${ad.ad_group_name}</span>` : ''}
+      ${ad.impressions > 0 ? `<span>·</span><span>${fmtNum(ad.impressions)} impr</span><span>·</span><span>${fmtNum(ad.clicks)} cliques</span><span>·</span><span>${ad.ctr_pct.toFixed(1)}% CTR</span>` : ''}
       ${ad.conversions > 0 ? `<span>·</span><span style="color:#10b981;font-weight:600">${ad.conversions.toFixed(1)} conv</span>` : ''}
     </div>
     <!-- All headlines/descriptions -->

@@ -171,6 +171,8 @@ async function getAds(customerId: string, range: string, token: string, campaign
   const campaignFilter = campaignId
     ? `AND campaign.id = ${campaignId}`
     : '';
+
+  // Try ad_group_ad first (works for Search, Display, etc.)
   const query = `
     SELECT
       campaign.id, campaign.name,
@@ -193,29 +195,92 @@ async function getAds(customerId: string, range: string, token: string, campaign
     ORDER BY metrics.impressions DESC
     LIMIT 50
   `;
-  const results = await gadsQuery(customerId, query, token);
-  return results.map((r: any) => {
-    const ad = r.adGroupAd?.ad || {};
-    const rsa = ad.responsiveSearchAd || {};
-    return {
-      campaign_id: r.campaign?.id,
-      campaign_name: r.campaign?.name,
-      ad_group_name: r.adGroup?.name,
-      ad_id: ad.id,
-      ad_type: ad.type,
-      ad_name: ad.name || '',
-      status: r.adGroupAd?.status,
-      headlines: (rsa.headlines || []).map((h: any) => h.text),
-      descriptions: (rsa.descriptions || []).map((d: any) => d.text),
-      final_urls: ad.finalUrls || [],
-      display_url: ad.displayUrl || '',
-      impressions: parseInt(r.metrics?.impressions || '0'),
-      clicks: parseInt(r.metrics?.clicks || '0'),
-      conversions: parseFloat(r.metrics?.conversions || '0'),
-      spend_brl: (r.metrics?.costMicros || 0) / 1e6,
-      ctr_pct: parseFloat(r.metrics?.ctr || '0') * 100,
-    };
-  });
+
+  let results: any[] = [];
+  try {
+    results = await gadsQuery(customerId, query, token);
+  } catch (_) { /* PMax may fail on ad_group_ad */ }
+
+  if (results.length > 0) {
+    return results.map((r: any) => {
+      const ad = r.adGroupAd?.ad || {};
+      const rsa = ad.responsiveSearchAd || {};
+      return {
+        campaign_id: r.campaign?.id,
+        campaign_name: r.campaign?.name,
+        ad_group_name: r.adGroup?.name,
+        ad_id: ad.id,
+        ad_type: ad.type,
+        ad_name: ad.name || '',
+        status: r.adGroupAd?.status,
+        headlines: (rsa.headlines || []).map((h: any) => h.text),
+        descriptions: (rsa.descriptions || []).map((d: any) => d.text),
+        final_urls: ad.finalUrls || [],
+        display_url: ad.displayUrl || '',
+        impressions: parseInt(r.metrics?.impressions || '0'),
+        clicks: parseInt(r.metrics?.clicks || '0'),
+        conversions: parseFloat(r.metrics?.conversions || '0'),
+        spend_brl: (r.metrics?.costMicros || 0) / 1e6,
+        ctr_pct: parseFloat(r.metrics?.ctr || '0') * 100,
+      };
+    });
+  }
+
+  // Fallback: PMax asset groups
+  const assetQuery = `
+    SELECT
+      campaign.id, campaign.name,
+      asset_group.id, asset_group.name, asset_group.status,
+      asset_group_asset.asset,
+      asset_group_asset.field_type,
+      asset.text_asset.text,
+      asset.image_asset.full_size.url,
+      asset.name
+    FROM asset_group_asset
+    WHERE campaign.status IN ('ENABLED', 'PAUSED')
+    ${campaignFilter}
+    AND asset_group.status = 'ENABLED'
+    AND asset_group_asset.field_type IN ('HEADLINE', 'DESCRIPTION', 'LONG_HEADLINE')
+  `;
+
+  let assetResults: any[] = [];
+  try {
+    assetResults = await gadsQuery(customerId, assetQuery, token);
+  } catch (_) { /* may fail */ }
+
+  if (!assetResults.length) return [];
+
+  // Group assets by asset_group
+  const groups: Record<string, any> = {};
+  for (const r of assetResults) {
+    const gid = r.assetGroup?.id || 'unknown';
+    if (!groups[gid]) {
+      groups[gid] = {
+        campaign_id: r.campaign?.id,
+        campaign_name: r.campaign?.name,
+        ad_group_name: r.assetGroup?.name || '',
+        ad_id: gid,
+        ad_type: 'PERFORMANCE_MAX',
+        ad_name: r.assetGroup?.name || '',
+        status: r.assetGroup?.status || 'ENABLED',
+        headlines: [],
+        descriptions: [],
+        final_urls: [],
+        display_url: '',
+        impressions: 0, clicks: 0, conversions: 0, spend_brl: 0, ctr_pct: 0,
+      };
+    }
+    const text = r.asset?.textAsset?.text;
+    if (!text) continue;
+    const fieldType = r.assetGroupAsset?.fieldType;
+    if (fieldType === 'HEADLINE' || fieldType === 'LONG_HEADLINE') {
+      groups[gid].headlines.push(text);
+    } else if (fieldType === 'DESCRIPTION') {
+      groups[gid].descriptions.push(text);
+    }
+  }
+
+  return Object.values(groups);
 }
 
 Deno.serve(async (req: Request) => {
