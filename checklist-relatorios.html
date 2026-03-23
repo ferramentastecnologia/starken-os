@@ -3539,6 +3539,20 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <!-- Alerts -->
           <div id="gadsAlerts" style="margin-bottom:20px"></div>
 
+          <!-- Ad Preview Modal -->
+          <div id="gadsAdModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);overflow-y:auto;padding:24px" onclick="if(event.target===this)this.style.display='none'">
+            <div style="max-width:720px;margin:0 auto;background:var(--card);border-radius:16px;border:1px solid var(--border);overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.25)">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);background:var(--bg)">
+                <div>
+                  <div id="gadsAdModalTitle" style="font-size:1rem;font-weight:700;color:var(--text)"></div>
+                  <div id="gadsAdModalSub" style="font-size:0.78rem;color:var(--text-secondary);margin-top:3px"></div>
+                </div>
+                <button onclick="document.getElementById('gadsAdModal').style.display='none'" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);padding:4px 8px;border-radius:8px;line-height:1">✕</button>
+              </div>
+              <div id="gadsAdModalBody" style="padding:20px 24px;max-height:70vh;overflow-y:auto"></div>
+            </div>
+          </div>
+
           <!-- Campaign filter -->
           <div id="gadsCampaignFilter" style="display:none;margin-bottom:16px;align-items:center;gap:10px">
             <label style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer;display:flex;align-items:center;gap:6px;user-select:none">
@@ -14856,12 +14870,11 @@ function gadsCampaignCard(c, accentColor) {
         <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">${c.conversions > 0 ? `CPA ${fmtBrl(c.cpa_brl)}` : 'Conv.'}</div>
       </div>
     </div>
-    <!-- Ad preview toggle -->
+    <!-- Ad preview button -->
     <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;padding-left:8px">
-      <button onclick="gadsToggleAds(this,'${c.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.74rem;color:var(--text-secondary);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all 0.2s">
+      <button onclick="gadsOpenAdModal('${c.id}','${shortName.replace(/'/g,"\\'")}','${c.type}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:5px 12px;font-size:0.74rem;color:var(--text-secondary);cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px;transition:all 0.2s;width:100%;justify-content:center" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='none'">
         <span style="font-size:0.8rem">📋</span> Ver anúncios
       </button>
-      <div id="gadsAdPreview-${c.id}" style="display:none;margin-top:12px"></div>
     </div>
   </div>`;
 }
@@ -14873,19 +14886,17 @@ function gadsApplyFilter() {
 // Ad preview cache
 const gadsAdCache = {};
 
-async function gadsToggleAds(btn, campaignId) {
-  const container = document.getElementById('gadsAdPreview-' + campaignId);
-  if (!container) return;
+async function gadsOpenAdModal(campaignId, campaignName, campaignType) {
+  const modal = document.getElementById('gadsAdModal');
+  const title = document.getElementById('gadsAdModalTitle');
+  const sub = document.getElementById('gadsAdModalSub');
+  const body = document.getElementById('gadsAdModalBody');
+  const typeLabels = { SEARCH: '🔍 Search', PERFORMANCE_MAX: '⚡ Performance Max', DISPLAY: '🖼️ Display', VIDEO: '▶️ Video' };
 
-  // Toggle visibility
-  if (container.style.display !== 'none' && container.innerHTML) {
-    container.style.display = 'none';
-    btn.innerHTML = '<span style="font-size:0.8rem">📋</span> Ver anúncios';
-    return;
-  }
-
-  btn.innerHTML = '<span style="font-size:0.8rem">⏳</span> Carregando...';
-  btn.disabled = true;
+  title.textContent = campaignName;
+  sub.textContent = (typeLabels[campaignType] || campaignType) + ' · Anúncios ativos';
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:1.5rem;margin-bottom:8px">⏳</div>Carregando anúncios...</div>';
+  modal.style.display = 'block';
 
   try {
     let ads = gadsAdCache[campaignId];
@@ -14898,18 +14909,16 @@ async function gadsToggleAds(btn, campaignId) {
     }
 
     if (!ads.length) {
-      container.innerHTML = '<div style="font-size:0.8rem;color:var(--text-secondary);padding:8px 0">Nenhum anúncio encontrado para este período.</div>';
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:1.5rem;margin-bottom:8px">📭</div>Nenhum anúncio encontrado para este período.</div>';
     } else {
-      container.innerHTML = ads.map(ad => gadsAdPreviewCard(ad)).join('');
+      const count = ads.length;
+      const totalImpr = ads.reduce((s, a) => s + (a.impressions || 0), 0);
+      const totalClicks = ads.reduce((s, a) => s + (a.clicks || 0), 0);
+      sub.textContent = (typeLabels[campaignType] || campaignType) + ` · ${count} anúncio(s)${totalImpr ? ` · ${fmtNum(totalImpr)} impr · ${fmtNum(totalClicks)} cliques` : ''}`;
+      body.innerHTML = ads.map(ad => gadsAdPreviewCard(ad)).join('');
     }
-    container.style.display = 'block';
-    btn.innerHTML = '<span style="font-size:0.8rem">📋</span> Ocultar anúncios';
   } catch (err) {
-    container.innerHTML = `<div style="font-size:0.8rem;color:#dc2626;padding:8px 0">Erro: ${err.message}</div>`;
-    container.style.display = 'block';
-    btn.innerHTML = '<span style="font-size:0.8rem">📋</span> Ver anúncios';
-  } finally {
-    btn.disabled = false;
+    body.innerHTML = `<div style="text-align:center;padding:40px;color:#dc2626"><div style="font-size:1.5rem;margin-bottom:8px">⚠️</div>${err.message}</div>`;
   }
 }
 
