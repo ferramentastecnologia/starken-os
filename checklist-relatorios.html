@@ -3504,6 +3504,86 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div>
 
+      <!-- ═══ GOOGLE ADS ═══ -->
+      <div id="tab-google-ads" class="tab-content">
+        <div style="padding:20px;background:var(--bg)">
+          <!-- Header -->
+          <div style="background:linear-gradient(135deg,#4285f4 0%,#34a853 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;color:#fff;position:relative;overflow:hidden;box-shadow:var(--shadow-lg)">
+            <div style="position:absolute;top:-30px;right:-30px;width:150px;height:150px;background:rgba(255,255,255,0.08);border-radius:50%"></div>
+            <div style="position:absolute;bottom:-40px;right:80px;width:100px;height:100px;background:rgba(255,255,255,0.05);border-radius:50%"></div>
+            <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+              <div>
+                <div style="font-size:1.4rem;font-weight:800;margin-bottom:6px">📈 Google Ads — Mortadella</div>
+                <div style="font-size:0.9rem;opacity:0.9">Performance de campanhas · Blumenau</div>
+              </div>
+              <!-- Period selector -->
+              <div id="gadsPeriodBtns" style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="gads-period-btn active" data-range="TODAY" onclick="gadsSetPeriod('TODAY')" style="padding:7px 14px;border:1px solid rgba(255,255,255,0.4);border-radius:8px;background:rgba(255,255,255,0.2);color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s">Hoje</button>
+                <button class="gads-period-btn" data-range="LAST_7_DAYS" onclick="gadsSetPeriod('LAST_7_DAYS')" style="padding:7px 14px;border:1px solid rgba(255,255,255,0.25);border-radius:8px;background:transparent;color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s">7 dias</button>
+                <button class="gads-period-btn" data-range="THIS_MONTH" onclick="gadsSetPeriod('THIS_MONTH')" style="padding:7px 14px;border:1px solid rgba(255,255,255,0.25);border-radius:8px;background:transparent;color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s">Este mês</button>
+                <button class="gads-period-btn" data-range="LAST_30_DAYS" onclick="gadsSetPeriod('LAST_30_DAYS')" style="padding:7px 14px;border:1px solid rgba(255,255,255,0.25);border-radius:8px;background:transparent;color:#fff;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s">30 dias</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading / Error state -->
+          <div id="gadsLoading" style="display:none;text-align:center;padding:60px 20px;color:var(--text-secondary)">
+            <div style="font-size:2rem;margin-bottom:12px">⏳</div>
+            <div style="font-size:0.95rem">Carregando dados do Google Ads...</div>
+          </div>
+          <div id="gadsError" style="display:none;padding:20px;background:#fef2f2;border:1px solid #fecaca;border-radius:12px;color:#dc2626;margin-bottom:20px;font-size:0.9rem"></div>
+
+          <!-- KPI Cards -->
+          <div id="gadsKpiRow" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:16px;margin-bottom:24px"></div>
+
+          <!-- Alerts -->
+          <div id="gadsAlerts" style="margin-bottom:20px"></div>
+
+          <!-- Campaigns Table -->
+          <div id="gadsCampaignsSection" style="display:none">
+            <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:14px">Campanhas</h3>
+            <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden">
+              <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
+                <thead>
+                  <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text-secondary)">Campanha</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text-secondary)">Status</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Budget</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Gasto</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Impr.</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Cliques</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Conv.</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">CPA</th>
+                  </tr>
+                </thead>
+                <tbody id="gadsCampaignsBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Keywords Section -->
+          <div id="gadsKeywordsSection" style="display:none;margin-top:24px">
+            <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:14px">Top Keywords</h3>
+            <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden">
+              <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
+                <thead>
+                  <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
+                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text-secondary)">Keyword</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text-secondary)">Tipo</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Gasto</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Cliques</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Conv.</th>
+                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">QS</th>
+                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text-secondary)">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="gadsKeywordsBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ CLIENT HUB ═══ -->
       <div id="tab-client-hub" class="tab-content" style="padding:0!important">
         <div class="ch-wrap">
@@ -4763,6 +4843,9 @@ let SIDEBAR_MENU = [
     { type: 'item', id: 'meta-balance', label: 'Saldo Contas', icon: '💰', tab: 'meta-balance' },
     { type: 'item', id: 'meta-bi', label: 'BI Campanhas', icon: '📊', tab: 'meta-bi' },
     { type: 'item', id: 'meta-publish', label: 'Agendamento', icon: '📤', tab: 'meta-publish' },
+  ]},
+  { type: 'category', id: 'cat-google-ads', label: 'Google Ads', items: [
+    { type: 'item', id: 'google-ads', label: 'Mortadella', icon: '📈', tab: 'google-ads' },
   ]},
   { type: 'category', id: 'cat-geral', label: 'Geral', items: [
     { type: 'item', id: 'clients', label: 'Clientes', icon: '&#128101;', tab: 'clients' },
@@ -14587,6 +14670,176 @@ async function setupDilokas() {
   await hubPopulateDilokas();
   await ctAutoPopulateDilokas();
   alert('🎉 Dilokas Pizzaria configurado por completo!');
+}
+
+// ═══════════════════════════════════════════════════════
+// GOOGLE ADS DASHBOARD
+// ═══════════════════════════════════════════════════════
+
+const GADS_EDGE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co/functions/v1/google-ads';
+const GADS_CUSTOMER_ID = '8779278717';
+
+let gadsCurrentRange = 'TODAY';
+let gadsData = { audit: null, campaigns: [], keywords: [] };
+
+function gadsSetPeriod(range) {
+  gadsCurrentRange = range;
+  document.querySelectorAll('.gads-period-btn').forEach(b => {
+    const active = b.dataset.range === range;
+    b.style.background = active ? 'rgba(255,255,255,0.2)' : 'transparent';
+    b.style.borderColor = active ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.25)';
+  });
+  gadsLoad();
+}
+
+async function gadsLoad() {
+  const loading = document.getElementById('gadsLoading');
+  const errorEl = document.getElementById('gadsError');
+  const kpiRow = document.getElementById('gadsKpiRow');
+
+  loading.style.display = 'block';
+  errorEl.style.display = 'none';
+  kpiRow.innerHTML = '';
+  document.getElementById('gadsCampaignsSection').style.display = 'none';
+  document.getElementById('gadsKeywordsSection').style.display = 'none';
+  document.getElementById('gadsAlerts').innerHTML = '';
+
+  try {
+    const [auditResp, campaignsResp, keywordsResp] = await Promise.all([
+      fetch(`${GADS_EDGE_URL}?customerId=${GADS_CUSTOMER_ID}&resource=audit&range=${gadsCurrentRange}`),
+      fetch(`${GADS_EDGE_URL}?customerId=${GADS_CUSTOMER_ID}&resource=campaigns&range=${gadsCurrentRange}`),
+      fetch(`${GADS_EDGE_URL}?customerId=${GADS_CUSTOMER_ID}&resource=keywords&range=${gadsCurrentRange}`),
+    ]);
+
+    const [audit, campaigns, keywords] = await Promise.all([
+      auditResp.json(), campaignsResp.json(), keywordsResp.json()
+    ]);
+
+    if (!audit.ok) throw new Error(audit.error || 'Erro ao carregar audit');
+
+    gadsData.audit = audit.data;
+    gadsData.campaigns = campaigns.data || [];
+    gadsData.keywords = keywords.data || [];
+
+    gadsRenderKpis(gadsData.audit);
+    gadsRenderAlerts(gadsData.audit, gadsData.campaigns);
+    gadsRenderCampaigns(gadsData.campaigns);
+    gadsRenderKeywords(gadsData.keywords);
+  } catch (err) {
+    errorEl.textContent = '⚠️ ' + err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+function fmtBrl(v) {
+  return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtNum(v) {
+  return Number(v || 0).toLocaleString('pt-BR');
+}
+function fmtPct(v) {
+  return Number(v || 0).toFixed(1) + '%';
+}
+
+function gadsKpiCard(icon, label, value, sub, color) {
+  return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;border-top:3px solid ${color}">
+    <div style="font-size:1.5rem;margin-bottom:6px">${icon}</div>
+    <div style="font-size:1.4rem;font-weight:800;color:var(--text);margin-bottom:4px">${value}</div>
+    <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary)">${label}</div>
+    ${sub ? `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${sub}</div>` : ''}
+  </div>`;
+}
+
+function gadsRenderKpis(a) {
+  const budgetColor = a.budget_utilization_pct > 110 ? '#ef4444' : a.budget_utilization_pct > 90 ? '#f59e0b' : '#10b981';
+  const html = [
+    gadsKpiCard('💸', 'Gasto', fmtBrl(a.total_spend_brl), `Budget: ${fmtBrl(a.total_budget_brl)}`, budgetColor),
+    gadsKpiCard('🎯', 'Conversões', fmtNum(a.total_conversions), `CPA: ${fmtBrl(a.avg_cpa_brl)}`, '#4285f4'),
+    gadsKpiCard('👁️', 'Impressões', fmtNum(a.total_impressions), `Cliques: ${fmtNum(a.total_clicks)}`, '#8b5cf6'),
+    gadsKpiCard('🖱️', 'CTR', fmtPct(a.ctr_pct), `${fmtNum(a.total_clicks)} cliques`, '#34a853'),
+    gadsKpiCard('📊', 'Campanhas', `${a.enabled_count}/${a.campaign_count}`, 'ativas / total', '#6b7280'),
+    gadsKpiCard('💰', 'Uso de Budget', fmtPct(a.budget_utilization_pct), `${fmtBrl(a.total_spend_brl)} de ${fmtBrl(a.total_budget_brl)}`, budgetColor),
+  ].join('');
+  document.getElementById('gadsKpiRow').innerHTML = html;
+}
+
+function gadsRenderAlerts(audit, campaigns) {
+  const alerts = [];
+  // PMax overspend
+  const pmax = campaigns.find(c => c.type === 'PERFORMANCE_MAX' && c.status === 'ENABLED');
+  if (pmax && pmax.budget_brl > 0 && pmax.spend_brl > pmax.budget_brl * 1.15) {
+    alerts.push({ type: 'error', msg: `🚨 PMax gastando ${fmtBrl(pmax.spend_brl)} vs budget ${fmtBrl(pmax.budget_brl)} (${Math.round(pmax.spend_brl/pmax.budget_brl*100)}%)` });
+  }
+  // SEARCH 0 impressions
+  const searchZero = campaigns.filter(c => c.type === 'SEARCH' && c.status === 'ENABLED' && Number(c.impressions) === 0);
+  if (searchZero.length > 0) {
+    alerts.push({ type: 'warn', msg: `⚠️ ${searchZero.length} campanha(s) SEARCH ativas sem impressões: ${searchZero.map(c => c.name.replace('SEARCH | ', '')).join(', ')}` });
+  }
+  // Good news
+  if (alerts.length === 0 && audit.enabled_count > 0) {
+    alerts.push({ type: 'ok', msg: '✅ Tudo certo — sem alertas de performance.' });
+  }
+
+  const colors = { error: { bg:'#fef2f2', border:'#fecaca', text:'#dc2626' }, warn: { bg:'#fffbeb', border:'#fde68a', text:'#92400e' }, ok: { bg:'#f0fdf4', border:'#bbf7d0', text:'#15803d' } };
+  document.getElementById('gadsAlerts').innerHTML = alerts.map(a => {
+    const c = colors[a.type];
+    return `<div style="padding:12px 16px;background:${c.bg};border:1px solid ${c.border};border-radius:10px;color:${c.text};font-size:0.88rem;font-weight:500;margin-bottom:10px">${a.msg}</div>`;
+  }).join('');
+}
+
+function gadsRenderCampaigns(campaigns) {
+  if (!campaigns.length) return;
+  const matchType = { SEARCH: '🔍', PERFORMANCE_MAX: '⚡', DISPLAY: '🖼️', VIDEO: '▶️', SHOPPING: '🛍️' };
+  const statusDot = { ENABLED: '🟢', PAUSED: '⏸️', REMOVED: '🔴' };
+
+  const rows = campaigns.map(c => {
+    const overBudget = c.budget_brl > 0 && c.spend_brl > c.budget_brl * 1.1;
+    const spendColor = overBudget ? 'color:#ef4444;font-weight:700' : 'color:var(--text)';
+    const shortName = c.name.replace(/SEARCH\s*\|\s*/i, '').replace(/PMAX\s*\|\s*/i, '⚡ ');
+    return `<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:10px 14px;color:var(--text)"><span style="font-size:0.9rem">${matchType[c.type]||'📋'}</span> ${shortName}</td>
+      <td style="padding:10px 14px;text-align:center">${statusDot[c.status]||c.status}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${c.budget_brl > 0 ? fmtBrl(c.budget_brl) : '—'}</td>
+      <td style="padding:10px 14px;text-align:right;${spendColor}">${fmtBrl(c.spend_brl)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${fmtNum(c.impressions)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${fmtNum(c.clicks)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text)">${Number(c.conversions).toFixed(1)}</td>
+      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${c.conversions > 0 ? fmtBrl(c.cpa_brl) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('gadsCampaignsBody').innerHTML = rows;
+  document.getElementById('gadsCampaignsSection').style.display = 'block';
+}
+
+function gadsRenderKeywords(keywords) {
+  if (!keywords.length) return;
+  const statusBadge = { WASTE: '<span style="background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600">Waste</span>', GOOD: '<span style="background:#f0fdf4;color:#15803d;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600">Bom</span>', NEUTRAL: '<span style="background:var(--bg);color:var(--text-secondary);padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600">Neutro</span>' };
+  const matchLabel = { EXACT: '[exata]', PHRASE: '"frase"', BROAD: 'ampla' };
+
+  const rows = keywords.slice(0, 20).map(k => `<tr style="border-bottom:1px solid var(--border)">
+    <td style="padding:10px 14px;color:var(--text);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${k.text}</td>
+    <td style="padding:10px 14px;text-align:center;color:var(--text-secondary);font-size:0.78rem">${matchLabel[k.match_type]||k.match_type}</td>
+    <td style="padding:10px 14px;text-align:right;color:var(--text)">${fmtBrl(k.spend_brl)}</td>
+    <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${fmtNum(k.clicks)}</td>
+    <td style="padding:10px 14px;text-align:right;color:var(--text)">${Number(k.conversions).toFixed(1)}</td>
+    <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${k.quality_score || '—'}</td>
+    <td style="padding:10px 14px;text-align:center">${statusBadge[k.status]||k.status}</td>
+  </tr>`).join('');
+
+  document.getElementById('gadsKeywordsBody').innerHTML = rows;
+  document.getElementById('gadsKeywordsSection').style.display = 'block';
+}
+
+// Auto-load when tab is opened
+const _origSwitchTab = switchTab;
+function switchTab(tabName) {
+  _origSwitchTab(tabName);
+  if (tabName === 'google-ads' && !gadsData.audit) {
+    gadsLoad();
+  }
 }
 
 </script>
