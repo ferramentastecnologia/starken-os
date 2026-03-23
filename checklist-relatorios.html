@@ -10295,9 +10295,11 @@ function ctRenderList() {
     const taskCount = tasks.length;
 
     // Group row
+    var safeGroupName = group.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     html += '<div class="ct-row group" onclick="ctToggleGroup(\'' + group.id + '\')">'
       + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span>📁 ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span></span></div>'
-      + '<div></div><div></div><div></div><div></div><div></div>'
+      + '<div></div><div></div><div></div><div></div>'
+      + '<div style="text-align:center"><button onclick="ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">🗑️</button></div>'
       + '</div>';
 
     if (expanded) {
@@ -10375,6 +10377,15 @@ function ctRenderList() {
 // ─── TOGGLE EXPAND ───
 function ctToggleGroup(groupId) {
   ctExpandedGroups[groupId] = ctExpandedGroups[groupId] === false ? true : false;
+  ctRenderList();
+}
+
+async function ctDeleteGroup(groupId, groupName) {
+  event.stopPropagation();
+  if (!confirm('Excluir o grupo "' + groupName + '" e todas as suas tarefas?\n\nEssa ação não pode ser desfeita.')) return;
+  const res = await ctApi('delete_group', { id: groupId, user: gpState.user });
+  if (res.error) { alert('Erro ao excluir: ' + res.error); return; }
+  ctGroups = ctGroups.filter(g => g.id !== groupId);
   ctRenderList();
 }
 
