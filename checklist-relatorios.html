@@ -3539,27 +3539,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <!-- Alerts -->
           <div id="gadsAlerts" style="margin-bottom:20px"></div>
 
-          <!-- Campaigns Table -->
-          <div id="gadsCampaignsSection" style="display:none">
-            <h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:14px">Campanhas</h3>
-            <div style="background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden">
-              <table style="width:100%;border-collapse:collapse;font-size:0.83rem">
-                <thead>
-                  <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
-                    <th style="padding:10px 14px;text-align:left;font-weight:600;color:var(--text-secondary)">Campanha</th>
-                    <th style="padding:10px 14px;text-align:center;font-weight:600;color:var(--text-secondary)">Status</th>
-                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Budget</th>
-                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Gasto</th>
-                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Impr.</th>
-                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Cliques</th>
-                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">Conv.</th>
-                    <th style="padding:10px 14px;text-align:right;font-weight:600;color:var(--text-secondary)">CPA</th>
-                  </tr>
-                </thead>
-                <tbody id="gadsCampaignsBody"></tbody>
-              </table>
-            </div>
-          </div>
+          <!-- Campaign Cards by Type -->
+          <div id="gadsCampaignCards" style="display:none"></div>
 
           <!-- Keywords Section -->
           <div id="gadsKeywordsSection" style="display:none;margin-top:24px">
@@ -14709,7 +14690,7 @@ async function gadsLoad() {
   loading.style.display = 'block';
   errorEl.style.display = 'none';
   kpiRow.innerHTML = '';
-  document.getElementById('gadsCampaignsSection').style.display = 'none';
+  document.getElementById('gadsCampaignCards').style.display = 'none';
   document.getElementById('gadsKeywordsSection').style.display = 'none';
   document.getElementById('gadsAlerts').innerHTML = '';
 
@@ -14798,29 +14779,139 @@ function gadsRenderAlerts(audit, campaigns) {
   }).join('');
 }
 
+function gadsCampaignShortName(name) {
+  return name
+    .replace(/^SEARCH\s*\|\s*/i, '')
+    .replace(/^PMAX\s*\|\s*/i, '')
+    .replace(/\s*\|\s*Mortadella\s*/i, ' ')
+    .replace(/\s*\|\s*BNU\s*$/i, '')
+    .replace(/\s*\|\s*TIS\d+\s*$/i, '')
+    .trim();
+}
+
+function gadsCampaignCard(c, accentColor) {
+  const utilPct = c.budget_brl > 0 ? (c.spend_brl / c.budget_brl) * 100 : 0;
+  const isOver = c.budget_brl > 0 && c.spend_brl > c.budget_brl * 1.1;
+  const isPaused = c.status !== 'ENABLED';
+  const barColor = isOver ? '#ef4444' : utilPct > 80 ? '#f59e0b' : '#10b981';
+  const barWidth = Math.min(utilPct, 100).toFixed(1);
+  const statusColor = c.status === 'ENABLED' ? '#10b981' : '#9ca3af';
+  const ctr = Number(c.impressions) > 0 ? (Number(c.clicks) / Number(c.impressions) * 100).toFixed(1) : '0.0';
+  const shortName = gadsCampaignShortName(c.name);
+
+  return `<div style="background:var(--card);border:1px solid ${isOver ? '#fecaca' : 'var(--border)'};border-radius:14px;padding:18px;${isPaused ? 'opacity:0.55' : ''}position:relative;overflow:hidden">
+    <div style="position:absolute;top:0;left:0;width:3px;height:100%;background:${accentColor};border-radius:3px 0 0 3px"></div>
+    <!-- Name + status -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;padding-left:8px">
+      <div style="font-size:0.85rem;font-weight:700;color:var(--text);line-height:1.35;flex:1;padding-right:8px">${shortName}</div>
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+        <div style="width:7px;height:7px;border-radius:50%;background:${statusColor}"></div>
+        <span style="font-size:0.7rem;color:var(--text-secondary)">${isPaused ? 'Pausada' : 'Ativa'}</span>
+      </div>
+    </div>
+    <!-- Budget bar -->
+    <div style="margin-bottom:14px;padding-left:8px">
+      <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-secondary);margin-bottom:5px">
+        <span>Gasto: <strong style="color:${isOver ? '#ef4444' : 'var(--text)'}">${fmtBrl(c.spend_brl)}</strong></span>
+        <span>Budget: ${c.budget_brl > 0 ? fmtBrl(c.budget_brl) : '—'}</span>
+      </div>
+      <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${barWidth}%;background:${barColor};border-radius:3px;transition:width 0.5s ease"></div>
+      </div>
+      ${c.budget_brl > 0 ? `<div style="font-size:0.69rem;color:${isOver ? '#dc2626' : 'var(--text-secondary)'};margin-top:3px;text-align:right;font-weight:${isOver ? '700' : '400'}">${utilPct.toFixed(0)}% do budget${isOver ? ' ⚠️' : ''}</div>` : ''}
+    </div>
+    <!-- Stats grid -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--border);padding-top:12px;padding-left:8px">
+      <div style="text-align:center">
+        <div style="font-size:0.92rem;font-weight:800;color:var(--text)">${fmtNum(c.impressions)}</div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">Impr.</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.92rem;font-weight:800;color:var(--text)">${fmtNum(c.clicks)}</div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">Cliques</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.92rem;font-weight:800;color:var(--text-secondary)">${ctr}%</div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">CTR</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-size:0.92rem;font-weight:800;color:${c.conversions > 0 ? '#10b981' : 'var(--text-secondary)'}">${Number(c.conversions).toFixed(1)}</div>
+        <div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px">${c.conversions > 0 ? `CPA ${fmtBrl(c.cpa_brl)}` : 'Conv.'}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 function gadsRenderCampaigns(campaigns) {
   if (!campaigns.length) return;
-  const matchType = { SEARCH: '🔍', PERFORMANCE_MAX: '⚡', DISPLAY: '🖼️', VIDEO: '▶️', SHOPPING: '🛍️' };
-  const statusDot = { ENABLED: '🟢', PAUSED: '⏸️', REMOVED: '🔴' };
 
-  const rows = campaigns.map(c => {
-    const overBudget = c.budget_brl > 0 && c.spend_brl > c.budget_brl * 1.1;
-    const spendColor = overBudget ? 'color:#ef4444;font-weight:700' : 'color:var(--text)';
-    const shortName = c.name.replace(/SEARCH\s*\|\s*/i, '').replace(/PMAX\s*\|\s*/i, '⚡ ');
-    return `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:10px 14px;color:var(--text)"><span style="font-size:0.9rem">${matchType[c.type]||'📋'}</span> ${shortName}</td>
-      <td style="padding:10px 14px;text-align:center">${statusDot[c.status]||c.status}</td>
-      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${c.budget_brl > 0 ? fmtBrl(c.budget_brl) : '—'}</td>
-      <td style="padding:10px 14px;text-align:right;${spendColor}">${fmtBrl(c.spend_brl)}</td>
-      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${fmtNum(c.impressions)}</td>
-      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${fmtNum(c.clicks)}</td>
-      <td style="padding:10px 14px;text-align:right;color:var(--text)">${Number(c.conversions).toFixed(1)}</td>
-      <td style="padding:10px 14px;text-align:right;color:var(--text-secondary)">${c.conversions > 0 ? fmtBrl(c.cpa_brl) : '—'}</td>
-    </tr>`;
-  }).join('');
+  const TYPE_META = {
+    PERFORMANCE_MAX: { label: 'Performance Max', icon: '⚡', color: '#f59e0b' },
+    SEARCH:          { label: 'Search',           icon: '🔍', color: '#4285f4' },
+    DISPLAY:         { label: 'Display',          icon: '🖼️', color: '#8b5cf6' },
+    VIDEO:           { label: 'Video',            icon: '▶️', color: '#ef4444' },
+    SHOPPING:        { label: 'Shopping',         icon: '🛍️', color: '#10b981' },
+  };
 
-  document.getElementById('gadsCampaignsBody').innerHTML = rows;
-  document.getElementById('gadsCampaignsSection').style.display = 'block';
+  // Group campaigns by type
+  const groups = {};
+  campaigns.forEach(c => {
+    const key = c.type || 'OTHER';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(c);
+  });
+
+  // Render order: PMax first, then Search, then others
+  const order = ['PERFORMANCE_MAX', 'SEARCH', 'DISPLAY', 'VIDEO', 'SHOPPING', 'OTHER'];
+
+  let html = '<h3 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:18px">Campanhas por tipo</h3>';
+
+  order.forEach(type => {
+    const list = groups[type];
+    if (!list || !list.length) return;
+
+    const meta = TYPE_META[type] || { label: type, icon: '📋', color: '#6b7280' };
+    const totalSpend  = list.reduce((s, c) => s + c.spend_brl, 0);
+    const totalBudget = list.reduce((s, c) => s + c.budget_brl, 0);
+    const totalConv   = list.reduce((s, c) => s + c.conversions, 0);
+    const totalImpr   = list.reduce((s, c) => s + Number(c.impressions), 0);
+    const activeCount = list.filter(c => c.status === 'ENABLED').length;
+    const isOver      = totalBudget > 0 && totalSpend > totalBudget * 1.1;
+    const utilPct     = totalBudget > 0 ? (totalSpend / totalBudget * 100).toFixed(0) : null;
+
+    html += `<div style="margin-bottom:28px">
+      <!-- Section header -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:14px 16px;background:var(--card);border:1px solid var(--border);border-radius:12px">
+        <div style="width:38px;height:38px;border-radius:10px;background:${meta.color}18;display:flex;align-items:center;justify-content:center;font-size:1.15rem;flex-shrink:0">${meta.icon}</div>
+        <div style="flex:1">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text)">${meta.label}</div>
+          <div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">${activeCount} ativa(s) de ${list.length} · ${fmtBrl(totalSpend)} gasto${utilPct ? ` · ${utilPct}% do budget` : ''}</div>
+        </div>
+        <div style="display:flex;gap:20px;flex-shrink:0">
+          <div style="text-align:center">
+            <div style="font-size:1rem;font-weight:800;color:${isOver ? '#ef4444' : 'var(--text)'}">${fmtBrl(totalSpend)}</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">Gasto</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1rem;font-weight:800;color:var(--text)">${fmtNum(totalImpr)}</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">Impressões</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1rem;font-weight:800;color:${totalConv > 0 ? '#10b981' : 'var(--text-secondary)'}">${totalConv.toFixed(1)}</div>
+            <div style="font-size:0.68rem;color:var(--text-secondary)">Conversões</div>
+          </div>
+          ${isOver ? `<div style="background:#fef2f2;color:#dc2626;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;align-self:center">Acima do budget</div>` : ''}
+        </div>
+      </div>
+      <!-- Campaign cards grid -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">
+        ${list.map(c => gadsCampaignCard(c, meta.color)).join('')}
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('gadsCampaignCards').innerHTML = html;
+  document.getElementById('gadsCampaignCards').style.display = 'block';
 }
 
 function gadsRenderKeywords(keywords) {
