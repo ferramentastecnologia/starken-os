@@ -8321,12 +8321,14 @@ async function zappfyTestConnection() {
       headers: { 'token': token }
     });
     var data = await res.json();
-    if (data.connected || data.status === 'connected' || data.loggedIn) {
+    var st = data.status || {};
+    if (st.connected || st.loggedIn || data.connected || data.loggedIn) {
       statusDiv.style.color = '#16a34a';
-      statusDiv.textContent = '✅ Conectado! Instância ativa.';
+      var name = (data.instance && data.instance.profileName) ? ' (' + data.instance.profileName + ')' : '';
+      statusDiv.textContent = '✅ Conectado! Instância ativa' + name + '.';
     } else {
       statusDiv.style.color = '#f59e0b';
-      statusDiv.textContent = '⚠️ Instância não conectada. Status: ' + (data.status || JSON.stringify(data));
+      statusDiv.textContent = '⚠️ Instância não conectada. Status: ' + (st.connected === false ? 'desconectada' : JSON.stringify(st));
     }
   } catch (e) {
     statusDiv.style.color = '#dc2626';
