@@ -8253,6 +8253,13 @@ function metaConfigRenderClientList() {
       + '</div>'
       + '</div>'
       + '</div>'
+      // Linha 5: Cardápio Digital
+      + '<div class="mc-field-row">'
+      + '<div class="mc-field full">'
+      + '<label>🍽️ Cardápio Digital (URL)</label>'
+      + '<input type="text" value="' + (c.cardapioUrl || '') + '" placeholder="https://cardapio.exemplo.com/cliente" oninput="_metaClients[\'' + key + '\'].cardapioUrl=this.value">'
+      + '</div>'
+      + '</div>'
       + '</div>'
       + '</div>';
   }
@@ -8488,7 +8495,7 @@ function zappfySendReport(clientId, type, periodKey) {
   var modal = document.createElement('div');
   modal.id = 'zappfySendModal';
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
-  modal.innerHTML = '<div style="background:var(--card-bg,#fff);border-radius:16px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);color:var(--text,#1a1a2e)">'
+  modal.innerHTML = '<div style="background:var(--card-bg,#fff);border-radius:16px;padding:32px 36px;max-width:700px;width:94%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);color:var(--text,#1a1a2e)">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
     + '<div style="font-size:1.1rem;font-weight:800">📱 Enviar Relatório</div>'
     + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#64748b)">✕</button>'
@@ -8585,24 +8592,39 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
     // Store data for the confirm step
     window._zappfyPending = { clientId: clientId, type: type, periodKey: periodKey, metaKey: metaKey, groupJid: groupJid, textMsg: textMsg, reportHtml: reportHtml, periodLabel: periodLabel, typeLabel: typeLabel, rows: rows, client: client };
 
-    // Show preview modal (replace current modal content)
+    // Show preview modal (replace current modal content — make it bigger)
     var modal = document.getElementById('zappfySendModal');
     if (!modal) return;
-    modal.querySelector('div').innerHTML = ''
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
-      + '<div style="font-size:1.1rem;font-weight:800">👁️ Preview — ' + (client.name || '') + '</div>'
-      + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#64748b)">✕</button>'
+    var innerDiv = modal.querySelector('div');
+    innerDiv.style.maxWidth = '900px';
+    innerDiv.style.width = '96%';
+    innerDiv.style.maxHeight = '92vh';
+    innerDiv.style.padding = '32px 36px';
+
+    // Check if client has cardápio URL
+    var metaClient = metaKey ? _metaClients[metaKey] : null;
+    var hasCardapio = metaClient && metaClient.cardapioUrl;
+
+    innerDiv.innerHTML = ''
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">'
+      + '<div style="font-size:1.25rem;font-weight:800">👁️ Preview — ' + (client.name || '') + '</div>'
+      + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:var(--text-secondary,#64748b)">✕</button>'
       + '</div>'
-      + '<div style="display:flex;gap:10px;margin-bottom:14px">'
-      + '<button id="zappfyPreviewTabMsg" onclick="zappfyShowPreviewTab(\'msg\')" style="flex:1;padding:8px;border:none;border-radius:8px;background:#25d366;color:#fff;font-weight:700;font-size:0.82rem;cursor:pointer">📱 Mensagem WhatsApp</button>'
-      + '<button id="zappfyPreviewTabPdf" onclick="zappfyShowPreviewTab(\'pdf\')" style="flex:1;padding:8px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:transparent;color:var(--text,#1a1a2e);font-weight:700;font-size:0.82rem;cursor:pointer">📄 Relatório PDF</button>'
+      + '<div style="display:flex;gap:10px;margin-bottom:16px">'
+      + '<button id="zappfyPreviewTabMsg" onclick="zappfyShowPreviewTab(\'msg\')" style="flex:1;padding:10px;border:none;border-radius:8px;background:#25d366;color:#fff;font-weight:700;font-size:0.88rem;cursor:pointer">📱 Mensagem WhatsApp</button>'
+      + '<button id="zappfyPreviewTabPdf" onclick="zappfyShowPreviewTab(\'pdf\')" style="flex:1;padding:10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:transparent;color:var(--text,#1a1a2e);font-weight:700;font-size:0.88rem;cursor:pointer">📄 Relatório PDF</button>'
       + '</div>'
-      + '<div id="zappfyPreviewContent" style="max-height:400px;overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:16px;background:var(--bg-secondary,#f8fafc);font-size:0.8rem;line-height:1.6;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
-      + '<div id="zappfySendStatus2" style="display:none;padding:8px 12px;border-radius:8px;margin-top:12px;font-size:0.8rem;font-weight:600"></div>'
-      + '<div style="display:flex;gap:10px;margin-top:14px">'
-      + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="flex:1;padding:12px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;background:transparent;color:var(--text,#1a1a2e);font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>'
-      + '<button onclick="zappfyEditMessage()" style="flex:1;padding:12px;border:1.5px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>'
-      + '<button id="zappfyConfirmBtn" onclick="zappfyConfirmSend()" style="flex:2;padding:12px;border:none;border-radius:10px;background:#25d366;color:#fff;font-size:0.88rem;font-weight:800;cursor:pointer;font-family:inherit">📱 Confirmar e Enviar</button>'
+      + (hasCardapio ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding:10px 14px;background:#fffbeb;border:1.5px solid #fbbf24;border-radius:10px">'
+        + '<input type="checkbox" id="zappfyIncludeCardapio" checked style="width:18px;height:18px;accent-color:#f59e0b">'
+        + '<label for="zappfyIncludeCardapio" style="font-size:0.85rem;font-weight:600;color:#92400e;cursor:pointer">🍽️ Incluir link do cardápio digital na mensagem</label>'
+        + '<a href="' + metaClient.cardapioUrl + '" target="_blank" style="margin-left:auto;font-size:0.75rem;color:#1877f2;text-decoration:underline">Abrir</a>'
+        + '</div>' : '')
+      + '<div id="zappfyPreviewContent" style="min-height:350px;max-height:calc(92vh - 280px);overflow-y:auto;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;padding:20px;background:var(--bg-secondary,#f8fafc);font-size:0.85rem;line-height:1.7;white-space:pre-wrap;word-break:break-word">' + zappfyFormatPreview(textMsg) + '</div>'
+      + '<div id="zappfySendStatus2" style="display:none;padding:10px 14px;border-radius:8px;margin-top:12px;font-size:0.85rem;font-weight:600"></div>'
+      + '<div style="display:flex;gap:12px;margin-top:16px">'
+      + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="flex:1;padding:14px;border:1.5px solid var(--border,#e2e8f0);border-radius:10px;background:transparent;color:var(--text,#1a1a2e);font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">Cancelar</button>'
+      + '<button onclick="zappfyEditMessage()" style="flex:1;padding:14px;border:1.5px solid #f59e0b;border-radius:10px;background:#fffbeb;color:#92400e;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">✏️ Editar</button>'
+      + '<button id="zappfyConfirmBtn" onclick="zappfyConfirmSend()" style="flex:2;padding:14px;border:none;border-radius:10px;background:#25d366;color:#fff;font-size:0.92rem;font-weight:800;cursor:pointer;font-family:inherit">📱 Confirmar e Enviar</button>'
       + '</div>';
 
   } catch (e) {
@@ -8727,8 +8749,17 @@ async function zappfyConfirmSend() {
       uploadUrl = urlResult.data.publicUrl;
     }
 
-    // Append report link to message if available
+    // Build final message with optional links
     var finalMsg = p.textMsg;
+
+    // Append cardápio link if checkbox is checked
+    var cardapioCheck = document.getElementById('zappfyIncludeCardapio');
+    var metaClient = p.metaKey ? _metaClients[p.metaKey] : null;
+    if (cardapioCheck && cardapioCheck.checked && metaClient && metaClient.cardapioUrl) {
+      finalMsg = finalMsg.replace(/\n\n_Starken Performance_/, '\n🍽️ *Cardápio Digital:*\n' + metaClient.cardapioUrl + '\n\n_Starken Performance_');
+    }
+
+    // Append report link
     if (uploadUrl && !finalMsg.includes(uploadUrl)) {
       finalMsg = finalMsg.replace(/\n\n_Starken Performance_/, '\n🔗 *Relatório completo:*\n' + uploadUrl + '\n\n_Starken Performance_');
     }
