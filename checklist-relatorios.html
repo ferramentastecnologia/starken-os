@@ -13720,9 +13720,19 @@ function ctOpenLightbox(url, isVideo) {
     var sel = document.getElementById('calClientFilter');
     if (!sel) return;
 
-    // Collect unique clients
+    // Collect clients from posts AND from _metaClients (so all clients appear)
     var seen = {};
     var clients = [];
+    // First: all clients from _metaClients
+    if (typeof _metaClients !== 'undefined') {
+      Object.keys(_metaClients).forEach(function(key) {
+        if (!seen[key]) {
+          seen[key] = true;
+          clients.push({ key: key, name: _metaClients[key].name || key });
+        }
+      });
+    }
+    // Then: any extra from posts
     _calAllPosts.forEach(function(p) {
       var key  = p.client_key  || p.client_name || '';
       var name = p.client_name || key;
