@@ -5633,6 +5633,7 @@ function renderWeeklyChecklist() {
 }
 
 // ============ CRONOGRAMA SEMANAL ============
+var _schedWeeklyFirstRender = true;
 function renderSchedWeekly() {
   const monthKey = document.getElementById('schedWeekMonth').value;
   const mInfo = MONTHS_2026.find(m => m.key === monthKey);
@@ -5641,9 +5642,10 @@ function renderSchedWeekly() {
   const weeks = getMonthWeeks(mInfo.year, mInfo.month);
 
   const wkSelect = document.getElementById('schedWeekNumber');
-  var currentVal = parseInt(wkSelect.value) || 0;
-  // Auto-select current week if no value set or first render
-  if (!currentVal && weeks.length > 0) {
+  var currentVal = parseInt(wkSelect.value) || 1;
+  // Auto-select current week on first render
+  if (_schedWeeklyFirstRender && weeks.length > 0) {
+    _schedWeeklyFirstRender = false;
     var today = new Date();
     var todayStr = today.getFullYear() + '-' + ('0' + (today.getMonth()+1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
     // Find the week where today falls within period OR is the send date
