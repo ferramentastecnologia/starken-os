@@ -12520,24 +12520,39 @@ async function ctDeleteAttachment(attachmentId) {
 function ctExtractVideoThumbnail(file) {
   return new Promise(function(resolve) {
     var video = document.createElement('video');
-    video.preload = 'metadata';
+    video.preload = 'auto';
     video.muted = true;
     video.playsInline = true;
+    video.crossOrigin = 'anonymous';
 
     var url = URL.createObjectURL(file);
     video.src = url;
+    var attempts = 0;
+    var seekTimes = [2, 4, 1]; // Try multiple timestamps
 
-    video.onloadeddata = function() {
-      video.currentTime = 0.5; // Seek to 0.5s for better frame
-    };
-
-    video.onseeked = function() {
+    function captureFrame() {
       try {
         var canvas = document.createElement('canvas');
-        canvas.width = Math.min(video.videoWidth, 720);
-        canvas.height = Math.round(canvas.width * video.videoHeight / video.videoWidth);
+        canvas.width = Math.min(video.videoWidth || 720, 720);
+        canvas.height = Math.round(canvas.width * (video.videoHeight || 1280) / (video.videoWidth || 720));
         var ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Check if frame is mostly black (average brightness < 15)
+        var sample = ctx.getImageData(0, 0, Math.min(canvas.width, 100), Math.min(canvas.height, 100));
+        var sum = 0;
+        for (var i = 0; i < sample.data.length; i += 16) {
+          sum += sample.data[i] + sample.data[i+1] + sample.data[i+2];
+        }
+        var avg = sum / (sample.data.length / 16) / 3;
+
+        if (avg < 15 && attempts < seekTimes.length) {
+          // Frame is black, try next timestamp
+          attempts++;
+          video.currentTime = seekTimes[attempts - 1];
+          return; // Will trigger onseeked again
+        }
+
         canvas.toBlob(function(blob) {
           URL.revokeObjectURL(url);
           resolve(blob);
@@ -12546,10 +12561,14 @@ function ctExtractVideoThumbnail(file) {
         URL.revokeObjectURL(url);
         resolve(null);
       }
-    };
+    }
 
+    video.onloadeddata = function() {
+      video.currentTime = seekTimes[0];
+    };
+    video.onseeked = captureFrame;
     video.onerror = function() { URL.revokeObjectURL(url); resolve(null); };
-    setTimeout(function() { URL.revokeObjectURL(url); resolve(null); }, 10000);
+    setTimeout(function() { URL.revokeObjectURL(url); resolve(null); }, 15000);
   });
 }
 
