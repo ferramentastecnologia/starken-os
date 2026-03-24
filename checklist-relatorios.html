@@ -12524,61 +12524,6 @@ async function ctDeleteAttachment(attachmentId) {
   ctRenderModalActivity(Array.isArray(actData) ? actData : (actData.activity || []));
 }
 
-// Extract first frame from video as JPEG blob
-function ctExtractVideoThumbnail(file) {
-  return new Promise(function(resolve) {
-    var video = document.createElement('video');
-    video.preload = 'auto';
-    video.muted = true;
-    video.playsInline = true;
-    video.crossOrigin = 'anonymous';
-
-    var url = URL.createObjectURL(file);
-    video.src = url;
-    var attempts = 0;
-    var seekTimes = [2, 4, 1]; // Try multiple timestamps
-
-    function captureFrame() {
-      try {
-        var canvas = document.createElement('canvas');
-        canvas.width = Math.min(video.videoWidth || 720, 720);
-        canvas.height = Math.round(canvas.width * (video.videoHeight || 1280) / (video.videoWidth || 720));
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        // Check if frame is mostly black (average brightness < 15)
-        var sample = ctx.getImageData(0, 0, Math.min(canvas.width, 100), Math.min(canvas.height, 100));
-        var sum = 0;
-        for (var i = 0; i < sample.data.length; i += 16) {
-          sum += sample.data[i] + sample.data[i+1] + sample.data[i+2];
-        }
-        var avg = sum / (sample.data.length / 16) / 3;
-
-        if (avg < 15 && attempts < seekTimes.length) {
-          // Frame is black, try next timestamp
-          attempts++;
-          video.currentTime = seekTimes[attempts - 1];
-          return; // Will trigger onseeked again
-        }
-
-        canvas.toBlob(function(blob) {
-          URL.revokeObjectURL(url);
-          resolve(blob);
-        }, 'image/jpeg', 0.85);
-      } catch(e) {
-        URL.revokeObjectURL(url);
-        resolve(null);
-      }
-    }
-
-    video.onloadeddata = function() {
-      video.currentTime = seekTimes[0];
-    };
-    video.onseeked = captureFrame;
-    video.onerror = function() { URL.revokeObjectURL(url); resolve(null); };
-    setTimeout(function() { URL.revokeObjectURL(url); resolve(null); }, 15000);
-  });
-}
 
 // Frame selector modal for video thumbnails
 async function ctOpenFrameSelector(videoUrl, attachmentId) {
@@ -12838,30 +12783,7 @@ async function ctHandleFileUpload(files, category) {
           user: ctGetUser(),
         });
 
-        // Auto-extract thumbnail from video files
-        var isVideoFile = file.type && file.type.startsWith('video/');
-        if (isVideoFile && _supabase && _supabase.storage) {
-          updateProgress(100, '🎬 Extraindo thumbnail...');
-          try {
-            var thumbBlob = await ctExtractVideoThumbnail(file);
-            if (thumbBlob) {
-              var thumbPath = 'content/' + ctCurrentClient + '/' + Date.now() + '_thumb_' + file.name.replace(/\.[^.]+$/, '.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
-              var thumbUp = await _supabase.storage.from('client-hub-materials').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true });
-              if (!thumbUp.error) {
-                var thumbUrl = _supabase.storage.from('client-hub-materials').getPublicUrl(thumbPath).data.publicUrl;
-                await ctApi('add_attachment', {
-                  task_id: ctModalTask.id,
-                  file_name: 'thumb_' + file.name.replace(/\.[^.]+$/, '.jpg'),
-                  file_url: thumbUrl,
-                  file_type: 'image/jpeg',
-                  file_size: thumbBlob.size,
-                  category: category,
-                  user: ctGetUser(),
-                });
-              }
-            }
-          } catch(thumbErr) { console.warn('Thumbnail extraction failed:', thumbErr); }
-        }
+        // Thumbnail is now selected manually via frame selector button
       }
     } catch(err) {
       console.error('Upload error:', err);
