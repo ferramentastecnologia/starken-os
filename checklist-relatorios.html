@@ -15686,7 +15686,7 @@ function cronogramaPreview() {
 
   pages.forEach(function(pageHtml, i) {
     cards += '<div style="flex:0 0 auto;width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);position:relative;background:#b5aa9a">'
-      + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:1100px;min-height:750px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
+      + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:1123px;height:794px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
       + '<div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 12px;border-radius:10px;font-weight:600">' + (i + 1) + ' / ' + total + '</div>'
       + '</div>';
   });
@@ -15716,16 +15716,16 @@ async function cronogramaDownload() {
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // Wrap HTML with bege background everywhere (no white gaps)
-    var fullHtml = '<div style="width:1100px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">' + html + '</div>';
+    // Wrap HTML - exact A4 landscape width (297mm = 1123px at 96dpi)
+    var fullHtml = '<div style="width:1123px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">' + html + '</div>';
 
     await html2pdf().set({
       margin: [0, 0, 0, 0],
       filename: filename,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 1.5, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a', width: 1123 },
+      jsPDF: { unit: 'px', format: [1123, 794], orientation: 'landscape', hotfixes: ['px_scaling'] },
+      pagebreak: { mode: ['css'], after: '.crono-page-break' }
     }).from(fullHtml, 'string').save();
 
     if (modal) { modal.style.display = 'flex'; }
@@ -15768,7 +15768,8 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
   var tenantLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
   var tenantColor = tenant === 'alpha' ? '#10b981' : '#3b82f6';
   var bgColor = '#b5aa9a';
-  var pageBase = 'width:1100px;min-height:750px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
+  // A4 landscape = 297mm x 210mm. At 96dpi: 1123px x 794px. Use exact ratio.
+  var pageBase = 'width:1123px;height:794px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
   var pages = [];
 
   // PAGE 1: COVER
