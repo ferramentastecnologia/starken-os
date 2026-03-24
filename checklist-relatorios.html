@@ -15687,19 +15687,12 @@ function cronogramaPreview() {
   var html = cronogramaBuildHtml(_cronoState.clientName, _cronoState.clientLogo, _cronoState.tenant, tasks);
   var area = document.getElementById('cronoPreviewArea');
   area.style.display = 'block';
-  var totalPages = tasks.length + 3; // cover + separator + posts + closing
-  // Show all pages as horizontal scrollable thumbnails
-  var pages = html.split('<div class="crono-page-break">');
-  var thumbs = '';
-  for (var i = 0; i < pages.length; i++) {
-    if (!pages[i].trim()) continue;
-    thumbs += '<div style="flex:0 0 auto;width:330px;height:230px;overflow:hidden;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);position:relative">'
-      + '<div style="transform:scale(0.3);transform-origin:top left;width:1100px;height:750px;pointer-events:none">' + pages[i] + '</div>'
-      + '<div style="position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:2px 8px;border-radius:4px">' + (i+1) + '/' + totalPages + '</div>'
-      + '</div>';
-  }
-  area.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary,#64748b);margin-bottom:8px">Preview — ' + totalPages + ' páginas</div>'
-    + '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">' + thumbs + '</div>';
+  var totalPages = tasks.length + 3;
+  // Show full rendered HTML scaled down — scrollable vertically
+  area.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary,#64748b);margin-bottom:8px">Preview — ' + totalPages + ' páginas (' + tasks.length + ' posts)</div>'
+    + '<div style="overflow:auto;max-height:45vh;border:2px solid var(--border,#e5e7eb);border-radius:10px;background:#b5aa9a">'
+    + '<div style="transform:scale(0.5);transform-origin:top left;width:1100px">' + html + '</div>'
+    + '</div>';
 }
 
 async function cronogramaDownload() {
