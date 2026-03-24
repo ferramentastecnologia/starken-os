@@ -14495,16 +14495,12 @@ function clientNavSwitch(view) {
     var _calAutoFilter = function() {
       var calFilter = document.getElementById('calClientFilter');
       if (calFilter && _hubCurrentSlug) {
-        // Check if the option exists
-        var hasOption = Array.from(calFilter.options).some(function(o) { return o.value === _hubCurrentSlug; });
-        if (hasOption) {
-          calFilter.value = _hubCurrentSlug;
-          if (typeof calFilterClient === 'function') calFilterClient();
-        } else if (_calRetries < 10) {
-          _calRetries++;
-          setTimeout(_calAutoFilter, 300);
-          return;
-        }
+        // Simplify dropdown: only current client + "Todos"
+        var clientName = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug].name : _hubCurrentSlug;
+        calFilter.innerHTML = '<option value="' + _hubCurrentSlug + '">' + clientName + '</option>'
+          + '<option value="">Todos os clientes</option>';
+        calFilter.value = _hubCurrentSlug;
+        if (typeof calFilterClient === 'function') calFilterClient();
       }
       clientNavShowBar('calendar');
     };
