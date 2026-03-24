@@ -15703,39 +15703,59 @@ async function cronogramaDownload() {
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
 
   var dlBtn = document.getElementById('cronoDlBtn');
-  if (dlBtn) { dlBtn.innerHTML = '⏳ Gerando PDF...'; dlBtn.disabled = true; }
+  if (dlBtn) { dlBtn.innerHTML = '⏳ Gerando...'; dlBtn.disabled = true; }
 
   try {
     var s = _cronoState;
-    var html = cronogramaBuildHtml(s.clientName, s.clientLogo, s.tenant, tasks);
+    var pages = cronogramaBuildPages(s.clientName, s.clientLogo, s.tenant, tasks);
 
-    // Close modal during generation
     var modal = document.getElementById('cronoModal');
     if (modal) modal.style.display = 'none';
 
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // Use A4 landscape with exact page height matching
-    // A4 landscape at 96dpi: 297mm wide. html2canvas renders at width=1123px
-    // Each page div is 794px tall = exactly 210mm
-    // pagebreak 'after' on .crono-page-break ensures 1 div = 1 PDF page
-    var fullHtml = '<div style="width:1123px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">' + html + '</div>';
+    // APPROACH: render each page individually with html2canvas, then compose PDF with jsPDF
+    // This avoids all page-break issues
+    var W = 1123, H = 790;
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:0;top:0;width:' + W + 'px;z-index:99999;background:#b5aa9a;';
+    document.body.appendChild(container);
 
-    await html2pdf().set({
-      margin: [0, 0, 0, 0],
-      filename: filename,
-      image: { type: 'jpeg', quality: 0.92 },
-      html2canvas: { scale: 1, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a', width: 1123, windowWidth: 1123 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.crono-pb' }
-    }).from(fullHtml, 'string').save();
+    // Access jsPDF from html2pdf's bundled version
+    var pdf = new (html2pdf().set({jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).prop.jsPDF)({unit:'mm',format:'a4',orientation:'landscape'});
+
+    for (var i = 0; i < pages.length; i++) {
+      if (dlBtn) dlBtn.innerHTML = '⏳ Página ' + (i+1) + '/' + pages.length;
+
+      container.innerHTML = '<div style="width:' + W + 'px;height:' + H + 'px;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a">' + pages[i] + '</div>';
+      await new Promise(function(r) { setTimeout(r, 200); });
+
+      var canvas = await html2canvas(container.firstElementChild, {
+        scale: 1,
+        useCORS: true,
+        backgroundColor: '#b5aa9a',
+        width: W,
+        height: H,
+        scrollY: 0,
+        windowWidth: W
+      });
+
+      var imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (i > 0) pdf.addPage('a4', 'landscape');
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+    }
+
+    document.body.removeChild(container);
+    pdf.save(filename);
 
     if (modal) { modal.style.display = 'flex'; }
     if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
   } catch(err) {
     console.error('Cronograma PDF error:', err);
     alert('Erro ao gerar PDF: ' + err.message);
+    var modal2 = document.getElementById('cronoModal');
+    if (modal2) modal2.style.display = 'flex';
     if (dlBtn) { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }
   }
 }
@@ -15857,13 +15877,7 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
 // Joins pages into single HTML with page breaks (for PDF generation)
 function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   var pages = cronogramaBuildPages(clientName, clientLogo, tenant, tasks);
-  var result = '<style>.crono-pb{page-break-before:always;break-before:page;}</style>';
-  result += pages[0];
-  for (var i = 1; i < pages.length; i++) {
-    // Inject class directly into the page div's opening tag (no wrapper nesting)
-    result += pages[i].replace('<div style="', '<div class="crono-pb" style="');
-  }
-  return result;
+  return pages.join('');
 }
 
 
