@@ -16044,6 +16044,18 @@ async function cronogramaDownload() {
       var imgData = canvas.toDataURL('image/jpeg', 0.98);
       if (i > 0) pdf.addPage([297, 210], 'landscape');
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+
+      // Add clickable video link if page has video URL
+      var videoEl = el.querySelector ? el : document.createElement('div');
+      try { videoEl.innerHTML = pages[i]; } catch(e) {}
+      var vidLink = videoEl.querySelector ? videoEl.querySelector('[data-video-url]') : null;
+      if (vidLink) {
+        var vidUrl = vidLink.getAttribute('data-video-url');
+        if (vidUrl) {
+          // Add clickable link area over the "clique para assistir" text area (bottom-left quadrant)
+          pdf.link(20, 160, 120, 30, { url: vidUrl });
+        }
+      }
     }
 
     pdf.save(filename);
@@ -16209,7 +16221,9 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
       p += '</div>';
       p += '</div>';
       // Link to video
-      p += '<a href="' + vid.file_url + '" style="color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline;font-style:italic;font-family:Georgia,serif">clique para assistir o vídeo</a>';
+      p += '<div style="margin-top:4px;padding:8px 20px;background:rgba(255,255,255,0.15);border-radius:8px;text-align:center" data-video-url="' + vid.file_url + '">'
+        + '<div style="font-size:14px;font-weight:600;color:#fff;font-family:Georgia,serif">▶ Clique para assistir o vídeo</div>'
+        + '<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;word-break:break-all">' + vid.file_url.split('/').pop().substring(0, 40) + '</div></div>';
     } else if (img) {
       if (postType === 'carrossel' && allImages.length > 1) {
         p += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:100%">';
@@ -16227,7 +16241,9 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
       p += '<div style="width:56px;height:56px;background:rgba(255,255,255,0.95);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.3)">';
       p += '<div style="width:0;height:0;border-left:20px solid #1a1a2e;border-top:12px solid transparent;border-bottom:12px solid transparent;margin-left:4px"></div>';
       p += '</div></div></div>';
-      p += '<a href="' + vid.file_url + '" style="color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline;font-style:italic;font-family:Georgia,serif">clique para assistir o vídeo</a>';
+      p += '<div style="margin-top:4px;padding:8px 20px;background:rgba(255,255,255,0.15);border-radius:8px;text-align:center" data-video-url="' + vid.file_url + '">'
+        + '<div style="font-size:14px;font-weight:600;color:#fff;font-family:Georgia,serif">▶ Clique para assistir o vídeo</div>'
+        + '<div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;word-break:break-all">' + vid.file_url.split('/').pop().substring(0, 40) + '</div></div>';
     } else {
       p += '<div style="width:320px;height:320px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.3)"><div style="text-align:center;color:rgba(255,255,255,0.5);font-size:13px">Criativo pendente</div></div>';
     }
