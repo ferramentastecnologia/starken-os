@@ -15684,33 +15684,28 @@ function cronogramaPreview() {
   var tasks = cronogramaGetSelectedTasks();
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
 
-  var html = cronogramaBuildHtml(_cronoState.clientName, _cronoState.clientLogo, _cronoState.tenant, tasks);
+  var pages = cronogramaBuildPages(_cronoState.clientName, _cronoState.clientLogo, _cronoState.tenant, tasks);
   var area = document.getElementById('cronoPreviewArea');
   area.style.display = 'block';
-  var totalPages = tasks.length + 3;
-
-  // Extract individual pages by splitting on page-break divs
-  // Wrap each in a self-contained div with background
-  var raw = html.replace(/<div class="crono-page-break"><\/div>/g, '<!--PAGEBREAK-->');
-  var parts = raw.split('<!--PAGEBREAK-->').filter(function(p) { return p.trim().length > 50; });
+  var total = pages.length;
 
   var cards = '';
-  var scale = 0.22; // Scale to fit nicely as cards
-  var cardW = Math.round(1100 * scale); // ~242px
-  var cardH = Math.round(750 * scale);  // ~165px
+  var scale = 0.25;
+  var cardW = Math.round(1100 * scale);
+  var cardH = Math.round(750 * scale);
 
-  parts.forEach(function(pageHtml, i) {
-    cards += '<div style="flex:0 0 auto;width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.2);position:relative;background:#b5aa9a">'
-      + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:1100px;min-height:750px;pointer-events:none;background:#b5aa9a">' + pageHtml + '</div>'
-      + '<div style="position:absolute;bottom:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.55);color:#fff;font-size:9px;padding:2px 10px;border-radius:10px;font-weight:600">' + (i + 1) + ' / ' + totalPages + '</div>'
+  pages.forEach(function(pageHtml, i) {
+    cards += '<div style="flex:0 0 auto;width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);position:relative;background:#b5aa9a">'
+      + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:1100px;min-height:750px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
+      + '<div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 12px;border-radius:10px;font-weight:600">' + (i + 1) + ' / ' + total + '</div>'
       + '</div>';
   });
 
   area.innerHTML = '<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px">'
     + '<span style="font-size:0.82rem;font-weight:700;color:var(--text,#1a1a2e)">Preview</span>'
-    + '<span style="font-size:0.72rem;color:var(--text-secondary,#64748b)">' + totalPages + ' páginas · ' + tasks.length + ' post' + (tasks.length > 1 ? 's' : '') + '</span>'
+    + '<span style="font-size:0.72rem;color:var(--text-secondary,#64748b)">' + total + ' páginas · ' + tasks.length + ' post' + (tasks.length > 1 ? 's' : '') + '</span>'
     + '</div>'
-    + '<div style="display:flex;gap:10px;overflow-x:auto;padding:8px 4px 12px">' + cards + '</div>';
+    + '<div style="display:flex;gap:12px;overflow-x:auto;padding:8px 4px 14px">' + cards + '</div>';
 }
 
 async function cronogramaDownload() {
@@ -15779,53 +15774,40 @@ function cronogramaFormatDate(dateStr) {
   return dias[d.getDay()] + ' (' + day + '/' + month + ')';
 }
 
-function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
+// Returns array of individual page HTML strings (for preview thumbnails)
+function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
   var tenantLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
   var tenantColor = tenant === 'alpha' ? '#10b981' : '#3b82f6';
-
   var bgColor = '#b5aa9a';
-  // All pages use bege background - consistent branding
   var pageBase = 'width:1100px;min-height:750px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
+  var pages = [];
 
-  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:' + bgColor + ';">'
-    + '<style>.crono-page-break{page-break-after:always;break-after:page;height:0;display:block;clear:both;}</style>';
-
-  // ═══ PAGE 1: COVER ═══
-  html += '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;padding:80px;">';
-  html += '<div style="position:absolute;top:20px;right:20px;background:' + tenantColor + ';color:#fff;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">' + tenantLabel + '</div>';
-  html += '<div style="flex:1;text-align:left">';
-  html += '<div style="font-size:48px;font-weight:300;color:rgba(255,255,255,0.8);line-height:1.2;font-family:Georgia,serif;">Aprovação de</div>';
-  html += '<div style="font-size:56px;font-weight:700;color:#fff;line-height:1.2;font-family:Georgia,serif;">conteúdos</div>';
-  html += '</div>';
+  // PAGE 1: COVER
+  var p1 = '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;padding:80px;">';
+  p1 += '<div style="position:absolute;top:20px;right:20px;background:' + tenantColor + ';color:#fff;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">' + tenantLabel + '</div>';
+  p1 += '<div style="flex:1;text-align:left"><div style="font-size:48px;font-weight:300;color:rgba(255,255,255,0.8);line-height:1.2;font-family:Georgia,serif;">Aprovação de</div>';
+  p1 += '<div style="font-size:56px;font-weight:700;color:#fff;line-height:1.2;font-family:Georgia,serif;">conteúdos</div></div>';
   if (clientLogo) {
-    html += '<div style="flex:0 0 auto;margin-left:60px">';
-    html += '<img src="' + clientLogo + '" style="max-width:320px;max-height:320px;object-fit:contain" crossorigin="anonymous">';
-    html += '</div>';
+    p1 += '<div style="flex:0 0 auto;margin-left:60px"><img src="' + clientLogo + '" style="max-width:320px;max-height:320px;object-fit:contain" crossorigin="anonymous"></div>';
   } else {
-    html += '<div style="flex:0 0 auto;margin-left:60px;background:rgba(255,255,255,0.15);border-radius:20px;padding:40px 50px;text-align:center">';
-    html += '<div style="font-size:36px;font-weight:800;color:#fff">' + clientName + '</div>';
-    html += '</div>';
+    p1 += '<div style="flex:0 0 auto;margin-left:60px;background:rgba(255,255,255,0.15);border-radius:20px;padding:40px 50px;text-align:center"><div style="font-size:36px;font-weight:800;color:#fff">' + clientName + '</div></div>';
   }
-  html += '</div>';
-  html += '<div class="crono-page-break"></div>';
+  p1 += '</div>';
+  pages.push(p1);
 
-  // ═══ PAGE 2: SEPARATOR "conteúdo feed" ═══
-  html += '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
-  html += '<div style="text-align:center">';
-  html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.7);font-family:Georgia,serif;line-height:1">conteúdo</div>';
-  html += '<div style="font-size:80px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;line-height:1;margin-top:-10px">feed</div>';
-  html += '</div></div>';
-  html += '<div class="crono-page-break"></div>';
+  // PAGE 2: SEPARATOR
+  var p2 = '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
+  p2 += '<div style="text-align:center"><div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.7);font-family:Georgia,serif;line-height:1">conteúdo</div>';
+  p2 += '<div style="font-size:80px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;line-height:1;margin-top:-10px">feed</div></div></div>';
+  pages.push(p2);
 
-  // ═══ PAGES 3-N: ONE POST PER PAGE (all bege background) ═══
+  // PAGES 3-N: POSTS
   tasks.forEach(function(task) {
     var postType = cronogramaClassifyPost(task);
     var typeLabel = postType === 'reels' ? 'FEED REELS' : postType === 'carrossel' ? 'CARROSSEL DE FOTOS' : 'FEED CRIATIVO';
     var dateLabel = cronogramaFormatDate(task.due_date);
-
     var attachments = task._attachments || [];
-    var img = null;
-    var allImages = [];
+    var img = null, allImages = [];
     for (var a = 0; a < attachments.length; a++) {
       var att = attachments[a];
       if (att.file_type && att.file_type.startsWith('image/')) {
@@ -15835,72 +15817,57 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
     }
     if (!img && allImages.length > 0) img = allImages[0];
 
-    // Post page - bege background
-    html += '<div style="' + pageBase + 'padding:0;">';
-
-    // Header bar - darker bege accent
-    html += '<div style="background:rgba(0,0,0,0.25);padding:18px 40px;border-bottom:3px solid rgba(255,255,255,0.2)">';
-    html += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
-    if (dateLabel) html += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
-    html += '</div>';
-
-    // Content area
-    html += '<div style="display:flex;min-height:640px;padding:30px 40px;gap:40px">';
-
-    // LEFT: Image
-    html += '<div style="flex:0 0 420px;display:flex;align-items:center;justify-content:center">';
+    var p = '<div style="' + pageBase + 'padding:0;">';
+    p += '<div style="background:rgba(0,0,0,0.25);padding:18px 40px;border-bottom:3px solid rgba(255,255,255,0.2)">';
+    p += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
+    if (dateLabel) p += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
+    p += '</div>';
+    p += '<div style="display:flex;min-height:640px;padding:30px 40px;gap:40px">';
+    p += '<div style="flex:0 0 420px;display:flex;align-items:center;justify-content:center">';
     if (img) {
       if (postType === 'reels') {
-        html += '<div style="width:280px;height:500px;background:#000;border-radius:30px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);position:relative;overflow:hidden">';
-        html += '<img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:24px" crossorigin="anonymous">';
-        html += '<div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px">';
-        html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.9)"></div>';
-        html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>';
-        html += '</div></div>';
+        p += '<div style="width:280px;height:500px;background:#000;border-radius:30px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);overflow:hidden"><img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:24px" crossorigin="anonymous"></div>';
       } else if (postType === 'carrossel' && allImages.length > 1) {
-        html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%">';
-        for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) {
-          html += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:200px;object-fit:cover;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15)" crossorigin="anonymous">';
-        }
-        html += '</div>';
+        p += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%">';
+        for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) p += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:200px;object-fit:cover;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15)" crossorigin="anonymous">';
+        p += '</div>';
       } else {
-        html += '<img src="' + img.file_url + '" style="max-width:400px;max-height:560px;object-fit:contain;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15)" crossorigin="anonymous">';
+        p += '<img src="' + img.file_url + '" style="max-width:400px;max-height:560px;object-fit:contain;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15)" crossorigin="anonymous">';
       }
     } else {
-      html += '<div style="width:350px;height:350px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.3)">';
-      html += '<div style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px">📷<br>Criativo pendente</div>';
-      html += '</div>';
+      p += '<div style="width:350px;height:350px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.3)"><div style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px">📷<br>Criativo pendente</div></div>';
     }
-    html += '</div>';
-
-    // RIGHT: Copy
-    html += '<div style="flex:1;overflow:hidden;padding-top:10px">';
-    html += '<div style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.7);font-style:italic;margin-bottom:16px;font-family:Georgia,serif">Legenda:</div>';
-
+    p += '</div>';
+    p += '<div style="flex:1;overflow:hidden;padding-top:10px">';
+    p += '<div style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.7);font-style:italic;margin-bottom:16px;font-family:Georgia,serif">Legenda:</div>';
     var copy = task.copy_text || task.description || task.briefing || '';
     if (copy) {
-      var copyHtml = copy.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-      html += '<div style="font-size:15px;color:rgba(60,50,40,0.9);line-height:1.7;max-height:550px;overflow:hidden">' + copyHtml + '</div>';
+      p += '<div style="font-size:15px;color:rgba(60,50,40,0.9);line-height:1.7;max-height:550px;overflow:hidden">' + copy.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '</div>';
     } else {
-      html += '<div style="font-size:14px;color:rgba(255,255,255,0.4);font-style:italic">Legenda pendente...</div>';
+      p += '<div style="font-size:14px;color:rgba(255,255,255,0.4);font-style:italic">Legenda pendente...</div>';
     }
-
-    html += '</div>';
-    html += '</div>';
-    html += '</div>';
-    html += '<div class="crono-page-break"></div>';
+    p += '</div></div></div>';
+    pages.push(p);
   });
 
-  // ═══ LAST PAGE: "aguardamos aprovação!" ═══
-  html += '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
-  html += '<div style="text-align:center">';
-  html += '<div style="font-size:64px;font-weight:300;color:rgba(255,255,255,0.8);font-family:Georgia,serif;line-height:1.1">aguardamos</div>';
-  html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.3);font-family:Georgia,serif;line-height:1;margin-top:-5px">aprovação!</div>';
-  html += '</div></div>';
+  // LAST PAGE: CLOSING
+  var pLast = '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
+  pLast += '<div style="text-align:center"><div style="font-size:64px;font-weight:300;color:rgba(255,255,255,0.8);font-family:Georgia,serif;line-height:1.1">aguardamos</div>';
+  pLast += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.3);font-family:Georgia,serif;line-height:1;margin-top:-5px">aprovação!</div></div></div>';
+  pages.push(pLast);
 
-  html += '</div>';
-  return html;
+  return pages;
 }
+
+// Joins pages into single HTML with page breaks (for PDF generation)
+function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
+  var pages = cronogramaBuildPages(clientName, clientLogo, tenant, tasks);
+  return '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;">'
+    + '<style>.crono-page-break{page-break-after:always;break-after:page;height:0;display:block;clear:both;}</style>'
+    + pages.join('<div class="crono-page-break"></div>')
+    + '</div>';
+}
+
 
 </script>
 
