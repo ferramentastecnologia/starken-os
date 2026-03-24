@@ -16036,15 +16036,17 @@ async function cronogramaDownload() {
     // Show loading overlay
     var overlay = document.createElement('div');
     overlay.id = 'cronoLoadingOverlay';
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(6px)';
+    overlay.style.cssText = 'position:fixed;inset:0;background:#0f0f0f;z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;';
     overlay.innerHTML = '<div style="text-align:center;color:#fff">'
-      + '<div style="font-size:48px;margin-bottom:16px">📄</div>'
-      + '<div style="font-size:1.2rem;font-weight:700;margin-bottom:8px">Gerando Cronograma PDF</div>'
-      + '<div id="cronoLoadingText" style="font-size:0.9rem;opacity:0.7;margin-bottom:20px">Preparando...</div>'
-      + '<div style="width:280px;height:6px;background:rgba(255,255,255,0.15);border-radius:3px;overflow:hidden">'
-      + '<div id="cronoLoadingBar" style="height:100%;width:0%;background:linear-gradient(90deg,#8B7355,#d4a574);border-radius:3px;transition:width 0.3s"></div>'
+      + '<div style="width:80px;height:80px;margin:0 auto 24px;border-radius:20px;background:linear-gradient(135deg,#8B7355,#d4a574);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(139,115,85,0.4)">'
+      + '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
       + '</div>'
-      + '<div id="cronoLoadingPct" style="font-size:0.8rem;opacity:0.5;margin-top:8px">0%</div>'
+      + '<div style="font-size:1.3rem;font-weight:800;margin-bottom:6px;letter-spacing:0.5px">Gerando Cronograma</div>'
+      + '<div id="cronoLoadingText" style="font-size:0.88rem;opacity:0.5;margin-bottom:28px">Preparando...</div>'
+      + '<div style="width:320px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden">'
+      + '<div id="cronoLoadingBar" style="height:100%;width:0%;background:linear-gradient(90deg,#8B7355,#d4a574);border-radius:2px;transition:width 0.3s"></div>'
+      + '</div>'
+      + '<div id="cronoLoadingPct" style="font-size:0.78rem;opacity:0.35;margin-top:10px">0%</div>'
       + '</div>';
     document.body.appendChild(overlay);
 
