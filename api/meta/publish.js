@@ -94,10 +94,25 @@ async function processPublishQueue() {
           const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: cr.id, access_token: igToken });
           publishedId = pr.id;
         } else if (imageUrls.length === 1) {
-          const mr = await graphPost(`/${client.igUserId}/media`, { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken });
-          await waitIG(mr.id);
-          const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
-          publishedId = pr.id;
+          // Check if it's a video/reels (by URL extension or media_type flag)
+          const isVideo = item.media_type === 'REELS' || item.media_type === 'VIDEO' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrls[0]);
+          if (isVideo) {
+            const videoBody = {
+              video_url: imageUrls[0],
+              caption: item.caption || '',
+              media_type: (item.media_type === 'REELS') ? 'REELS' : 'VIDEO',
+              access_token: igToken,
+            };
+            const mr = await graphPost(`/${client.igUserId}/media`, videoBody);
+            await waitIG(mr.id);
+            const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
+            publishedId = pr.id;
+          } else {
+            const mr = await graphPost(`/${client.igUserId}/media`, { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken });
+            await waitIG(mr.id);
+            const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
+            publishedId = pr.id;
+          }
         }
       } else if (item.platform === 'fb') {
         // FB scheduled (should have been published by FB itself, but handle direct publish too)
@@ -275,14 +290,14 @@ module.exports = async function handler(req, res) {
   // ─── QUEUE: Agendar para publicação futura ───
   if (req.body && req.body.action === 'queue') {
     try {
-      const { client_key, client_name, platform, caption, image_urls, post_type, scheduled_for, user_name, task_id } = req.body;
+      const { client_key, client_name, platform, caption, image_urls, post_type, media_type, scheduled_for, user_name, task_id } = req.body;
       if (!client_key || !platform || !scheduled_for) {
         return res.status(400).json({ error: true, message: 'client_key, platform e scheduled_for são obrigatórios' });
       }
       const queued = await saveToQueue({
         client_key, client_name: client_name || client_key, platform,
         caption: caption || '', image_urls: image_urls || [],
-        post_type: post_type || 'feed', scheduled_for,
+        post_type: post_type || 'feed', media_type: media_type || null, scheduled_for,
         user_name: user_name || 'Sistema', status: 'QUEUED',
       });
 
@@ -303,7 +318,7 @@ module.exports = async function handler(req, res) {
   const tenant = await validateTenant(req, res);
   if (!tenant) return;
 
-  const { destination, caption, type, container_id, photo_ids, scheduled_publish_time, image_url, user, task_id } = req.body || {};
+  const { destination, caption, type, container_id, photo_ids, scheduled_publish_time, image_url, video_url, media_type, user, task_id } = req.body || {};
 
   if (!destination || !['ig', 'fb'].includes(destination)) {
     return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'destination deve ser "ig" ou "fb"' });
@@ -387,6 +402,22 @@ module.exports = async function handler(req, res) {
         const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, pubBody);
         publishedId = pubRes.id;
       }
+      // ─── IG VIDEO / REELS ───
+      else if (video_url) {
+        const videoBody = {
+          video_url: video_url,
+          caption: caption || '',
+          media_type: (media_type === 'REELS') ? 'REELS' : 'VIDEO',
+          ...(igToken && { access_token: igToken }),
+        };
+        const mediaRes = await graphPost(`/${tenant.igUserId}/media`, videoBody);
+        await waitForContainer(mediaRes.id);
+        const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
+          creation_id: mediaRes.id,
+          ...(igToken && { access_token: igToken }),
+        });
+        publishedId = pubRes.id;
+      }
       // ─── IG IMAGEM ÚNICA via URL direta ───
       else if (image_url) {
         const mediaRes = await graphPost(`/${tenant.igUserId}/media`, {
@@ -404,7 +435,7 @@ module.exports = async function handler(req, res) {
       else {
         return res.status(400).json({
           error: true, code: 'MISSING_PARAM',
-          message: 'Instagram requer imagem. Envie image_url, image_urls[] ou container_id.',
+          message: 'Instagram requer mídia. Envie image_url, video_url, image_urls[] ou container_id.',
         });
       }
 

@@ -12226,7 +12226,16 @@ async function ctOpenModal(taskId) {
   document.getElementById('ctModalTitle').value = task.name || '';
   document.getElementById('ctModalBriefing').value = task.briefing || '';
   document.getElementById('ctModalCopy').value = task.copy_text || '';
-  ctUpdateFormatButtons((task.publish_config && task.publish_config.content_type) || '');
+  var _fmt = (task.publish_config && task.publish_config.content_type) || '';
+  ctUpdateFormatButtons(_fmt);
+  // Update publish button label for format
+  var _pubBtn = document.getElementById('ctPubSubmitBtn');
+  if (_pubBtn) {
+    var _fmtLabels = { feed: '🚀 Publicar', reels: '🎬 Publicar Reels', carrossel: '🖼️ Publicar Carrossel', story: '📱 Stories (manual)' };
+    _pubBtn.textContent = _fmtLabels[_fmt] || '🚀 Publicar';
+    _pubBtn.disabled = (_fmt === 'story');
+    _pubBtn.style.opacity = (_fmt === 'story') ? '0.5' : '1';
+  }
   document.getElementById('ctModalCopyCount').textContent = (task.copy_text || '').length;
   document.getElementById('ctModalDescription').value = task.description || '';
   document.getElementById('ctModalDueDate').value = task.due_date || '';
@@ -12963,6 +12972,15 @@ async function ctPublishFromModal() {
   if (document.getElementById('ctPubIg').classList.contains('selected')) platforms.push('ig');
   if (platforms.length === 0) { alert('Selecione a plataforma (Facebook e/ou Instagram)'); return; }
 
+  // ─── Read post format from publish_config ───
+  var contentType = (ctModalTask.publish_config && ctModalTask.publish_config.content_type) || 'feed';
+
+  // Story: block publishing (Meta API doesn't support Stories scheduling)
+  if (contentType === 'story') {
+    alert('📱 Stories: publique manualmente pelo app do Instagram/Facebook.\n\nA Meta API não suporta publicação de Stories automatizada.');
+    return;
+  }
+
   const copy = ctModalTask.copy_text || '';
   if (!copy) { alert('Preencha a Copy do Post antes de publicar'); return; }
 
@@ -12972,14 +12990,36 @@ async function ctPublishFromModal() {
 
   const statusDiv = document.getElementById('ctPubStatus');
   statusDiv.style.display = 'block';
-  statusDiv.innerHTML = '⏳ Publicando...';
+  statusDiv.innerHTML = '⏳ Preparando publicação...';
   statusDiv.style.color = '#1d4ed8';
 
-  // Find ALL creative attachments (for carousel support)
+  // ─── Find ALL creative attachments and separate videos from images ───
   const data = await ctApi('list_attachments', { task_id: ctModalTask.id });
   const attachments = Array.isArray(data) ? data : (data.attachments || []);
   const creatives = attachments.filter(a => a.category === 'creative' || a.category === 'final');
-  const imageUrls = creatives.map(a => a.file_url);
+  var videos = creatives.filter(a => ctIsVideo(a));
+  var images = creatives.filter(a => !ctIsVideo(a));
+  var videoUrls = videos.map(a => a.file_url);
+  var imageUrls = images.map(a => a.file_url);
+
+  // ─── Validations per format ───
+  if (contentType === 'reels') {
+    if (videoUrls.length === 0) {
+      alert('🎬 Reels precisa de um vídeo nos criativos.\n\nFaça upload de um vídeo na seção "Criativo Final".');
+      return;
+    }
+  } else if (contentType === 'carrossel') {
+    if (imageUrls.length < 2) {
+      alert('🖼️ Carrossel precisa de pelo menos 2 imagens nos criativos.\n\nVocê tem ' + imageUrls.length + ' imagem(s). Faça upload de mais imagens.');
+      return;
+    }
+  } else {
+    // feed — needs at least 1 image or video
+    if (imageUrls.length === 0 && videoUrls.length === 0) {
+      alert('📷 Faça upload de pelo menos 1 imagem/vídeo na seção "Criativo Final".');
+      return;
+    }
+  }
 
   const clientName = document.getElementById('ctClientFilter').selectedOptions[0]?.text || ctCurrentClient;
   let successCount = 0;
@@ -12987,25 +13027,32 @@ async function ctPublishFromModal() {
 
   for (const plat of platforms) {
     const platLabel = plat === 'fb' ? 'Facebook' : 'Instagram';
-    statusDiv.innerHTML = '⏳ Publicando em ' + platLabel + '...';
+    statusDiv.innerHTML = '⏳ Publicando ' + (contentType === 'reels' ? 'Reels' : contentType === 'carrossel' ? 'Carrossel' : 'Feed') + ' em ' + platLabel + '...';
 
-    // IG + Agendamento → fila
+    // ─── IG + Agendamento → fila ───
     if (plat === 'ig' && isSchedule) {
       try {
+        var queueBody = {
+          action: 'queue',
+          client_key: ctCurrentClient,
+          client_name: clientName,
+          platform: 'ig',
+          caption: copy,
+          scheduled_for: new Date(datetime).toISOString(),
+          user_name: ctGetUser(),
+          task_id: ctModalTask.id,
+        };
+        // Reels → send video URL + media_type
+        if (contentType === 'reels') {
+          queueBody.image_urls = [videoUrls[0]];
+          queueBody.media_type = 'REELS';
+        } else {
+          queueBody.image_urls = contentType === 'carrossel' ? imageUrls : (imageUrls.length > 0 ? imageUrls : videoUrls);
+        }
         const qRes = await fetch(ctApiBase() + '/api/meta/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'queue',
-            client_key: ctCurrentClient,
-            client_name: clientName,
-            platform: 'ig',
-            caption: copy,
-            image_urls: imageUrls,
-            scheduled_for: new Date(datetime).toISOString(),
-            user_name: ctGetUser(),
-            task_id: ctModalTask.id,
-          }),
+          body: JSON.stringify(queueBody),
         });
         const qData = await qRes.json();
         results.push({ plat: platLabel, ok: !qData.error, msg: qData.error ? qData.message : 'Agendado' });
@@ -13014,17 +13061,40 @@ async function ctPublishFromModal() {
       continue;
     }
 
-    // FB or immediate publish
+    // ─── FB or immediate publish (format-aware) ───
     const body = {
       destination: plat,
       client: ctCurrentClient,
       caption: copy,
-      type: imageUrls.length > 1 ? 'carousel' : 'feed',
       user: ctGetUser(),
       task_id: ctModalTask.id,
     };
-    if (imageUrls.length > 1) body.image_urls = imageUrls;
-    else if (imageUrls.length === 1) body.image_url = imageUrls[0];
+
+    if (contentType === 'reels') {
+      // Reels → VIDEO/REELS type
+      body.type = 'reels';
+      body.media_type = 'REELS';
+      body.video_url = videoUrls[0];
+    } else if (contentType === 'carrossel') {
+      // Carrossel → always carousel
+      body.type = 'carousel';
+      body.image_urls = imageUrls;
+    } else {
+      // Feed → auto-detect single vs carousel
+      if (imageUrls.length > 1) {
+        body.type = 'carousel';
+        body.image_urls = imageUrls;
+      } else if (imageUrls.length === 1) {
+        body.type = 'feed';
+        body.image_url = imageUrls[0];
+      } else if (videoUrls.length > 0) {
+        // Feed with video
+        body.type = 'reels';
+        body.media_type = 'VIDEO';
+        body.video_url = videoUrls[0];
+      }
+    }
+
     if (plat === 'fb' && isSchedule) {
       body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
     }
@@ -16563,6 +16633,14 @@ function ctSetFormat(type) {
   ctModalTask.publish_config = config;
   ctSaveTaskField('publish_config', config);
   ctUpdateFormatButtons(type);
+  // Update publish button label based on format
+  var pubBtn = document.getElementById('ctPubSubmitBtn');
+  if (pubBtn) {
+    var labels = { feed: '🚀 Publicar', reels: '🎬 Publicar Reels', carrossel: '🖼️ Publicar Carrossel', story: '📱 Stories (manual)' };
+    pubBtn.textContent = labels[type] || '🚀 Publicar';
+    pubBtn.disabled = (type === 'story');
+    pubBtn.style.opacity = (type === 'story') ? '0.5' : '1';
+  }
 }
 
 function ctUpdateFormatButtons(activeType) {
