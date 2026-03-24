@@ -1232,8 +1232,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 /* List */
 .ct-list { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
-.ct-header-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 100px 140px 70px;gap:0;background:var(--bg-secondary);padding:10px 16px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;border-bottom:1px solid var(--border); }
-.ct-row { display:grid;grid-template-columns:minmax(250px,2fr) 150px 120px 100px 140px 70px;gap:0;padding:8px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;align-items:center;transition:background 0.15s;cursor:pointer; }
+.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px 130px 60px;gap:0;background:var(--bg-secondary);padding:10px 16px;font-size:0.72rem;font-weight:700;text-transform:uppercase;color:var(--text-secondary);letter-spacing:0.5px;border-bottom:1px solid var(--border); }
+.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px 130px 60px;gap:0;padding:8px 16px;border-bottom:1px solid var(--border);font-size:0.85rem;align-items:center;transition:background 0.15s;cursor:pointer; }
 .ct-row:hover { background:var(--bg-secondary); }
 .ct-row.group { background:var(--bg-secondary);font-weight:700;font-size:0.88rem; }
 .ct-row.subtask { padding-left:56px;font-size:0.82rem;color:var(--text-secondary); }
@@ -1297,7 +1297,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-modal-section-title { font-size:0.82rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;color:var(--text-primary); }
 .ct-modal-textarea { width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;resize:vertical;min-height:80px;line-height:1.5;transition:border-color 0.2s; }
 .ct-modal-textarea:focus { outline:none;border-color:var(--accent,#3b82f6); }
-.ct-modal-textarea.copy-area { background:#fffbeb;border-color:#fde68a;min-height:100px; }
+.ct-modal-textarea.copy-area { background:#fffbeb;border-color:#fde68a;min-height:220px; }
 
 /* Attachments */
 .ct-attachment-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px; }
@@ -1431,7 +1431,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 @media (max-width:900px) {
   .ct-modal { grid-template-columns:1fr;max-width:100%; }
   .ct-modal-sidebar,.ct-modal-activity { display:none; }
-  .ct-header-row,.ct-row { grid-template-columns:1fr 120px 100px; }
+  .ct-header-row,.ct-row { grid-template-columns:1fr 80px 120px 100px; }
   .ct-row .ct-col-date,.ct-row .ct-col-comments,.ct-row .ct-col-priority { display:none; }
 }
 
@@ -3281,6 +3281,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <div class="ct-list" id="ctList">
             <div class="ct-header-row">
               <div><input type="checkbox" id="ctSelectAll" onclick="ctToggleSelectAll()" style="margin-right:6px;cursor:pointer;accent-color:var(--accent,#3b82f6)">Nome</div>
+              <div>Formato</div>
               <div>Status</div>
               <div>Responsável</div>
               <div>Data</div>
@@ -3371,6 +3372,17 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div class="ct-modal-section-title">🎨 Criativo Final <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctUploadAttachment('creative')">+ Upload Criativo</button></div>
               <div class="ct-attachment-grid" id="ctModalCreatives"></div>
               <input type="file" id="ctFileInputCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFileUpload(this.files,'creative')">
+            </div>
+
+            <!-- Post Format -->
+            <div class="ct-modal-section">
+              <div class="ct-modal-section-title">📐 Formato do Post</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap" id="ctModalFormatBtns">
+                <button onclick="ctSetFormat('feed')" class="ct-format-btn" data-format="feed" style="padding:6px 14px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">📷 Feed</button>
+                <button onclick="ctSetFormat('reels')" class="ct-format-btn" data-format="reels" style="padding:6px 14px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">🎬 Reels</button>
+                <button onclick="ctSetFormat('carrossel')" class="ct-format-btn" data-format="carrossel" style="padding:6px 14px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">🖼️ Carrossel</button>
+                <button onclick="ctSetFormat('story')" class="ct-format-btn" data-format="story" style="padding:6px 14px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">📱 Story</button>
+              </div>
             </div>
 
             <!-- Copy Text -->
@@ -11864,6 +11876,7 @@ function ctRenderList() {
           + '<span onclick="ctOpenModal(\'' + task.id + '\')" style="cursor:pointer">' + task.name + '</span>'
           + (canAddSub ? '<button onclick="event.stopPropagation();ctShowAddSubtask(\'' + task.id + '\',\'' + groupId + '\')" style="opacity:0;margin-left:6px;border:none;background:none;cursor:pointer;font-size:0.72rem;color:var(--text-muted);transition:opacity 0.15s" class="ct-add-sub-btn" title="Adicionar subtarefa">＋ sub</button>' : '')
           + '</div>'
+          + ctRenderFormatBadge(task.publish_config)
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
           + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')">'
           + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
@@ -12144,6 +12157,7 @@ async function ctOpenModal(taskId) {
   document.getElementById('ctModalTitle').value = task.name || '';
   document.getElementById('ctModalBriefing').value = task.briefing || '';
   document.getElementById('ctModalCopy').value = task.copy_text || '';
+  ctUpdateFormatButtons((task.publish_config && task.publish_config.content_type) || '');
   document.getElementById('ctModalCopyCount').textContent = (task.copy_text || '').length;
   document.getElementById('ctModalDescription').value = task.description || '';
   document.getElementById('ctModalDueDate').value = task.due_date || '';
@@ -15899,7 +15913,54 @@ function cronogramaGetWeekLabel(tasks) {
   return months[d.getMonth()] + '_' + weekNum + 'SEMANA';
 }
 
+// ═══ POST FORMAT ═══
+
+var CT_FORMATS = {
+  feed: { label: '📷 Feed', color: '#3b82f6', bg: '#eff6ff' },
+  reels: { label: '🎬 Reels', color: '#8b5cf6', bg: '#f5f3ff' },
+  carrossel: { label: '🖼️ Carrossel', color: '#f59e0b', bg: '#fffbeb' },
+  story: { label: '📱 Story', color: '#ec4899', bg: '#fdf2f8' }
+};
+
+function ctRenderFormatBadge(publishConfig) {
+  var type = (publishConfig && publishConfig.content_type) || '';
+  var fmt = CT_FORMATS[type];
+  if (!fmt) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
+  return '<div><span style="font-size:0.68rem;font-weight:600;padding:3px 8px;border-radius:6px;background:' + fmt.bg + ';color:' + fmt.color + ';white-space:nowrap">' + fmt.label + '</span></div>';
+}
+
+function ctSetFormat(type) {
+  if (!ctModalTask) return;
+  var config = ctModalTask.publish_config || {};
+  config.content_type = type;
+  ctModalTask.publish_config = config;
+  ctSaveTaskField('publish_config', config);
+  ctUpdateFormatButtons(type);
+}
+
+function ctUpdateFormatButtons(activeType) {
+  var btns = document.querySelectorAll('.ct-format-btn');
+  btns.forEach(function(btn) {
+    var fmt = btn.dataset.format;
+    var info = CT_FORMATS[fmt] || {};
+    if (fmt === activeType) {
+      btn.style.background = info.bg || '#eff6ff';
+      btn.style.borderColor = info.color || '#3b82f6';
+      btn.style.color = info.color || '#3b82f6';
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.background = 'var(--card,#fff)';
+      btn.style.borderColor = 'var(--border,#e2e8f0)';
+      btn.style.color = 'var(--text,#1a1a2e)';
+      btn.style.fontWeight = '400';
+    }
+  });
+}
+
 function cronogramaClassifyPost(task) {
+  // Use explicit format if set
+  if (task.publish_config && task.publish_config.content_type) return task.publish_config.content_type;
+  // Fallback: infer from name
   var name = (task.name || '').toLowerCase();
   if (name.includes('carrossel') || name.includes('carousel') || name.includes('album')) return 'carrossel';
   if (name.includes('reels') || name.includes('reel') || name.includes('video') || name.includes('vídeo')) return 'reels';
