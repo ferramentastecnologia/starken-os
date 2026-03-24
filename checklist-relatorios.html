@@ -5631,11 +5631,11 @@ function renderSchedWeekly() {
   if (!currentVal && weeks.length > 0) {
     var today = new Date();
     var todayStr = today.getFullYear() + '-' + ('0' + (today.getMonth()+1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
-    // Find the week where today falls within the period
+    // Find the week where today falls within period OR is the send date
     var autoWeek = weeks.find(function(w) {
-      return todayStr >= w.periodStartISO && todayStr <= w.periodEndISO;
+      return todayStr >= w.periodStartISO && todayStr <= w.sendDateISO;
     });
-    // Fallback: find closest week by send date
+    // Fallback: find closest upcoming send date
     if (!autoWeek) {
       autoWeek = weeks.find(function(w) { return todayStr <= w.sendDateISO; }) || weeks[weeks.length - 1];
     }
@@ -16533,7 +16533,7 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
   // PAGES 3-N: POSTS
   tasks.forEach(function(task) {
     var postType = cronogramaClassifyPost(task);
-    var typeLabel = postType === 'reels' ? 'FEED REELS' : postType === 'carrossel' ? 'CARROSSEL DE FOTOS' : 'FEED CRIATIVO';
+    var typeLabel = postType === 'reels' ? 'FEED REELS' : postType === 'carrossel' ? 'CARROSSEL DE FOTOS' : postType === 'story' ? 'STORIES' : 'FEED CRIATIVO';
     var dateLabel = cronogramaFormatDate(task.due_date);
     var attachments = task._attachments || [];
     var img = null, vid = null, allImages = [];
