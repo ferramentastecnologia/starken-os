@@ -15680,13 +15680,13 @@ function cronogramaPreview() {
   var total = pages.length;
 
   var cards = '';
-  var scale = 0.28;
-  var cardW = Math.round(1123 * scale);
-  var cardH = Math.round(794 * scale);
+  var scale = 0.32;
+  var cardW = Math.round(960 * scale);
+  var cardH = Math.round(680 * scale);
 
   pages.forEach(function(pageHtml, i) {
     cards += '<div style="flex:0 0 auto;width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.2);position:relative;background:#b5aa9a">'
-      + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:1123px;height:790px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
+      + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:960px;height:680px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
       + '<div style="position:absolute;bottom:5px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 12px;border-radius:10px;font-weight:600">' + (i + 1) + ' / ' + total + '</div>'
       + '</div>';
   });
@@ -15715,8 +15715,8 @@ async function cronogramaDownload() {
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // APPROACH: render each page individually, generate PDF page by page using html2pdf chain
-    var W = 1123, H = 790;
+    // Render each page individually, generate PDF page by page
+    var W = 960, H = 680;
     var wrap = function(pg) {
       return '<div style="width:' + W + 'px;height:' + H + 'px;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a">' + pg + '</div>';
     };
@@ -15787,8 +15787,8 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
   var bgColor = '#b5aa9a';
   // html2pdf uses 96dpi internally. A4 landscape = 297x210mm
   // At 96dpi with width=1123: page height = 210/297 * 1123 = 794px
-  // Each page = exactly A4 landscape at 96dpi. box-sizing ensures padding is inside.
-  var pageBase = 'width:1123px;height:790px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
+  // Use 960px width - maps cleanly to A4 landscape with margin room
+  var pageBase = 'width:960px;height:680px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
   var pages = [];
 
   // PAGE 1: COVER
@@ -15831,17 +15831,17 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
     p += '<span style="font-size:15px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
     if (dateLabel) p += '<span style="font-size:15px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
     p += '</div>';
-    p += '<div style="display:flex;padding:20px 36px;gap:30px;height:710px;overflow:hidden">';
+    p += '<div style="display:flex;padding:20px 36px;gap:30px;height:600px;overflow:hidden">';
     p += '<div style="flex:0 0 380px;display:flex;align-items:center;justify-content:center">';
     if (img) {
       if (postType === 'reels') {
-        p += '<div style="width:240px;height:440px;background:#000;border-radius:28px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,0.2);overflow:hidden"><img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:22px" crossorigin="anonymous"></div>';
+        p += '<div style="width:220px;height:400px;background:#000;border-radius:24px;padding:5px;box-shadow:0 8px 20px rgba(0,0,0,0.2);overflow:hidden"><img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:20px" crossorigin="anonymous"></div>';
       } else if (postType === 'carrossel' && allImages.length > 1) {
         p += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:100%">';
         for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) p += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:180px;object-fit:cover;border-radius:8px" crossorigin="anonymous">';
         p += '</div>';
       } else {
-        p += '<img src="' + img.file_url + '" style="max-width:360px;max-height:480px;object-fit:contain;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.15)" crossorigin="anonymous">';
+        p += '<img src="' + img.file_url + '" style="max-width:320px;max-height:420px;object-fit:contain;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.15)" crossorigin="anonymous">';
       }
     } else {
       p += '<div style="width:320px;height:320px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.3)"><div style="text-align:center;color:rgba(255,255,255,0.5);font-size:13px">Criativo pendente</div></div>';
