@@ -4565,17 +4565,21 @@ async function syncToSupabase(d) {
       if (error) throw error;
     }
     if (d.reports && d.reports.length > 0) {
-      const rows = d.reports.map(r => ({
-        id: r.id, client_id: r.clientId, type: r.type, period: r.period,
-        status: r.status || 0, sent: r.sent || false,
-        sent_date: r.sentDate || null, notes: r.notes || '',
-        pdf_filename: r.pdfFilename || null,
-        period_start: r.periodStart || null, period_end: r.periodEnd || null,
-        period_note: r.periodNote || '',
-        created_at: r.createdAt || new Date().toISOString()
-      }));
-      const { error } = await _supabase.from('reports').upsert(rows);
-      if (error) throw error;
+      // Filter out sched-weekly type (not in Supabase reports_type_check constraint, stored locally only)
+      const syncableReports = d.reports.filter(r => r.type !== 'sched-weekly');
+      if (syncableReports.length > 0) {
+        const rows = syncableReports.map(r => ({
+          id: r.id, client_id: r.clientId, type: r.type, period: r.period,
+          status: r.status || 0, sent: r.sent || false,
+          sent_date: r.sentDate || null, notes: r.notes || '',
+          pdf_filename: r.pdfFilename || null,
+          period_start: r.periodStart || null, period_end: r.periodEnd || null,
+          period_note: r.periodNote || '',
+          created_at: r.createdAt || new Date().toISOString()
+        }));
+        const { error } = await _supabase.from('reports').upsert(rows);
+        if (error) throw error;
+      }
     }
     setSyncStatus('ok');
     setTimeout(() => setSyncStatus('idle'), 3000);
@@ -16395,7 +16399,7 @@ async function cronogramaBuildPdf(opts) {
     try {
       var pdfBlob = pdf.output('blob');
       var storagePath = 'cronogramas/' + _cronoState.clientId + '/' + filename;
-      var uploadRes = await fetch('https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + storagePath, {
+      var uploadRes = await fetch('https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/client-hub-materials/' + storagePath, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/pdf',
