@@ -7453,7 +7453,7 @@ renderAll(); // render imediato com dados do localStorage
   if (initSupabase()) {
     setSyncStatus('syncing');
     const cloudData = await loadFromSupabase();
-    loadCronogramaStatus(); // Load cronograma status in parallel (no await needed)
+    await loadCronogramaStatus(); // Load cronograma status before rendering
     if (cloudData) {
       // Aplica migrações
       cloudData.clients.forEach(c => {
