@@ -4805,25 +4805,27 @@ function getMonthWeeks(year, month) {
     const date = new Date(year, month, day);
     if (date.getDay() !== 1) continue; // apenas segundas-feiras
 
-    // Período coberto: segunda anterior (day-7) até domingo anterior (day-1)
-    const periodStart = new Date(year, month, day - 7);
-    const periodEnd   = new Date(year, month, day - 1);
+    // Período coberto: esta segunda (day) até domingo (day+6)
+    const periodStart = new Date(year, month, day);
+    const periodEnd   = new Date(year, month, day + 6);
+    // Envio: segunda seguinte (day+7)
+    const sendDate    = new Date(year, month, day + 7);
 
     weeks.push({
       week: weeks.length + 1,
-      sendDay: day,
-      sendDate: date,
+      sendDay: sendDate.getDate(),
+      sendDate: sendDate,
       periodStartDate: periodStart,
       periodEndDate:   periodEnd,
       // helpers de formatação
-      sendLabel: pad(day) + '/' + pad(month + 1) + '/' + year,
+      sendLabel: pad(sendDate.getDate()) + '/' + pad(sendDate.getMonth() + 1) + '/' + sendDate.getFullYear(),
       periodStartLabel: pad(periodStart.getDate()) + '/' + pad(periodStart.getMonth() + 1) + '/' + periodStart.getFullYear(),
       periodEndLabel:   pad(periodEnd.getDate())   + '/' + pad(periodEnd.getMonth()   + 1) + '/' + periodEnd.getFullYear(),
       // ISO para o modal de período
       periodStartISO: periodStart.getFullYear() + '-' + pad(periodStart.getMonth() + 1) + '-' + pad(periodStart.getDate()),
       periodEndISO:   periodEnd.getFullYear()   + '-' + pad(periodEnd.getMonth()   + 1) + '-' + pad(periodEnd.getDate()),
-      // ISO da data de envio (para pre-fill do modal de envio)
-      sendDateISO: year + '-' + pad(month + 1) + '-' + pad(day),
+      // ISO da data de envio
+      sendDateISO: sendDate.getFullYear() + '-' + pad(sendDate.getMonth() + 1) + '-' + pad(sendDate.getDate()),
     });
   }
 
@@ -5648,11 +5650,18 @@ function renderSchedWeekly() {
     _schedWeeklyFirstRender = false;
     var today = new Date();
     var todayStr = today.getFullYear() + '-' + ('0' + (today.getMonth()+1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
-    // Find the week where today falls within period OR is the send date
+    // Find the week where today falls within the content period (periodStart to periodEnd)
+    // This represents the week we're currently PRODUCING content for
     var autoWeek = weeks.find(function(w) {
-      return todayStr >= w.periodStartISO && todayStr <= w.sendDateISO;
+      return todayStr >= w.periodStartISO && todayStr <= w.periodEndISO;
     });
-    // Fallback: find closest upcoming send date
+    // Fallback: find week where today is between periodEnd and sendDate (content done, pending send)
+    if (!autoWeek) {
+      autoWeek = weeks.find(function(w) {
+        return todayStr > w.periodEndISO && todayStr <= w.sendDateISO;
+      });
+    }
+    // Fallback: closest upcoming send date
     if (!autoWeek) {
       autoWeek = weeks.find(function(w) { return todayStr <= w.sendDateISO; }) || weeks[weeks.length - 1];
     }
