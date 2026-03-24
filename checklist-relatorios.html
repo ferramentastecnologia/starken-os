@@ -15716,15 +15716,20 @@ async function cronogramaDownload() {
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // Wrap HTML - exact A4 landscape width (297mm = 1123px at 96dpi)
-    var fullHtml = '<div style="width:1123px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">' + html + '</div>';
+    // Use A4 landscape with exact page height matching
+    // A4 landscape at 96dpi: 297mm wide. html2canvas renders at width=1123px
+    // Each page div is 794px tall = exactly 210mm
+    // pagebreak 'after' on .crono-page-break ensures 1 div = 1 PDF page
+    var fullHtml = '<div style="width:1123px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">'
+      + '<style>@page{size:297mm 210mm;margin:0} .crono-page-break{page-break-after:always;break-after:page;height:0;display:block;}</style>'
+      + html + '</div>';
 
     await html2pdf().set({
       margin: [0, 0, 0, 0],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a', width: 1123 },
-      jsPDF: { unit: 'px', format: [1123, 794], orientation: 'landscape', hotfixes: ['px_scaling'] },
+      image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: { scale: 1.5, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a', width: 1123, windowWidth: 1123 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
       pagebreak: { mode: ['css'], after: '.crono-page-break' }
     }).from(fullHtml, 'string').save();
 
