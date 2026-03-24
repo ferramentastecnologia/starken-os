@@ -3305,6 +3305,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button onclick="ctBulkChangeAssignee()">👤 Responsável</button>
             <button onclick="ctBulkChangePriority()">🏳️ Prioridade</button>
             <button onclick="ctBulkSchedule()" style="background:rgba(59,130,246,0.8)">🚀 Agendar</button>
+            <button onclick="ctBulkDuplicate()" style="background:rgba(139,92,246,0.8)">📋 Duplicar</button>
             <button class="ct-ab-delete" onclick="ctBulkDelete()">🗑️ Excluir</button>
             <button onclick="ctClearSelection()" style="font-size:0.75rem;padding:6px 10px">✕</button>
           </div>
@@ -13301,6 +13302,67 @@ async function ctBulkSchedule() {
 
   alert('✅ ' + successCount + ' publicações processadas!' + (failCount > 0 ? '\n⚠️ ' + failCount + ' falhas.' : ''));
   ctClearSelection();
+  ctLoadGroups();
+}
+
+async function ctBulkDuplicate() {
+  var count = ctSelectedIds.size;
+  if (count === 0) return;
+  var label = count === 1 ? 'Duplicar 1 tarefa?' : 'Duplicar ' + count + ' tarefas?';
+  if (!confirm(label)) return;
+
+  var ids = Array.from(ctSelectedIds);
+  for (var i = 0; i < ids.length; i++) {
+    try {
+      // Fetch full task data
+      var task = await ctApi('get_task', { id: ids[i] });
+      if (!task || !task.name) continue;
+
+      // Create duplicate with (Cópia) suffix
+      var newTask = await ctApi('upsert_task', {
+        group_id: task.group_id,
+        client_id: task.client_id || ctCurrentClient,
+        name: task.name + ' (Cópia)',
+        description: task.description || '',
+        briefing: task.briefing || '',
+        copy_text: task.copy_text || '',
+        status: 'a_fazer',
+        assignee: task.assignee || '',
+        priority: task.priority || 'normal',
+        due_date: task.due_date || null,
+        publish_config: task.publish_config ? JSON.parse(JSON.stringify(task.publish_config)) : null,
+        user: ctGetUser(),
+      });
+
+      // Remove publish entries from duplicate (fresh start)
+      if (newTask && newTask.id && task.publish_config) {
+        var cleanConfig = JSON.parse(JSON.stringify(task.publish_config));
+        delete cleanConfig.entries;
+        await ctApi('upsert_task', { id: newTask.id, publish_config: cleanConfig, user: ctGetUser() });
+      }
+
+      // Duplicate attachments (copy references, not re-upload)
+      if (task.attachments && task.attachments.length > 0) {
+        for (var a = 0; a < task.attachments.length; a++) {
+          var att = task.attachments[a];
+          await ctApi('add_attachment', {
+            task_id: newTask.id,
+            file_name: att.file_name,
+            file_url: att.file_url,
+            file_type: att.file_type,
+            file_size: att.file_size,
+            category: att.category,
+            user: ctGetUser(),
+          });
+        }
+      }
+    } catch(e) {
+      console.error('Erro ao duplicar task ' + ids[i] + ':', e);
+    }
+  }
+
+  ctSelectedIds.clear();
+  ctUpdateSelection();
   ctLoadGroups();
 }
 
