@@ -12198,7 +12198,7 @@ async function ctOpenModal(taskId) {
 
   // Publish section: show form for aprovado/agendar, or show if already has publish data
   const hasPublishEntries = task.publish_config && task.publish_config.entries && task.publish_config.entries.length > 0;
-  const showPublishForm = ['aprovado', 'agendar'].includes(task.status);
+  const showPublishForm = ['aprovado', 'aprovacao', 'agendar', 'agendado'].includes(task.status);
   const showPublishSection = showPublishForm || hasPublishEntries;
   document.getElementById('ctModalPublish').style.display = showPublishSection ? 'block' : 'none';
   // Hide the publish button if already published/scheduled (but show history)
@@ -12311,7 +12311,7 @@ async function ctSaveTaskField(field, value) {
   }
   if (field === 'status') {
     const hasPublishEntries = ctModalTask.publish_config && ctModalTask.publish_config.entries && ctModalTask.publish_config.entries.length > 0;
-    const showPublishForm = ['aprovado', 'agendar'].includes(value);
+    const showPublishForm = ['aprovado', 'aprovacao', 'agendar', 'agendado'].includes(value);
     const showPublishSection = showPublishForm || hasPublishEntries;
     document.getElementById('ctModalPublish').style.display = showPublishSection ? 'block' : 'none';
     document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
