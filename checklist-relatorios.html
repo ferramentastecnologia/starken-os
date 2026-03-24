@@ -16052,8 +16052,9 @@ async function cronogramaDownload() {
       if (vidLink) {
         var vidUrl = vidLink.getAttribute('data-video-url');
         if (vidUrl) {
-          // Clickable area covering the phone mockup + play button + text (left side of page)
-          pdf.link(15, 30, 130, 170, { url: vidUrl });
+          // Link to video preview page (nicer than raw Supabase URL)
+          var previewUrl = 'https://starken-os.vercel.app/video.html?src=' + encodeURIComponent(vidUrl);
+          pdf.link(15, 30, 130, 170, { url: previewUrl });
         }
       }
     }
