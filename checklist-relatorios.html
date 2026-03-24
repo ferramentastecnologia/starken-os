@@ -3265,6 +3265,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             </select>
             <button class="ct-add-btn" onclick="ctShowNewGroupModal()" id="ctAddGroupBtn" style="display:none">+ Novo Grupo</button>
             <button class="ct-add-btn" onclick="cronogramaGenerate()" id="ctCronoBtn" style="display:none;background:#8B7355;border-color:#8B7355">📄 Cronograma PDF</button>
+            <span id="ctCronoStatus" style="display:none;font-size:0.75rem;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer" onclick="ctCycleCronoStatus()" title="Clique para alterar status"></span>
+            <button id="ctCronoSendBtn" style="display:none;padding:5px 14px;border:none;border-radius:8px;background:#25d366;color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit" onclick="ctCronoSendWhatsApp()">📱 Enviar</button>
             <div style="flex:1"></div>
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
@@ -15946,10 +15948,101 @@ window.switchTab = (function(orig) {
 function cronogramaUpdateButton() {
   var btn = document.getElementById('ctCronoBtn');
   if (btn) btn.style.display = document.getElementById('ctClientFilter').value ? '' : 'none';
+  ctUpdateCronoStatusBar();
 }
 
 // Cronograma state
 var _cronoState = { tasks: [], clientName: '', clientLogo: '', tenant: '', clientId: '', scheduleContext: null };
+
+// ═══ CRONOGRAMA STATUS BAR (in content management toolbar) ═══
+
+function ctUpdateCronoStatusBar() {
+  var statusEl = document.getElementById('ctCronoStatus');
+  var sendBtn = document.getElementById('ctCronoSendBtn');
+  if (!statusEl || !sendBtn) return;
+
+  var clientId = document.getElementById('ctClientFilter').value;
+  if (!clientId) { statusEl.style.display = 'none'; sendBtn.style.display = 'none'; return; }
+
+  // Find current week period key
+  var now = new Date();
+  var weekNum = Math.ceil(now.getDate() / 7);
+  var monthKey = now.getFullYear() + '-' + ('0' + (now.getMonth()+1)).slice(-2);
+  var periodKey = monthKey + '-S' + weekNum;
+
+  // Find report status from data.reports
+  var report = null;
+  if (typeof data !== 'undefined' && data.reports) {
+    var clientObj = (data.clients || []).find(function(c) {
+      var mk = typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) : '';
+      return mk === clientId;
+    });
+    if (clientObj) {
+      report = data.reports.find(function(r) {
+        return r.clientId === clientObj.id && r.type === 'sched-weekly' && r.period === periodKey;
+      });
+    }
+  }
+
+  var status = report ? report.status : 0;
+  var labels = ['⏳ Pendente', '📄 Gerado', '✅ Enviado'];
+  var colors = ['#f59e0b', '#3b82f6', '#22c55e'];
+  var bgs = ['#fffbeb', '#eff6ff', '#f0fdf4'];
+
+  statusEl.style.display = '';
+  statusEl.textContent = labels[status] || labels[0];
+  statusEl.style.background = bgs[status] || bgs[0];
+  statusEl.style.color = colors[status] || colors[0];
+
+  // Show send button only if status >= 1 (Gerado)
+  sendBtn.style.display = status >= 1 ? '' : 'none';
+
+  // Store context for status updates
+  statusEl.dataset.clientId = clientId;
+  statusEl.dataset.periodKey = periodKey;
+  statusEl.dataset.status = status;
+}
+
+function ctCycleCronoStatus() {
+  var statusEl = document.getElementById('ctCronoStatus');
+  if (!statusEl) return;
+
+  var clientId = statusEl.dataset.clientId;
+  var periodKey = statusEl.dataset.periodKey;
+  var current = parseInt(statusEl.dataset.status || 0);
+  var next = (current + 1) % 3;
+
+  // Find client in data.clients by metaKey
+  if (typeof data !== 'undefined' && data.clients) {
+    var clientObj = data.clients.find(function(c) {
+      var mk = typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) : '';
+      return mk === clientId;
+    });
+    if (clientObj && typeof setReportStatus === 'function') {
+      setReportStatus(clientObj.id, 'sched-weekly', periodKey, next);
+      ctUpdateCronoStatusBar();
+    }
+  }
+}
+
+function ctCronoSendWhatsApp() {
+  var statusEl = document.getElementById('ctCronoStatus');
+  if (!statusEl) return;
+
+  var clientId = statusEl.dataset.clientId;
+
+  // Find client and trigger zappfy send
+  if (typeof data !== 'undefined' && data.clients) {
+    var clientObj = data.clients.find(function(c) {
+      var mk = typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) : '';
+      return mk === clientId;
+    });
+    if (clientObj && typeof zappfySendReport === 'function') {
+      var periodKey = statusEl.dataset.periodKey;
+      zappfySendReport(clientObj.id, 'sched-weekly', periodKey);
+    }
+  }
+}
 
 // Bridge: open cronograma modal from weekly schedule page
 async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
@@ -16230,13 +16323,27 @@ async function cronogramaDownload() {
     updateLoading(100, 'Salvando PDF...');
     pdf.save(filename);
 
-    // Update schedule status to "Gerado" (1) if came from schedule page
+    // Update schedule status to "Gerado" (1)
     if (_cronoState.scheduleContext) {
       var sc = _cronoState.scheduleContext;
       if (typeof setReportStatus === 'function') {
         setReportStatus(sc.clientId, sc.type, sc.periodKey, 1);
       }
     }
+    // Also update status bar in content management toolbar
+    // Find client in data and update status
+    if (typeof data !== 'undefined' && data.clients && _cronoState.clientId) {
+      var now = new Date();
+      var weekNum = Math.ceil(now.getDate() / 7);
+      var mKey = now.getFullYear() + '-' + ('0' + (now.getMonth()+1)).slice(-2) + '-S' + weekNum;
+      var cObj = data.clients.find(function(c) {
+        return (typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) : '') === _cronoState.clientId;
+      });
+      if (cObj && typeof setReportStatus === 'function') {
+        setReportStatus(cObj.id, 'sched-weekly', mKey, 1);
+      }
+    }
+    ctUpdateCronoStatusBar();
 
     // Remove overlay
     var ov = document.getElementById('cronoLoadingOverlay');
