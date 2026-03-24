@@ -2487,6 +2487,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -15715,33 +15717,34 @@ async function cronogramaDownload() {
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // Render each page individually, generate PDF page by page
+    // DEFINITIVE: render each page with html2canvas, compose with jsPDF directly
     var W = 960, H = 680;
-    var wrap = function(pg) {
-      return '<div style="width:' + W + 'px;height:' + H + 'px;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a">' + pg + '</div>';
-    };
-    var opts = {
-      margin: 0, filename: filename,
-      image: { type: 'jpeg', quality: 0.92 },
-      html2canvas: { scale: 1, useCORS: true, backgroundColor: '#b5aa9a', width: W, height: H, windowWidth: W },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
+    var pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
 
-    if (dlBtn) dlBtn.innerHTML = '⏳ 1/' + pages.length;
+    for (var i = 0; i < pages.length; i++) {
+      if (dlBtn) dlBtn.innerHTML = '⏳ ' + (i + 1) + '/' + pages.length;
 
-    // Generate first page, then chain addPage+addImage for rest
-    var worker = html2pdf().set(opts).from(wrap(pages[0]), 'string').toPdf();
+      // Create temporary visible container for this page
+      var el = document.createElement('div');
+      el.style.cssText = 'position:fixed;left:0;top:0;width:' + W + 'px;height:' + H + 'px;z-index:99999;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a;';
+      el.innerHTML = pages[i];
+      document.body.appendChild(el);
 
-    for (var i = 1; i < pages.length; i++) {
-      (function(idx) {
-        worker = worker.get('pdf').then(function(pdf) {
-          if (dlBtn) dlBtn.innerHTML = '⏳ ' + (idx+1) + '/' + pages.length;
-          pdf.addPage('a4', 'landscape');
-        }).from(wrap(pages[idx]), 'string').toContainer().toCanvas().toPdf();
-      })(i);
+      await new Promise(function(r) { setTimeout(r, 100); });
+
+      var canvas = await html2canvas(el, {
+        width: W, height: H, scale: 1,
+        useCORS: true, backgroundColor: '#b5aa9a'
+      });
+
+      document.body.removeChild(el);
+
+      var imgData = canvas.toDataURL('image/jpeg', 0.92);
+      if (i > 0) pdf.addPage([297, 210], 'landscape');
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
     }
 
-    await worker.save();
+    pdf.save(filename);
 
     if (modal) { modal.style.display = 'flex'; }
     if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
