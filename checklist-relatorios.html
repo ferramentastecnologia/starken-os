@@ -16087,8 +16087,8 @@ async function cronogramaDownload() {
       if (vidLink) {
         var vidUrl = vidLink.getAttribute('data-video-url');
         if (vidUrl) {
-          var previewUrl = 'https://starken-os.vercel.app/video.html?src=' + encodeURIComponent(vidUrl);
-          pdf.link(15, 30, 130, 170, { url: previewUrl });
+          // Link direto ao vídeo (Chrome faz autoplay com som em URLs de mídia)
+          pdf.link(15, 30, 130, 170, { url: vidUrl });
         }
       }
     }
