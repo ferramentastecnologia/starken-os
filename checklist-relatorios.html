@@ -5550,6 +5550,11 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
         html += '<button class="btn btn-sm" style="background:#eff6ff;color:#1877f2;border:1px solid #bfdbfe;padding:4px 8px" onclick="metaBiOpenFromReport(\'' + metaKey + '\',\'' + (co.key === 'Starken' ? 'starken' : 'alpha') + '\')" title="Ver no BI Campanhas">📊</button>';
       }
 
+      // Cronograma PDF button
+      if (metaKey) {
+        html += '<button class="btn btn-sm" style="background:#8B7355;color:#fff;border:1px solid #7a6349;padding:4px 8px" onclick="event.stopPropagation();cronogramaFromSchedule(\'' + metaKey + '\',\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Gerar Cronograma PDF">📄</button>';
+      }
+
       // Zappfy WhatsApp button
       var _zClientTenant = co.key === 'Starken' ? 'starken' : 'alpha';
       var _zMetaKey = findMetaClientKey(c.name, _zClientTenant);
@@ -15865,7 +15870,55 @@ function cronogramaUpdateButton() {
 }
 
 // Cronograma state
-var _cronoState = { tasks: [], clientName: '', clientLogo: '', tenant: '', clientId: '' };
+var _cronoState = { tasks: [], clientName: '', clientLogo: '', tenant: '', clientId: '', scheduleContext: null };
+
+// Bridge: open cronograma modal from weekly schedule page
+async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
+  if (!clientSlug) { alert('Cliente não encontrado no Meta Config'); return; }
+
+  try {
+    // Fetch tasks for this client
+    var tasksRes = await ctApi('list_tasks', { client_id: clientSlug });
+    var allTasks = tasksRes.data || tasksRes || [];
+    allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
+
+    // Fetch attachments
+    for (var i = 0; i < allTasks.length; i++) {
+      try {
+        var attRes = await ctApi('list_attachments', { task_id: allTasks[i].id });
+        allTasks[i]._attachments = attRes.data || attRes || [];
+      } catch(e) { allTasks[i]._attachments = []; }
+    }
+
+    // Get client info
+    var clientName = '', clientLogo = '', tenant = '';
+    if (typeof _metaClients !== 'undefined' && _metaClients[clientSlug]) {
+      clientName = _metaClients[clientSlug].name || clientSlug;
+      tenant = _metaClients[clientSlug].tenant || '';
+    }
+    if (!clientName) clientName = clientSlug.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    if (typeof _supabase !== 'undefined') {
+      try {
+        var hubData = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientSlug).single();
+        if (hubData.data) {
+          if (hubData.data.logo_url) clientLogo = hubData.data.logo_url;
+          if (hubData.data.client_name) clientName = hubData.data.client_name;
+        }
+      } catch(e) {}
+    }
+
+    // Store state with schedule context for status update after download
+    _cronoState = {
+      tasks: allTasks, clientName: clientName, clientLogo: clientLogo,
+      tenant: tenant, clientId: clientSlug,
+      scheduleContext: { clientId: clientId, type: type, periodKey: periodKey }
+    };
+    cronogramaShowModal();
+  } catch(err) {
+    console.error('Cronograma from schedule error:', err);
+    alert('Erro ao carregar dados: ' + err.message);
+  }
+}
 
 // Main: open modal with task selection
 async function cronogramaGenerate() {
@@ -15906,7 +15959,7 @@ async function cronogramaGenerate() {
       } catch(e) {}
     }
 
-    _cronoState = { tasks: allTasks, clientName: clientName, clientLogo: clientLogo, tenant: tenant, clientId: clientId };
+    _cronoState = { tasks: allTasks, clientName: clientName, clientLogo: clientLogo, tenant: tenant, clientId: clientId, scheduleContext: null };
     cronogramaShowModal();
   } catch(err) {
     console.error('Cronograma error:', err);
@@ -16097,6 +16150,14 @@ async function cronogramaDownload() {
 
     updateLoading(100, 'Salvando PDF...');
     pdf.save(filename);
+
+    // Update schedule status to "Gerado" (1) if came from schedule page
+    if (_cronoState.scheduleContext) {
+      var sc = _cronoState.scheduleContext;
+      if (typeof setReportStatus === 'function') {
+        setReportStatus(sc.clientId, sc.type, sc.periodKey, 1);
+      }
+    }
 
     // Remove overlay
     var ov = document.getElementById('cronoLoadingOverlay');
