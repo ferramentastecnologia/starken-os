@@ -5503,7 +5503,20 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
     }
 
     for (const c of clients) {
-      const report = data.reports.find(r => r.clientId === c.id && r.type === type && r.period === periodKey);
+      var report = data.reports.find(r => r.clientId === c.id && r.type === type && r.period === periodKey);
+      // For sched-weekly, override with cronograma_status from Supabase
+      if (type === 'sched-weekly') {
+        var csData = getCronogramaStatus(c.id, periodKey);
+        if (csData) {
+          if (!report) { report = { clientId: c.id, type: type, period: periodKey }; }
+          report.status = csData.status || 0;
+          report.cronogramaPdfUrl = csData.pdf_url;
+          report.cronogramaPdfName = csData.pdf_name;
+          report.cronogramaGeneratedAt = csData.generated_at;
+          report.sent = csData.sent || false;
+          report.sentDate = csData.sent_date;
+        }
+      }
       const status = report ? report.status : 0;
       const notes = report ? (report.notes || '') : '';
       const sentDate = report && report.sentDate ? new Date(report.sentDate).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -7440,6 +7453,7 @@ renderAll(); // render imediato com dados do localStorage
   if (initSupabase()) {
     setSyncStatus('syncing');
     const cloudData = await loadFromSupabase();
+    loadCronogramaStatus(); // Load cronograma status in parallel (no await needed)
     if (cloudData) {
       // Aplica migrações
       cloudData.clients.forEach(c => {
@@ -7462,9 +7476,6 @@ renderAll(); // render imediato com dados do localStorage
           cloudData.clients[idx].segment = seed.segment;
         }
       }
-      // Merge: preserve local-only reports (sched-weekly) that aren't in Supabase
-      var localOnlyReports = (data.reports || []).filter(function(r) { return r.type === 'sched-weekly'; });
-      cloudData.reports = cloudData.reports.concat(localOnlyReports);
       data = cloudData;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       setSyncStatus('ok');
@@ -16006,6 +16017,29 @@ window.switchTab = (function(orig) {
 // ═══ CRONOGRAMA PDF GENERATOR ═══
 
 // Show/hide cronograma button when client is selected
+// ============ CRONOGRAMA STATUS (Supabase real-time sync) ============
+var _cronogramaStatusCache = {}; // { "clientId_periodKey": { status, pdf_url, pdf_name, generated_at } }
+
+async function loadCronogramaStatus() {
+  if (!_supabase) return;
+  try {
+    var { data: rows, error } = await _supabase.from('cronograma_status').select('*');
+    if (error) { console.warn('cronograma_status load error:', error); return; }
+    _cronogramaStatusCache = {};
+    (rows || []).forEach(function(r) {
+      _cronogramaStatusCache[r.id] = r;
+    });
+    console.log('Cronograma status loaded:', Object.keys(_cronogramaStatusCache).length, 'entries');
+  } catch(e) {
+    console.warn('cronograma_status load error:', e);
+  }
+}
+
+function getCronogramaStatus(clientId, periodKey) {
+  var key = clientId + '_' + periodKey;
+  return _cronogramaStatusCache[key] || null;
+}
+
 function cronogramaUpdateButton() {
   var btn = document.getElementById('ctCronoBtn');
   if (btn) btn.style.display = document.getElementById('ctClientFilter').value ? '' : 'none';
@@ -16419,37 +16453,14 @@ async function cronogramaBuildPdf(opts) {
     // Update schedule status to "Gerado" (1) and save PDF URL
     var _pdfUrlForReport = _cronoState.lastPdfUrl || null;
 
-    // Helper to save PDF URL in report (set URL first, then update status which triggers renderAll)
-    function _savePdfInReport(clientId, type, periodKey) {
-      if (typeof data === 'undefined' || !data.reports) return;
-      // Find or create report entry FIRST
-      var rep = data.reports.find(function(r) { return r.clientId === clientId && r.type === type && r.period === periodKey; });
-      if (!rep) {
-        rep = { id: (typeof gid === 'function' ? gid() : Date.now().toString()), clientId: clientId, type: type, period: periodKey, status: 1, sent: false, sentDate: null, notes: '', createdAt: new Date().toISOString() };
-        data.reports.push(rep);
-      }
-      // Set PDF URL BEFORE calling setReportStatus (which triggers renderAll)
-      if (_pdfUrlForReport) {
-        rep.cronogramaPdfUrl = _pdfUrlForReport;
-        rep.cronogramaPdfName = filename;
-        rep.cronogramaGeneratedAt = new Date().toISOString();
-      }
-      rep.status = 1;
-      saveData(data);
-      if (typeof renderAll === 'function') renderAll();
-    }
-
-    console.log('PDF save context:', { scheduleContext: _cronoState.scheduleContext, clientId: _cronoState.clientId, pdfUrl: _pdfUrlForReport });
-
-    // Save from schedule context (cronograma semanal screen)
+    // Save to cronograma_status table in Supabase (syncs across all PCs)
+    var _csClientId = _cronoState.clientId;
+    var _csPeriodKey = '';
     if (_cronoState.scheduleContext) {
-      var sc = _cronoState.scheduleContext;
-      console.log('Saving PDF to schedule report:', sc);
-      _savePdfInReport(sc.clientId, sc.type, sc.periodKey);
-    }
-    // Also save from content management context (when opened from client area, not schedule)
-    if (!_cronoState.scheduleContext && typeof data !== 'undefined' && data.clients && _cronoState.clientId) {
-      // Build periodKey same way as renderSchedWeekly: monthKey + '-S' + weekNum
+      _csClientId = _cronoState.scheduleContext.clientId;
+      _csPeriodKey = _cronoState.scheduleContext.periodKey;
+    } else {
+      // Build periodKey from current week
       var now = new Date();
       var mKey2 = now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2);
       var weeks2 = getMonthWeeks(now.getFullYear(), now.getMonth());
@@ -16459,21 +16470,40 @@ async function cronogramaBuildPdf(opts) {
         if (todayISO2 >= weeks2[wi2].sendDateISO) { wk2 = weeks2[wi2]; break; }
       }
       if (!wk2 && weeks2.length) wk2 = weeks2[0];
-      var periodKey2 = mKey2 + '-S' + (wk2 ? wk2.week : 1);
+      _csPeriodKey = mKey2 + '-S' + (wk2 ? wk2.week : 1);
+    }
 
-      // Find client in data.clients by matching meta key
-      var cObj = data.clients.find(function(c) {
-        var mk = typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) || findMetaClientKey(c.name) : '';
-        return mk === _cronoState.clientId;
-      });
-      console.log('Content context: periodKey=' + periodKey2 + ', cObj=', cObj, 'clientId=', _cronoState.clientId);
-      if (cObj) {
-        _savePdfInReport(cObj.id, 'sched-weekly', periodKey2);
+    console.log('Saving cronograma_status:', { clientId: _csClientId, periodKey: _csPeriodKey, pdfUrl: _pdfUrlForReport });
+
+    if (_supabase && _csClientId && _csPeriodKey) {
+      try {
+        var csId = _csClientId + '_' + _csPeriodKey;
+        var { error: csErr } = await _supabase.from('cronograma_status').upsert({
+          id: csId,
+          client_id: _csClientId,
+          period_key: _csPeriodKey,
+          status: 1,
+          pdf_url: _pdfUrlForReport || null,
+          pdf_name: filename,
+          generated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'id' });
+        if (csErr) console.warn('cronograma_status upsert error:', csErr);
+        else {
+          console.log('cronograma_status saved OK');
+          // Update local cache immediately
+          _cronogramaStatusCache[csId] = {
+            id: csId, client_id: _csClientId, period_key: _csPeriodKey,
+            status: 1, pdf_url: _pdfUrlForReport, pdf_name: filename,
+            generated_at: new Date().toISOString()
+          };
+        }
+      } catch(csE) {
+        console.warn('cronograma_status save error:', csE);
       }
     }
+
     ctUpdateCronoStatusBar();
-    // Persist to localStorage + Supabase
-    if (typeof saveData === 'function' && typeof data !== 'undefined') saveData(data);
     // Re-render schedule list to show PDF button
     if (typeof renderSchedWeekly === 'function') renderSchedWeekly();
 
