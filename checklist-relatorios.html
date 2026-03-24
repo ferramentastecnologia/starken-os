@@ -16407,8 +16407,8 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
         + '<div style="font-size:15px;font-weight:700;color:#fff;font-family:Georgia,serif">▶ Clique para assistir o vídeo</div></div>';
     } else if (img) {
       if (postType === 'carrossel' && allImages.length > 1) {
-        p += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:100%">';
-        for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) p += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:180px;object-fit:cover;border-radius:8px" crossorigin="anonymous">';
+        p += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;width:100%">';
+        for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) p += '<img src="' + allImages[ci].file_url + '" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:6px" crossorigin="anonymous">';
         p += '</div>';
       } else if (postType === 'reels') {
         p += '<div style="width:220px;height:400px;background:#000;border-radius:24px;padding:5px;box-shadow:0 8px 20px rgba(0,0,0,0.2);overflow:hidden"><img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:20px" crossorigin="anonymous"></div>';
@@ -16428,7 +16428,7 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
       p += '<div style="width:320px;height:320px;background:rgba(255,255,255,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.3)"><div style="text-align:center;color:rgba(255,255,255,0.5);font-size:13px">Criativo pendente</div></div>';
     }
     p += '</div>';
-    p += '<div style="flex:1;overflow:hidden;padding-top:8px">';
+    p += '<div style="flex:1;overflow:hidden;display:flex;flex-direction:column;justify-content:center">';
     p += '<div style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.7);font-style:italic;margin-bottom:14px;font-family:Georgia,serif">Legenda:</div>';
     var copy = task.copy_text || task.description || task.briefing || '';
     if (copy) {
