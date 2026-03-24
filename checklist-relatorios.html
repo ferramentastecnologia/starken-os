@@ -7462,6 +7462,9 @@ renderAll(); // render imediato com dados do localStorage
           cloudData.clients[idx].segment = seed.segment;
         }
       }
+      // Merge: preserve local-only reports (sched-weekly) that aren't in Supabase
+      var localOnlyReports = (data.reports || []).filter(function(r) { return r.type === 'sched-weekly'; });
+      cloudData.reports = cloudData.reports.concat(localOnlyReports);
       data = cloudData;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       setSyncStatus('ok');
