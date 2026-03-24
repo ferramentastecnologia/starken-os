@@ -15720,9 +15720,7 @@ async function cronogramaDownload() {
     // A4 landscape at 96dpi: 297mm wide. html2canvas renders at width=1123px
     // Each page div is 794px tall = exactly 210mm
     // pagebreak 'after' on .crono-page-break ensures 1 div = 1 PDF page
-    var fullHtml = '<div style="width:1123px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">'
-      + '<style>.crono-page-break{page-break-after:always;break-after:page;height:0;display:block;}</style>'
-      + html + '</div>';
+    var fullHtml = '<div style="width:1123px;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;margin:0;padding:0">' + html + '</div>';
 
     await html2pdf().set({
       margin: [0, 0, 0, 0],
@@ -15730,7 +15728,7 @@ async function cronogramaDownload() {
       image: { type: 'jpeg', quality: 0.92 },
       html2canvas: { scale: 1, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a', width: 1123, windowWidth: 1123 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      pagebreak: { mode: ['css'], after: '.crono-page-break' }
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.crono-page-break' }
     }).from(fullHtml, 'string').save();
 
     if (modal) { modal.style.display = 'flex'; }
@@ -15773,13 +15771,14 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
   var tenantLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
   var tenantColor = tenant === 'alpha' ? '#10b981' : '#3b82f6';
   var bgColor = '#b5aa9a';
-  // html2pdf scale=1: A4 landscape = 297x210mm at 96dpi = 1123x794px
-  // Each page div must be exactly 1123x794 so it fills 1 PDF page with scale=1
-  var pageBase = 'width:1123px;height:794px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
+  // html2pdf uses 96dpi internally. A4 landscape = 297x210mm
+  // At 96dpi with width=1123: page height = 210/297 * 1123 = 794px
+  // But html2pdf adds some internal padding, so use slightly less height
+  var pageBase = 'width:1123px;max-height:790px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';padding:40px;';
   var pages = [];
 
   // PAGE 1: COVER
-  var p1 = '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;padding:80px;">';
+  var p1 = '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
   p1 += '<div style="position:absolute;top:20px;right:20px;background:' + tenantColor + ';color:#fff;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">' + tenantLabel + '</div>';
   p1 += '<div style="flex:1;text-align:left"><div style="font-size:48px;font-weight:300;color:rgba(255,255,255,0.8);line-height:1.2;font-family:Georgia,serif;">Aprovação de</div>';
   p1 += '<div style="font-size:56px;font-weight:700;color:#fff;line-height:1.2;font-family:Georgia,serif;">conteúdos</div></div>';
@@ -15813,7 +15812,7 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
     }
     if (!img && allImages.length > 0) img = allImages[0];
 
-    var p = '<div style="' + pageBase + 'padding:0;">';
+    var p = '<div style="' + pageBase + 'padding:0 !important;">';
     p += '<div style="background:rgba(0,0,0,0.25);padding:16px 40px;border-bottom:3px solid rgba(255,255,255,0.2)">';
     p += '<span style="font-size:16px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
     if (dateLabel) p += '<span style="font-size:16px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
@@ -15858,10 +15857,14 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
 // Joins pages into single HTML with page breaks (for PDF generation)
 function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   var pages = cronogramaBuildPages(clientName, clientLogo, tenant, tasks);
-  return '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:#b5aa9a;">'
-    + '<style>.crono-page-break{page-break-after:always;break-after:page;height:0;display:block;clear:both;}</style>'
-    + pages.join('<div class="crono-page-break"></div>')
-    + '</div>';
+  // First page has no break before it; subsequent pages get a break-before class
+  var result = '<style>.crono-page-break{page-break-before:always;break-before:page;}</style>';
+  result += pages[0];
+  for (var i = 1; i < pages.length; i++) {
+    // Add the break class to the page div itself by wrapping
+    result += '<div class="crono-page-break">' + pages[i] + '</div>';
+  }
+  return result;
 }
 
 
