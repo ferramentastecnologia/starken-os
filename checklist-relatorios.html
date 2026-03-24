@@ -15715,39 +15715,33 @@ async function cronogramaDownload() {
     var weekLabel = cronogramaGetWeekLabel(tasks);
     var filename = 'CRONOGRAMA_' + s.clientName.toUpperCase().replace(/\s+/g, '_') + '_' + weekLabel + '.pdf';
 
-    // APPROACH: render each page as standalone HTML, capture with html2canvas, build PDF
+    // APPROACH: render each page individually, generate PDF page by page using html2pdf chain
     var W = 1123, H = 790;
-    var container = document.createElement('div');
-    container.style.cssText = 'position:fixed;left:0;top:0;width:' + W + 'px;z-index:99999;background:#b5aa9a;';
-    document.body.appendChild(container);
-
-    // Capture each page as canvas image
-    var canvases = [];
-    for (var i = 0; i < pages.length; i++) {
-      if (dlBtn) dlBtn.innerHTML = '⏳ ' + (i+1) + '/' + pages.length;
-      container.innerHTML = '<div style="width:' + W + 'px;height:' + H + 'px;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a">' + pages[i] + '</div>';
-      await new Promise(function(r) { setTimeout(r, 150); });
-      var canvas = await html2canvas(container.firstElementChild, { scale: 1, useCORS: true, backgroundColor: '#b5aa9a', width: W, height: H });
-      canvases.push(canvas);
-    }
-    document.body.removeChild(container);
-
-    // Build PDF: use html2pdf for first page to get jsPDF instance, then add rest
-    var firstImg = '<img src="' + canvases[0].toDataURL('image/jpeg', 0.92) + '" style="width:297mm;height:210mm;display:block">';
-    var worker = html2pdf().set({
+    var wrap = function(pg) {
+      return '<div style="width:' + W + 'px;height:' + H + 'px;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a">' + pg + '</div>';
+    };
+    var opts = {
       margin: 0, filename: filename,
       image: { type: 'jpeg', quality: 0.92 },
+      html2canvas: { scale: 1, useCORS: true, backgroundColor: '#b5aa9a', width: W, height: H, windowWidth: W },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    });
+    };
 
-    // Generate first page
-    await worker.from(firstImg, 'string').toPdf().get('pdf').then(function(pdf) {
-      // Add remaining pages
-      for (var p = 1; p < canvases.length; p++) {
-        pdf.addPage('a4', 'landscape');
-        pdf.addImage(canvases[p].toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 297, 210);
-      }
-    }).save();
+    if (dlBtn) dlBtn.innerHTML = '⏳ 1/' + pages.length;
+
+    // Generate first page, then chain addPage+addImage for rest
+    var worker = html2pdf().set(opts).from(wrap(pages[0]), 'string').toPdf();
+
+    for (var i = 1; i < pages.length; i++) {
+      (function(idx) {
+        worker = worker.get('pdf').then(function(pdf) {
+          if (dlBtn) dlBtn.innerHTML = '⏳ ' + (idx+1) + '/' + pages.length;
+          pdf.addPage('a4', 'landscape');
+        }).from(wrap(pages[idx]), 'string').toContainer().toCanvas().toPdf();
+      })(i);
+    }
+
+    await worker.save();
 
     if (modal) { modal.style.display = 'flex'; }
     if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
