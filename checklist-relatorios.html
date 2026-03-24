@@ -15633,7 +15633,7 @@ function cronogramaShowModal() {
       + '</label>';
   });
 
-  modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:1100px;max-width:96vw;max-height:96vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25)">'
+  modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:1100px;max-width:96vw;height:94vh;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25)">'
     // Header
     + '<div style="background:linear-gradient(135deg,#8B7355,#a89070);padding:20px 24px;color:#fff">'
     + '<div style="display:flex;justify-content:space-between;align-items:center">'
@@ -15658,7 +15658,7 @@ function cronogramaShowModal() {
     + '<div style="overflow-y:auto;flex:1;max-height:50vh">' + taskRows + '</div>'
 
     // Preview area
-    + '<div id="cronoPreviewArea" style="display:none;padding:16px;border-top:1px solid var(--border,#e5e7eb);max-height:50vh;overflow-y:auto;background:var(--bg-secondary,#f8fafc)"></div>'
+    + '<div id="cronoPreviewArea" style="display:none;padding:16px;border-top:1px solid var(--border,#e5e7eb);flex:1;overflow-y:auto;background:var(--bg-secondary,#f8fafc)"></div>'
 
     // Actions
     + '<div style="padding:16px 20px;border-top:1px solid var(--border,#e5e7eb);display:flex;gap:10px">'
@@ -15685,13 +15685,12 @@ function cronogramaPreview() {
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
 
   var pages = cronogramaBuildPages(_cronoState.clientName, _cronoState.clientLogo, _cronoState.tenant, tasks);
-  console.log('CRONO PREVIEW: pages array length =', pages.length, 'page lengths:', pages.map(function(p){return p.length}));
   var area = document.getElementById('cronoPreviewArea');
   area.style.display = 'block';
   var total = pages.length;
 
   var cards = '';
-  var scale = 0.25;
+  var scale = 0.35;
   var cardW = Math.round(1100 * scale);
   var cardH = Math.round(750 * scale);
 
