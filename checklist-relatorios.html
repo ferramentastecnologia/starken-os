@@ -12529,18 +12529,18 @@ async function ctHandleFileUpload(files, category) {
         updateProgress(20, 'Enviando ' + sizeMB + ' MB...');
 
         if (_supabase && _supabase.storage) {
-          // Use Supabase JS SDK
-          var upRes = await _supabase.storage.from('media-uploads').upload(storagePath, file, {
+          // Use Supabase JS SDK with client-hub-materials bucket (has public RLS)
+          var upRes = await _supabase.storage.from('client-hub-materials').upload(storagePath, file, {
             contentType: file.type || 'application/octet-stream',
             upsert: true
           });
           if (upRes.error) throw new Error(upRes.error.message);
-          var urlRes = _supabase.storage.from('media-uploads').getPublicUrl(storagePath);
+          var urlRes = _supabase.storage.from('client-hub-materials').getPublicUrl(storagePath);
           publicUrl = urlRes.data.publicUrl;
           updateProgress(100, '✅ Upload concluído!');
         } else {
           // Fallback: direct REST with XMLHttpRequest for progress
-          var uploadUrl = SUPABASE_URL + '/storage/v1/object/media-uploads/' + storagePath;
+          var uploadUrl = SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + storagePath;
           await new Promise(function(resolve, reject) {
             var xhr = new XMLHttpRequest();
             xhr.open('POST', uploadUrl, true);
@@ -12556,7 +12556,7 @@ async function ctHandleFileUpload(files, category) {
             };
             xhr.onload = function() {
               if (xhr.status >= 200 && xhr.status < 300) {
-                publicUrl = SUPABASE_URL + '/storage/v1/object/public/media-uploads/' + storagePath;
+                publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + storagePath;
                 updateProgress(100, '✅ Upload concluído!');
                 resolve();
               } else { reject(new Error('Upload falhou: HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,100))); }
