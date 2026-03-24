@@ -1303,7 +1303,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-attachment-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px; }
 .ct-attachment-card { border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;cursor:pointer;transition:box-shadow 0.2s; }
 .ct-attachment-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-.ct-attachment-card img { width:100%;height:90px;object-fit:cover; }
+.ct-attachment-card img { width:100%;aspect-ratio:1;object-fit:cover; }
 .ct-attachment-card .ct-att-name { padding:4px 8px;font-size:0.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg-secondary); }
 .ct-attachment-card .ct-att-category { position:absolute;top:4px;left:4px;padding:2px 6px;border-radius:4px;font-size:0.6rem;font-weight:700;background:rgba(0,0,0,0.7);color:#fff; }
 
@@ -12398,13 +12398,18 @@ function ctRenderModalAttachments(attachments) {
   if (creatives.length === 0) {
     creativesEl.innerHTML = '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Designer ainda não enviou o criativo</div>';
   } else {
-    // Render with order numbers and drag handles for carousel reordering
+    // Detect format for aspect ratio
+    var format = (ctModalTask && ctModalTask.publish_config && ctModalTask.publish_config.content_type) || 'feed';
+    var ratio = format === 'reels' || format === 'story' ? '9/16' : format === 'carrossel' ? '4/5' : '1/1';
+
     creativesEl.innerHTML = creatives.map(function(a, idx) {
       var card = ctBuildAttCard(a, (idx + 1) + '°', '#10b981');
-      // Wrap with drag attributes
       return card.replace(
         'class="ct-attachment-card"',
         'class="ct-attachment-card" draggable="true" data-att-id="' + a.id + '" data-att-idx="' + idx + '" ondragstart="ctAttDragStart(event)" ondragover="ctAttDragOver(event)" ondrop="ctAttDrop(event)" ondragend="ctAttDragEnd(event)" style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);cursor:grab;transition:transform 0.15s,opacity 0.15s"'
+      ).replace(
+        'aspect-ratio:1;object-fit:cover',
+        'aspect-ratio:' + ratio + ';object-fit:cover'
       );
     }).join('');
     // Store current creative order
@@ -12461,11 +12466,16 @@ function ctAttDrop(e) {
   window._ctCreativeAtts = reordered;
 
   var creativesEl = document.getElementById('ctModalCreatives');
+  var format = (ctModalTask && ctModalTask.publish_config && ctModalTask.publish_config.content_type) || 'feed';
+  var ratio = format === 'reels' || format === 'story' ? '9/16' : format === 'carrossel' ? '4/5' : '1/1';
   creativesEl.innerHTML = reordered.map(function(a, idx) {
     var card = ctBuildAttCard(a, (idx + 1) + '°', '#10b981');
     return card.replace(
       'class="ct-attachment-card"',
       'class="ct-attachment-card" draggable="true" data-att-id="' + a.id + '" data-att-idx="' + idx + '" ondragstart="ctAttDragStart(event)" ondragover="ctAttDragOver(event)" ondrop="ctAttDrop(event)" ondragend="ctAttDragEnd(event)" style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);cursor:grab;transition:transform 0.15s,opacity 0.15s"'
+    ).replace(
+      'aspect-ratio:1;object-fit:cover',
+      'aspect-ratio:' + ratio + ';object-fit:cover'
     );
   }).join('');
 
