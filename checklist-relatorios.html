@@ -13995,16 +13995,28 @@ function hubUpdateLogoPreview() {
 }
 
 // -- Logo download --
-function hubDownloadLogo() {
+async function hubDownloadLogo() {
   var url = document.getElementById('chLogoUrl').value.trim();
   if (!url) return;
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = 'logo_' + (_hubCurrentSlug || 'cliente') + '.' + (url.split('.').pop().split('?')[0] || 'png');
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  var btn = document.getElementById('chLogoDownloadBtn');
+  if (btn) { btn.textContent = '⏳...'; btn.disabled = true; }
+  try {
+    var res = await fetch(url);
+    var blob = await res.blob();
+    var ext = url.split('.').pop().split('?')[0] || 'png';
+    var blobUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = 'logo_' + (_hubCurrentSlug || 'cliente') + '.' + ext;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+  } catch(e) {
+    console.error('Logo download error:', e);
+    window.open(url, '_blank');
+  }
+  if (btn) { btn.textContent = '⬇ Baixar'; btn.disabled = false; }
 }
 
 // -- Logo file upload --
