@@ -5633,11 +5633,11 @@ function renderSchedWeekly() {
     var todayStr = today.getFullYear() + '-' + ('0' + (today.getMonth()+1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
     // Find the week where today falls within the period
     var autoWeek = weeks.find(function(w) {
-      return todayStr >= w.periodStart && todayStr <= w.periodEnd;
+      return todayStr >= w.periodStartISO && todayStr <= w.periodEndISO;
     });
     // Fallback: find closest week by send date
     if (!autoWeek) {
-      autoWeek = weeks.find(function(w) { return todayStr <= w.send; }) || weeks[weeks.length - 1];
+      autoWeek = weeks.find(function(w) { return todayStr <= w.sendDateISO; }) || weeks[weeks.length - 1];
     }
     currentVal = autoWeek ? autoWeek.week : 1;
   }
