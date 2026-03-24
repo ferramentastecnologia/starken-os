@@ -12507,7 +12507,7 @@ function ctUploadAttachment(category) {
 async function ctDeleteAttachment(attachmentId) {
   if (!ctModalTask || !attachmentId) return;
   if (!confirm('Remover este arquivo?')) return;
-  await ctApi('delete_attachment', { id: attachmentId });
+  await ctApi('delete_attachment', { id: attachmentId, user: ctGetUser() });
   // Reload attachments
   const attData = await ctApi('list_attachments', { task_id: ctModalTask.id });
   ctRenderModalAttachments(Array.isArray(attData) ? attData : (attData.attachments || []));
