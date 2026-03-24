@@ -16440,21 +16440,36 @@ async function cronogramaBuildPdf(opts) {
       if (typeof renderAll === 'function') renderAll();
     }
 
+    console.log('PDF save context:', { scheduleContext: _cronoState.scheduleContext, clientId: _cronoState.clientId, pdfUrl: _pdfUrlForReport });
+
     // Save from schedule context (cronograma semanal screen)
     if (_cronoState.scheduleContext) {
       var sc = _cronoState.scheduleContext;
+      console.log('Saving PDF to schedule report:', sc);
       _savePdfInReport(sc.clientId, sc.type, sc.periodKey);
     }
-    // Also save from content management context
-    if (typeof data !== 'undefined' && data.clients && _cronoState.clientId) {
+    // Also save from content management context (when opened from client area, not schedule)
+    if (!_cronoState.scheduleContext && typeof data !== 'undefined' && data.clients && _cronoState.clientId) {
+      // Build periodKey same way as renderSchedWeekly: monthKey + '-S' + weekNum
       var now = new Date();
-      var weekNum = Math.ceil(now.getDate() / 7);
-      var mKey = now.getFullYear() + '-' + ('0' + (now.getMonth()+1)).slice(-2) + '-S' + weekNum;
+      var mKey2 = now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2);
+      var weeks2 = getMonthWeeks(now.getFullYear(), now.getMonth());
+      var todayISO2 = now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2) + '-' + ('0'+now.getDate()).slice(-2);
+      var wk2 = null;
+      for (var wi2 = weeks2.length - 1; wi2 >= 0; wi2--) {
+        if (todayISO2 >= weeks2[wi2].sendDateISO) { wk2 = weeks2[wi2]; break; }
+      }
+      if (!wk2 && weeks2.length) wk2 = weeks2[0];
+      var periodKey2 = mKey2 + '-S' + (wk2 ? wk2.week : 1);
+
+      // Find client in data.clients by matching meta key
       var cObj = data.clients.find(function(c) {
-        return (typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) : '') === _cronoState.clientId;
+        var mk = typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) || findMetaClientKey(c.name) : '';
+        return mk === _cronoState.clientId;
       });
+      console.log('Content context: periodKey=' + periodKey2 + ', cObj=', cObj, 'clientId=', _cronoState.clientId);
       if (cObj) {
-        _savePdfInReport(cObj.id, 'sched-weekly', mKey);
+        _savePdfInReport(cObj.id, 'sched-weekly', periodKey2);
       }
     }
     ctUpdateCronoStatusBar();
