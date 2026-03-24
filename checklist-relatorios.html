@@ -16419,18 +16419,30 @@ async function cronogramaBuildPdf(opts) {
 
     // Update schedule status to "Gerado" (1) and save PDF URL
     var _pdfUrlForReport = _cronoState.lastPdfUrl || null;
+
+    // Helper to save PDF URL in report
+    function _savePdfInReport(clientId, type, periodKey) {
+      if (!_pdfUrlForReport || typeof data === 'undefined' || !data.reports) return;
+      if (typeof setReportStatus === 'function') {
+        setReportStatus(clientId, type, periodKey, 1);
+      }
+      // Find or create report entry
+      var rep = data.reports.find(function(r) { return r.clientId === clientId && r.type === type && r.period === periodKey; });
+      if (!rep) {
+        rep = { clientId: clientId, type: type, period: periodKey, status: 1 };
+        data.reports.push(rep);
+      }
+      rep.cronogramaPdfUrl = _pdfUrlForReport;
+      rep.cronogramaPdfName = filename;
+      rep.cronogramaGeneratedAt = new Date().toISOString();
+    }
+
+    // Save from schedule context (cronograma semanal screen)
     if (_cronoState.scheduleContext) {
       var sc = _cronoState.scheduleContext;
-      if (typeof setReportStatus === 'function') {
-        setReportStatus(sc.clientId, sc.type, sc.periodKey, 1);
-      }
-      // Save PDF URL in report data
-      if (_pdfUrlForReport && typeof data !== 'undefined' && data.reports) {
-        var rep = data.reports.find(function(r) { return r.clientId === sc.clientId && r.type === sc.type && r.period === sc.periodKey; });
-        if (rep) { rep.cronogramaPdfUrl = _pdfUrlForReport; rep.cronogramaPdfName = filename; rep.cronogramaGeneratedAt = new Date().toISOString(); }
-      }
+      _savePdfInReport(sc.clientId, sc.type, sc.periodKey);
     }
-    // Also update status bar in content management toolbar
+    // Also save from content management context
     if (typeof data !== 'undefined' && data.clients && _cronoState.clientId) {
       var now = new Date();
       var weekNum = Math.ceil(now.getDate() / 7);
@@ -16438,16 +16450,13 @@ async function cronogramaBuildPdf(opts) {
       var cObj = data.clients.find(function(c) {
         return (typeof findMetaClientKey === 'function' ? findMetaClientKey(c.id) : '') === _cronoState.clientId;
       });
-      if (cObj && typeof setReportStatus === 'function') {
-        setReportStatus(cObj.id, 'sched-weekly', mKey, 1);
-        // Save PDF URL in report
-        if (_pdfUrlForReport) {
-          var rep2 = data.reports.find(function(r) { return r.clientId === cObj.id && r.type === 'sched-weekly' && r.period === mKey; });
-          if (rep2) { rep2.cronogramaPdfUrl = _pdfUrlForReport; rep2.cronogramaPdfName = filename; }
-        }
+      if (cObj) {
+        _savePdfInReport(cObj.id, 'sched-weekly', mKey);
       }
     }
     ctUpdateCronoStatusBar();
+    // Re-render schedule list to show PDF button
+    if (typeof renderSchedWeekly === 'function') renderSchedWeekly();
 
     // Remove overlay
     var ov = document.getElementById('cronoLoadingOverlay');
