@@ -16420,21 +16420,24 @@ async function cronogramaBuildPdf(opts) {
     // Update schedule status to "Gerado" (1) and save PDF URL
     var _pdfUrlForReport = _cronoState.lastPdfUrl || null;
 
-    // Helper to save PDF URL in report
+    // Helper to save PDF URL in report (set URL first, then update status which triggers renderAll)
     function _savePdfInReport(clientId, type, periodKey) {
-      if (!_pdfUrlForReport || typeof data === 'undefined' || !data.reports) return;
-      if (typeof setReportStatus === 'function') {
-        setReportStatus(clientId, type, periodKey, 1);
-      }
-      // Find or create report entry
+      if (typeof data === 'undefined' || !data.reports) return;
+      // Find or create report entry FIRST
       var rep = data.reports.find(function(r) { return r.clientId === clientId && r.type === type && r.period === periodKey; });
       if (!rep) {
-        rep = { clientId: clientId, type: type, period: periodKey, status: 1 };
+        rep = { id: (typeof gid === 'function' ? gid() : Date.now().toString()), clientId: clientId, type: type, period: periodKey, status: 1, sent: false, sentDate: null, notes: '', createdAt: new Date().toISOString() };
         data.reports.push(rep);
       }
-      rep.cronogramaPdfUrl = _pdfUrlForReport;
-      rep.cronogramaPdfName = filename;
-      rep.cronogramaGeneratedAt = new Date().toISOString();
+      // Set PDF URL BEFORE calling setReportStatus (which triggers renderAll)
+      if (_pdfUrlForReport) {
+        rep.cronogramaPdfUrl = _pdfUrlForReport;
+        rep.cronogramaPdfName = filename;
+        rep.cronogramaGeneratedAt = new Date().toISOString();
+      }
+      rep.status = 1;
+      saveData(data);
+      if (typeof renderAll === 'function') renderAll();
     }
 
     // Save from schedule context (cronograma semanal screen)
@@ -16455,6 +16458,8 @@ async function cronogramaBuildPdf(opts) {
       }
     }
     ctUpdateCronoStatusBar();
+    // Persist to localStorage + Supabase
+    if (typeof saveData === 'function' && typeof data !== 'undefined') saveData(data);
     // Re-render schedule list to show PDF button
     if (typeof renderSchedWeekly === 'function') renderSchedWeekly();
 
