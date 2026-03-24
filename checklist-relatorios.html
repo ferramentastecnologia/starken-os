@@ -5506,7 +5506,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       var report = data.reports.find(r => r.clientId === c.id && r.type === type && r.period === periodKey);
       // For sched-weekly, override with cronograma_status from Supabase
       if (type === 'sched-weekly') {
-        var csData = getCronogramaStatus(c.id, periodKey);
+        var csData = (typeof getCronogramaStatus === 'function') ? getCronogramaStatus(c.id, periodKey) : null;
         if (csData) {
           if (!report) { report = { clientId: c.id, type: type, period: periodKey }; }
           report.status = csData.status || 0;
@@ -16164,7 +16164,7 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
       tenant = _metaClients[clientSlug].tenant || '';
     }
     if (!clientName) clientName = clientSlug.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-    if (typeof _supabase !== 'undefined') {
+    if (_supabase) {
       try {
         var hubRes = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientSlug);
         var hubRow = hubRes.data && hubRes.data.length > 0 ? hubRes.data[0] : null;
@@ -16217,7 +16217,7 @@ async function cronogramaGenerate() {
       tenant = _metaClients[clientId].tenant || '';
     }
     if (!clientName) clientName = clientId.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-    if (typeof _supabase !== 'undefined') {
+    if (_supabase) {
       try {
         var hubRes2 = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientId);
         var hubRow2 = hubRes2.data && hubRes2.data.length > 0 ? hubRes2.data[0] : null;
