@@ -16492,11 +16492,35 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
     }
     if (!img && allImages.length > 0) img = allImages[0];
 
+    var isStory = postType === 'story';
+
     var p = '<div style="' + pageBase + '">';
     p += '<div style="background:rgba(0,0,0,0.25);padding:14px 36px;border-bottom:2px solid rgba(255,255,255,0.2)">';
     p += '<span style="font-size:15px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
     if (dateLabel) p += '<span style="font-size:15px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
     p += '</div>';
+
+    if (isStory) {
+      // STORY: centered phone mockup, no copy text
+      p += '<div style="display:flex;align-items:center;justify-content:center;height:600px;overflow:hidden;flex-direction:column;gap:12px">';
+      if (img) {
+        p += '<div style="width:260px;height:460px;background:#000;border-radius:28px;padding:5px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden">';
+        p += '<img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:24px" crossorigin="anonymous">';
+        p += '</div>';
+      } else if (vid) {
+        p += '<div style="width:260px;height:460px;background:#000;border-radius:28px;padding:5px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden;position:relative">';
+        p += '<div style="width:100%;height:100%;border-radius:24px;background:linear-gradient(135deg,#1a1a2e,#2d1b4e);display:flex;align-items:center;justify-content:center">';
+        p += '<div style="width:56px;height:56px;background:rgba(255,255,255,0.95);border-radius:50%;display:flex;align-items:center;justify-content:center"><div style="width:0;height:0;border-left:20px solid #1a1a2e;border-top:12px solid transparent;border-bottom:12px solid transparent;margin-left:4px"></div></div>';
+        p += '</div></div>';
+        p += '<div style="padding:8px 20px;background:rgba(255,255,255,0.18);border-radius:10px;text-align:center" data-video-url="' + vid.file_url + '"><div style="font-size:14px;font-weight:700;color:#fff">▶ Clique para assistir</div></div>';
+      } else {
+        p += '<div style="width:260px;height:460px;background:rgba(255,255,255,0.1);border-radius:28px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.25)"><div style="color:rgba(255,255,255,0.4);font-size:13px;text-align:center">📱<br>Story pendente</div></div>';
+      }
+      p += '</div></div>';
+      pages.push(p);
+      return; // Skip the rest (no copy section for stories)
+    }
+
     p += '<div style="display:flex;padding:20px 36px;gap:30px;height:600px;overflow:hidden">';
     p += '<div style="flex:0 0 380px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px">';
 
