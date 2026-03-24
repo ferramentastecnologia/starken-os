@@ -15733,13 +15733,13 @@ async function cronogramaDownload() {
       await new Promise(function(r) { setTimeout(r, 100); });
 
       var canvas = await html2canvas(el, {
-        width: W, height: H, scale: 1,
+        width: W, height: H, scale: 2,
         useCORS: true, backgroundColor: '#b5aa9a'
       });
 
       document.body.removeChild(el);
 
-      var imgData = canvas.toDataURL('image/jpeg', 0.92);
+      var imgData = canvas.toDataURL('image/jpeg', 0.98);
       if (i > 0) pdf.addPage([297, 210], 'landscape');
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
     }
