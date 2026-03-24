@@ -12319,6 +12319,43 @@ async function ctChangeModalStatus(newStatus) {
 }
 
 // ─── MODAL RENDERERS ───
+function ctIsVideo(att) {
+  if (att.file_type && att.file_type.startsWith('video/')) return true;
+  var ext = (att.file_name || '').split('.').pop().toLowerCase();
+  return ['mp4','mov','avi','webm','mkv','m4v'].includes(ext);
+}
+
+function ctBuildAttCard(a, badge, badgeColor) {
+  var isVid = ctIsVideo(a);
+  var delBtn = '<button onclick="event.stopPropagation();ctDeleteAttachment(\'' + a.id + '\')" style="position:absolute;top:4px;right:4px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:0.72rem;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Remover">✕</button>';
+
+  var preview = '';
+  if (isVid) {
+    // Video: dark background with play icon
+    preview = '<div style="width:100%;height:100px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;position:relative">'
+      + '<div style="width:44px;height:44px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,0.3)">'
+      + '<div style="width:0;height:0;border-left:16px solid #1a1a2e;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:3px"></div>'
+      + '</div>'
+      + '<div style="position:absolute;bottom:4px;right:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.6rem;padding:1px 6px;border-radius:3px">🎬 Vídeo</div>'
+      + '</div>';
+  } else {
+    // Image thumbnail
+    preview = '<img src="' + a.file_url + '" style="width:100%;height:100px;object-fit:cover" onerror="this.outerHTML=\'<div style=padding:30px;text-align:center;color:var(--text-secondary);font-size:0.75rem>📄 Arquivo</div>\'">';
+  }
+
+  var sizeTxt = a.file_size ? (a.file_size > 1048576 ? (a.file_size/1048576).toFixed(1) + ' MB' : Math.round(a.file_size/1024) + ' KB') : '';
+
+  return '<div class="ct-attachment-card" style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border)">'
+    + delBtn
+    + '<div onclick="ctOpenLightbox(\'' + a.file_url + '\',' + isVid + ')">'
+    + '<span class="ct-att-category" style="background:' + badgeColor + '">' + badge + '</span>'
+    + preview
+    + '<div style="padding:6px 8px;background:var(--bg-secondary)">'
+    + '<div style="font-size:0.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">' + a.file_name + '</div>'
+    + (sizeTxt ? '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:1px">' + sizeTxt + '</div>' : '')
+    + '</div></div></div>';
+}
+
 function ctRenderModalAttachments(attachments) {
   const refs = attachments.filter(a => a.category === 'reference');
   const creatives = attachments.filter(a => a.category === 'creative' || a.category === 'final');
@@ -12327,10 +12364,10 @@ function ctRenderModalAttachments(attachments) {
   const creativesEl = document.getElementById('ctModalCreatives');
 
   refsEl.innerHTML = refs.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhuma referência adicionada</div>' :
-    refs.map(a => '<div class="ct-attachment-card" style="position:relative"><button onclick="event.stopPropagation();ctDeleteAttachment(\'' + a.id + '\')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center" title="Remover">✕</button><div onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category">REF</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div></div>').join('');
+    refs.map(a => ctBuildAttCard(a, 'REF', 'rgba(0,0,0,0.7)')).join('');
 
   creativesEl.innerHTML = creatives.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Designer ainda não enviou o criativo</div>' :
-    creatives.map(a => '<div class="ct-attachment-card" style="position:relative"><button onclick="event.stopPropagation();ctDeleteAttachment(\'' + a.id + '\')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:0.7rem;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center" title="Remover">✕</button><div onclick="ctOpenLightbox(\'' + a.file_url + '\')"><span class="ct-att-category" style="background:#10b981">FINAL</span><img src="' + a.file_url + '" onerror="this.style.display=\'none\'"><div class="ct-att-name">' + a.file_name + '</div></div></div>').join('');
+    creatives.map(a => ctBuildAttCard(a, 'FINAL', '#10b981')).join('');
 }
 
 function ctRenderModalComments(comments) {
@@ -13361,15 +13398,25 @@ function ctShowDatePicker(event) {
   }, 10);
 }
 
-function ctOpenLightbox(url) {
+function ctOpenLightbox(url, isVideo) {
   if (!url) return;
   const overlay = document.createElement('div');
   overlay.className = 'ct-lightbox';
   overlay.onclick = function() { this.remove(); };
-  overlay.innerHTML = '<button class="ct-lightbox-close" onclick="this.parentElement.remove()">&times;</button>'
-    + '<img src="' + url + '" onclick="event.stopPropagation()">';
+
+  var content = '';
+  if (isVideo) {
+    content = '<video src="' + url + '" controls autoplay playsinline onclick="event.stopPropagation()" style="max-width:90vw;max-height:85vh;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);background:#000"></video>'
+      + '<div onclick="event.stopPropagation()" style="display:flex;gap:10px;margin-top:12px">'
+      + '<a href="' + url + '" download style="padding:8px 20px;background:rgba(255,255,255,0.15);color:#fff;border-radius:8px;font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,0.2)">⬇ Download</a>'
+      + '<a href="' + url + '" target="_blank" style="padding:8px 20px;background:rgba(255,255,255,0.15);color:#fff;border-radius:8px;font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,0.2)">↗ Abrir em nova aba</a>'
+      + '</div>';
+  } else {
+    content = '<img src="' + url + '" onclick="event.stopPropagation()" style="max-width:90vw;max-height:85vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,0.5)">';
+  }
+
+  overlay.innerHTML = '<button class="ct-lightbox-close" onclick="this.parentElement.remove()">&times;</button>' + content;
   document.body.appendChild(overlay);
-  // ESC para fechar
   const handler = function(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', handler); } };
   document.addEventListener('keydown', handler);
 }
