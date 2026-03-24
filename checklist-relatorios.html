@@ -15687,9 +15687,19 @@ function cronogramaPreview() {
   var html = cronogramaBuildHtml(_cronoState.clientName, _cronoState.clientLogo, _cronoState.tenant, tasks);
   var area = document.getElementById('cronoPreviewArea');
   area.style.display = 'block';
-  // Show preview in scaled iframe
-  area.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary,#64748b);margin-bottom:8px">Preview (' + tasks.length + ' posts) — ' + (tasks.length + 4) + ' páginas</div>'
-    + '<div style="transform:scale(0.35);transform-origin:top left;width:1280px;height:720px;border:2px solid var(--border,#e5e7eb);border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1)">' + html.split('<div class="crono-page-break">')[0] + '</div>';
+  var totalPages = tasks.length + 3; // cover + separator + posts + closing
+  // Show all pages as horizontal scrollable thumbnails
+  var pages = html.split('<div class="crono-page-break">');
+  var thumbs = '';
+  for (var i = 0; i < pages.length; i++) {
+    if (!pages[i].trim()) continue;
+    thumbs += '<div style="flex:0 0 auto;width:330px;height:230px;overflow:hidden;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);position:relative">'
+      + '<div style="transform:scale(0.3);transform-origin:top left;width:1100px;height:750px;pointer-events:none">' + pages[i] + '</div>'
+      + '<div style="position:absolute;bottom:6px;right:8px;background:rgba(0,0,0,0.5);color:#fff;font-size:10px;padding:2px 8px;border-radius:4px">' + (i+1) + '/' + totalPages + '</div>'
+      + '</div>';
+  }
+  area.innerHTML = '<div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary,#64748b);margin-bottom:8px">Preview — ' + totalPages + ' páginas</div>'
+    + '<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px">' + thumbs + '</div>';
 }
 
 async function cronogramaDownload() {
@@ -15762,24 +15772,20 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   var tenantLabel = tenant === 'alpha' ? 'Alpha' : 'Starken';
   var tenantColor = tenant === 'alpha' ? '#10b981' : '#3b82f6';
 
-  // A4 landscape: 297mm x 210mm at 96dpi ≈ 1100px x 780px
-  var pageStyle = 'width:1100px;min-height:750px;overflow:hidden;position:relative;box-sizing:border-box;';
   var bgColor = '#b5aa9a';
-  var darkBg = '#2d2d2d';
+  // All pages use bege background - consistent branding
+  var pageBase = 'width:1100px;min-height:750px;overflow:hidden;position:relative;box-sizing:border-box;background:' + bgColor + ';';
 
-  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;">'
-    + '<style>.crono-page{' + pageStyle + '} .crono-page-break{page-break-after:always;break-after:page;height:0;display:block;clear:both;}</style>';
+  var html = '<div style="font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;background:' + bgColor + ';">'
+    + '<style>.crono-page-break{page-break-after:always;break-after:page;height:0;display:block;clear:both;}</style>';
 
   // ═══ PAGE 1: COVER ═══
-  html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;padding:80px;">';
-  // Starken badge top-right
+  html += '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;padding:80px;">';
   html += '<div style="position:absolute;top:20px;right:20px;background:' + tenantColor + ';color:#fff;padding:6px 16px;border-radius:4px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px">' + tenantLabel + '</div>';
-  // Left text
   html += '<div style="flex:1;text-align:left">';
   html += '<div style="font-size:48px;font-weight:300;color:rgba(255,255,255,0.8);line-height:1.2;font-family:Georgia,serif;">Aprovação de</div>';
   html += '<div style="font-size:56px;font-weight:700;color:#fff;line-height:1.2;font-family:Georgia,serif;">conteúdos</div>';
   html += '</div>';
-  // Right logo
   if (clientLogo) {
     html += '<div style="flex:0 0 auto;margin-left:60px">';
     html += '<img src="' + clientLogo + '" style="max-width:320px;max-height:320px;object-fit:contain" crossorigin="anonymous">';
@@ -15790,26 +15796,22 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
     html += '</div>';
   }
   html += '</div>';
-  // Page break
   html += '<div class="crono-page-break"></div>';
 
   // ═══ PAGE 2: SEPARATOR "conteúdo feed" ═══
-  html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;">';
+  html += '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
   html += '<div style="text-align:center">';
   html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.7);font-family:Georgia,serif;line-height:1">conteúdo</div>';
   html += '<div style="font-size:80px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;line-height:1;margin-top:-10px">feed</div>';
   html += '</div></div>';
   html += '<div class="crono-page-break"></div>';
 
-  // ═══ PAGES 3-N: ONE POST PER PAGE ═══
-  var feedImages = []; // Collect for grid preview
-
+  // ═══ PAGES 3-N: ONE POST PER PAGE (all bege background) ═══
   tasks.forEach(function(task) {
     var postType = cronogramaClassifyPost(task);
     var typeLabel = postType === 'reels' ? 'FEED REELS' : postType === 'carrossel' ? 'CARROSSEL DE FOTOS' : 'FEED CRIATIVO';
     var dateLabel = cronogramaFormatDate(task.due_date);
 
-    // Get best image (prefer 'final' then 'creative' then any)
     var attachments = task._attachments || [];
     var img = null;
     var allImages = [];
@@ -15821,115 +15823,71 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
       }
     }
     if (!img && allImages.length > 0) img = allImages[0];
-    if (img) feedImages.push(img.file_url);
 
-    // Post page
-    html += '<div style="' + pageStyle + 'background:' + darkBg + ';padding:0;">';
+    // Post page - bege background
+    html += '<div style="' + pageBase + 'padding:0;">';
 
-    // Header bar
-    html += '<div style="background:#1a1a1a;padding:18px 40px;border-bottom:3px solid ' + bgColor + '">';
+    // Header bar - darker bege accent
+    html += '<div style="background:rgba(0,0,0,0.25);padding:18px 40px;border-bottom:3px solid rgba(255,255,255,0.2)">';
     html += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + typeLabel + '</span>';
     if (dateLabel) html += '<span style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px"> | DATA POSTAGEM: ' + dateLabel + '</span>';
     html += '</div>';
 
-    // Content area: image left, copy right
-    html += '<div style="display:flex;height:640px;padding:30px 40px;gap:40px">';
+    // Content area
+    html += '<div style="display:flex;min-height:640px;padding:30px 40px;gap:40px">';
 
     // LEFT: Image
     html += '<div style="flex:0 0 420px;display:flex;align-items:center;justify-content:center">';
     if (img) {
       if (postType === 'reels') {
-        // Phone mockup for reels
-        html += '<div style="width:280px;height:560px;background:#000;border-radius:30px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.4);position:relative;overflow:hidden">';
+        html += '<div style="width:280px;height:500px;background:#000;border-radius:30px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.2);position:relative;overflow:hidden">';
         html += '<img src="' + img.file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:24px" crossorigin="anonymous">';
-        // Instagram bottom bar dots
         html += '<div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px">';
         html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.9)"></div>';
         html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>';
-        html += '<div style="width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.4)"></div>';
         html += '</div></div>';
       } else if (postType === 'carrossel' && allImages.length > 1) {
-        // Carousel grid
         html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%">';
         for (var ci = 0; ci < Math.min(allImages.length, 4); ci++) {
-          html += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:200px;object-fit:cover;border-radius:10px" crossorigin="anonymous">';
-          if (ci === 0) feedImages.push(allImages[ci].file_url); // Only first for grid
+          html += '<img src="' + allImages[ci].file_url + '" style="width:100%;height:200px;object-fit:cover;border-radius:10px;box-shadow:0 4px 12px rgba(0,0,0,0.15)" crossorigin="anonymous">';
         }
         html += '</div>';
       } else {
-        // Standard feed image
-        html += '<img src="' + img.file_url + '" style="max-width:400px;max-height:560px;object-fit:contain;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.3)" crossorigin="anonymous">';
+        html += '<img src="' + img.file_url + '" style="max-width:400px;max-height:560px;object-fit:contain;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15)" crossorigin="anonymous">';
       }
     } else {
-      html += '<div style="width:350px;height:350px;background:rgba(255,255,255,0.05);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.15)">';
-      html += '<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:14px">📷<br>Criativo pendente</div>';
+      html += '<div style="width:350px;height:350px;background:rgba(255,255,255,0.15);border-radius:12px;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,0.3)">';
+      html += '<div style="text-align:center;color:rgba(255,255,255,0.5);font-size:14px">📷<br>Criativo pendente</div>';
       html += '</div>';
     }
     html += '</div>';
 
-    // RIGHT: Copy/Legend
+    // RIGHT: Copy
     html += '<div style="flex:1;overflow:hidden;padding-top:10px">';
-    html += '<div style="font-size:20px;font-weight:700;color:#d4c8b8;font-style:italic;margin-bottom:16px;font-family:Georgia,serif">Legenda:</div>';
+    html += '<div style="font-size:20px;font-weight:700;color:rgba(255,255,255,0.7);font-style:italic;margin-bottom:16px;font-family:Georgia,serif">Legenda:</div>';
 
     var copy = task.copy_text || task.description || task.briefing || '';
     if (copy) {
-      // Preserve line breaks and emojis
       var copyHtml = copy.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-      html += '<div style="font-size:15px;color:rgba(255,255,255,0.85);line-height:1.7;max-height:480px;overflow:hidden">' + copyHtml + '</div>';
+      html += '<div style="font-size:15px;color:rgba(60,50,40,0.9);line-height:1.7;max-height:550px;overflow:hidden">' + copyHtml + '</div>';
     } else {
-      html += '<div style="font-size:14px;color:rgba(255,255,255,0.3);font-style:italic">Legenda pendente...</div>';
+      html += '<div style="font-size:14px;color:rgba(255,255,255,0.4);font-style:italic">Legenda pendente...</div>';
     }
 
-    html += '</div>'; // end right
-    html += '</div>'; // end content area
-    html += '</div>'; // end page
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
     html += '<div class="crono-page-break"></div>';
   });
 
-  // ═══ PAGE N+1: FEED PREVIEW (Grid 3x3) ═══
-  if (feedImages.length > 0) {
-    html += '<div style="' + pageStyle + 'background:' + darkBg + ';display:flex;align-items:center;justify-content:center;gap:60px;padding:40px;">';
-
-    // Left: IG profile mockup
-    html += '<div style="width:500px;background:#000;border-radius:12px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,0.4)">';
-    // Profile header
-    html += '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">';
-    if (clientLogo) {
-      html += '<img src="' + clientLogo + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #e91e63" crossorigin="anonymous">';
-    } else {
-      html += '<div style="width:56px;height:56px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;font-weight:800">' + (clientName[0] || '?') + '</div>';
-    }
-    html += '<div style="flex:1"><div style="font-size:14px;font-weight:700;color:#fff">' + clientName.toLowerCase().replace(/\s+/g, '') + '</div>';
-    html += '<div style="font-size:11px;color:#8e8e8e">Instagram</div></div></div>';
-    // Grid
-    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px">';
-    for (var gi = 0; gi < Math.min(feedImages.length, 9); gi++) {
-      html += '<img src="' + feedImages[gi] + '" style="width:100%;aspect-ratio:1;object-fit:cover" crossorigin="anonymous">';
-    }
-    // Fill empty slots
-    for (var ei = feedImages.length; ei < 9; ei++) {
-      html += '<div style="width:100%;aspect-ratio:1;background:#1a1a1a"></div>';
-    }
-    html += '</div></div>';
-
-    // Right: "PRÉVIA feed" text
-    html += '<div style="text-align:center">';
-    html += '<div style="font-size:64px;font-weight:800;color:rgba(255,255,255,0.9);text-transform:uppercase;letter-spacing:4px;font-family:Georgia,serif">PRÉVIA</div>';
-    html += '<div style="font-size:56px;font-weight:300;color:rgba(255,255,255,0.25);font-family:Georgia,serif;font-style:italic;margin-top:-10px">feed</div>';
-    html += '</div>';
-
-    html += '</div>';
-    html += '<div class="crono-page-break"></div>';
-  }
-
   // ═══ LAST PAGE: "aguardamos aprovação!" ═══
-  html += '<div style="' + pageStyle + 'background:' + bgColor + ';display:flex;align-items:center;justify-content:center;">';
+  html += '<div style="' + pageBase + 'display:flex;align-items:center;justify-content:center;">';
   html += '<div style="text-align:center">';
   html += '<div style="font-size:64px;font-weight:300;color:rgba(255,255,255,0.8);font-family:Georgia,serif;line-height:1.1">aguardamos</div>';
   html += '<div style="font-size:72px;font-weight:300;color:rgba(255,255,255,0.3);font-family:Georgia,serif;line-height:1;margin-top:-5px">aprovação!</div>';
   html += '</div></div>';
 
-  html += '</div>'; // end wrapper
+  html += '</div>';
   return html;
 }
 
