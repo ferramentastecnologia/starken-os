@@ -12469,8 +12469,7 @@ async function ctHandleFileUpload(files, category) {
   if (!ctModalTask || !files.length) return;
 
   var SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
-  var SUPABASE_ANON = typeof _supabase !== 'undefined' && _supabase.supabaseUrl ? _supabase.supabaseKey : '';
-  if (!SUPABASE_ANON) { try { SUPABASE_ANON = _supabase.rest.headers.apikey || ''; } catch(e) {} }
+  var SUPABASE_ANON = SUPABASE_KEY; // Use the global SUPABASE_KEY constant
 
   for (const file of files) {
     // Show progress bar
@@ -12523,39 +12522,49 @@ async function ctHandleFileUpload(files, category) {
         if (uploadData.upload && uploadData.upload.publicUrl) publicUrl = uploadData.upload.publicUrl;
         updateProgress(100, 'Concluído!');
       } else {
-        // Large file: upload with XMLHttpRequest for progress tracking
+        // Large file: upload via Supabase JS client (handles auth automatically)
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         var storagePath = 'content/' + ctCurrentClient + '/' + Date.now() + '_' + safeName;
-        var uploadUrl = SUPABASE_URL + '/storage/v1/object/media-uploads/' + storagePath;
 
-        await new Promise(function(resolve, reject) {
-          var xhr = new XMLHttpRequest();
-          xhr.open('POST', uploadUrl, true);
-          xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON);
-          xhr.setRequestHeader('apikey', SUPABASE_ANON);
-          xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-          xhr.setRequestHeader('x-upsert', 'true');
+        updateProgress(20, 'Enviando ' + sizeMB + ' MB...');
 
-          xhr.upload.onprogress = function(e) {
-            if (e.lengthComputable) {
-              var pct = Math.round(e.loaded / e.total * 100);
-              var loaded = (e.loaded / 1024 / 1024).toFixed(1);
-              var total = (e.total / 1024 / 1024).toFixed(1);
-              updateProgress(pct, pct + '% · ' + loaded + ' / ' + total + ' MB');
-            }
-          };
-          xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              publicUrl = SUPABASE_URL + '/storage/v1/object/public/media-uploads/' + storagePath;
-              updateProgress(100, '✅ Upload concluído!');
-              resolve();
-            } else {
-              reject(new Error('Upload falhou: HTTP ' + xhr.status));
-            }
-          };
-          xhr.onerror = function() { reject(new Error('Erro de rede no upload')); };
-          xhr.send(file);
-        });
+        if (_supabase && _supabase.storage) {
+          // Use Supabase JS SDK
+          var upRes = await _supabase.storage.from('media-uploads').upload(storagePath, file, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: true
+          });
+          if (upRes.error) throw new Error(upRes.error.message);
+          var urlRes = _supabase.storage.from('media-uploads').getPublicUrl(storagePath);
+          publicUrl = urlRes.data.publicUrl;
+          updateProgress(100, '✅ Upload concluído!');
+        } else {
+          // Fallback: direct REST with XMLHttpRequest for progress
+          var uploadUrl = SUPABASE_URL + '/storage/v1/object/media-uploads/' + storagePath;
+          await new Promise(function(resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', uploadUrl, true);
+            xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON);
+            xhr.setRequestHeader('apikey', SUPABASE_ANON);
+            xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+            xhr.setRequestHeader('x-upsert', 'true');
+            xhr.upload.onprogress = function(e) {
+              if (e.lengthComputable) {
+                var pct = Math.round(e.loaded / e.total * 100);
+                updateProgress(pct, pct + '% · ' + (e.loaded/1024/1024).toFixed(1) + '/' + sizeMB + ' MB');
+              }
+            };
+            xhr.onload = function() {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                publicUrl = SUPABASE_URL + '/storage/v1/object/public/media-uploads/' + storagePath;
+                updateProgress(100, '✅ Upload concluído!');
+                resolve();
+              } else { reject(new Error('Upload falhou: HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,100))); }
+            };
+            xhr.onerror = function() { reject(new Error('Erro de rede')); };
+            xhr.send(file);
+          });
+        }
       }
 
       if (publicUrl) {
