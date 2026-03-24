@@ -15728,7 +15728,7 @@ async function cronogramaDownload() {
       image: { type: 'jpeg', quality: 0.92 },
       html2canvas: { scale: 1, useCORS: true, scrollY: 0, backgroundColor: '#b5aa9a', width: 1123, windowWidth: 1123 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.crono-page-break' }
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'], before: '.crono-pb' }
     }).from(fullHtml, 'string').save();
 
     if (modal) { modal.style.display = 'flex'; }
@@ -15857,12 +15857,11 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
 // Joins pages into single HTML with page breaks (for PDF generation)
 function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
   var pages = cronogramaBuildPages(clientName, clientLogo, tenant, tasks);
-  // First page has no break before it; subsequent pages get a break-before class
-  var result = '<style>.crono-page-break{page-break-before:always;break-before:page;}</style>';
+  var result = '<style>.crono-pb{page-break-before:always;break-before:page;}</style>';
   result += pages[0];
   for (var i = 1; i < pages.length; i++) {
-    // Add the break class to the page div itself by wrapping
-    result += '<div class="crono-page-break">' + pages[i] + '</div>';
+    // Inject class directly into the page div's opening tag (no wrapper nesting)
+    result += pages[i].replace('<div style="', '<div class="crono-pb" style="');
   }
   return result;
 }
