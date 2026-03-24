@@ -16405,7 +16405,7 @@ async function cronogramaDownload() {
       // Save PDF URL in report data
       if (_pdfUrlForReport && typeof data !== 'undefined' && data.reports) {
         var rep = data.reports.find(function(r) { return r.clientId === sc.clientId && r.type === sc.type && r.period === sc.periodKey; });
-        if (rep) { rep.cronogramaPdfUrl = _pdfUrlForReport; rep.cronogramaPdfName = filename; }
+        if (rep) { rep.cronogramaPdfUrl = _pdfUrlForReport; rep.cronogramaPdfName = filename; rep.cronogramaGeneratedAt = new Date().toISOString(); }
       }
     }
     // Also update status bar in content management toolbar
