@@ -12516,6 +12516,43 @@ async function ctDeleteAttachment(attachmentId) {
   ctRenderModalActivity(Array.isArray(actData) ? actData : (actData.activity || []));
 }
 
+// Extract first frame from video as JPEG blob
+function ctExtractVideoThumbnail(file) {
+  return new Promise(function(resolve) {
+    var video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+
+    var url = URL.createObjectURL(file);
+    video.src = url;
+
+    video.onloadeddata = function() {
+      video.currentTime = 0.5; // Seek to 0.5s for better frame
+    };
+
+    video.onseeked = function() {
+      try {
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.min(video.videoWidth, 720);
+        canvas.height = Math.round(canvas.width * video.videoHeight / video.videoWidth);
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob) {
+          URL.revokeObjectURL(url);
+          resolve(blob);
+        }, 'image/jpeg', 0.85);
+      } catch(e) {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      }
+    };
+
+    video.onerror = function() { URL.revokeObjectURL(url); resolve(null); };
+    setTimeout(function() { URL.revokeObjectURL(url); resolve(null); }, 10000);
+  });
+}
+
 async function ctHandleFileUpload(files, category) {
   if (!ctModalTask || !files.length) return;
 
@@ -12629,6 +12666,31 @@ async function ctHandleFileUpload(files, category) {
           category: category,
           user: ctGetUser(),
         });
+
+        // Auto-extract thumbnail from video files
+        var isVideoFile = file.type && file.type.startsWith('video/');
+        if (isVideoFile && _supabase && _supabase.storage) {
+          updateProgress(100, '🎬 Extraindo thumbnail...');
+          try {
+            var thumbBlob = await ctExtractVideoThumbnail(file);
+            if (thumbBlob) {
+              var thumbPath = 'content/' + ctCurrentClient + '/' + Date.now() + '_thumb_' + file.name.replace(/\.[^.]+$/, '.jpg').replace(/[^a-zA-Z0-9._-]/g, '_');
+              var thumbUp = await _supabase.storage.from('client-hub-materials').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true });
+              if (!thumbUp.error) {
+                var thumbUrl = _supabase.storage.from('client-hub-materials').getPublicUrl(thumbPath).data.publicUrl;
+                await ctApi('add_attachment', {
+                  task_id: ctModalTask.id,
+                  file_name: 'thumb_' + file.name.replace(/\.[^.]+$/, '.jpg'),
+                  file_url: thumbUrl,
+                  file_type: 'image/jpeg',
+                  file_size: thumbBlob.size,
+                  category: category,
+                  user: ctGetUser(),
+                });
+              }
+            }
+          } catch(thumbErr) { console.warn('Thumbnail extraction failed:', thumbErr); }
+        }
       }
     } catch(err) {
       console.error('Upload error:', err);
