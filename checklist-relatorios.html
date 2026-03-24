@@ -16166,12 +16166,13 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
     if (!clientName) clientName = clientSlug.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
     if (typeof _supabase !== 'undefined') {
       try {
-        var hubData = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientSlug).single();
-        if (hubData.data) {
-          if (hubData.data.logo_url) clientLogo = hubData.data.logo_url;
-          if (hubData.data.client_name) clientName = hubData.data.client_name;
+        var hubRes = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientSlug);
+        var hubRow = hubRes.data && hubRes.data.length > 0 ? hubRes.data[0] : null;
+        if (hubRow) {
+          if (hubRow.logo_url) clientLogo = hubRow.logo_url;
+          if (hubRow.client_name) clientName = hubRow.client_name;
         }
-      } catch(e) {}
+      } catch(e) { console.warn('Hub logo fetch error:', e); }
     }
 
     // Store state with schedule context for status update after download
@@ -16218,12 +16219,13 @@ async function cronogramaGenerate() {
     if (!clientName) clientName = clientId.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
     if (typeof _supabase !== 'undefined') {
       try {
-        var hubData = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientId).single();
-        if (hubData.data) {
-          if (hubData.data.logo_url) clientLogo = hubData.data.logo_url;
-          if (hubData.data.client_name) clientName = hubData.data.client_name;
+        var hubRes2 = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientId);
+        var hubRow2 = hubRes2.data && hubRes2.data.length > 0 ? hubRes2.data[0] : null;
+        if (hubRow2) {
+          if (hubRow2.logo_url) clientLogo = hubRow2.logo_url;
+          if (hubRow2.client_name) clientName = hubRow2.client_name;
         }
-      } catch(e) {}
+      } catch(e) { console.warn('Hub logo fetch error:', e); }
     }
 
     _cronoState = { tasks: allTasks, clientName: clientName, clientLogo: clientLogo, tenant: tenant, clientId: clientId, scheduleContext: null };
