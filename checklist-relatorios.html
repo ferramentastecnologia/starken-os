@@ -5537,24 +5537,31 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       }
       html += '</select>';
 
-      // Período real
-      html += '<button class="btn btn-sm" style="background:' + (hasCustomPeriod ? '#dbeafe' : '#f1f5f9') + ';color:' + (hasCustomPeriod ? '#1e40af' : 'var(--text-secondary)') + ';border:1px solid ' + (hasCustomPeriod ? '#bfdbfe' : 'var(--border)') + ';padding:4px 8px" onclick="openPeriodModal(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Definir período real do relatório">📅</button>';
+      // Período real + Relatórios + BI — only for report tabs, not cronograma semanal
+      if (type !== 'sched-weekly') {
+        html += '<button class="btn btn-sm" style="background:' + (hasCustomPeriod ? '#dbeafe' : '#f1f5f9') + ';color:' + (hasCustomPeriod ? '#1e40af' : 'var(--text-secondary)') + ';border:1px solid ' + (hasCustomPeriod ? '#bfdbfe' : 'var(--border)') + ';padding:4px 8px" onclick="openPeriodModal(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Definir período real do relatório">📅</button>';
 
-      // Relatórios gerados
-      const pdfCount = data.reports.filter(rep => rep.clientId === c.id && rep.pdfFilename).length;
-      if (pdfCount > 0) {
-        html += '<button class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:4px 8px" onclick="openClientReports(\'' + c.id + '\')" title="Ver relatórios gerados">&#128196; ' + pdfCount + '</button>';
+        const pdfCount = data.reports.filter(rep => rep.clientId === c.id && rep.pdfFilename).length;
+        if (pdfCount > 0) {
+          html += '<button class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:4px 8px" onclick="openClientReports(\'' + c.id + '\')" title="Ver relatórios gerados">&#128196; ' + pdfCount + '</button>';
+        }
       }
 
-      // BI link button - find matching meta client
       var metaKey = findMetaClientKey(c.name, co.key === 'Starken' ? 'starken' : 'alpha');
-      if (metaKey) {
+
+      // BI link button — only for report tabs
+      if (type !== 'sched-weekly' && metaKey) {
         html += '<button class="btn btn-sm" style="background:#eff6ff;color:#1877f2;border:1px solid #bfdbfe;padding:4px 8px" onclick="metaBiOpenFromReport(\'' + metaKey + '\',\'' + (co.key === 'Starken' ? 'starken' : 'alpha') + '\')" title="Ver no BI Campanhas">📊</button>';
       }
 
-      // Cronograma PDF button
+      // Cronograma PDF button + download last PDF
       if (metaKey) {
         html += '<button class="btn btn-sm" style="background:#8B7355;color:#fff;border:1px solid #7a6349;padding:4px 8px" onclick="event.stopPropagation();cronogramaFromSchedule(\'' + metaKey + '\',\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Gerar Cronograma PDF">📄</button>';
+        // Show download button if PDF was generated this session
+        var cronoPdfUrl = report && report.cronogramaPdfUrl;
+        if (cronoPdfUrl) {
+          html += '<a href="' + cronoPdfUrl + '" target="_blank" class="btn btn-sm" style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:4px 8px;text-decoration:none" title="Baixar último cronograma PDF">⬇️</a>';
+        }
       }
 
       // Zappfy WhatsApp button
@@ -5619,7 +5626,21 @@ function renderSchedWeekly() {
   const weeks = getMonthWeeks(mInfo.year, mInfo.month);
 
   const wkSelect = document.getElementById('schedWeekNumber');
-  const currentVal = parseInt(wkSelect.value) || 1;
+  var currentVal = parseInt(wkSelect.value) || 0;
+  // Auto-select current week if no value set or first render
+  if (!currentVal && weeks.length > 0) {
+    var today = new Date();
+    var todayStr = today.getFullYear() + '-' + ('0' + (today.getMonth()+1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2);
+    // Find the week where today falls within the period
+    var autoWeek = weeks.find(function(w) {
+      return todayStr >= w.periodStart && todayStr <= w.periodEnd;
+    });
+    // Fallback: find closest week by send date
+    if (!autoWeek) {
+      autoWeek = weeks.find(function(w) { return todayStr <= w.send; }) || weeks[weeks.length - 1];
+    }
+    currentVal = autoWeek ? autoWeek.week : 1;
+  }
   wkSelect.innerHTML = weeks.map(w =>
     '<option value="' + w.week + '"' + (w.week === currentVal ? ' selected' : '') + '>Semana ' + w.week + ' — Envio ' + w.sendLabel + '</option>'
   ).join('');
@@ -16333,15 +16354,46 @@ async function cronogramaDownload() {
     updateLoading(100, 'Salvando PDF...');
     pdf.save(filename);
 
-    // Update schedule status to "Gerado" (1)
+    // Auto-upload PDF to Supabase Storage
+    try {
+      var pdfBlob = pdf.output('blob');
+      var storagePath = 'cronogramas/' + _cronoState.clientId + '/' + filename;
+      var uploadRes = await fetch('https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + storagePath, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Authorization': 'Bearer ' + _supabase.supabaseKey,
+          'x-upsert': 'true'
+        },
+        body: pdfBlob
+      });
+      if (uploadRes.ok) {
+        var pdfUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + storagePath;
+        console.log('Cronograma PDF uploaded:', pdfUrl);
+        // Store URL in state for future reference
+        _cronoState.lastPdfUrl = pdfUrl;
+        _cronoState.lastPdfFilename = filename;
+      } else {
+        console.warn('PDF upload failed:', uploadRes.status);
+      }
+    } catch(upErr) {
+      console.warn('PDF auto-upload error:', upErr);
+    }
+
+    // Update schedule status to "Gerado" (1) and save PDF URL
+    var _pdfUrlForReport = _cronoState.lastPdfUrl || null;
     if (_cronoState.scheduleContext) {
       var sc = _cronoState.scheduleContext;
       if (typeof setReportStatus === 'function') {
         setReportStatus(sc.clientId, sc.type, sc.periodKey, 1);
       }
+      // Save PDF URL in report data
+      if (_pdfUrlForReport && typeof data !== 'undefined' && data.reports) {
+        var rep = data.reports.find(function(r) { return r.clientId === sc.clientId && r.type === sc.type && r.period === sc.periodKey; });
+        if (rep) { rep.cronogramaPdfUrl = _pdfUrlForReport; rep.cronogramaPdfName = filename; }
+      }
     }
     // Also update status bar in content management toolbar
-    // Find client in data and update status
     if (typeof data !== 'undefined' && data.clients && _cronoState.clientId) {
       var now = new Date();
       var weekNum = Math.ceil(now.getDate() / 7);
@@ -16351,6 +16403,11 @@ async function cronogramaDownload() {
       });
       if (cObj && typeof setReportStatus === 'function') {
         setReportStatus(cObj.id, 'sched-weekly', mKey, 1);
+        // Save PDF URL in report
+        if (_pdfUrlForReport) {
+          var rep2 = data.reports.find(function(r) { return r.clientId === cObj.id && r.type === 'sched-weekly' && r.period === mKey; });
+          if (rep2) { rep2.cronogramaPdfUrl = _pdfUrlForReport; rep2.cronogramaPdfName = filename; }
+        }
       }
     }
     ctUpdateCronoStatusBar();
