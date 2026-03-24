@@ -12468,39 +12468,73 @@ async function ctDeleteAttachment(attachmentId) {
 async function ctHandleFileUpload(files, category) {
   if (!ctModalTask || !files.length) return;
 
+  var SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
+  var SUPABASE_ANON = typeof _supabase !== 'undefined' && _supabase.supabaseUrl ? _supabase.supabaseKey : '';
+  // Fallback: get anon key from page
+  if (!SUPABASE_ANON) {
+    try { SUPABASE_ANON = _supabase.rest.headers.apikey || ''; } catch(e) {}
+  }
+
   for (const file of files) {
-    // Convert to base64
-    const base64 = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-      reader.readAsDataURL(file);
-    });
+    try {
+      // For small files (<3MB): use existing base64 API
+      // For large files: upload directly to Supabase Storage
+      var publicUrl = '';
 
-    // Upload to Supabase Storage via media endpoint
-    const uploadRes = await fetch(ctApiBase() + '/api/meta/media', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        destination: 'fb',
-        client: ctCurrentClient,
-        source_base64: base64,
-        filename: file.name,
-        media_type: 'IMAGE',
-      }),
-    });
-    const uploadData = await uploadRes.json();
+      if (file.size < 3 * 1024 * 1024) {
+        // Small file: base64 via API (existing method)
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+          reader.readAsDataURL(file);
+        });
+        const uploadRes = await fetch(ctApiBase() + '/api/meta/media', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: 'fb', client: ctCurrentClient,
+            source_base64: base64, filename: file.name, media_type: 'IMAGE',
+          }),
+        });
+        const uploadData = await uploadRes.json();
+        if (uploadData.upload && uploadData.upload.publicUrl) publicUrl = uploadData.upload.publicUrl;
+      } else {
+        // Large file: upload directly to Supabase Storage
+        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        var storagePath = 'content/' + ctCurrentClient + '/' + Date.now() + '_' + safeName;
+        var uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/media-uploads/' + storagePath, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + SUPABASE_ANON,
+            'apikey': SUPABASE_ANON,
+            'Content-Type': file.type || 'application/octet-stream',
+            'x-upsert': 'true'
+          },
+          body: file
+        });
+        if (uploadRes.ok) {
+          publicUrl = SUPABASE_URL + '/storage/v1/object/public/media-uploads/' + storagePath;
+        } else {
+          var errText = await uploadRes.text();
+          throw new Error('Upload falhou: ' + errText.substring(0, 100));
+        }
+      }
 
-    if (uploadData.upload && uploadData.upload.publicUrl) {
-      await ctApi('add_attachment', {
-        task_id: ctModalTask.id,
-        file_name: file.name,
-        file_url: uploadData.upload.publicUrl,
-        file_type: file.type,
-        file_size: file.size,
-        category: category,
-        user: ctGetUser(),
-      });
+      if (publicUrl) {
+        await ctApi('add_attachment', {
+          task_id: ctModalTask.id,
+          file_name: file.name,
+          file_url: publicUrl,
+          file_type: file.type,
+          file_size: file.size,
+          category: category,
+          user: ctGetUser(),
+        });
+      }
+    } catch(err) {
+      console.error('Upload error:', err);
+      alert('Erro no upload de ' + file.name + ': ' + err.message);
     }
   }
 
