@@ -16395,28 +16395,20 @@ async function cronogramaBuildPdf(opts) {
     updateLoading(100, shouldDownload ? 'Baixando PDF...' : 'Salvando no sistema...');
     if (shouldDownload) pdf.save(filename);
 
-    // Auto-upload PDF to Supabase Storage
+    // Auto-upload PDF to Supabase Storage via SDK (same approach as logo upload)
     try {
       var pdfBlob = pdf.output('blob');
-      var storagePath = 'cronogramas/' + _cronoState.clientId + '/' + filename;
-      var uploadRes = await fetch('https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/client-hub-materials/' + storagePath, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Authorization': 'Bearer ' + _supabase.supabaseKey,
-          'x-upsert': 'true'
-        },
-        body: pdfBlob
-      });
-      if (uploadRes.ok) {
-        var pdfUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + storagePath;
-        console.log('Cronograma PDF uploaded:', pdfUrl);
-        // Store URL in state for future reference
-        _cronoState.lastPdfUrl = pdfUrl;
-        _cronoState.lastPdfFilename = filename;
-      } else {
-        console.warn('PDF upload failed:', uploadRes.status);
-      }
+      var pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
+      var storagePath = 'cronogramas/' + _cronoState.clientId + '/' + Date.now() + '_' + filename;
+      var { data: upData, error: upError } = await _supabase.storage
+        .from('client-hub-materials')
+        .upload(storagePath, pdfFile, { cacheControl: '3600', upsert: true });
+      if (upError) throw upError;
+      var { data: urlData } = _supabase.storage.from('client-hub-materials').getPublicUrl(storagePath);
+      var pdfUrl = urlData.publicUrl;
+      console.log('Cronograma PDF uploaded:', pdfUrl);
+      _cronoState.lastPdfUrl = pdfUrl;
+      _cronoState.lastPdfFilename = filename;
     } catch(upErr) {
       console.warn('PDF auto-upload error:', upErr);
     }
