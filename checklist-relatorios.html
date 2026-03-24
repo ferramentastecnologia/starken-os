@@ -15685,6 +15685,7 @@ function cronogramaPreview() {
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
 
   var pages = cronogramaBuildPages(_cronoState.clientName, _cronoState.clientLogo, _cronoState.tenant, tasks);
+  console.log('CRONO PREVIEW: pages array length =', pages.length, 'page lengths:', pages.map(function(p){return p.length}));
   var area = document.getElementById('cronoPreviewArea');
   area.style.display = 'block';
   var total = pages.length;
