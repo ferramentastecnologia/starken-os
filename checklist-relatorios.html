@@ -16023,10 +16023,35 @@ async function cronogramaDownload() {
     var W = 960, H = 680;
     var pdf = new jspdf.jsPDF({ unit: 'mm', format: 'a4', orientation: 'landscape' });
 
-    for (var i = 0; i < pages.length; i++) {
-      if (dlBtn) dlBtn.innerHTML = '⏳ ' + (i + 1) + '/' + pages.length;
+    // Show loading overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'cronoLoadingOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(6px)';
+    overlay.innerHTML = '<div style="text-align:center;color:#fff">'
+      + '<div style="font-size:48px;margin-bottom:16px">📄</div>'
+      + '<div style="font-size:1.2rem;font-weight:700;margin-bottom:8px">Gerando Cronograma PDF</div>'
+      + '<div id="cronoLoadingText" style="font-size:0.9rem;opacity:0.7;margin-bottom:20px">Preparando...</div>'
+      + '<div style="width:280px;height:6px;background:rgba(255,255,255,0.15);border-radius:3px;overflow:hidden">'
+      + '<div id="cronoLoadingBar" style="height:100%;width:0%;background:linear-gradient(90deg,#8B7355,#d4a574);border-radius:3px;transition:width 0.3s"></div>'
+      + '</div>'
+      + '<div id="cronoLoadingPct" style="font-size:0.8rem;opacity:0.5;margin-top:8px">0%</div>'
+      + '</div>';
+    document.body.appendChild(overlay);
 
-      // Create temporary visible container for this page
+    var updateLoading = function(pct, text) {
+      var bar = document.getElementById('cronoLoadingBar');
+      var txt = document.getElementById('cronoLoadingText');
+      var pctEl = document.getElementById('cronoLoadingPct');
+      if (bar) bar.style.width = pct + '%';
+      if (txt) txt.textContent = text;
+      if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+    };
+
+    for (var i = 0; i < pages.length; i++) {
+      var pct = Math.round((i / pages.length) * 100);
+      updateLoading(pct, 'Renderizando página ' + (i + 1) + ' de ' + pages.length + '...');
+
+      // Create container BEHIND the overlay (z-index lower)
       var el = document.createElement('div');
       el.style.cssText = 'position:fixed;left:0;top:0;width:' + W + 'px;height:' + H + 'px;z-index:99999;overflow:hidden;font-family:Inter,-apple-system,sans-serif;background:#b5aa9a;';
       el.innerHTML = pages[i];
@@ -16046,20 +16071,24 @@ async function cronogramaDownload() {
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
 
       // Add clickable video link if page has video URL
-      var videoEl = el.querySelector ? el : document.createElement('div');
-      try { videoEl.innerHTML = pages[i]; } catch(e) {}
-      var vidLink = videoEl.querySelector ? videoEl.querySelector('[data-video-url]') : null;
+      var videoEl = document.createElement('div');
+      videoEl.innerHTML = pages[i];
+      var vidLink = videoEl.querySelector('[data-video-url]');
       if (vidLink) {
         var vidUrl = vidLink.getAttribute('data-video-url');
         if (vidUrl) {
-          // Link to video preview page (nicer than raw Supabase URL)
           var previewUrl = 'https://starken-os.vercel.app/video.html?src=' + encodeURIComponent(vidUrl);
           pdf.link(15, 30, 130, 170, { url: previewUrl });
         }
       }
     }
 
+    updateLoading(100, 'Salvando PDF...');
     pdf.save(filename);
+
+    // Remove overlay
+    var ov = document.getElementById('cronoLoadingOverlay');
+    if (ov) ov.remove();
 
     if (modal) { modal.style.display = 'flex'; }
     if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
