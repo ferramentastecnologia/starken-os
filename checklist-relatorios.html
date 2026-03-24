@@ -5522,7 +5522,22 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       if (hasCustomPeriod) html += '<span style="background:#dbeafe;color:#1e40af;border-radius:3px;padding:1px 5px;font-weight:600">📅 ' + customPeriodLabel + '</span>';
       else if (periodInfo) html += '<span style="color:var(--text-muted)">Período: ' + esc(periodInfo) + '</span>';
       html += '</div>';
-      if (status === 2) {
+      if (type === 'sched-weekly') {
+        // Show generation and send dates for cronograma
+        var cronoGenDate = report && report.cronogramaGeneratedAt;
+        var cronoSentDate = report && report.cronogramaSentAt;
+        if (cronoGenDate || status >= 1) {
+          var genLabel = cronoGenDate ? new Date(cronoGenDate).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+          html += '<div style="font-size:0.68rem;color:#3b82f6;margin-top:1px">📄 Gerado: ' + (genLabel || 'sim') + '</div>';
+        }
+        if (cronoSentDate || status === 2) {
+          var sentLbl = cronoSentDate ? new Date(cronoSentDate).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : (sentDate || '');
+          html += '<div style="font-size:0.68rem;color:#22c55e;margin-top:1px">✅ Enviado: ' + (sentLbl || 'sim') + '</div>';
+        }
+        if (!cronoGenDate && status < 1) {
+          html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:1px;opacity:0.5">Aguardando geração</div>';
+        }
+      } else if (status === 2) {
         const sentLabel = sentDate ? 'Enviado ' + sentDate : 'Enviado (sem data)';
         html += '<div style="font-size:0.7rem;color:var(--alpha-dark);margin-top:1px;cursor:pointer;text-decoration:underline dotted" onclick="openSentDateModal(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Editar data de envio">' + sentLabel + ' ✏️</div>';
       } else {
