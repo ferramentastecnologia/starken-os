@@ -521,6 +521,28 @@ module.exports = async function handler(req, res) {
           ...(scheduled_publish_time && { scheduled_for: new Date(scheduled_publish_time * 1000).toISOString() }),
         };
       }
+      // ─── VIDEO / REELS (FB) ───
+      else if (video_url) {
+        const videoBody = {
+          file_url: video_url,
+          description: caption || '',
+          access_token: tenant.pageAccessToken,
+        };
+        if (scheduled_publish_time) {
+          videoBody.scheduled_publish_time = scheduled_publish_time;
+          videoBody.published = false;
+        }
+        const videoRes = await graphPost(`/${tenant.pageId}/videos`, videoBody);
+        result = {
+          post_id: videoRes.id,
+          status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',
+          has_image: true,
+          media_type: 'VIDEO',
+          client: tenant.name || tenant.key,
+          page: tenant.pageName || tenant.pageId,
+          ...(scheduled_publish_time && { scheduled_for: new Date(scheduled_publish_time * 1000).toISOString() }),
+        };
+      }
       // ─── COM IMAGEM ÚNICA ───
       else if (image_url) {
 
