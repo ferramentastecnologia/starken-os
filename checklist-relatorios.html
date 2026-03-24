@@ -5572,10 +5572,10 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       // Cronograma PDF button + download last PDF
       if (metaKey) {
         html += '<button class="btn btn-sm" style="background:#8B7355;color:#fff;border:1px solid #7a6349;padding:4px 8px" onclick="event.stopPropagation();cronogramaFromSchedule(\'' + metaKey + '\',\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Gerar Cronograma PDF">📄</button>';
-        // Show download button if PDF was generated this session
+        // Show download button if PDF was generated
         var cronoPdfUrl = report && report.cronogramaPdfUrl;
         if (cronoPdfUrl) {
-          html += '<a href="' + cronoPdfUrl + '" target="_blank" class="btn btn-sm" style="background:#f0fdf4;color:#166534;border:1px solid #86efac;padding:4px 8px;text-decoration:none" title="Baixar último cronograma PDF">⬇️</a>';
+          html += '<a href="' + cronoPdfUrl + '" target="_blank" download class="btn btn-sm" style="background:#16a34a;color:#fff;border:none;padding:6px 12px;text-decoration:none;font-weight:600;border-radius:6px;font-size:0.78rem" title="Baixar cronograma PDF">⬇️ PDF</a>';
         }
       }
 
@@ -16244,7 +16244,8 @@ function cronogramaShowModal() {
 
     // Actions
     + '<div style="padding:12px 20px;border-top:1px solid var(--border,#e5e7eb);display:flex;gap:10px;flex:0 0 auto">'
-    + '<button id="cronoDlBtn" onclick="cronogramaDownload()" style="flex:1;padding:12px;border:none;border-radius:10px;background:#8B7355;color:#fff;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Baixar PDF</button>'
+    + '<button id="cronoGenBtn" onclick="cronogramaGenerate()" style="flex:1;padding:14px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">📄 Gerar PDF</button>'
+    + '<button id="cronoDlBtn" onclick="cronogramaDownload()" style="flex:1;padding:14px;border:none;border-radius:10px;background:#8B7355;color:#fff;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Baixar PDF</button>'
     + '</div>'
     + '</div>';
 
@@ -16291,12 +16292,25 @@ function cronogramaPreview() {
     + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:8px 0 14px">' + cards + '</div>';
 }
 
+// Gerar PDF e salvar no Supabase (sem baixar) — disponível no cronograma semanal
+async function cronogramaGenerate() {
+  return cronogramaBuildPdf({ download: false });
+}
+
+// Baixar PDF no computador
 async function cronogramaDownload() {
+  return cronogramaBuildPdf({ download: true });
+}
+
+async function cronogramaBuildPdf(opts) {
+  var shouldDownload = opts && opts.download;
   var tasks = cronogramaGetSelectedTasks();
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
 
+  var genBtn = document.getElementById('cronoGenBtn');
   var dlBtn = document.getElementById('cronoDlBtn');
-  if (dlBtn) { dlBtn.innerHTML = '⏳ Gerando...'; dlBtn.disabled = true; }
+  if (genBtn) { genBtn.disabled = true; genBtn.innerHTML = '⏳ Gerando...'; }
+  if (dlBtn) { dlBtn.disabled = true; }
 
   try {
     var s = _cronoState;
@@ -16374,8 +16388,8 @@ async function cronogramaDownload() {
       }
     }
 
-    updateLoading(100, 'Salvando PDF...');
-    pdf.save(filename);
+    updateLoading(100, shouldDownload ? 'Baixando PDF...' : 'Salvando no sistema...');
+    if (shouldDownload) pdf.save(filename);
 
     // Auto-upload PDF to Supabase Storage
     try {
@@ -16440,12 +16454,19 @@ async function cronogramaDownload() {
     if (ov) ov.remove();
 
     if (modal) { modal.style.display = 'flex'; }
-    if (dlBtn) { dlBtn.innerHTML = '✅ PDF Gerado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
+    if (shouldDownload) {
+      if (dlBtn) { dlBtn.innerHTML = '✅ Baixado!'; setTimeout(function() { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }, 2000); }
+      if (genBtn) { genBtn.disabled = false; }
+    } else {
+      if (genBtn) { genBtn.innerHTML = '✅ Gerado e Salvo!'; setTimeout(function() { genBtn.innerHTML = '📄 Gerar PDF'; genBtn.disabled = false; }, 2500); }
+      if (dlBtn) { dlBtn.disabled = false; }
+    }
   } catch(err) {
     console.error('Cronograma PDF error:', err);
     alert('Erro ao gerar PDF: ' + err.message);
     var modal2 = document.getElementById('cronoModal');
     if (modal2) modal2.style.display = 'flex';
+    if (genBtn) { genBtn.innerHTML = '📄 Gerar PDF'; genBtn.disabled = false; }
     if (dlBtn) { dlBtn.innerHTML = '⬇️ Baixar PDF'; dlBtn.disabled = false; }
   }
 }
