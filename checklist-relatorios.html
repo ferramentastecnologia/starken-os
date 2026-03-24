@@ -12359,15 +12359,23 @@ function ctBuildAttCard(a, badge, badgeColor) {
 
   var sizeTxt = a.file_size ? (a.file_size > 1048576 ? (a.file_size/1048576).toFixed(1) + ' MB' : Math.round(a.file_size/1024) + ' KB') : '';
 
+  var frameBtn = '';
+  if (isVid) {
+    frameBtn = '<button onclick="event.stopPropagation();ctOpenFrameSelector(\'' + a.file_url + '\',\'' + a.id + '\')" style="width:100%;padding:4px;border:none;background:var(--starken,#3b82f6);color:#fff;font-size:0.68rem;font-weight:600;cursor:pointer;font-family:inherit">🎞 Escolher thumbnail</button>';
+  }
+
   return '<div class="ct-attachment-card" style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border)">'
     + delBtn
     + '<div onclick="ctOpenLightbox(\'' + a.file_url + '\',' + isVid + ')">'
     + '<span class="ct-att-category" style="background:' + badgeColor + '">' + badge + '</span>'
     + preview
+    + '</div>'
     + '<div style="padding:6px 8px;background:var(--bg-secondary)">'
     + '<div style="font-size:0.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">' + a.file_name + '</div>'
     + (sizeTxt ? '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:1px">' + sizeTxt + '</div>' : '')
-    + '</div></div></div>';
+    + '</div>'
+    + frameBtn
+    + '</div>';
 }
 
 function ctRenderModalAttachments(attachments) {
@@ -12570,6 +12578,142 @@ function ctExtractVideoThumbnail(file) {
     video.onerror = function() { URL.revokeObjectURL(url); resolve(null); };
     setTimeout(function() { URL.revokeObjectURL(url); resolve(null); }, 15000);
   });
+}
+
+// Frame selector modal for video thumbnails
+function ctOpenFrameSelector(videoUrl, attachmentId) {
+  var old = document.getElementById('ctFrameModal');
+  if (old) old.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'ctFrameModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10001;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
+  modal.onclick = function(e) { if (e.target === modal) { modal.remove(); } };
+
+  modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:600px;max-width:95vw;overflow:hidden;box-shadow:0 25px 50px rgba(0,0,0,0.4)">'
+    + '<div style="background:linear-gradient(135deg,#1a1a2e,#2d1b4e);padding:16px 20px;color:#fff;display:flex;justify-content:space-between;align-items:center">'
+    + '<div><div style="font-size:1rem;font-weight:800">🎞 Escolher Thumbnail</div>'
+    + '<div style="font-size:0.75rem;opacity:0.7;margin-top:2px">Arraste o slider para escolher o frame</div></div>'
+    + '<button onclick="document.getElementById(\'ctFrameModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:1rem">✕</button>'
+    + '</div>'
+    + '<div style="padding:20px;text-align:center">'
+    + '<div style="position:relative;display:inline-block;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.15)">'
+    + '<video id="ctFrameVideo" src="' + videoUrl + '" muted playsinline preload="auto" style="width:100%;max-height:350px;display:block;background:#000"></video>'
+    + '</div>'
+    + '<div style="margin-top:14px;display:flex;align-items:center;gap:10px">'
+    + '<span style="font-size:0.75rem;color:var(--text-secondary);min-width:40px" id="ctFrameTime">0:00</span>'
+    + '<input type="range" id="ctFrameSlider" min="0" max="100" value="0" step="0.1" style="flex:1;accent-color:#8b5cf6;cursor:pointer;height:6px">'
+    + '<span style="font-size:0.75rem;color:var(--text-secondary);min-width:40px" id="ctFrameDuration">0:00</span>'
+    + '</div>'
+    + '<div id="ctFramePreview" style="margin-top:12px;display:flex;gap:6px;justify-content:center;overflow-x:auto;padding:4px 0"></div>'
+    + '</div>'
+    + '<div style="padding:12px 20px;border-top:1px solid var(--border,#e5e7eb);display:flex;gap:10px">'
+    + '<button onclick="document.getElementById(\'ctFrameModal\').remove()" style="flex:1;padding:10px;border:1.5px solid var(--border,#e5e7eb);border-radius:8px;background:transparent;cursor:pointer;font-family:inherit;font-size:0.82rem">Cancelar</button>'
+    + '<button onclick="ctSaveFrameAsThumb(\'' + attachmentId + '\')" id="ctFrameSaveBtn" style="flex:1;padding:10px;border:none;border-radius:8px;background:#8b5cf6;color:#fff;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.82rem">✅ Salvar como thumbnail</button>'
+    + '</div></div>';
+
+  document.body.appendChild(modal);
+
+  var video = document.getElementById('ctFrameVideo');
+  var slider = document.getElementById('ctFrameSlider');
+  var timeEl = document.getElementById('ctFrameTime');
+  var durEl = document.getElementById('ctFrameDuration');
+  var previewEl = document.getElementById('ctFramePreview');
+
+  function fmtTime(s) { var m = Math.floor(s/60); return m + ':' + ('0'+Math.floor(s%60)).slice(-2); }
+
+  video.onloadedmetadata = function() {
+    slider.max = video.duration;
+    durEl.textContent = fmtTime(video.duration);
+    video.currentTime = Math.min(2, video.duration * 0.1);
+    // Generate preview strip (8 thumbnails at intervals)
+    var count = 8;
+    var interval = video.duration / count;
+    previewEl.innerHTML = '';
+    for (var i = 0; i < count; i++) {
+      var t = Math.round(interval * i * 10) / 10;
+      previewEl.innerHTML += '<canvas width="64" height="114" data-time="' + t + '" onclick="document.getElementById(\'ctFrameVideo\').currentTime=' + t + ';document.getElementById(\'ctFrameSlider\').value=' + t + '" style="border-radius:4px;cursor:pointer;border:2px solid transparent;background:#000;flex:0 0 64px"></canvas>';
+    }
+    // Fill preview strip asynchronously
+    ctFillPreviewStrip(video, previewEl);
+  };
+
+  slider.oninput = function() {
+    video.currentTime = parseFloat(this.value);
+  };
+
+  video.ontimeupdate = function() {
+    timeEl.textContent = fmtTime(video.currentTime);
+    if (!slider._dragging) slider.value = video.currentTime;
+  };
+  slider.onmousedown = function() { slider._dragging = true; };
+  slider.onmouseup = function() { slider._dragging = false; };
+}
+
+async function ctFillPreviewStrip(video, container) {
+  var canvases = container.querySelectorAll('canvas');
+  for (var i = 0; i < canvases.length; i++) {
+    var c = canvases[i];
+    var t = parseFloat(c.dataset.time);
+    video.currentTime = t;
+    await new Promise(function(r) {
+      video.onseeked = function() {
+        var ctx = c.getContext('2d');
+        ctx.drawImage(video, 0, 0, c.width, c.height);
+        r();
+      };
+      setTimeout(r, 500);
+    });
+  }
+  // Reset to slider position
+  video.currentTime = parseFloat(document.getElementById('ctFrameSlider').value) || 2;
+}
+
+async function ctSaveFrameAsThumb(videoAttachmentId) {
+  var video = document.getElementById('ctFrameVideo');
+  var btn = document.getElementById('ctFrameSaveBtn');
+  if (!video || !ctModalTask) return;
+  if (btn) { btn.textContent = '⏳ Salvando...'; btn.disabled = true; }
+
+  try {
+    var canvas = document.createElement('canvas');
+    canvas.width = Math.min(video.videoWidth || 720, 720);
+    canvas.height = Math.round(canvas.width * (video.videoHeight || 1280) / (video.videoWidth || 720));
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    var blob = await new Promise(function(r) { canvas.toBlob(r, 'image/jpeg', 0.9); });
+    if (!blob) throw new Error('Falha ao capturar frame');
+
+    // Upload thumbnail
+    var thumbName = 'thumb_frame_' + Date.now() + '.jpg';
+    var thumbPath = 'content/' + ctCurrentClient + '/' + thumbName;
+    var upRes = await _supabase.storage.from('client-hub-materials').upload(thumbPath, blob, { contentType: 'image/jpeg', upsert: true });
+    if (upRes.error) throw new Error(upRes.error.message);
+
+    var thumbUrl = _supabase.storage.from('client-hub-materials').getPublicUrl(thumbPath).data.publicUrl;
+
+    // Save as attachment
+    await ctApi('add_attachment', {
+      task_id: ctModalTask.id,
+      file_name: thumbName,
+      file_url: thumbUrl,
+      file_type: 'image/jpeg',
+      file_size: blob.size,
+      category: 'creative',
+      user: ctGetUser(),
+    });
+
+    // Reload and close
+    var data = await ctApi('get_task', { id: ctModalTask.id });
+    ctRenderModalAttachments(data.attachments || []);
+    document.getElementById('ctFrameModal').remove();
+
+  } catch(err) {
+    console.error('Frame save error:', err);
+    alert('Erro: ' + err.message);
+    if (btn) { btn.textContent = '✅ Salvar como thumbnail'; btn.disabled = false; }
+  }
 }
 
 async function ctHandleFileUpload(files, category) {
