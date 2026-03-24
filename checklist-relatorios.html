@@ -12579,17 +12579,53 @@ function ctRenderModalActivity(activity) {
 
   el.innerHTML = activity.map(a => {
     const time = new Date(a.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    let icon = '📝';
     let desc = a.action;
-    if (a.action === 'status_change' && a.details) {
-      const d = typeof a.details === 'string' ? JSON.parse(a.details) : a.details;
-      const oldS = CT_STATUSES.find(s => s.key === d.old_status);
-      const newS = CT_STATUSES.find(s => s.key === d.new_status);
-      desc = '<span style="color:' + (oldS ? oldS.color : '#666') + '">' + (oldS ? oldS.label : d.old_status) + '</span> → <span style="color:' + (newS ? newS.color : '#666') + '">' + (newS ? newS.label : d.new_status) + '</span>';
-    } else if (a.action === 'task_created') desc = '📋 Tarefa criada';
-    else if (a.action === 'comment_added') desc = '💬 Comentário adicionado';
-    else if (a.action === 'attachment_added') desc = '📎 Arquivo anexado';
+    var d = null;
+    try { d = a.details ? (typeof a.details === 'string' ? JSON.parse(a.details) : a.details) : null; } catch(e) { d = null; }
 
-    return '<div class="ct-activity-item"><span class="ct-activity-actor">' + a.actor + '</span> ' + desc + '<div class="ct-activity-time">' + time + '</div></div>';
+    if (a.action === 'status_change' || a.action === 'status_changed') {
+      icon = '🔄';
+      if (d && (d.old_status || d.new_status)) {
+        const oldS = CT_STATUSES.find(s => s.key === d.old_status);
+        const newS = CT_STATUSES.find(s => s.key === d.new_status);
+        desc = 'Status: <span style="color:' + (oldS ? oldS.color : '#666') + ';font-weight:600">' + (oldS ? oldS.label : d.old_status || '?') + '</span> → <span style="color:' + (newS ? newS.color : '#666') + ';font-weight:600">' + (newS ? newS.label : d.new_status || '?') + '</span>';
+      } else { desc = 'Alterou o status'; }
+    } else if (a.action === 'task_created') {
+      icon = '📋'; desc = 'Tarefa criada';
+    } else if (a.action === 'comment_added') {
+      icon = '💬'; desc = 'Comentário adicionado';
+      if (d && d.body) desc += ': <span style="color:var(--text-secondary);font-style:italic">"' + (d.body.length > 60 ? d.body.substring(0, 60) + '...' : d.body) + '"</span>';
+    } else if (a.action === 'attachment_added') {
+      icon = '📎'; desc = 'Arquivo anexado';
+      if (d && d.file_name) desc += ': <span style="font-weight:600">' + d.file_name + '</span>';
+      else if (d && d.filename) desc += ': <span style="font-weight:600">' + d.filename + '</span>';
+    } else if (a.action === 'attachment_deleted') {
+      icon = '🗑️'; desc = 'Arquivo removido';
+      if (d && d.file_name) desc += ': ' + d.file_name;
+    } else if (a.action === 'published' || a.action === 'publish') {
+      icon = '🚀'; desc = 'Publicado';
+      if (d && d.platform) desc += ' no <span style="font-weight:600">' + d.platform + '</span>';
+    } else if (a.action === 'scheduled') {
+      icon = '📅'; desc = 'Agendado';
+      if (d && d.platform) desc += ' no <span style="font-weight:600">' + d.platform + '</span>';
+      if (d && d.scheduled_for) desc += ' para ' + new Date(d.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } else if (a.action === 'field_changed') {
+      icon = '✏️';
+      if (d && d.field) {
+        var fieldNames = { name: 'Nome', assignee: 'Responsável', priority: 'Prioridade', due_date: 'Data', briefing: 'Briefing', copy_text: 'Copy', description: 'Descrição', publish_config: 'Configuração' };
+        desc = 'Editou <span style="font-weight:600">' + (fieldNames[d.field] || d.field) + '</span>';
+        if (d.old_value && d.new_value) desc += ': ' + d.old_value + ' → ' + d.new_value;
+      } else { desc = 'Campo editado'; }
+    } else if (a.action === 'duplicated') {
+      icon = '📋'; desc = 'Tarefa duplicada';
+      if (d && d.source_name) desc += ' de <span style="font-weight:600">"' + d.source_name + '"</span>';
+    } else {
+      // Fallback: clean up action name
+      desc = a.action.replace(/_/g, ' ');
+    }
+
+    return '<div class="ct-activity-item"><span class="ct-activity-actor">' + a.actor + '</span> ' + icon + ' ' + desc + '<div class="ct-activity-time">' + time + '</div></div>';
   }).join('');
 }
 
