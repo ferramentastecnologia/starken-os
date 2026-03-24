@@ -31,11 +31,14 @@
   if (!src) {
     playerEl.innerHTML = '<div class="error">Nenhum vídeo especificado</div>';
   } else {
-    playerEl.innerHTML = '<video src="' + src + '" controls autoplay playsinline></video>';
+    playerEl.innerHTML = '<video id="vid" src="' + src + '" controls autoplay muted playsinline></video>';
     actionsEl.innerHTML = '<a href="' + src + '" download class="download">⬇ Baixar vídeo</a>';
     // Update title with filename
     var name = src.split('/').pop().split('?')[0].replace(/_/g, ' ');
     document.title = name + ' — Starken OS';
+    // Unmute after autoplay starts (Chrome requires muted for autoplay)
+    var vid = document.getElementById('vid');
+    vid.addEventListener('playing', function() { vid.muted = false; }, { once: true });
   }
 </script>
 </body>
