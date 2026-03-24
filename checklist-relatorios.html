@@ -3786,12 +3786,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                   <div class="ch-card-body">
                     <div class="ch-field">
                       <label class="ch-field-label">Logo Principal</label>
+                      <div id="chLogoPreview" style="margin-bottom:10px"></div>
                       <div style="display:flex;gap:8px;align-items:center">
-                        <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="URL do logo ou faça upload →" oninput="hubUpdateLogoPreview();hubMarkDirty()" style="flex:1">
-                        <label for="chLogoFileInput" style="padding:8px 14px;background:var(--starken,#3b82f6);color:#fff;border-radius:8px;font-size:0.78rem;font-weight:700;cursor:pointer;white-space:nowrap">⬆ Upload</label>
+                        <input type="text" class="ch-field-value" id="chLogoUrl" placeholder="Cole a URL ou faça upload" oninput="hubUpdateLogoPreview();hubMarkDirty()" style="flex:1;font-size:0.75rem">
+                        <label for="chLogoFileInput" style="padding:8px 14px;background:var(--starken,#3b82f6);color:#fff;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap">⬆ Upload</label>
+                        <button onclick="hubDownloadLogo()" id="chLogoDownloadBtn" style="display:none;padding:8px 14px;background:var(--bg-secondary,#f1f5f9);border:1.5px solid var(--border,#e2e8f0);border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;white-space:nowrap;color:var(--text,#1a1a2e);font-family:inherit">⬇ Baixar</button>
                         <input type="file" id="chLogoFileInput" accept="image/*" style="display:none" onchange="hubUploadLogo(this.files)">
                       </div>
-                      <div id="chLogoPreview" class="ch-logo-preview"></div>
                     </div>
                     <div class="ch-field">
                       <label class="ch-field-label">Cores da Marca</label>
@@ -13980,12 +13981,30 @@ function hubRestoreCardState() {
 function hubUpdateLogoPreview() {
   var url     = document.getElementById('chLogoUrl').value.trim();
   var preview = document.getElementById('chLogoPreview');
+  var dlBtn   = document.getElementById('chLogoDownloadBtn');
   if (!preview) return;
   if (url) {
-    preview.innerHTML = '<img src="' + url + '" alt="Logo" style="max-width:200px;max-height:150px;object-fit:contain;border-radius:8px;border:1px solid var(--border,#e2e8f0);padding:8px;background:#fff" onerror="this.style.display=\'none\'">';
+    preview.innerHTML = '<div style="display:inline-block;padding:12px;background:#fff;border:1.5px solid var(--border,#e2e8f0);border-radius:10px">'
+      + '<img src="' + url + '" alt="Logo" style="max-width:180px;max-height:120px;object-fit:contain;display:block" onerror="this.parentElement.innerHTML=\'<span style=color:#ef4444;font-size:0.78rem>Erro ao carregar imagem</span>\'">'
+      + '</div>';
+    if (dlBtn) dlBtn.style.display = '';
   } else {
-    preview.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary,#64748b);font-size:0.8rem;border:2px dashed var(--border,#e2e8f0);border-radius:8px">Nenhum logo configurado</div>';
+    preview.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-secondary,#64748b);font-size:0.78rem;border:2px dashed var(--border,#e2e8f0);border-radius:8px;background:var(--bg-secondary,#f8fafc)">📷 Nenhum logo configurado — faça upload ou cole a URL</div>';
+    if (dlBtn) dlBtn.style.display = 'none';
   }
+}
+
+// -- Logo download --
+function hubDownloadLogo() {
+  var url = document.getElementById('chLogoUrl').value.trim();
+  if (!url) return;
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'logo_' + (_hubCurrentSlug || 'cliente') + '.' + (url.split('.').pop().split('?')[0] || 'png');
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 // -- Logo file upload --
