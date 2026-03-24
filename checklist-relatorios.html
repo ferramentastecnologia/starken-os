@@ -12470,25 +12470,46 @@ async function ctHandleFileUpload(files, category) {
 
   var SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
   var SUPABASE_ANON = typeof _supabase !== 'undefined' && _supabase.supabaseUrl ? _supabase.supabaseKey : '';
-  // Fallback: get anon key from page
-  if (!SUPABASE_ANON) {
-    try { SUPABASE_ANON = _supabase.rest.headers.apikey || ''; } catch(e) {}
-  }
+  if (!SUPABASE_ANON) { try { SUPABASE_ANON = _supabase.rest.headers.apikey || ''; } catch(e) {} }
 
   for (const file of files) {
+    // Show progress bar
+    var sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    var progressId = 'ctUploadProgress_' + Date.now();
+    var section = category === 'reference' ? document.getElementById('ctRefSection') : document.getElementById('ctCreativeSection');
+    var progressEl = document.createElement('div');
+    progressEl.id = progressId;
+    progressEl.innerHTML = '<div style="padding:10px 0">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      + '<span style="font-size:0.75rem;font-weight:600;color:var(--text,#1a1a2e)">⬆ ' + file.name.substring(0, 30) + (file.name.length > 30 ? '...' : '') + '</span>'
+      + '<span style="font-size:0.68rem;color:var(--text-secondary,#64748b)">' + sizeMB + ' MB</span>'
+      + '</div>'
+      + '<div style="height:6px;background:var(--border,#e2e8f0);border-radius:3px;overflow:hidden">'
+      + '<div id="' + progressId + '_bar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#10b981);border-radius:3px;transition:width 0.2s"></div>'
+      + '</div>'
+      + '<div id="' + progressId + '_text" style="font-size:0.68rem;color:var(--text-secondary,#64748b);margin-top:4px">Iniciando...</div>'
+      + '</div>';
+    if (section) section.appendChild(progressEl);
+
+    var updateProgress = function(pct, text) {
+      var bar = document.getElementById(progressId + '_bar');
+      var txt = document.getElementById(progressId + '_text');
+      if (bar) bar.style.width = pct + '%';
+      if (txt) txt.textContent = text || (pct + '%');
+    };
+
     try {
-      // For small files (<3MB): use existing base64 API
-      // For large files: upload directly to Supabase Storage
       var publicUrl = '';
 
       if (file.size < 3 * 1024 * 1024) {
-        // Small file: base64 via API (existing method)
+        updateProgress(10, 'Preparando...');
         const base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
           reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
           reader.readAsDataURL(file);
         });
+        updateProgress(30, 'Enviando...');
         const uploadRes = await fetch(ctApiBase() + '/api/meta/media', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -12497,31 +12518,48 @@ async function ctHandleFileUpload(files, category) {
             source_base64: base64, filename: file.name, media_type: 'IMAGE',
           }),
         });
+        updateProgress(80, 'Processando...');
         const uploadData = await uploadRes.json();
         if (uploadData.upload && uploadData.upload.publicUrl) publicUrl = uploadData.upload.publicUrl;
+        updateProgress(100, 'Concluído!');
       } else {
-        // Large file: upload directly to Supabase Storage
+        // Large file: upload with XMLHttpRequest for progress tracking
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         var storagePath = 'content/' + ctCurrentClient + '/' + Date.now() + '_' + safeName;
-        var uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/media-uploads/' + storagePath, {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + SUPABASE_ANON,
-            'apikey': SUPABASE_ANON,
-            'Content-Type': file.type || 'application/octet-stream',
-            'x-upsert': 'true'
-          },
-          body: file
+        var uploadUrl = SUPABASE_URL + '/storage/v1/object/media-uploads/' + storagePath;
+
+        await new Promise(function(resolve, reject) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', uploadUrl, true);
+          xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON);
+          xhr.setRequestHeader('apikey', SUPABASE_ANON);
+          xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+          xhr.setRequestHeader('x-upsert', 'true');
+
+          xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+              var pct = Math.round(e.loaded / e.total * 100);
+              var loaded = (e.loaded / 1024 / 1024).toFixed(1);
+              var total = (e.total / 1024 / 1024).toFixed(1);
+              updateProgress(pct, pct + '% · ' + loaded + ' / ' + total + ' MB');
+            }
+          };
+          xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              publicUrl = SUPABASE_URL + '/storage/v1/object/public/media-uploads/' + storagePath;
+              updateProgress(100, '✅ Upload concluído!');
+              resolve();
+            } else {
+              reject(new Error('Upload falhou: HTTP ' + xhr.status));
+            }
+          };
+          xhr.onerror = function() { reject(new Error('Erro de rede no upload')); };
+          xhr.send(file);
         });
-        if (uploadRes.ok) {
-          publicUrl = SUPABASE_URL + '/storage/v1/object/public/media-uploads/' + storagePath;
-        } else {
-          var errText = await uploadRes.text();
-          throw new Error('Upload falhou: ' + errText.substring(0, 100));
-        }
       }
 
       if (publicUrl) {
+        updateProgress(100, '✅ Salvando...');
         await ctApi('add_attachment', {
           task_id: ctModalTask.id,
           file_name: file.name,
@@ -12534,8 +12572,12 @@ async function ctHandleFileUpload(files, category) {
       }
     } catch(err) {
       console.error('Upload error:', err);
+      updateProgress(0, '❌ ' + err.message);
       alert('Erro no upload de ' + file.name + ': ' + err.message);
     }
+
+    // Remove progress after 2s
+    setTimeout(function() { var el = document.getElementById(progressId); if (el) el.remove(); }, 2000);
   }
 
   // Reload attachments
