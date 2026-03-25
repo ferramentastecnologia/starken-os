@@ -13415,8 +13415,16 @@ async function ctShowAiHistory() {
 }
 
 // ─── CREATOMATE: VIDEO + MUSIC INTEGRATION ───
-var CREATOMATE_API_KEY = 'public-eun5425w890p79cxjq9o76qy';
+var CREATOMATE_API_KEY = '';  // Loaded from Supabase admin_secrets
 var _ctMusicTab = 'url';
+
+// Load Creatomate key from Supabase
+(async function() {
+  try {
+    var { data } = await _supabase.rpc('get_secret', { p_label: 'creatomate_api_key' });
+    if (data) CREATOMATE_API_KEY = data;
+  } catch(e) { console.warn('Creatomate key not loaded:', e); }
+})();
 var _ctRenderedVideoUrl = null;
 
 function ctMusicTab(tab) {
