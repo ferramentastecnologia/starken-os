@@ -274,6 +274,15 @@ async function upsertTask(params) {
     return fail('group_id, client_id, and name are required for new tasks');
   }
 
+  // Calculate next position (add to bottom)
+  let nextPos = 0;
+  if (position === undefined || position === null) {
+    const existing = await supaSelect('content_tasks',
+      `select=position&group_id=eq.${group_id}&parent_id=${parent_id ? 'eq.' + parent_id : 'is.null'}&order=position.desc&limit=1`
+    );
+    nextPos = existing.length ? (existing[0].position || 0) + 1 : 0;
+  }
+
   const record = {
     group_id,
     parent_id: parent_id || null,
@@ -286,7 +295,7 @@ async function upsertTask(params) {
     assignee: assignee || null,
     priority: priority || 'medium',
     due_date: due_date || null,
-    position: position ?? 0,
+    position: position ?? nextPos,
     publish_config: publish_config || null,
     created_by: user,
     created_at: now,
