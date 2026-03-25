@@ -12805,8 +12805,17 @@ function ctRenderModalAttachments(attachments) {
   const refsEl = document.getElementById('ctModalReferences');
   const creativesEl = document.getElementById('ctModalCreatives');
 
-  refsEl.innerHTML = refs.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhuma referência adicionada</div>' :
-    refs.map(a => ctBuildAttCard(a, 'REF', 'rgba(0,0,0,0.7)')).join('');
+  if (refsEl) {
+    refsEl.innerHTML = refs.length === 0 ? '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Nenhuma referência adicionada</div>' :
+      refs.map(a => ctBuildAttCard(a, 'REF', 'rgba(0,0,0,0.7)')).join('');
+  }
+
+  if (!creativesEl) {
+    // Legacy creative section removed - creatives now rendered per-format
+    if (typeof ctShowMusicSectionIfVideo === 'function') ctShowMusicSectionIfVideo();
+    if (_ctSelectedFormats && _ctSelectedFormats.length > 0 && typeof ctRenderFormatContent === 'function') ctRenderFormatContent();
+    return;
+  }
 
   if (creatives.length === 0) {
     creativesEl.innerHTML = '<div style="color:var(--text-secondary);font-size:0.82rem;padding:12px">Designer ainda não enviou o criativo</div>';
