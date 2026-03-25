@@ -3477,6 +3477,43 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div class="ct-modal-section-title">✏️ Copy do Post</div>
               <textarea class="ct-modal-textarea copy-area" id="ctModalCopy" placeholder="Texto/legenda que será publicado nas redes sociais..." onchange="ctSaveTaskField('copy_text',this.value)"></textarea>
               <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctModalCopyCount">0</span> / 2.200 caracteres</div>
+
+              <!-- AI Copy Generator -->
+              <div style="margin-top:12px;background:linear-gradient(135deg,#f8f5ff,#f0e7ff);border-radius:12px;padding:14px;border:1px solid #e9d5ff">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+                  <span style="font-size:1rem">🤖</span>
+                  <span style="font-size:0.82rem;font-weight:700;color:#7c3aed">Gerar Copy com IA</span>
+                  <span style="font-size:0.6rem;background:#7c3aed;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">DeepSeek</span>
+                </div>
+
+                <!-- Direction Input -->
+                <textarea id="ctAiDirection" placeholder="Direcionamento rápido: ex. 'amanhã inaugura, food porn, se preparem'" style="width:100%;padding:8px 12px;border:1px solid #d8b4fe;border-radius:8px;font-size:0.8rem;font-family:inherit;background:#fff;color:var(--text);box-sizing:border-box;min-height:50px;resize:vertical;margin-bottom:10px"></textarea>
+
+                <!-- Generation Buttons -->
+                <div style="display:flex;gap:8px">
+                  <button onclick="ctGenerateCopy('estrategia')" id="ctAiBtnEstrategia" style="flex:1;padding:9px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s">
+                    ⚡ Gerar Copy - Estratégia
+                  </button>
+                  <button onclick="ctGenerateCopy('briefing')" id="ctAiBtnBriefing" style="flex:1;padding:9px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s">
+                    📋 Gerar Copy - Briefing
+                  </button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="ctAiLoading" style="display:none;margin-top:12px;text-align:center;padding:16px">
+                  <div class="ct-spinner" style="width:24px;height:24px;border-width:3px;margin:0 auto 8px"></div>
+                  <div style="font-size:0.8rem;font-weight:600;color:#7c3aed">Gerando 3 variações de copy...</div>
+                  <div style="font-size:0.7rem;color:var(--text-secondary);margin-top:4px">Analisando contexto do cliente + direcionamento</div>
+                </div>
+
+                <!-- Results -->
+                <div id="ctAiResults" style="display:none;margin-top:12px"></div>
+
+                <!-- History Link -->
+                <div style="margin-top:8px;text-align:right">
+                  <button onclick="ctShowAiHistory()" style="background:none;border:none;color:#7c3aed;font-size:0.72rem;cursor:pointer;font-family:inherit;text-decoration:underline">📜 Histórico de gerações</button>
+                </div>
+              </div>
             </div>
 
             <!-- Description / Notes -->
@@ -13085,6 +13122,251 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
     console.error('Frame save error:', err);
     alert('Erro: ' + err.message);
     if (btn) { btn.textContent = '✅ Salvar como thumbnail'; btn.disabled = false; }
+  }
+}
+
+// ─── DEEPSEEK AI: COPY GENERATION ───
+var DEEPSEEK_API_KEY = 'sk-a8eb34e51f7749a39c37fda33c349432';
+var DEEPSEEK_MODEL = 'deepseek-chat';
+
+async function ctGetClientContext(clientSlug) {
+  if (!clientSlug) return null;
+  try {
+    var { data } = await _supabase.from('client_hub').select('*').eq('client_slug', clientSlug).limit(1).single();
+    return data;
+  } catch(e) {
+    // Try alternative slug format
+    var slugAlt = clientSlug.toLowerCase().replace(/\s+/g, '-');
+    try {
+      var { data } = await _supabase.from('client_hub').select('*').eq('client_slug', slugAlt).limit(1).single();
+      return data;
+    } catch(e2) { return null; }
+  }
+}
+
+function ctBuildCopyPrompt(mode, context, direction, briefing, format) {
+  var clientName = context ? (context.client_name || '') : (ctCurrentClient || '');
+  var tone = context ? (context.copy_tone || context.tone_of_voice || '') : '';
+  var persona = context ? (context.copy_persona || context.persona_description || '') : '';
+  var keywords = '';
+  if (context && context.copy_keywords) {
+    keywords = Array.isArray(context.copy_keywords) ? context.copy_keywords.join(', ') : String(context.copy_keywords);
+  } else if (context && context.keywords) {
+    keywords = Array.isArray(context.keywords) ? context.keywords.join(', ') : String(context.keywords);
+  }
+  var forbidden = '';
+  if (context && context.copy_forbidden) {
+    forbidden = Array.isArray(context.copy_forbidden) ? context.copy_forbidden.join(', ') : String(context.copy_forbidden);
+  } else if (context && context.forbidden_words) {
+    forbidden = Array.isArray(context.forbidden_words) ? context.forbidden_words.join(', ') : String(context.forbidden_words);
+  }
+  var examples = '';
+  if (context && context.copy_examples_text) {
+    var ex = Array.isArray(context.copy_examples_text) ? context.copy_examples_text : [];
+    examples = ex.join('\n---\n');
+  } else if (context && context.copy_examples) {
+    var ex2 = Array.isArray(context.copy_examples) ? context.copy_examples : [];
+    examples = ex2.join('\n---\n');
+  }
+  var obs = context ? (context.copy_observations || context.notes || '') : '';
+
+  var systemPrompt = 'Voce e um copywriter especialista em social media. Voce escreve para o cliente "' + clientName + '".\n\n';
+  if (tone) systemPrompt += 'TOM DE VOZ: ' + tone + '\n';
+  if (persona) systemPrompt += 'PERSONA / PUBLICO-ALVO: ' + persona + '\n';
+  if (keywords) systemPrompt += 'PALAVRAS-CHAVE (use naturalmente): ' + keywords + '\n';
+  if (forbidden) systemPrompt += 'PALAVRAS PROIBIDAS (NUNCA use): ' + forbidden + '\n';
+  if (obs) systemPrompt += 'OBSERVACOES: ' + obs + '\n';
+  if (examples) systemPrompt += '\nEXEMPLOS DE COPY APROVADOS:\n' + examples + '\n';
+
+  systemPrompt += '\nREGRAS:\n'
+    + '- Escreva em portugues brasileiro\n'
+    + '- Use emojis de forma natural quando apropriado\n'
+    + '- Formato do post: ' + (format || 'feed') + '\n'
+    + '- Gere exatamente 3 variacoes da copy\n'
+    + '- Cada variacao deve ter um estilo levemente diferente\n'
+    + '- Inclua hashtags relevantes ao final de cada variacao\n'
+    + '- Separe cada variacao com "---VARIACAO---"\n'
+    + '- NAO numere as variacoes, apenas separe com o marcador acima\n'
+    + '- Maximo 2200 caracteres por variacao\n';
+
+  var userPrompt = '';
+  if (mode === 'estrategia') {
+    userPrompt = 'Gere 3 variacoes de copy criativa e estrategica para um post de ' + (format || 'feed') + '.';
+    if (direction) userPrompt += '\n\nDirecionamento do usuario: ' + direction;
+  } else {
+    userPrompt = 'Gere 3 variacoes de copy baseada no briefing abaixo.';
+    if (briefing) userPrompt += '\n\nBRIEFING:\n' + briefing;
+    if (direction) userPrompt += '\n\nDIRECIONAMENTO ADICIONAL:\n' + direction;
+  }
+
+  return { systemPrompt, userPrompt };
+}
+
+async function ctGenerateCopy(mode) {
+  if (!ctModalTask) return;
+
+  var direction = document.getElementById('ctAiDirection').value.trim();
+  var briefing = document.getElementById('ctModalBriefing') ? document.getElementById('ctModalBriefing').value.trim() : '';
+  var format = ctModalTask.publish_config ? ctModalTask.publish_config.content_type : 'feed';
+
+  if (mode === 'briefing' && !briefing && !direction) {
+    return alert('Preencha o Briefing ou o Direcionamento para gerar copy no modo Briefing');
+  }
+
+  // Disable buttons, show loading
+  var btnE = document.getElementById('ctAiBtnEstrategia');
+  var btnB = document.getElementById('ctAiBtnBriefing');
+  var loading = document.getElementById('ctAiLoading');
+  var results = document.getElementById('ctAiResults');
+  btnE.disabled = true; btnB.disabled = true;
+  btnE.style.opacity = '0.5'; btnB.style.opacity = '0.5';
+  loading.style.display = ''; results.style.display = 'none';
+
+  try {
+    // 1. Fetch client context
+    var context = await ctGetClientContext(ctCurrentClient);
+
+    // 2. Build prompt
+    var { systemPrompt, userPrompt } = ctBuildCopyPrompt(mode, context, direction, briefing, format);
+
+    // 3. Call DeepSeek API
+    var res = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + DEEPSEEK_API_KEY
+      },
+      body: JSON.stringify({
+        model: DEEPSEEK_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.8,
+        max_tokens: 3000
+      })
+    });
+
+    if (!res.ok) {
+      var errText = await res.text();
+      throw new Error('DeepSeek API error: ' + res.status + ' - ' + errText);
+    }
+
+    var data = await res.json();
+    var content = data.choices[0].message.content;
+    var tokensUsed = data.usage ? data.usage.total_tokens : 0;
+
+    // 4. Parse variations
+    var variations = content.split('---VARIACAO---').map(function(v) { return v.trim(); }).filter(function(v) { return v.length > 10; });
+    if (variations.length === 0) variations = [content.trim()];
+
+    // 5. Save to history
+    await _supabase.from('ai_generation_history').insert({
+      client_slug: ctCurrentClient,
+      task_id: ctModalTask.id,
+      user_name: gpState.user,
+      generation_mode: mode,
+      input_direction: direction || null,
+      input_briefing: mode === 'briefing' ? briefing : null,
+      client_context: context ? { tone: context.copy_tone || context.tone_of_voice, persona: context.copy_persona || context.persona_description } : null,
+      output_copies: variations,
+      model_used: DEEPSEEK_MODEL,
+      tokens_used: tokensUsed
+    }).catch(function(e) { console.warn('AI history save error:', e); });
+
+    // 6. Render results
+    loading.style.display = 'none';
+    results.style.display = '';
+    results.innerHTML = variations.map(function(v, i) {
+      var escaped = v.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      return '<div style="background:var(--card,#fff);border-radius:10px;padding:12px;border:1px solid var(--border);margin-bottom:8px">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        + '<span style="font-size:0.72rem;font-weight:700;color:#7c3aed">Variação ' + (i + 1) + '</span>'
+        + '<span style="font-size:0.65rem;color:var(--text-secondary)">' + v.length + ' caracteres</span>'
+        + '</div>'
+        + '<div style="font-size:0.82rem;color:var(--text);line-height:1.5;white-space:pre-wrap;margin-bottom:10px">' + escaped + '</div>'
+        + '<div style="display:flex;gap:6px">'
+        + '<button onclick="ctUseCopyVariation(' + i + ')" style="flex:1;padding:6px 10px;border:none;border-radius:6px;background:#10b981;color:#fff;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">✅ Usar Esta</button>'
+        + '<button onclick="ctCopyCopyVariation(' + i + ')" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+
+    window._ctAiVariations = variations;
+
+  } catch(err) {
+    console.error('AI generation error:', err);
+    loading.style.display = 'none';
+    results.style.display = '';
+    results.innerHTML = '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px;color:#dc2626;font-size:0.82rem">'
+      + '<b>Erro:</b> ' + err.message + '</div>';
+  } finally {
+    btnE.disabled = false; btnB.disabled = false;
+    btnE.style.opacity = '1'; btnB.style.opacity = '1';
+  }
+}
+
+function ctUseCopyVariation(idx) {
+  if (!window._ctAiVariations || !window._ctAiVariations[idx]) return;
+  var textarea = document.getElementById('ctModalCopy');
+  if (textarea) {
+    textarea.value = window._ctAiVariations[idx];
+    textarea.dispatchEvent(new Event('change'));
+    // Update char count
+    var counter = document.getElementById('ctModalCopyCount');
+    if (counter) counter.textContent = textarea.value.length;
+  }
+}
+
+function ctCopyCopyVariation(idx) {
+  if (!window._ctAiVariations || !window._ctAiVariations[idx]) return;
+  navigator.clipboard.writeText(window._ctAiVariations[idx]).then(function() {
+    var btn = event.target;
+    var orig = btn.textContent;
+    btn.textContent = '✅ Copiado!';
+    setTimeout(function() { btn.textContent = orig; }, 1500);
+  });
+}
+
+async function ctShowAiHistory() {
+  if (!ctCurrentClient) return;
+  try {
+    var { data } = await _supabase.from('ai_generation_history')
+      .select('*')
+      .eq('client_slug', ctCurrentClient)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (!data || data.length === 0) return alert('Nenhuma geração anterior encontrada para este cliente.');
+
+    var html = '<div style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10002;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)this.remove()">'
+      + '<div style="background:var(--card,#fff);border-radius:16px;padding:20px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+      + '<h3 style="margin:0;font-size:1rem;color:var(--text)">📜 Histórico de Gerações IA</h3>'
+      + '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-secondary)">✕</button>'
+      + '</div>';
+
+    data.forEach(function(item) {
+      var date = new Date(item.created_at).toLocaleString('pt-BR');
+      var modeLabel = item.generation_mode === 'estrategia' ? '⚡ Estratégia' : '📋 Briefing';
+      var copies = item.output_copies || [];
+      html += '<div style="border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:8px">'
+        + '<div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--text-secondary);margin-bottom:6px">'
+        + '<span>' + modeLabel + ' • ' + item.user_name + '</span><span>' + date + '</span></div>';
+      if (item.input_direction) html += '<div style="font-size:0.72rem;color:#7c3aed;margin-bottom:4px">Direção: ' + item.input_direction + '</div>';
+      copies.forEach(function(c, ci) {
+        var short = c.length > 120 ? c.substring(0, 120) + '...' : c;
+        html += '<div style="font-size:0.75rem;color:var(--text);background:var(--bg-secondary);padding:6px 8px;border-radius:6px;margin-top:4px;cursor:pointer" onclick="document.getElementById(\'ctModalCopy\').value=window._ctHistCopies[' + ci + '];document.getElementById(\'ctModalCopy\').dispatchEvent(new Event(\'change\'));this.closest(\'div[style*=fixed]\').remove()">'
+          + short.replace(/</g, '&lt;') + '</div>';
+      });
+      if (!window._ctHistCopies) window._ctHistCopies = copies;
+      html += '</div>';
+    });
+
+    html += '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  } catch(e) {
+    console.error('AI history error:', e);
   }
 }
 
