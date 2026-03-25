@@ -2506,14 +2506,15 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <option value="Juan">Juan</option>
         <option value="Henrique">Henrique</option>
         <option value="Emilly">Emilly</option>
+        <option value="Leonardo">Leonardo</option>
       </select>
     </div>
     <div>
-      <label class="login-field-label">PIN</label>
-      <input type="password" id="loginPin" class="login-field" maxlength="6" placeholder="••••">
+      <label class="login-field-label">Senha</label>
+      <input type="password" id="loginPin" class="login-field" placeholder="Sua senha">
     </div>
     <button id="loginBtn" class="login-btn">Entrar</button>
-    <div id="loginError" class="login-error">PIN inválido. Tente novamente.</div>
+    <div id="loginError" class="login-error">Credenciais inválidas. Tente novamente.</div>
   </div>
 </div>
 
@@ -7581,9 +7582,10 @@ renderAll(); // render imediato com dados do localStorage
 // GESTÃO DE PROJETOS — Login + Módulo completo
 // ================================================================
 const GP_USERS = [
-  { name:'Juan',     pin:'1234', role:'admin',    color:'#3b82f6' },
-  { name:'Henrique', pin:'5678', role:'executor', color:'#8b5cf6' },
-  { name:'Emilly',   pin:'2222', role:'editor',   color:'#f59e0b' }
+  { name:'Juan',     role:'admin',    color:'#3b82f6' },
+  { name:'Henrique', role:'executor', color:'#8b5cf6' },
+  { name:'Emilly',   role:'editor',   color:'#f59e0b' },
+  { name:'Leonardo', role:'admin',    color:'#a855f7' }
 ];
 
 const GP_STATUSES = [
@@ -7627,14 +7629,27 @@ function gpFmt(d)       { if (!d) return ''; return new Date(d + 'T00:00:00').to
 document.getElementById('loginBtn').addEventListener('click', doLogin);
 document.getElementById('loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-function doLogin() {
+async function doLogin() {
   const name = document.getElementById('loginUser').value;
-  const pin  = document.getElementById('loginPin').value;
-  const user = GP_USERS.find(u => u.name === name && u.pin === pin);
-  if (user) {
+  const password = document.getElementById('loginPin').value;
+  if (!name || !password) return;
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  try {
+    const { data, error } = await _supabase.rpc('verify_login', { p_name: name, p_password: password });
+    if (error || !data || data.length === 0) {
+      document.getElementById('loginError').classList.add('show');
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    const user = { name: row.name, role: row.role, color: row.avatar_color || '#3b82f6' };
     activateSession(user);
-  } else {
+  } catch(e) {
     document.getElementById('loginError').classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
   }
 }
 
@@ -7655,7 +7670,7 @@ function activateSession(user) {
     setTimeout(function() { try { Gestao.populateClientFilter(); } catch(e2) {} }, 100);
   }
   // Persiste sessão
-  try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, pin: user.pin })); } catch(e) {}
+  try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, role: user.role, color: user.color })); } catch(e) {}
   // Pré-carrega meta clients para todas as abas
   metaClientsPreload();
   // Fallback: re-populate client lists after 3s (in case Supabase loads late)
@@ -7711,10 +7726,10 @@ function metaClientsPreload() {
   try {
     const saved = localStorage.getItem('starkenSession');
     if (saved) {
-      const { name, pin } = JSON.parse(saved);
-      const user = GP_USERS.find(u => u.name === name && u.pin === pin);
-      if (user) {
-        activateSession(user);
+      const { name, role, color } = JSON.parse(saved);
+      const gpUser = GP_USERS.find(u => u.name === name);
+      if (gpUser) {
+        activateSession({ name: gpUser.name, role: gpUser.role, color: gpUser.color });
         return;
       }
     }
