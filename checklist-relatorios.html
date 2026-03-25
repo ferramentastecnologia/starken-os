@@ -12597,7 +12597,9 @@ async function ctOpenModal(taskId) {
   const hasPublishEntries = task.publish_config && task.publish_config.entries && task.publish_config.entries.length > 0;
   const showPublishForm = ['aprovado', 'aprovacao', 'agendar', 'agendado'].includes(task.status);
   const showPublishSection = showPublishForm || hasPublishEntries;
-  document.getElementById('ctModalPublish').style.display = showPublishSection ? 'block' : 'none';
+  // Hide legacy publish section when multi-format is active
+  var hasFormats = _ctSelectedFormats && _ctSelectedFormats.length > 0;
+  document.getElementById('ctModalPublish').style.display = (showPublishSection && !hasFormats) ? 'block' : 'none';
   // Hide the publish button if already published/scheduled (but show history)
   document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
   // Render publish history inside the section
@@ -12627,10 +12629,13 @@ async function ctOpenModal(taskId) {
   ctUpdateFormatButtons();
   ctRenderFormatTabs();
   // Show/hide legacy sections
+  var hasFormats = _ctSelectedFormats.length > 0;
   var legacySection = document.getElementById('ctLegacyCreativeSection');
   var legacyCopy = document.getElementById('ctLegacyCopySection');
-  if (legacySection) legacySection.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
-  if (legacyCopy) legacyCopy.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
+  var legacyPublish = document.getElementById('ctModalPublish');
+  if (legacySection) legacySection.style.display = hasFormats ? 'none' : '';
+  if (legacyCopy) legacyCopy.style.display = hasFormats ? 'none' : '';
+  if (legacyPublish && hasFormats) legacyPublish.style.display = 'none';
 
   // Load comments
   ctRenderModalComments(data.comments || []);
@@ -17746,10 +17751,13 @@ function ctToggleFormat(type) {
   ctRenderFormatTabs();
 
   // Show/hide legacy sections when formats are selected
+  var hasFormats = _ctSelectedFormats.length > 0;
   var legacySection = document.getElementById('ctLegacyCreativeSection');
   var legacyCopy = document.getElementById('ctLegacyCopySection');
-  if (legacySection) legacySection.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
-  if (legacyCopy) legacyCopy.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
+  var legacyPublish = document.getElementById('ctModalPublish');
+  if (legacySection) legacySection.style.display = hasFormats ? 'none' : '';
+  if (legacyCopy) legacyCopy.style.display = hasFormats ? 'none' : '';
+  if (legacyPublish && hasFormats) legacyPublish.style.display = 'none';
 }
 
 function ctUpdateFormatButtons() {
@@ -17815,7 +17823,7 @@ function ctRenderFormatContent() {
   // Render creatives filtered by format_type
   var allAtts = ctModalTask.attachments || [];
   var creatives = allAtts.filter(function(a) {
-    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || (!a.format_type && fmt === 'feed'));
+    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type);
   });
 
   var grid = document.getElementById('ctFormatCreatives');
@@ -17989,7 +17997,7 @@ async function ctPublishFormat() {
   // Get format-specific creatives
   var allAtts = ctModalTask.attachments || [];
   var creatives = allAtts.filter(function(a) {
-    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || (!a.format_type && fmt === 'feed'));
+    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type);
   });
 
   if (creatives.length === 0) return alert('Adicione criativos para o formato ' + (CT_FORMATS[fmt] || {}).label);
