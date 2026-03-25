@@ -13731,7 +13731,8 @@ async function ctHandleFileUpload(files, category) {
     // Show progress bar
     var sizeMB = (file.size / 1024 / 1024).toFixed(1);
     var progressId = 'ctUploadProgress_' + Date.now();
-    var section = category === 'reference' ? document.getElementById('ctRefSection') : document.getElementById('ctCreativeSection');
+    var section = category === 'reference' ? document.getElementById('ctRefSection') :
+      (document.getElementById('ctFormatCreatives') && _ctSelectedFormats && _ctSelectedFormats.length > 0 ? document.getElementById('ctFormatCreatives').parentElement : document.getElementById('ctCreativeSection') || document.getElementById('ctLegacyCreativeSection'));
     var progressEl = document.createElement('div');
     progressEl.id = progressId;
     progressEl.innerHTML = '<div style="padding:10px 0">'
@@ -13850,8 +13851,13 @@ async function ctHandleFileUpload(files, category) {
 
   // Reload attachments
   const data = await ctApi('get_task', { id: ctModalTask.id });
-  ctRenderModalAttachments(data.attachments || []);
+  ctModalTask.attachments = data.attachments || [];
+  ctRenderModalAttachments(ctModalTask.attachments);
   ctRenderModalActivity(data.activity || []);
+  // Refresh format tab content if multi-format is active
+  if (_ctSelectedFormats && _ctSelectedFormats.length > 0 && typeof ctRenderFormatContent === 'function') {
+    ctRenderFormatContent();
+  }
 }
 
 // ─── PUBLISH FROM MODAL ───
