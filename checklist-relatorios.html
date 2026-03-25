@@ -13268,18 +13268,20 @@ async function ctGenerateCopy(mode) {
     if (variations.length === 0) variations = [content.trim()];
 
     // 5. Save to history
-    await _supabase.from('ai_generation_history').insert({
-      client_slug: ctCurrentClient,
-      task_id: ctModalTask.id,
-      user_name: gpState.user,
-      generation_mode: mode,
-      input_direction: direction || null,
-      input_briefing: mode === 'briefing' ? briefing : null,
-      client_context: context ? { tone: context.copy_tone || context.tone_of_voice, persona: context.copy_persona || context.persona_description } : null,
-      output_copies: variations,
-      model_used: GROQ_MODEL,
-      tokens_used: tokensUsed
-    }).catch(function(e) { console.warn('AI history save error:', e); });
+    try {
+      await _supabase.from('ai_generation_history').insert({
+        client_slug: ctCurrentClient,
+        task_id: ctModalTask.id,
+        user_name: gpState.user,
+        generation_mode: mode,
+        input_direction: direction || null,
+        input_briefing: mode === 'briefing' ? briefing : null,
+        client_context: context ? { tone: context.copy_tone || context.tone_of_voice, persona: context.copy_persona || context.persona_description } : null,
+        output_copies: variations,
+        model_used: GROQ_MODEL,
+        tokens_used: tokensUsed
+      });
+    } catch(e) { console.warn('AI history save error:', e); }
 
     // 6. Render results
     loading.style.display = 'none';
@@ -13569,15 +13571,17 @@ async function ctRenderVideoWithMusic() {
     btn.disabled = false; btn.style.opacity = '1';
 
     // Save failed render
-    await _supabase.from('video_renders').insert({
-      client_slug: ctCurrentClient,
-      task_id: ctModalTask ? ctModalTask.id : null,
-      created_by: gpState.user,
-      source_video_url: videoAtt ? videoAtt.file_url : '',
-      status: 'failed',
-      error_message: err.message,
-      music_volume: parseInt(document.getElementById('ctMusicVolume').value || 70)
-    }).catch(function(){});
+    try {
+      await _supabase.from('video_renders').insert({
+        client_slug: ctCurrentClient,
+        task_id: ctModalTask ? ctModalTask.id : null,
+        created_by: gpState.user,
+        source_video_url: videoAtt ? videoAtt.file_url : '',
+        status: 'failed',
+        error_message: err.message,
+        music_volume: parseInt(document.getElementById('ctMusicVolume').value || 70)
+      });
+    } catch(e) {}
   }
 }
 
