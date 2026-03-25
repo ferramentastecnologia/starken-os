@@ -3656,6 +3656,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button class="ch-tab" data-chtab="materiais" onclick="hubSwitchInnerTab('materiais',this)">📁 Materiais</button>
             <button class="ch-tab" data-chtab="links" onclick="hubSwitchInnerTab('links',this)">🔗 Links &amp; Recursos</button>
             <button class="ch-tab" data-chtab="atividade" onclick="hubSwitchInnerTab('atividade',this)">🕐 Atividade</button>
+            <button class="ch-tab" data-chtab="copy-context" onclick="hubSwitchInnerTab('copy-context',this)">📝 Contexto Copy</button>
           </div>
 
           <!-- ── TAB: VISAO GERAL ── -->
@@ -4015,6 +4016,70 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
             </div>
           </div><!-- end #chPanel-atividade -->
+
+          <div class="ch-inner-panel" id="chPanel-copy-context">
+            <div style="max-width:800px;margin:0 auto;padding:8px 0">
+              <div class="ch-card" id="chCardCopyContext">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopyContext')">
+                  <span>🎯 Tom de Voz</span><span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field-label">Como a marca se comunica? Ex: informal, divertido, técnico...</div>
+                  <textarea class="ch-textarea" id="chCopyTone" rows="3" placeholder="Descreva o tom de voz da marca..." onblur="hubMarkDirty()"></textarea>
+                </div>
+              </div>
+
+              <div class="ch-card" id="chCardCopyPersona">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopyPersona')">
+                  <span>👤 Persona / Público-alvo</span><span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field-label">Quem é o público? Idade, interesses, comportamento...</div>
+                  <textarea class="ch-textarea" id="chCopyPersona" rows="3" placeholder="Descreva a persona e público-alvo..." onblur="hubMarkDirty()"></textarea>
+                </div>
+              </div>
+
+              <div class="ch-card" id="chCardCopyKeywords">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopyKeywords')">
+                  <span>🔑 Palavras-chave</span><span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field-label">Termos e frases que DEVEM aparecer nos textos</div>
+                  <textarea class="ch-textarea" id="chCopyKeywords" rows="2" placeholder="Liste as palavras-chave separadas por vírgula..." onblur="hubMarkDirty()"></textarea>
+                </div>
+              </div>
+
+              <div class="ch-card" id="chCardCopyForbidden">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopyForbidden')">
+                  <span>🚫 Palavras Proibidas</span><span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field-label">Termos e frases que NÃO devem ser usados</div>
+                  <textarea class="ch-textarea" id="chCopyForbidden" rows="2" placeholder="Liste as palavras proibidas separadas por vírgula..." onblur="hubMarkDirty()"></textarea>
+                </div>
+              </div>
+
+              <div class="ch-card" id="chCardCopyExamples">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopyExamples')">
+                  <span>📝 Exemplos de Copy</span><span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field-label">Copys anteriores que funcionaram bem para referência</div>
+                  <textarea class="ch-textarea" id="chCopyExamplesText" rows="6" placeholder="Cole aqui exemplos de copys aprovados..." onblur="hubMarkDirty()"></textarea>
+                </div>
+              </div>
+
+              <div class="ch-card" id="chCardCopyObs">
+                <div class="ch-card-header" onclick="hubToggleCard('chCardCopyObs')">
+                  <span>📋 Observações Gerais</span><span class="ch-chevron">▶</span>
+                </div>
+                <div class="ch-card-body">
+                  <div class="ch-field-label">Guidelines da marca, regras especiais, notas internas</div>
+                  <textarea class="ch-textarea" id="chCopyObs" rows="4" placeholder="Notas e observações sobre o cliente..." onblur="hubMarkDirty()"></textarea>
+                </div>
+              </div>
+            </div>
+          </div><!-- end #chPanel-copy-context -->
 
         </div><!-- end .ch-wrap -->
       </div><!-- end #tab-client-hub -->
@@ -14371,6 +14436,14 @@ function hubPopulateForm() {
   hubRenderExtraLinks(_hubData.extra_links     || []);
   hubRenderDriveFolders(_hubData.drive_folders || []);
 
+  // Copy Context tab
+  document.getElementById('chCopyTone').value = _hubData.copy_tone || '';
+  document.getElementById('chCopyPersona').value = _hubData.copy_persona || '';
+  document.getElementById('chCopyKeywords').value = (_hubData.copy_keywords || []).join ? (_hubData.copy_keywords || []).join(', ') : (_hubData.copy_keywords || '');
+  document.getElementById('chCopyForbidden').value = (_hubData.copy_forbidden || []).join ? (_hubData.copy_forbidden || []).join(', ') : (_hubData.copy_forbidden || '');
+  document.getElementById('chCopyExamplesText').value = (_hubData.copy_examples_text || []).join ? (_hubData.copy_examples_text || []).join('\n\n---\n\n') : (_hubData.copy_examples_text || '');
+  document.getElementById('chCopyObs').value = _hubData.copy_observations || '';
+
   // Derived UI
   hubUpdateLogoPreview();
   hubUpdateStatusBadge();
@@ -14419,7 +14492,13 @@ function hubCollectForm() {
     brand_colors:     hubGetColors(),
     copy_examples:    hubGetCopyExamples(),
     extra_links:      hubGetExtraLinks(),
-    drive_folders:    hubGetDriveFolders()
+    drive_folders:    hubGetDriveFolders(),
+    copy_tone:        document.getElementById('chCopyTone').value.trim(),
+    copy_persona:     document.getElementById('chCopyPersona').value.trim(),
+    copy_keywords:    document.getElementById('chCopyKeywords').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+    copy_forbidden:   document.getElementById('chCopyForbidden').value.split(',').map(function(s) { return s.trim(); }).filter(Boolean),
+    copy_examples_text: document.getElementById('chCopyExamplesText').value.split('---').map(function(s) { return s.trim(); }).filter(Boolean),
+    copy_observations: document.getElementById('chCopyObs').value.trim()
   };
 }
 
@@ -14970,14 +15049,11 @@ function clientNavSwitch(view) {
     setTimeout(_calAutoFilter, 200);
     document.querySelectorAll('#clientNavBtnCalendarCal').forEach(function(b) { b.classList.add('active'); });
   } else if (view === 'info') {
-    switchTab('client-info');
     document.querySelectorAll('#clientNavBtnInfo').forEach(function(b) { b.classList.add('active'); });
     if (_hubCurrentSlug) {
       var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
       var clientName = clientData.name || _hubCurrentClientName || _hubCurrentSlug;
-      var nameEl = document.getElementById('ciClientName');
-      if (nameEl) nameEl.textContent = clientName;
-      ciLoad(_hubCurrentSlug);
+      hubOpen(_hubCurrentSlug, clientName);
     }
   }
 }
