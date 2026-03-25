@@ -13178,16 +13178,27 @@ function ctBuildCopyPrompt(mode, context, direction, briefing, format) {
   if (obs) systemPrompt += 'OBSERVACOES: ' + obs + '\n';
   if (examples) systemPrompt += '\nEXEMPLOS DE COPY APROVADOS:\n' + examples + '\n';
 
-  systemPrompt += '\nREGRAS:\n'
+  systemPrompt += '\nREGRAS DE CONTEUDO:\n'
     + '- Escreva em portugues brasileiro\n'
-    + '- Use emojis de forma natural quando apropriado\n'
+    + '- Use emojis de forma natural e estrategica (nao exagere, 1-3 por paragrafo no maximo)\n'
     + '- Formato do post: ' + (format || 'feed') + '\n'
     + '- Gere exatamente 3 variacoes da copy\n'
     + '- Cada variacao deve ter um estilo levemente diferente\n'
-    + '- Inclua hashtags relevantes ao final de cada variacao\n'
+    + '- Maximo 2200 caracteres por variacao\n'
+    + '\nREGRAS DE FORMATACAO (MUITO IMPORTANTE):\n'
+    + '- Estruture a copy em paragrafos curtos (1-2 frases por paragrafo)\n'
+    + '- Separe cada paragrafo com uma LINHA EM BRANCO (pule uma linha entre paragrafos)\n'
+    + '- Comece com um gancho forte na primeira linha (headline que prende atencao)\n'
+    + '- Segundo bloco: desenvolva a mensagem principal\n'
+    + '- Terceiro bloco: call-to-action ou informacao complementar\n'
+    + '- Ultimo bloco: hashtags relevantes (separadas por espaco)\n'
+    + '- NAO use textos corridos sem espacamento — quebre em blocos visiveis\n'
+    + '- NAO comece com "Atencao" ou formulas genericas — seja criativo e autentico\n'
+    + '- Use pontuacao estrategica: reticencias para suspense, exclamacao para energia\n'
+    + '\nFORMATO DE SAIDA:\n'
     + '- Separe cada variacao com "---VARIACAO---"\n'
-    + '- NAO numere as variacoes, apenas separe com o marcador acima\n'
-    + '- Maximo 2200 caracteres por variacao\n';
+    + '- NAO numere as variacoes\n'
+    + '- NAO adicione titulos como "Variacao 1" — apenas o texto da copy\n';
 
   var userPrompt = '';
   if (mode === 'estrategia') {
