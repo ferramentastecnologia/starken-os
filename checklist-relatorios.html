@@ -12729,7 +12729,8 @@ async function ctSaveTaskField(field, value) {
     const hasPublishEntries = ctModalTask.publish_config && ctModalTask.publish_config.entries && ctModalTask.publish_config.entries.length > 0;
     const showPublishForm = ['aprovado', 'aprovacao', 'agendar', 'agendado'].includes(value);
     const showPublishSection = showPublishForm || hasPublishEntries;
-    document.getElementById('ctModalPublish').style.display = showPublishSection ? 'block' : 'none';
+    var hasFormatsActive = _ctSelectedFormats && _ctSelectedFormats.length > 0;
+    document.getElementById('ctModalPublish').style.display = (showPublishSection && !hasFormatsActive) ? 'block' : 'none';
     document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
   }
 }
@@ -12746,9 +12747,10 @@ async function ctChangeModalStatus(newStatus) {
   statusBtn.style.background = status.bg;
   statusBtn.style.color = status.color;
 
-  // Show publish section when status is aprovado or agendar
+  // Show publish section when status is aprovado or agendar (only if no multi-format)
   const showPublish = ['aprovado', 'agendar'].includes(newStatus);
-  document.getElementById('ctModalPublish').style.display = showPublish ? 'block' : 'none';
+  var hasFormatsActive = _ctSelectedFormats && _ctSelectedFormats.length > 0;
+  document.getElementById('ctModalPublish').style.display = (showPublish && !hasFormatsActive) ? 'block' : 'none';
 
   // Reload activity
   const actData = await ctApi('list_activity', { task_id: ctModalTask.id });
