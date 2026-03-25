@@ -407,7 +407,7 @@ async function listComments({ task_id }) {
 // Attachment Actions
 // =============================================================================
 
-async function addAttachment({ task_id, file_name, file_url, file_type, file_size, category, user }) {
+async function addAttachment({ task_id, file_name, file_url, file_type, file_size, category, format_type, user }) {
   if (!task_id || !file_name || !file_url) {
     return fail('task_id, file_name, and file_url are required');
   }
@@ -420,6 +420,7 @@ async function addAttachment({ task_id, file_name, file_url, file_type, file_siz
     file_type: file_type || null,
     file_size: file_size || null,
     category: category || null,
+    format_type: format_type || 'feed',
     uploaded_by: user,
     created_at: new Date().toISOString(),
   });
