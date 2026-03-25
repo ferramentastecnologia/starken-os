@@ -3497,8 +3497,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
             </div>
 
-            <!-- Copy Text -->
-            <div class="ct-modal-section">
+            <!-- Copy Text (legacy - hidden when formats are selected) -->
+            <div class="ct-modal-section" id="ctLegacyCopySection">
               <div class="ct-modal-section-title">✏️ Copy do Post</div>
               <textarea class="ct-modal-textarea copy-area" id="ctModalCopy" placeholder="Texto/legenda que será publicado nas redes sociais..." onchange="ctSaveTaskField('copy_text',this.value)"></textarea>
               <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctModalCopyCount">0</span> / 2.200 caracteres</div>
@@ -12581,9 +12581,11 @@ async function ctOpenModal(taskId) {
   _ctActiveFormatTab = _ctSelectedFormats[0] || null;
   ctUpdateFormatButtons();
   ctRenderFormatTabs();
-  // Show/hide legacy creative section
+  // Show/hide legacy sections
   var legacySection = document.getElementById('ctLegacyCreativeSection');
+  var legacyCopy = document.getElementById('ctLegacyCopySection');
   if (legacySection) legacySection.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
+  if (legacyCopy) legacyCopy.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
 
   // Load comments
   ctRenderModalComments(data.comments || []);
@@ -17692,9 +17694,11 @@ function ctToggleFormat(type) {
   // Update tabs
   ctRenderFormatTabs();
 
-  // Show/hide legacy creative section
+  // Show/hide legacy sections when formats are selected
   var legacySection = document.getElementById('ctLegacyCreativeSection');
+  var legacyCopy = document.getElementById('ctLegacyCopySection');
   if (legacySection) legacySection.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
+  if (legacyCopy) legacyCopy.style.display = _ctSelectedFormats.length > 0 ? 'none' : '';
 }
 
 function ctUpdateFormatButtons() {
@@ -17777,6 +17781,10 @@ function ctRenderFormatContent() {
       return card.replace('aspect-ratio:1;object-fit:cover', 'aspect-ratio:' + ratio + ';object-fit:cover');
     }).join('');
   }
+
+  // Hide copy section for Story (stories don't have captions)
+  var copyParent = document.getElementById('ctFormatCopy') ? document.getElementById('ctFormatCopy').closest('.ct-modal-section') : null;
+  if (copyParent) copyParent.style.display = (fmt === 'story') ? 'none' : '';
 
   // Load copy for this format
   var config = ctModalTask.publish_config || {};
