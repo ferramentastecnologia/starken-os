@@ -2483,6 +2483,17 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   .ch-activity-wrap { max-width: 100%; }
   .ch-btn-view { display: none; }
 }
+
+/* ── Client Info Tab ── */
+.ci-wrap { max-width:800px; margin:0 auto; padding:24px 18px; }
+.ci-section { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+.ci-label { font-weight:700; font-size:14px; color:var(--text); margin-bottom:2px; }
+.ci-hint { font-size:12px; color:var(--text-secondary); margin-bottom:8px; }
+.ci-textarea { width:100%; min-height:80px; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; font-family:inherit; background:var(--bg); color:var(--text); resize:vertical; outline:none; transition:border .2s; }
+.ci-textarea:focus { border-color:var(--starken); }
+.ci-short { min-height:50px; }
+.ci-tall { min-height:160px; }
+.ci-footer { text-align:center; font-size:11px; color:var(--text-secondary); padding:8px 0 20px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -4008,6 +4019,59 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div><!-- end .ch-wrap -->
       </div><!-- end #tab-client-hub -->
 
+      <!-- ═══ CLIENT INFO ═══ -->
+      <div id="tab-client-info" class="tab-content">
+        <!-- Client nav bar -->
+        <div class="ct-toolbar" id="clientNavBarInfo" style="display:flex;align-items:center;gap:8px;padding:10px 18px;border-bottom:1px solid var(--border)">
+          <span id="ciClientName" style="font-weight:700;font-size:15px;color:var(--text)"></span>
+          <div style="flex:1"></div>
+          <button class="client-nav-btn" onclick="clientNavSwitch('content')">Conteúdo</button>
+          <button class="client-nav-btn" onclick="clientNavSwitch('calendar')">Calendário</button>
+          <button class="client-nav-btn active" onclick="clientNavSwitch('info')">ℹ️ Info</button>
+        </div>
+
+        <!-- Info form -->
+        <div class="ci-wrap">
+          <div class="ci-section">
+            <div class="ci-label">🎯 Tom de Voz</div>
+            <div class="ci-hint">Como a marca se comunica? Ex: informal, divertido, técnico, sofisticado...</div>
+            <textarea class="ci-textarea" id="ciToneOfVoice" placeholder="Descreva o tom de voz da marca..." onblur="ciSave('tone_of_voice', this.value)"></textarea>
+          </div>
+
+          <div class="ci-section">
+            <div class="ci-label">👤 Persona / Público-alvo</div>
+            <div class="ci-hint">Quem é o público? Idade, interesses, comportamento...</div>
+            <textarea class="ci-textarea" id="ciPersona" placeholder="Descreva a persona e público-alvo..." onblur="ciSave('persona', this.value)"></textarea>
+          </div>
+
+          <div class="ci-section">
+            <div class="ci-label">🔑 Palavras-chave</div>
+            <div class="ci-hint">Termos e frases que DEVEM aparecer nos textos</div>
+            <textarea class="ci-textarea ci-short" id="ciKeywords" placeholder="Liste as palavras-chave separadas por vírgula..." onblur="ciSave('keywords', this.value)"></textarea>
+          </div>
+
+          <div class="ci-section">
+            <div class="ci-label">🚫 Palavras Proibidas</div>
+            <div class="ci-hint">Termos e frases que NÃO devem ser usados</div>
+            <textarea class="ci-textarea ci-short" id="ciForbiddenWords" placeholder="Liste as palavras proibidas separadas por vírgula..." onblur="ciSave('forbidden_words', this.value)"></textarea>
+          </div>
+
+          <div class="ci-section">
+            <div class="ci-label">📝 Exemplos de Copy</div>
+            <div class="ci-hint">Copys anteriores que funcionaram bem para referência</div>
+            <textarea class="ci-textarea ci-tall" id="ciCopyExamples" placeholder="Cole aqui exemplos de copys aprovados..." onblur="ciSave('copy_examples', this.value)"></textarea>
+          </div>
+
+          <div class="ci-section">
+            <div class="ci-label">📋 Observações Gerais</div>
+            <div class="ci-hint">Guidelines da marca, regras especiais, notas internas</div>
+            <textarea class="ci-textarea" id="ciObservations" placeholder="Notas e observações sobre o cliente..." onblur="ciSave('observations', this.value)"></textarea>
+          </div>
+
+          <div class="ci-footer" id="ciFooter"></div>
+        </div>
+      </div><!-- end #tab-client-info -->
+
     </div>
   </div>
 </div>
@@ -5200,7 +5264,8 @@ const TAB_TITLES = {
   'meta-bi':           'BI de Campanhas',
   'meta-publish':      'Agendamento de Posts',
   'calendario':        'Calendário de Posts',
-  'client-hub':        'Client Hub'
+  'client-hub':        'Client Hub',
+  'client-info':       'Info do Cliente'
 };
 
 function switchTab(tabName) {
@@ -14801,6 +14866,73 @@ function hubSwitchInnerTab(tab, btn) {
   if (tab === 'links')     hubUpdateLinkAnchors();
 }
 
+// ── Client Info Tab ──
+var _ciSlug = '';
+var _ciData = {};
+var _ciSaveTimer = null;
+
+async function ciLoad(clientSlug) {
+  _ciSlug = clientSlug;
+  var nameEl = document.getElementById('ciClientName');
+  if (nameEl) nameEl.textContent = clientSlug;
+  // Clear fields
+  document.getElementById('ciToneOfVoice').value = '';
+  document.getElementById('ciPersona').value = '';
+  document.getElementById('ciKeywords').value = '';
+  document.getElementById('ciForbiddenWords').value = '';
+  document.getElementById('ciCopyExamples').value = '';
+  document.getElementById('ciObservations').value = '';
+  document.getElementById('ciFooter').textContent = '';
+  try {
+    var resp = await ctApi('get_client_info', { client_slug: clientSlug });
+    if (resp && resp.client_slug) {
+      _ciData = resp;
+      document.getElementById('ciToneOfVoice').value = resp.tone_of_voice || '';
+      document.getElementById('ciPersona').value = resp.persona || '';
+      document.getElementById('ciKeywords').value = resp.keywords || '';
+      document.getElementById('ciForbiddenWords').value = resp.forbidden_words || '';
+      document.getElementById('ciCopyExamples').value = resp.copy_examples || '';
+      document.getElementById('ciObservations').value = resp.observations || '';
+      if (resp.updated_at) {
+        var d = new Date(resp.updated_at);
+        document.getElementById('ciFooter').textContent = 'Última atualização: ' + d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + (resp.updated_by ? ' por ' + resp.updated_by : '');
+      }
+    }
+  } catch(e) {
+    console.warn('ciLoad error:', e);
+  }
+}
+
+async function ciSave(field, value) {
+  if (!_ciSlug) return;
+  _ciData[field] = value;
+  var payload = {
+    client_slug: _ciSlug,
+    client_name: _ciSlug,
+    tone_of_voice: _ciData.tone_of_voice || '',
+    persona: _ciData.persona || '',
+    keywords: _ciData.keywords || '',
+    forbidden_words: _ciData.forbidden_words || '',
+    copy_examples: _ciData.copy_examples || '',
+    observations: _ciData.observations || '',
+    user: gpState.user ? gpState.user.name : ''
+  };
+  try {
+    await ctApi('save_client_info', payload);
+    // Show saved toast
+    var footer = document.getElementById('ciFooter');
+    footer.textContent = '✓ Salvo!';
+    footer.style.color = '#22c55e';
+    setTimeout(function() {
+      footer.style.color = '';
+      var now = new Date();
+      footer.textContent = 'Última atualização: ' + now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) + (gpState.user ? ' por ' + gpState.user.name : '');
+    }, 1500);
+  } catch(e) {
+    console.warn('ciSave error:', e);
+  }
+}
+
 // -- Client Navigation Bar: switch between Content / Calendar / Info --
 var _hubCurrentClientName = '';
 
@@ -14838,10 +14970,15 @@ function clientNavSwitch(view) {
     setTimeout(_calAutoFilter, 200);
     document.querySelectorAll('#clientNavBtnCalendarCal').forEach(function(b) { b.classList.add('active'); });
   } else if (view === 'info') {
-    var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
-    var clientName = clientData.name || _hubCurrentClientName || _hubCurrentSlug;
-    hubOpen(_hubCurrentSlug, clientName);
+    switchTab('client-info');
     document.querySelectorAll('#clientNavBtnInfo').forEach(function(b) { b.classList.add('active'); });
+    if (_hubCurrentSlug) {
+      var clientData = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug] : {};
+      var clientName = clientData.name || _hubCurrentClientName || _hubCurrentSlug;
+      var nameEl = document.getElementById('ciClientName');
+      if (nameEl) nameEl.textContent = clientName;
+      ciLoad(_hubCurrentSlug);
+    }
   }
 }
 

@@ -442,6 +442,61 @@ async function listAttachments({ task_id }) {
 }
 
 // =============================================================================
+// Client Info Actions
+// =============================================================================
+
+async function getClientInfo({ client_slug }) {
+  if (!client_slug) return fail('client_slug is required');
+
+  const data = await supaSelect(
+    'client_info',
+    `select=*&client_slug=eq.${client_slug}&limit=1`
+  );
+
+  return ok(data.length ? data[0] : {});
+}
+
+async function saveClientInfo({
+  client_slug, client_name, tone_of_voice, persona,
+  keywords, forbidden_words, copy_examples, observations, user,
+}) {
+  if (!client_slug) return fail('client_slug is required');
+  if (!user) return fail('user is required');
+
+  const now = new Date().toISOString();
+
+  const record = {
+    client_slug,
+    ...(client_name !== undefined && { client_name }),
+    ...(tone_of_voice !== undefined && { tone_of_voice }),
+    ...(persona !== undefined && { persona }),
+    ...(keywords !== undefined && { keywords }),
+    ...(forbidden_words !== undefined && { forbidden_words }),
+    ...(copy_examples !== undefined && { copy_examples }),
+    ...(observations !== undefined && { observations }),
+    updated_at: now,
+    updated_by: user,
+  };
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/client_info`, {
+    method: 'POST',
+    headers: {
+      ...HEADERS_RETURN,
+      Prefer: 'resolution=merge-duplicates,return=representation',
+    },
+    body: JSON.stringify(record),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`UPSERT client_info failed: ${err}`);
+  }
+
+  const data = await res.json();
+  return ok({ success: true, data: data.length ? data[0] : data });
+}
+
+// =============================================================================
 // Activity Actions
 // =============================================================================
 
@@ -487,6 +542,9 @@ const ACTIONS = {
   list_attachments: listAttachments,
   // Activity
   list_activity: listActivity,
+  // Client Info
+  get_client_info: getClientInfo,
+  save_client_info: saveClientInfo,
 };
 
 // =============================================================================
