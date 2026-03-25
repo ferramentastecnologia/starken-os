@@ -3489,10 +3489,55 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 </div>
 
                 <!-- Copy for active format -->
-                <div class="ct-modal-section" style="margin-bottom:0">
+                <div class="ct-modal-section" style="margin-bottom:12px">
                   <div class="ct-modal-section-title">✏️ Copy <span id="ctFormatCopyLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
                   <textarea class="ct-modal-textarea copy-area" id="ctFormatCopy" placeholder="Texto/legenda para este formato..." onchange="ctSaveFormatCopy(this.value)" style="min-height:80px"></textarea>
                   <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctFormatCopyCount">0</span> / 2.200 caracteres</div>
+                </div>
+
+                <!-- Per-Format Publish Section -->
+                <div class="ct-modal-section" style="margin-bottom:0" id="ctFormatPublishSection">
+                  <div style="background:var(--card,#fff);border-radius:12px;border:1.5px solid var(--border);padding:14px">
+                    <div class="ct-modal-section-title" style="margin-bottom:10px">🚀 Publicar <span id="ctFormatPublishLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
+
+                    <!-- Platform buttons -->
+                    <div style="margin-bottom:10px">
+                      <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Plataforma</div>
+                      <div style="display:flex;gap:8px">
+                        <button class="meta-pub-plat-btn" id="ctFmtPubFb" onclick="ctFmtSelectPlatform('fb')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">📄 Facebook</button>
+                        <button class="meta-pub-plat-btn" id="ctFmtPubIg" onclick="ctFmtSelectPlatform('ig')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">📷 Instagram</button>
+                      </div>
+                    </div>
+
+                    <!-- Schedule mode -->
+                    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+                      <div>
+                        <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Quando</div>
+                        <select id="ctFmtPubMode" onchange="document.getElementById('ctFmtPubDateWrap').style.display=this.value==='schedule'?'block':'none'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text)">
+                          <option value="now">⚡ Publicar Agora</option>
+                          <option value="schedule">📅 Agendar</option>
+                        </select>
+                      </div>
+                      <div id="ctFmtPubDateWrap" style="display:none;flex:1">
+                        <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Data/Hora</div>
+                        <input type="datetime-local" id="ctFmtPubDatetime" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+                      </div>
+                    </div>
+
+                    <!-- Publish button -->
+                    <button onclick="ctPublishFormat()" id="ctFmtPubBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s">
+                      🚀 Publicar
+                    </button>
+
+                    <!-- Status -->
+                    <div id="ctFmtPubStatus" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:0.8rem"></div>
+
+                    <!-- Per-format publish history -->
+                    <div style="margin-top:12px">
+                      <div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px">📋 Histórico</div>
+                      <div id="ctFmtPublishHistory" style="font-size:0.78rem;color:var(--text-secondary)">Nenhuma publicação</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -17811,6 +17856,9 @@ function ctRenderFormatContent() {
     });
     copyEl._hasListener = true;
   }
+
+  // Render per-format publish section
+  if (typeof ctRenderFormatPublish === 'function') ctRenderFormatPublish();
 }
 
 function ctSaveFormatCopy(value) {
@@ -17832,6 +17880,258 @@ async function ctHandleFormatFileUpload(files) {
   window._ctUploadFormatType = _ctActiveFormatTab;
   await ctHandleFileUpload(files, 'creative');
   window._ctUploadFormatType = null;
+}
+
+// ─── PER-FORMAT PUBLISH ───
+var _ctFmtPlatforms = [];
+
+function ctFmtSelectPlatform(plat) {
+  var btn = document.getElementById(plat === 'fb' ? 'ctFmtPubFb' : 'ctFmtPubIg');
+  var idx = _ctFmtPlatforms.indexOf(plat);
+  if (idx >= 0) {
+    _ctFmtPlatforms.splice(idx, 1);
+    btn.style.background = 'var(--card,#fff)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--text)';
+    btn.style.fontWeight = '400';
+  } else {
+    _ctFmtPlatforms.push(plat);
+    btn.style.background = '#dbeafe';
+    btn.style.borderColor = '#3b82f6';
+    btn.style.color = '#1d4ed8';
+    btn.style.fontWeight = '700';
+  }
+}
+
+function ctRenderFormatPublish() {
+  if (!_ctActiveFormatTab || !ctModalTask) return;
+  var fmt = _ctActiveFormatTab;
+  var info = CT_FORMATS[fmt] || { label: fmt };
+
+  // Update publish label
+  var label = document.getElementById('ctFormatPublishLabel');
+  if (label) label.textContent = '— ' + info.label;
+
+  // Update publish button text
+  var btn = document.getElementById('ctFmtPubBtn');
+  if (btn) {
+    if (fmt === 'story') {
+      btn.textContent = '📱 Publicar Story';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+    } else if (fmt === 'reels') {
+      btn.textContent = '🎬 Publicar Reels';
+    } else if (fmt === 'carrossel') {
+      btn.textContent = '🖼️ Publicar Carrossel';
+    } else {
+      btn.textContent = '🚀 Publicar Feed';
+    }
+  }
+
+  // Reset platform selection
+  _ctFmtPlatforms = [];
+  var fbBtn = document.getElementById('ctFmtPubFb');
+  var igBtn = document.getElementById('ctFmtPubIg');
+  if (fbBtn) { fbBtn.style.background = 'var(--card,#fff)'; fbBtn.style.borderColor = 'var(--border)'; fbBtn.style.color = 'var(--text)'; fbBtn.style.fontWeight = '400'; }
+  if (igBtn) { igBtn.style.background = 'var(--card,#fff)'; igBtn.style.borderColor = 'var(--border)'; igBtn.style.color = 'var(--text)'; igBtn.style.fontWeight = '400'; }
+
+  // Hide status
+  var status = document.getElementById('ctFmtPubStatus');
+  if (status) status.style.display = 'none';
+
+  // Render per-format publish history
+  ctRenderFormatPublishHistory();
+}
+
+function ctRenderFormatPublishHistory() {
+  var el = document.getElementById('ctFmtPublishHistory');
+  if (!el || !ctModalTask || !_ctActiveFormatTab) return;
+
+  var config = ctModalTask.publish_config || {};
+  var fmtConfig = config[_ctActiveFormatTab] || {};
+  var entries = fmtConfig.entries || [];
+
+  if (entries.length === 0) {
+    el.innerHTML = '<span style="color:var(--text-secondary);font-size:0.75rem">Nenhuma publicação para este formato</span>';
+    return;
+  }
+
+  el.innerHTML = entries.map(function(e) {
+    var icon = e.platform === 'facebook' ? '📄' : '📷';
+    var platName = e.platform === 'facebook' ? 'Facebook' : 'Instagram';
+    var statusColor = e.status === 'published' ? '#10b981' : e.status === 'scheduled' ? '#f59e0b' : e.status === 'failed' ? '#ef4444' : '#6b7280';
+    var statusLabel = e.status === 'published' ? 'Publicado' : e.status === 'scheduled' ? 'Agendado' : e.status === 'failed' ? 'Falhou' : e.status;
+    var date = e.published_at || e.scheduled_for;
+    var dateStr = date ? new Date(date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0">'
+      + '<span>' + icon + '</span>'
+      + '<span style="font-weight:600">' + platName + '</span>'
+      + '<span style="background:' + statusColor + '20;color:' + statusColor + ';padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">' + statusLabel + '</span>'
+      + '<span style="font-size:0.7rem;color:var(--text-secondary)">' + dateStr + '</span>'
+      + '</div>';
+  }).join('');
+}
+
+async function ctPublishFormat() {
+  if (!ctModalTask || !_ctActiveFormatTab) return;
+
+  var fmt = _ctActiveFormatTab;
+  if (_ctFmtPlatforms.length === 0) return alert('Selecione pelo menos uma plataforma (Facebook ou Instagram)');
+
+  // Get format-specific data
+  var config = ctModalTask.publish_config || {};
+  var fmtConfig = config[fmt] || {};
+  var copy = fmtConfig.copy_text || ctModalTask.copy_text || '';
+
+  // Stories don't need copy
+  if (fmt !== 'story' && !copy) return alert('Preencha a Copy antes de publicar');
+
+  // Get format-specific creatives
+  var allAtts = ctModalTask.attachments || [];
+  var creatives = allAtts.filter(function(a) {
+    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || (!a.format_type && fmt === 'feed'));
+  });
+
+  if (creatives.length === 0) return alert('Adicione criativos para o formato ' + (CT_FORMATS[fmt] || {}).label);
+
+  var videos = creatives.filter(function(a) { return ctIsVideo(a); });
+  var images = creatives.filter(function(a) { return !ctIsVideo(a); });
+  var videoUrls = videos.map(function(a) { return a.file_url; });
+  var imageUrls = images.map(function(a) { return a.file_url; });
+
+  // Validate by format
+  if (fmt === 'reels' && videos.length === 0) return alert('Reels precisa de pelo menos 1 vídeo');
+  if (fmt === 'carrossel' && images.length < 2) return alert('Carrossel precisa de pelo menos 2 imagens');
+
+  var mode = document.getElementById('ctFmtPubMode').value;
+  var datetime = document.getElementById('ctFmtPubDatetime').value;
+  var isSchedule = mode === 'schedule';
+  if (isSchedule && !datetime) return alert('Selecione data e hora para agendamento');
+
+  // Show loading
+  var btn = document.getElementById('ctFmtPubBtn');
+  var statusEl = document.getElementById('ctFmtPubStatus');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  statusEl.style.display = '';
+  statusEl.style.background = '#dbeafe';
+  statusEl.style.color = '#1d4ed8';
+  statusEl.textContent = '⏳ Publicando...';
+
+  var results = [];
+
+  for (var i = 0; i < _ctFmtPlatforms.length; i++) {
+    var plat = _ctFmtPlatforms[i];
+    try {
+      if (plat === 'ig') {
+        // Instagram via queue
+        var scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 5000).toISOString();
+        var queueBody = {
+          action: 'queue',
+          client_key: ctCurrentClient,
+          platform: 'ig',
+          caption: fmt === 'story' ? '' : copy,
+          scheduled_for: scheduledFor,
+          task_id: ctModalTask.id,
+          content_type: fmt,
+        };
+        if (fmt === 'carrossel') {
+          queueBody.image_urls = imageUrls;
+        } else if (fmt === 'reels' || videos.length > 0) {
+          queueBody.image_urls = videoUrls;
+        } else {
+          queueBody.image_urls = imageUrls;
+        }
+
+        var igRes = await fetch(ctApiBase() + '/api/meta/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(queueBody)
+        });
+        var igData = await igRes.json();
+        results.push({ plat: 'Instagram', ok: !igData.error, postId: igData.queue_id || null });
+
+      } else {
+        // Facebook direct
+        var body = {
+          action: 'publish',
+          client_key: ctCurrentClient,
+          platform: 'fb',
+          caption: copy,
+        };
+
+        if (fmt === 'reels' || (fmt === 'feed' && videos.length > 0 && images.length === 0)) {
+          body.type = 'reels';
+          body.media_type = fmt === 'reels' ? 'REELS' : 'VIDEO';
+          body.video_url = videoUrls[0];
+        } else if (fmt === 'carrossel' || images.length > 1) {
+          body.type = 'carousel';
+          body.image_urls = imageUrls;
+        } else if (fmt === 'story') {
+          body.type = 'story';
+          body.image_url = images.length > 0 ? imageUrls[0] : videoUrls[0];
+        } else {
+          body.type = 'feed';
+          body.image_url = imageUrls[0];
+        }
+
+        if (isSchedule) {
+          body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
+        }
+
+        var fbRes = await fetch(ctApiBase() + '/api/meta/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        var fbData = await fbRes.json();
+        results.push({ plat: 'Facebook', ok: !fbData.error, postId: fbData.id || fbData.post_id || null });
+      }
+    } catch(err) {
+      results.push({ plat: plat === 'fb' ? 'Facebook' : 'Instagram', ok: false, error: err.message });
+    }
+  }
+
+  // Save results to publish_config per format
+  if (!config[fmt]) config[fmt] = {};
+  if (!config[fmt].entries) config[fmt].entries = [];
+  results.filter(function(r) { return r.ok; }).forEach(function(r) {
+    config[fmt].entries.push({
+      platform: r.plat === 'Facebook' ? 'facebook' : 'instagram',
+      status: isSchedule ? 'scheduled' : 'published',
+      post_id: r.postId || null,
+      scheduled_for: isSchedule ? new Date(datetime).toISOString() : null,
+      published_at: isSchedule ? null : new Date().toISOString(),
+    });
+  });
+  // Also update legacy entries for backward compat
+  if (!config.entries) config.entries = [];
+  results.filter(function(r) { return r.ok; }).forEach(function(r) {
+    config.entries.push({
+      platform: r.plat === 'Facebook' ? 'facebook' : 'instagram',
+      status: isSchedule ? 'scheduled' : 'published',
+      post_id: r.postId || null,
+      format_type: fmt,
+      scheduled_for: isSchedule ? new Date(datetime).toISOString() : null,
+      published_at: isSchedule ? null : new Date().toISOString(),
+    });
+  });
+
+  ctModalTask.publish_config = config;
+  await ctSaveTaskField('publish_config', config);
+
+  // Show results
+  var allOk = results.every(function(r) { return r.ok; });
+  var msgs = results.map(function(r) { return (r.ok ? '✅' : '❌') + ' ' + r.plat + (r.ok ? (isSchedule ? ' agendado' : ' publicado') : ': ' + (r.error || 'erro')); });
+  statusEl.style.background = allOk ? '#d1fae5' : '#fef2f2';
+  statusEl.style.color = allOk ? '#059669' : '#dc2626';
+  statusEl.innerHTML = msgs.join('<br>');
+
+  btn.disabled = false; btn.style.opacity = '1';
+
+  // Refresh history
+  ctRenderFormatPublishHistory();
+  // Also refresh legacy history
+  if (typeof ctRenderPublishHistory === 'function') ctRenderPublishHistory(config);
 }
 
 // Keep legacy ctSetFormat as a no-op for backward compatibility
