@@ -13540,16 +13540,17 @@ async function ctPublishFromModal() {
     const platLabel = plat === 'fb' ? 'Facebook' : 'Instagram';
     statusDiv.innerHTML = '⏳ Publicando ' + (contentType === 'reels' ? 'Reels' : contentType === 'carrossel' ? 'Carrossel' : 'Feed') + ' em ' + platLabel + '...';
 
-    // ─── IG + Agendamento → fila ───
-    if (plat === 'ig' && isSchedule) {
+    // ─── IG → sempre via fila (evita timeout Vercel 10s com vídeos) ───
+    if (plat === 'ig') {
       try {
+        var scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 60000).toISOString();
         var queueBody = {
           action: 'queue',
           client_key: ctCurrentClient,
           client_name: clientName,
           platform: 'ig',
           caption: copy,
-          scheduled_for: new Date(datetime).toISOString(),
+          scheduled_for: scheduledFor,
           user_name: ctGetUser(),
           task_id: ctModalTask.id,
         };
@@ -13566,7 +13567,8 @@ async function ctPublishFromModal() {
           body: JSON.stringify(queueBody),
         });
         const qData = await qRes.json();
-        results.push({ plat: platLabel, ok: !qData.error, msg: qData.error ? qData.message : 'Agendado' });
+        var igMsg = isSchedule ? 'Agendado' : 'Na fila — publica em ~1min';
+        results.push({ plat: platLabel, ok: !qData.error, msg: qData.error ? qData.message : igMsg });
         if (!qData.error) successCount++;
       } catch(e) { results.push({ plat: platLabel, ok: false, msg: e.message }); }
       continue;
