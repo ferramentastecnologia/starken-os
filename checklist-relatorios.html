@@ -3483,7 +3483,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
                   <span style="font-size:1rem">🤖</span>
                   <span style="font-size:0.82rem;font-weight:700;color:#7c3aed">Gerar Copy com IA</span>
-                  <span style="font-size:0.6rem;background:#7c3aed;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">DeepSeek</span>
+                  <span style="font-size:0.6rem;background:#4285f4;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">Gemini</span>
                 </div>
 
                 <!-- Direction Input -->
@@ -13125,9 +13125,9 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
   }
 }
 
-// ─── DEEPSEEK AI: COPY GENERATION ───
-var DEEPSEEK_API_KEY = 'sk-a8eb34e51f7749a39c37fda33c349432';
-var DEEPSEEK_MODEL = 'deepseek-chat';
+// ─── AI COPY GENERATION (Google Gemini - Free) ───
+var GEMINI_API_KEY = 'AIzaSyBJrqJahMFZWDFTh9VWjEVo31wIIxGe3TU';
+var GEMINI_MODEL = 'gemini-2.0-flash';
 
 async function ctGetClientContext(clientSlug) {
   if (!clientSlug) return null;
@@ -13229,32 +13229,35 @@ async function ctGenerateCopy(mode) {
     // 2. Build prompt
     var { systemPrompt, userPrompt } = ctBuildCopyPrompt(mode, context, direction, briefing, format);
 
-    // 3. Call DeepSeek API
-    var res = await fetch('https://api.deepseek.com/chat/completions', {
+    // 3. Call Google Gemini API (Free)
+    if (!GEMINI_API_KEY) {
+      throw new Error('API Key do Gemini não configurada. Acesse aistudio.google.com/apikey para criar uma key gratuita.');
+    }
+
+    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY;
+
+    var res = await fetch(geminiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + DEEPSEEK_API_KEY
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: DEEPSEEK_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.8,
-        max_tokens: 3000
+        contents: [{
+          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
+        }],
+        generationConfig: {
+          temperature: 0.8,
+          maxOutputTokens: 3000
+        }
       })
     });
 
     if (!res.ok) {
       var errText = await res.text();
-      throw new Error('DeepSeek API error: ' + res.status + ' - ' + errText);
+      throw new Error('Gemini API error: ' + res.status + ' - ' + errText);
     }
 
     var data = await res.json();
-    var content = data.choices[0].message.content;
-    var tokensUsed = data.usage ? data.usage.total_tokens : 0;
+    var content = data.candidates[0].content.parts[0].text;
+    var tokensUsed = data.usageMetadata ? (data.usageMetadata.totalTokenCount || 0) : 0;
 
     // 4. Parse variations
     var variations = content.split('---VARIACAO---').map(function(v) { return v.trim(); }).filter(function(v) { return v.length > 10; });
@@ -13270,7 +13273,7 @@ async function ctGenerateCopy(mode) {
       input_briefing: mode === 'briefing' ? briefing : null,
       client_context: context ? { tone: context.copy_tone || context.tone_of_voice, persona: context.copy_persona || context.persona_description } : null,
       output_copies: variations,
-      model_used: DEEPSEEK_MODEL,
+      model_used: GEMINI_MODEL,
       tokens_used: tokensUsed
     }).catch(function(e) { console.warn('AI history save error:', e); });
 
