@@ -3483,7 +3483,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
                   <span style="font-size:1rem">🤖</span>
                   <span style="font-size:0.82rem;font-weight:700;color:#7c3aed">Gerar Copy com IA</span>
-                  <span style="font-size:0.6rem;background:#4285f4;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">Gemini</span>
+                  <span style="font-size:0.6rem;background:#f55036;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">Llama 3.3</span>
                 </div>
 
                 <!-- Direction Input -->
@@ -13125,9 +13125,9 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
   }
 }
 
-// ─── AI COPY GENERATION (Google Gemini - Free) ───
-var GEMINI_API_KEY = 'AIzaSyBJrqJahMFZWDFTh9VWjEVo31wIIxGe3TU';
-var GEMINI_MODEL = 'gemini-2.0-flash-lite';
+// ─── AI COPY GENERATION (Groq - Free) ───
+var GROQ_API_KEY = '';
+var GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 async function ctGetClientContext(clientSlug) {
   if (!clientSlug) return null;
@@ -13205,6 +13205,13 @@ function ctBuildCopyPrompt(mode, context, direction, briefing, format) {
 async function ctGenerateCopy(mode) {
   if (!ctModalTask) return;
 
+  // Fetch API key from Supabase if not cached
+  if (!GROQ_API_KEY) {
+    var { data: keyData } = await _supabase.rpc('get_secret', { p_label: 'groq_api_key' });
+    if (keyData) { GROQ_API_KEY = keyData; }
+    else { return alert('API Key não encontrada. Adicione groq_api_key na tabela admin_secrets.'); }
+  }
+
   var direction = document.getElementById('ctAiDirection').value.trim();
   var briefing = document.getElementById('ctModalBriefing') ? document.getElementById('ctModalBriefing').value.trim() : '';
   var format = ctModalTask.publish_config ? ctModalTask.publish_config.content_type : 'feed';
@@ -13229,35 +13236,32 @@ async function ctGenerateCopy(mode) {
     // 2. Build prompt
     var { systemPrompt, userPrompt } = ctBuildCopyPrompt(mode, context, direction, briefing, format);
 
-    // 3. Call Google Gemini API (Free)
-    if (!GEMINI_API_KEY) {
-      throw new Error('API Key do Gemini não configurada. Acesse aistudio.google.com/apikey para criar uma key gratuita.');
-    }
-
-    var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + GEMINI_MODEL + ':generateContent?key=' + GEMINI_API_KEY;
-
-    var res = await fetch(geminiUrl, {
+    // 3. Call Groq API (Free - Llama 3.3 70B)
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + GROQ_API_KEY
+      },
       body: JSON.stringify({
-        contents: [{
-          parts: [{ text: systemPrompt + '\n\n' + userPrompt }]
-        }],
-        generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 3000
-        }
+        model: GROQ_MODEL,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.8,
+        max_tokens: 3000
       })
     });
 
     if (!res.ok) {
       var errText = await res.text();
-      throw new Error('Gemini API error: ' + res.status + ' - ' + errText);
+      throw new Error('Groq API error: ' + res.status + ' - ' + errText);
     }
 
     var data = await res.json();
-    var content = data.candidates[0].content.parts[0].text;
-    var tokensUsed = data.usageMetadata ? (data.usageMetadata.totalTokenCount || 0) : 0;
+    var content = data.choices[0].message.content;
+    var tokensUsed = data.usage ? data.usage.total_tokens : 0;
 
     // 4. Parse variations
     var variations = content.split('---VARIACAO---').map(function(v) { return v.trim(); }).filter(function(v) { return v.length > 10; });
@@ -13273,7 +13277,7 @@ async function ctGenerateCopy(mode) {
       input_briefing: mode === 'briefing' ? briefing : null,
       client_context: context ? { tone: context.copy_tone || context.tone_of_voice, persona: context.copy_persona || context.persona_description } : null,
       output_copies: variations,
-      model_used: GEMINI_MODEL,
+      model_used: GROQ_MODEL,
       tokens_used: tokensUsed
     }).catch(function(e) { console.warn('AI history save error:', e); });
 
