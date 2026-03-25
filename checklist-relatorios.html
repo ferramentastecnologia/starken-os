@@ -7638,11 +7638,12 @@ async function doLogin() {
   btn.textContent = 'Entrando...';
   try {
     const { data, error } = await _supabase.rpc('verify_login', { p_name: name, p_password: password });
-    if (error || !data || data.length === 0) {
+    console.log('verify_login response:', { data, error });
+    if (error || !data) {
       document.getElementById('loginError').classList.add('show');
       return;
     }
-    const row = Array.isArray(data) ? data[0] : data;
+    const row = (typeof data === 'string') ? JSON.parse(data) : (Array.isArray(data) ? data[0] : data);
     const user = { name: row.name, role: row.role, color: row.avatar_color || '#3b82f6' };
     activateSession(user);
   } catch(e) {
