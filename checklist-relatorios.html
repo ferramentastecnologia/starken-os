@@ -3382,12 +3382,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <input type="file" id="ctFileInputRef" accept="image/*" multiple style="display:none" onchange="ctHandleFileUpload(this.files,'reference')">
             </div>
 
-            <!-- Creative Final (legacy - now handled per format below) -->
-            <div class="ct-modal-section" id="ctLegacyCreativeSection">
-              <div class="ct-modal-section-title">🎨 Criativo Final <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctUploadAttachment('creative')">+ Upload Criativo</button></div>
-              <div class="ct-attachment-grid" id="ctModalCreatives"></div>
-              <input type="file" id="ctFileInputCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFileUpload(this.files,'creative')">
-            </div>
+            <!-- Legacy creative section removed - now per-format -->
 
             <!-- Music for Video (Creatomate) -->
             <div class="ct-modal-section" id="ctMusicSection" style="display:none">
@@ -3491,12 +3486,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <!-- Copy for active format -->
                 <div class="ct-modal-section" style="margin-bottom:12px">
                   <div class="ct-modal-section-title">✏️ Copy <span id="ctFormatCopyLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
-                  <textarea class="ct-modal-textarea copy-area" id="ctFormatCopy" placeholder="Texto/legenda para este formato..." onchange="ctSaveFormatCopy(this.value)" style="min-height:80px"></textarea>
+                  <textarea class="ct-modal-textarea copy-area" id="ctFormatCopy" placeholder="Texto/legenda para este formato..." onchange="ctSaveFormatCopy(this.value)" style="min-height:160px"></textarea>
                   <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctFormatCopyCount">0</span> / 2.200 caracteres</div>
                 </div>
 
                 <!-- Per-Format Publish Section -->
-                <div class="ct-modal-section" style="margin-bottom:0" id="ctFormatPublishSection">
+                <div class="ct-modal-section" style="margin-bottom:0;display:none" id="ctFormatPublishSection">
                   <div style="background:var(--card,#fff);border-radius:12px;border:1.5px solid var(--border);padding:14px">
                     <div class="ct-modal-section-title" style="margin-bottom:10px">🚀 Publicar <span id="ctFormatPublishLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
 
@@ -13201,6 +13196,7 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
       file_type: 'image/jpeg',
       file_size: blob.size,
       category: 'creative',
+      format_type: window._ctUploadFormatType || (_ctActiveFormatTab) || (ctModalTask.publish_config && ctModalTask.publish_config.content_type) || 'feed',
       user: ctGetUser(),
     });
 
@@ -13809,7 +13805,8 @@ async function ctHandleFileUpload(files, category) {
     try {
       var publicUrl = '';
 
-      if (file.size < 3 * 1024 * 1024) {
+      var isVideoFile = file.type && file.type.startsWith('video/') || ['mp4','mov','avi','webm','mkv','m4v'].includes((file.name || '').split('.').pop().toLowerCase());
+      if (file.size < 3 * 1024 * 1024 && !isVideoFile) {
         updateProgress(10, 'Preparando...');
         const base64 = await new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -17790,6 +17787,88 @@ function ctRenderFormatTabs() {
     _ctActiveFormatTab = _ctSelectedFormats[0];
   }
 
+  // Check if we should use 2-column layout (Feed + Story)
+  var isTwoColumn = _ctSelectedFormats.length === 2 && _ctSelectedFormats.includes('feed') && _ctSelectedFormats.includes('story');
+
+  if (isTwoColumn) {
+    // 2-column layout: hide tabs, render both side by side
+    tabsEl.style.display = 'none';
+    var contentEl = document.getElementById('ctFormatContent');
+    contentEl.style.padding = '0';
+    contentEl.style.background = 'transparent';
+    contentEl.style.border = 'none';
+
+    contentEl.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+      + '<div id="ctFormatCol_feed" style="background:var(--bg-secondary,#f8fafc);border:1px solid var(--border);border-radius:12px;padding:14px">'
+      + '<div style="font-size:0.85rem;font-weight:700;color:#3b82f6;margin-bottom:10px;display:flex;align-items:center;gap:6px">📷 Feed</div>'
+      + '<div class="ct-modal-section" style="margin-bottom:10px">'
+      + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'feed\';document.getElementById(\'ctFileInputFormatCreative\').click()">+ Upload</button></div>'
+      + '<div class="ct-attachment-grid" id="ctFormatCreatives_feed"></div>'
+      + '</div>'
+      + '<div class="ct-modal-section" style="margin-bottom:10px">'
+      + '<div class="ct-modal-section-title" style="font-size:0.78rem">✏️ Copy</div>'
+      + '<textarea class="ct-modal-textarea copy-area" id="ctFormatCopy_feed" placeholder="Copy do Feed..." onchange="ctSaveFormatCopyCol(\'feed\',this.value)" style="min-height:120px;font-size:0.8rem"></textarea>'
+      + '<div style="text-align:right;font-size:0.68rem;color:var(--text-secondary);margin-top:2px"><span id="ctFormatCopyCount_feed">0</span> / 2.200</div>'
+      + '</div>'
+      + '<div id="ctFormatPub_feed"></div>'
+      + '</div>'
+      + '<div id="ctFormatCol_story" style="background:var(--bg-secondary,#f8fafc);border:1px solid var(--border);border-radius:12px;padding:14px">'
+      + '<div style="font-size:0.85rem;font-weight:700;color:#ec4899;margin-bottom:10px;display:flex;align-items:center;gap:6px">📱 Story</div>'
+      + '<div class="ct-modal-section" style="margin-bottom:10px">'
+      + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'story\';document.getElementById(\'ctFileInputFormatCreative\').click()">+ Upload</button></div>'
+      + '<div class="ct-attachment-grid" id="ctFormatCreatives_story"></div>'
+      + '</div>'
+      + '<div id="ctFormatPub_story"></div>'
+      + '</div>'
+      + '</div>'
+      + '<input type="file" id="ctFileInputFormatCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">';
+
+    // Populate both columns
+    ctRenderTwoColumnContent();
+    return;
+  }
+
+  // Regular tab layout
+  tabsEl.style.display = 'flex';
+  var contentEl = document.getElementById('ctFormatContent');
+  contentEl.style.padding = '16px';
+  contentEl.style.background = 'var(--bg-secondary,#f8fafc)';
+  contentEl.style.border = '1px solid var(--border)';
+
+  // Restore the original format content HTML if it was replaced by 2-column
+  if (!document.getElementById('ctFormatCreatives')) {
+    contentEl.innerHTML = '<div class="ct-modal-section" style="margin-bottom:12px">'
+      + '<div class="ct-modal-section-title">🎨 Criativo <span id="ctFormatCreativeLabel" style="font-weight:400;color:var(--text-secondary)"></span>'
+      + '<button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctUploadFormatAttachment()">+ Upload Criativo</button></div>'
+      + '<div class="ct-attachment-grid" id="ctFormatCreatives"></div>'
+      + '<input type="file" id="ctFileInputFormatCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">'
+      + '<div id="ctFormatCreativeEmpty" style="color:var(--text-secondary);font-size:0.82rem;padding:12px;display:none">Nenhum criativo para este formato</div>'
+      + '</div>'
+      + '<div class="ct-modal-section" style="margin-bottom:12px">'
+      + '<div class="ct-modal-section-title">✏️ Copy <span id="ctFormatCopyLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>'
+      + '<textarea class="ct-modal-textarea copy-area" id="ctFormatCopy" placeholder="Texto/legenda para este formato..." onchange="ctSaveFormatCopy(this.value)" style="min-height:160px"></textarea>'
+      + '<div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctFormatCopyCount">0</span> / 2.200 caracteres</div>'
+      + '</div>'
+      + '<div class="ct-modal-section" style="margin-bottom:0;display:none" id="ctFormatPublishSection">'
+      + '<div style="background:var(--card,#fff);border-radius:12px;border:1.5px solid var(--border);padding:14px">'
+      + '<div class="ct-modal-section-title" style="margin-bottom:10px">🚀 Publicar <span id="ctFormatPublishLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>'
+      + '<div style="margin-bottom:10px"><div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Plataforma</div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="meta-pub-plat-btn" id="ctFmtPubFb" onclick="ctFmtSelectPlatform(\'fb\')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">📄 Facebook</button>'
+      + '<button class="meta-pub-plat-btn" id="ctFmtPubIg" onclick="ctFmtSelectPlatform(\'ig\')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s">📷 Instagram</button>'
+      + '</div></div>'
+      + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><div>'
+      + '<div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Quando</div>'
+      + '<select id="ctFmtPubMode" onchange="document.getElementById(\'ctFmtPubDateWrap\').style.display=this.value===\'schedule\'?\'block\':\'none\'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text)"><option value="now">⚡ Publicar Agora</option><option value="schedule">📅 Agendar</option></select>'
+      + '</div><div id="ctFmtPubDateWrap" style="display:none;flex:1"><div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Data/Hora</div>'
+      + '<input type="datetime-local" id="ctFmtPubDatetime" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box"></div></div>'
+      + '<button onclick="ctPublishFormat()" id="ctFmtPubBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s">🚀 Publicar</button>'
+      + '<div id="ctFmtPubStatus" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:0.8rem"></div>'
+      + '<div style="margin-top:12px"><div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px">📋 Histórico</div>'
+      + '<div id="ctFmtPublishHistory" style="font-size:0.78rem;color:var(--text-secondary)">Nenhuma publicação</div></div>'
+      + '</div></div>';
+  }
+
   tabsEl.innerHTML = _ctSelectedFormats.map(function(fmt) {
     var info = CT_FORMATS[fmt] || { label: fmt, color: '#3b82f6' };
     var isActive = fmt === _ctActiveFormatTab;
@@ -17803,6 +17882,75 @@ function ctRenderFormatTabs() {
   }).join('');
 
   ctRenderFormatContent();
+}
+
+function ctRenderTwoColumnContent() {
+  if (!ctModalTask) return;
+  var allAtts = ctModalTask.attachments || [];
+  var config = ctModalTask.publish_config || {};
+
+  ['feed', 'story'].forEach(function(fmt) {
+    var creatives = allAtts.filter(function(a) {
+      return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type);
+    });
+
+    var grid = document.getElementById('ctFormatCreatives_' + fmt);
+    if (grid) {
+      var ratio = fmt === 'story' ? '9/16' : '1/1';
+      grid.innerHTML = creatives.length === 0
+        ? '<div style="color:var(--text-secondary);font-size:0.78rem;padding:8px">Nenhum criativo</div>'
+        : creatives.map(function(a, idx) {
+            var card = ctBuildAttCard(a, (idx + 1) + '°', '#10b981');
+            return card.replace('aspect-ratio:1;object-fit:cover', 'aspect-ratio:' + ratio + ';object-fit:cover');
+          }).join('');
+    }
+
+    // Load copy
+    var fmtConfig = config[fmt] || {};
+    var copyText = fmtConfig.copy_text || (fmt === 'feed' ? (ctModalTask.copy_text || '') : '');
+    var copyEl = document.getElementById('ctFormatCopy_' + fmt);
+    if (copyEl) {
+      copyEl.value = copyText;
+      var counter = document.getElementById('ctFormatCopyCount_' + fmt);
+      if (counter) counter.textContent = copyText.length;
+      if (!copyEl._hasListener) {
+        copyEl.addEventListener('input', function() {
+          var c = document.getElementById('ctFormatCopyCount_' + fmt);
+          if (c) c.textContent = this.value.length;
+        });
+        copyEl._hasListener = true;
+      }
+    }
+
+    // Render publish button per column
+    var pubEl = document.getElementById('ctFormatPub_' + fmt);
+    if (pubEl) {
+      var showPub = ctModalTask && ['aprovado','aprovacao','agendar','agendado','publicado'].includes(ctModalTask.status);
+      if (showPub) {
+        var fmtEntries = (fmtConfig.entries || []);
+        var histHtml = fmtEntries.length === 0 ? '<span style="font-size:0.7rem;color:var(--text-secondary)">Sem publicações</span>' :
+          fmtEntries.map(function(e) {
+            var icon = e.platform === 'facebook' ? '📄' : '📷';
+            var statusLabel = e.status === 'published' ? '✅' : e.status === 'scheduled' ? '📅' : '❌';
+            return '<span style="font-size:0.7rem">' + icon + statusLabel + '</span>';
+          }).join(' ');
+
+        pubEl.innerHTML = '<div style="margin-top:8px;display:flex;gap:6px">'
+          + '<button onclick="_ctActiveFormatTab=\'' + fmt + '\';ctFmtSelectPlatform(\'fb\');ctFmtSelectPlatform(\'ig\');ctPublishFormat()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit">🚀 Publicar</button>'
+          + '</div>'
+          + '<div style="margin-top:6px">' + histHtml + '</div>';
+      }
+    }
+  });
+}
+
+function ctSaveFormatCopyCol(fmt, value) {
+  if (!ctModalTask) return;
+  var config = ctModalTask.publish_config || {};
+  if (!config[fmt]) config[fmt] = {};
+  config[fmt].copy_text = value;
+  ctModalTask.publish_config = config;
+  ctSaveTaskField('publish_config', config);
 }
 
 function ctSwitchFormatTab(type) {
@@ -17869,6 +18017,13 @@ function ctRenderFormatContent() {
 
   // Render per-format publish section
   if (typeof ctRenderFormatPublish === 'function') ctRenderFormatPublish();
+
+  // Show publish section only for agendar/aprovado status
+  var pubSection = document.getElementById('ctFormatPublishSection');
+  if (pubSection) {
+    var showPub = ctModalTask && ['aprovado','aprovacao','agendar','agendado','publicado'].includes(ctModalTask.status);
+    pubSection.style.display = showPub ? '' : 'none';
+  }
 }
 
 function ctSaveFormatCopy(value) {
