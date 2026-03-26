@@ -12051,6 +12051,9 @@ async function ctApi(action, params = {}) {
 function ctGetUser() {
   return gpState.user ? gpState.user.name : 'Sistema';
 }
+function ctSafeClientPath(name) {
+  return (name || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+}
 
 // ─── INIT ───
 function ctInit() {
@@ -13278,7 +13281,7 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
 
     // Upload thumbnail
     var thumbName = 'thumb_frame_' + Date.now() + '.jpg';
-    var thumbPath = 'content/' + ctCurrentClient + '/' + thumbName;
+    var thumbPath = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + thumbName;
     var upRes = await _supabase.storage.from('client-hub-materials').upload(thumbPath, blob, { contentType: 'image/jpeg', upsert: true });
     if (upRes.error) throw new Error(upRes.error.message);
 
@@ -13845,7 +13848,7 @@ async function ctUseMusicVideoFmt() {
       return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type) && ctIsVideo(a);
     });
     var fileName = 'video_music_' + Date.now() + '.mp4';
-    var path = 'content/' + (ctCurrentClient || 'default') + '/' + fileName;
+    var path = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + fileName;
 
     // Upload to Supabase
     var { error } = await _supabase.storage.from('client-hub-materials').upload(path, videoBlob, { contentType: 'video/mp4', upsert: true });
@@ -14105,7 +14108,7 @@ async function ctUseMusicVideo() {
 
     var SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
     var fileName = 'video_music_' + Date.now() + '.mp4';
-    var path = 'content/' + (ctCurrentClient || 'default') + '/' + fileName;
+    var path = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + fileName;
 
     // Fetch the video
     var videoRes = await fetch(_ctRenderedVideoUrl);
@@ -14205,7 +14208,7 @@ async function ctHandleFileUpload(files, category) {
       } else {
         // Large file: upload via Supabase JS client (handles auth automatically)
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var storagePath = 'content/' + ctCurrentClient + '/' + Date.now() + '_' + safeName;
+        var storagePath = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + Date.now() + '_' + safeName;
 
         updateProgress(20, 'Enviando ' + sizeMB + ' MB...');
 
