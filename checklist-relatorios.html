@@ -3489,6 +3489,28 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                   <div class="ct-modal-section-title">✏️ Copy <span id="ctFormatCopyLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>
                   <textarea class="ct-modal-textarea copy-area" id="ctFormatCopy" placeholder="Texto/legenda para este formato..." onchange="ctSaveFormatCopy(this.value)" style="min-height:160px"></textarea>
                   <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctFormatCopyCount">0</span> / 2.200 caracteres</div>
+
+                  <!-- AI Copy Generator (inside format tab) -->
+                  <div id="ctAiGenFormat" style="margin-top:12px;background:linear-gradient(135deg,#f8f5ff,#f0e7ff);border-radius:12px;padding:14px;border:1px solid #e9d5ff">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+                      <span style="font-size:1rem">🤖</span>
+                      <span style="font-size:0.82rem;font-weight:700;color:#7c3aed">Gerar Copy com IA</span>
+                      <span style="font-size:0.6rem;background:#f97316;color:#fff;padding:2px 6px;border-radius:4px;font-weight:600">Llama 3.3</span>
+                    </div>
+                    <textarea id="ctAiDirectionFormat" placeholder="Direcionamento rápido: ex. 'amanhã inaugura, food porn, se preparem'" style="width:100%;padding:8px 12px;border:1px solid #d8b4fe;border-radius:8px;font-size:0.8rem;font-family:inherit;background:#fff;color:var(--text);box-sizing:border-box;min-height:50px;resize:vertical;margin-bottom:10px"></textarea>
+                    <div style="display:flex;gap:8px">
+                      <button onclick="ctGenerateCopyFormat('estrategia')" id="ctAiBtnEstrategiaFmt" style="flex:1;padding:9px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s">⚡ Gerar Copy - Estratégia</button>
+                      <button onclick="ctGenerateCopyFormat('briefing')" id="ctAiBtnBriefingFmt" style="flex:1;padding:9px 14px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.2s">📋 Gerar Copy - Briefing</button>
+                    </div>
+                    <div id="ctAiLoadingFormat" style="display:none;margin-top:12px;text-align:center;padding:16px">
+                      <div class="ct-spinner" style="width:24px;height:24px;border-width:3px;margin:0 auto 8px"></div>
+                      <div style="font-size:0.8rem;font-weight:600;color:#7c3aed">Gerando 3 variações de copy...</div>
+                    </div>
+                    <div id="ctAiResultsFormat" style="display:none;margin-top:12px"></div>
+                    <div style="margin-top:8px;text-align:right">
+                      <button onclick="ctShowAiHistory()" style="background:none;border:none;color:#7c3aed;font-size:0.72rem;cursor:pointer;font-family:inherit;text-decoration:underline">📜 Histórico de gerações</button>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Per-Format Publish Section -->
@@ -13515,6 +13537,96 @@ async function ctShowAiHistory() {
 }
 
 // ─── CREATOMATE: VIDEO + MUSIC INTEGRATION ───
+// ─── AI COPY GENERATION FOR FORMAT TABS ───
+async function ctGenerateCopyFormat(mode) {
+  if (!ctModalTask) return;
+  var direction = document.getElementById('ctAiDirectionFormat').value.trim();
+  var briefing = document.getElementById('ctModalBriefing') ? document.getElementById('ctModalBriefing').value.trim() : '';
+  var format = _ctActiveFormatTab || 'feed';
+
+  if (mode === 'briefing' && !briefing && !direction) {
+    return alert('Preencha o Briefing ou o Direcionamento para gerar copy no modo Briefing');
+  }
+
+  var btnE = document.getElementById('ctAiBtnEstrategiaFmt');
+  var btnB = document.getElementById('ctAiBtnBriefingFmt');
+  var loading = document.getElementById('ctAiLoadingFormat');
+  var results = document.getElementById('ctAiResultsFormat');
+  btnE.disabled = true; btnB.disabled = true;
+  btnE.style.opacity = '0.5'; btnB.style.opacity = '0.5';
+  loading.style.display = ''; results.style.display = 'none';
+
+  try {
+    var context = await ctGetClientContext(ctCurrentClient);
+    var { systemPrompt, userPrompt } = ctBuildCopyPrompt(mode, context, direction, briefing, format);
+
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _SK.gr },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+        temperature: 0.8, max_tokens: 3000
+      })
+    });
+
+    if (!res.ok) throw new Error('Groq API error: ' + res.status + ' - ' + (await res.text()));
+
+    var data = await res.json();
+    var content = data.choices[0].message.content;
+    var tokensUsed = data.usage ? data.usage.total_tokens : 0;
+
+    var variations = content.split('---VARIACAO---').map(function(v) { return v.trim(); }).filter(function(v) { return v.length > 10; });
+    if (variations.length === 0) variations = [content.trim()];
+
+    // Save to history
+    _supabase.from('ai_generation_history').insert({
+      client_slug: ctCurrentClient, task_id: ctModalTask.id, user_name: gpState.user,
+      generation_mode: mode, input_direction: direction || null,
+      input_briefing: mode === 'briefing' ? briefing : null,
+      client_context: context ? { tone: context.copy_tone || context.tone_of_voice } : null,
+      output_copies: variations, model_used: 'llama-3.3-70b-versatile', tokens_used: tokensUsed
+    });
+
+    loading.style.display = 'none';
+    results.style.display = '';
+    results.innerHTML = variations.map(function(v, i) {
+      var escaped = v.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      return '<div style="background:var(--card,#fff);border-radius:10px;padding:12px;border:1px solid var(--border);margin-bottom:8px">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        + '<span style="font-size:0.72rem;font-weight:700;color:#7c3aed">Variação ' + (i + 1) + '</span>'
+        + '<span style="font-size:0.65rem;color:var(--text-secondary)">' + v.length + ' caracteres</span></div>'
+        + '<div style="font-size:0.82rem;color:var(--text);line-height:1.5;white-space:pre-wrap;margin-bottom:10px">' + escaped + '</div>'
+        + '<div style="display:flex;gap:6px">'
+        + '<button onclick="ctUseCopyVariationFormat(' + i + ')" style="flex:1;padding:6px 10px;border:none;border-radius:6px;background:#10b981;color:#fff;font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">✅ Usar Esta</button>'
+        + '<button onclick="ctCopyCopyVariation(' + i + ')" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:0.72rem;font-weight:600;cursor:pointer;font-family:inherit">📋 Copiar</button>'
+        + '</div></div>';
+    }).join('');
+
+    window._ctAiVariations = variations;
+
+  } catch(err) {
+    console.error('AI generation error:', err);
+    loading.style.display = 'none';
+    results.style.display = '';
+    results.innerHTML = '<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:12px;color:#dc2626;font-size:0.82rem"><b>Erro:</b> ' + err.message + '</div>';
+  } finally {
+    btnE.disabled = false; btnB.disabled = false;
+    btnE.style.opacity = '1'; btnB.style.opacity = '1';
+  }
+}
+
+function ctUseCopyVariationFormat(idx) {
+  if (!window._ctAiVariations || !window._ctAiVariations[idx]) return;
+  var textarea = document.getElementById('ctFormatCopy');
+  if (textarea) {
+    textarea.value = window._ctAiVariations[idx];
+    textarea.dispatchEvent(new Event('change'));
+    var counter = document.getElementById('ctFormatCopyCount');
+    if (counter) counter.textContent = textarea.value.length;
+  }
+}
+
 var _ctMusicTab = 'url';
 var _ctRenderedVideoUrl = null;
 
@@ -18002,9 +18114,11 @@ function ctRenderFormatContent() {
     }).join('');
   }
 
-  // Hide copy section for Story (stories don't have captions)
+  // Hide copy section + AI generator for Story (stories don't have captions)
   var copyParent = document.getElementById('ctFormatCopy') ? document.getElementById('ctFormatCopy').closest('.ct-modal-section') : null;
   if (copyParent) copyParent.style.display = (fmt === 'story') ? 'none' : '';
+  var aiGenFmt = document.getElementById('ctAiGenFormat');
+  if (aiGenFmt) aiGenFmt.style.display = (fmt === 'story') ? 'none' : '';
 
   // Load copy for this format
   var config = ctModalTask.publish_config || {};
