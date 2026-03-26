@@ -12832,6 +12832,27 @@ async function ctChangeModalStatus(newStatus) {
   var hasFormatsActive = _ctSelectedFormats && _ctSelectedFormats.length > 0;
   document.getElementById('ctModalPublish').style.display = (showPublish && !hasFormatsActive) ? 'block' : 'none';
 
+  // Update the task in ctGroups so the list reflects the change
+  for (var g = 0; g < ctGroups.length; g++) {
+    var tasks = ctGroups[g].tasks || [];
+    for (var t = 0; t < tasks.length; t++) {
+      if (tasks[t].id === ctModalTask.id) {
+        tasks[t].status = newStatus;
+        break;
+      }
+      // Check subtasks recursively
+      if (tasks[t].subtasks) {
+        (function updateSub(subs) {
+          for (var s = 0; s < subs.length; s++) {
+            if (subs[s].id === ctModalTask.id) { subs[s].status = newStatus; return; }
+            if (subs[s].subtasks) updateSub(subs[s].subtasks);
+          }
+        })(tasks[t].subtasks);
+      }
+    }
+  }
+  ctRenderList();
+
   // Reload activity
   const actData = await ctApi('list_activity', { task_id: ctModalTask.id });
   ctRenderModalActivity(Array.isArray(actData) ? actData : (actData.activity || []));
