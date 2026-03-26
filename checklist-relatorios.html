@@ -3482,6 +3482,60 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                   <div class="ct-attachment-grid" id="ctFormatCreatives"></div>
                   <input type="file" id="ctFileInputFormatCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">
                   <div id="ctFormatCreativeEmpty" style="color:var(--text-secondary);font-size:0.82rem;padding:12px;display:none">Nenhum criativo para este formato</div>
+
+                  <!-- Music for Video (inside format tab) -->
+                  <div id="ctMusicSectionFormat" style="display:none;margin-top:12px;background:var(--bg-secondary);border-radius:10px;padding:14px;border:1px solid var(--border)">
+                    <div class="ct-modal-section-title" style="margin-bottom:10px">🎵 Música para Vídeo
+                      <span style="font-size:0.6rem;font-weight:400;color:var(--text-secondary);margin-left:6px">Creatomate</span>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-bottom:10px">
+                      <button onclick="ctMusicTabFmt('url')" id="ctMusicTabUrlFmt" style="flex:1;padding:6px 12px;border:1.5px solid var(--starken,#3b82f6);background:var(--starken,#3b82f6);color:#fff;border-radius:8px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit">🔗 URL</button>
+                      <button onclick="ctMusicTabFmt('upload')" id="ctMusicTabUploadFmt" style="flex:1;padding:6px 12px;border:1.5px solid var(--border);background:var(--card,#fff);color:var(--text);border-radius:8px;cursor:pointer;font-size:0.75rem;font-weight:600;font-family:inherit">📁 Upload MP3</button>
+                    </div>
+                    <div id="ctMusicUrlAreaFmt">
+                      <input type="text" id="ctMusicUrlFmt" placeholder="Cole a URL do arquivo de áudio..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card,#fff);color:var(--text);box-sizing:border-box">
+                    </div>
+                    <div id="ctMusicUploadAreaFmt" style="display:none">
+                      <div onclick="document.getElementById('ctMusicFileInputFmt').click()" style="border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer" onmouseover="this.style.borderColor='var(--starken,#3b82f6)'" onmouseout="this.style.borderColor='var(--border)'">
+                        <div style="font-size:1.2rem">🎶</div>
+                        <div style="font-size:0.78rem;font-weight:600">Enviar MP3</div>
+                        <div style="font-size:0.68rem;color:var(--text-secondary)">MP3, WAV, M4A (máx 10MB)</div>
+                      </div>
+                      <input type="file" id="ctMusicFileInputFmt" accept="audio/*" style="display:none" onchange="ctUploadMusicFileFmt(this.files[0])">
+                      <div id="ctMusicUploadStatusFmt" style="display:none;margin-top:6px;font-size:0.75rem"></div>
+                    </div>
+                    <div style="display:flex;gap:12px;margin-top:10px;align-items:center">
+                      <div style="flex:1">
+                        <label style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:3px">🔊 Volume</label>
+                        <input type="range" id="ctMusicVolumeFmt" min="0" max="100" value="70" style="width:100%;accent-color:var(--starken,#3b82f6)">
+                        <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-secondary)"><span>0%</span><span id="ctMusicVolumeLabelFmt">70%</span><span>100%</span></div>
+                      </div>
+                      <div style="flex:1">
+                        <label style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:3px">⏱ Fade Out</label>
+                        <input type="number" id="ctMusicFadeOutFmt" value="2" min="0" max="10" step="0.5" style="width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card,#fff);color:var(--text);box-sizing:border-box">
+                      </div>
+                    </div>
+                    <button onclick="ctRenderVideoWithMusicFmt()" id="ctMusicRenderBtnFmt" style="width:100%;margin-top:10px;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px">🎬 Renderizar Vídeo com Música</button>
+                    <div id="ctMusicRenderProgressFmt" style="display:none;margin-top:10px">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                        <div class="ct-spinner" style="width:14px;height:14px;border-width:2px"></div>
+                        <span id="ctMusicRenderStatusFmt" style="font-size:0.75rem;font-weight:600;color:var(--text)">Renderizando...</span>
+                      </div>
+                      <div style="background:var(--border);border-radius:6px;height:5px;overflow:hidden">
+                        <div id="ctMusicRenderBarFmt" style="height:100%;background:linear-gradient(90deg,#8b5cf6,#6d28d9);width:0%;transition:width 0.3s;border-radius:6px"></div>
+                      </div>
+                    </div>
+                    <div id="ctMusicRenderResultFmt" style="display:none;margin-top:10px;background:var(--card,#fff);border-radius:10px;border:1px solid #10b981;padding:10px">
+                      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                        <span>✅</span><span style="font-size:0.8rem;font-weight:700;color:#10b981">Vídeo com música pronto!</span>
+                      </div>
+                      <video id="ctMusicRenderPreviewFmt" controls style="width:100%;border-radius:8px;max-height:250px"></video>
+                      <div style="display:flex;gap:8px;margin-top:8px">
+                        <button onclick="ctUseMusicVideoFmt()" style="flex:1;padding:8px;border:none;border-radius:8px;background:#10b981;color:#fff;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit">✅ Substituir Criativo</button>
+                        <a id="ctMusicDownloadLinkFmt" href="#" download style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:0.76rem;font-weight:600;text-decoration:none;text-align:center;display:block">⬇️ Download</a>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Copy for active format -->
@@ -13627,6 +13681,179 @@ function ctUseCopyVariationFormat(idx) {
   }
 }
 
+// ─── MUSIC FOR FORMAT TABS (Creatomate) ───
+var _ctRenderedVideoUrlFmt = null;
+
+function ctMusicTabFmt(tab) {
+  var urlBtn = document.getElementById('ctMusicTabUrlFmt');
+  var uploadBtn = document.getElementById('ctMusicTabUploadFmt');
+  var urlArea = document.getElementById('ctMusicUrlAreaFmt');
+  var uploadArea = document.getElementById('ctMusicUploadAreaFmt');
+  if (tab === 'url') {
+    urlBtn.style.background = 'var(--starken,#3b82f6)'; urlBtn.style.color = '#fff'; urlBtn.style.borderColor = 'var(--starken,#3b82f6)';
+    uploadBtn.style.background = 'var(--card,#fff)'; uploadBtn.style.color = 'var(--text)'; uploadBtn.style.borderColor = 'var(--border)';
+    urlArea.style.display = ''; uploadArea.style.display = 'none';
+  } else {
+    uploadBtn.style.background = 'var(--starken,#3b82f6)'; uploadBtn.style.color = '#fff'; uploadBtn.style.borderColor = 'var(--starken,#3b82f6)';
+    urlBtn.style.background = 'var(--card,#fff)'; urlBtn.style.color = 'var(--text)'; urlBtn.style.borderColor = 'var(--border)';
+    uploadArea.style.display = ''; urlArea.style.display = 'none';
+  }
+}
+
+async function ctUploadMusicFileFmt(file) {
+  if (!file) return;
+  var statusEl = document.getElementById('ctMusicUploadStatusFmt');
+  statusEl.style.display = ''; statusEl.textContent = 'Enviando...'; statusEl.style.color = 'var(--text-secondary)';
+  try {
+    var path = 'music/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    var { error } = await _supabase.storage.from('client-hub-materials').upload(path, file, { upsert: true });
+    if (error) throw error;
+    var publicUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + path;
+    document.getElementById('ctMusicUrlFmt').value = publicUrl;
+    statusEl.innerHTML = '✅ Enviado!'; statusEl.style.color = '#10b981';
+    ctMusicTabFmt('url');
+  } catch(err) { statusEl.textContent = '❌ ' + err.message; statusEl.style.color = '#ef4444'; }
+}
+
+document.addEventListener('input', function(e) {
+  if (e.target.id === 'ctMusicVolumeFmt') {
+    var label = document.getElementById('ctMusicVolumeLabelFmt');
+    if (label) label.textContent = e.target.value + '%';
+  }
+});
+
+function ctShowMusicSectionFormat() {
+  var section = document.getElementById('ctMusicSectionFormat');
+  if (!section || !ctModalTask) { if (section) section.style.display = 'none'; return; }
+  var fmt = _ctActiveFormatTab;
+  var allAtts = ctModalTask.attachments || [];
+  var hasVideo = allAtts.some(function(a) {
+    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type) && ctIsVideo(a);
+  });
+  section.style.display = hasVideo ? '' : 'none';
+}
+
+async function ctRenderVideoWithMusicFmt() {
+  if (!ctModalTask || !ctModalTask.attachments) return alert('Nenhum criativo encontrado');
+  var fmt = _ctActiveFormatTab;
+  var videoAtt = ctModalTask.attachments.find(function(a) {
+    return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type) && ctIsVideo(a);
+  });
+  if (!videoAtt) return alert('Nenhum vídeo encontrado');
+
+  var musicUrl = document.getElementById('ctMusicUrlFmt').value.trim();
+  if (!musicUrl) return alert('Cole a URL da música ou faça upload de um MP3');
+
+  var volume = parseInt(document.getElementById('ctMusicVolumeFmt').value);
+  var fadeOut = parseFloat(document.getElementById('ctMusicFadeOutFmt').value) || 2;
+
+  var btn = document.getElementById('ctMusicRenderBtnFmt');
+  var progress = document.getElementById('ctMusicRenderProgressFmt');
+  var result = document.getElementById('ctMusicRenderResultFmt');
+  btn.disabled = true; btn.style.opacity = '0.6';
+  progress.style.display = ''; result.style.display = 'none';
+
+  var statusEl = document.getElementById('ctMusicRenderStatusFmt');
+  var barEl = document.getElementById('ctMusicRenderBarFmt');
+  statusEl.textContent = 'Enviando para Creatomate...'; barEl.style.width = '20%';
+
+  try {
+    var renderPayload = {
+      source: {
+        output_format: 'mp4',
+        width: 1080,
+        height: 1920,
+        elements: [
+          { type: 'video', source: videoAtt.file_url, fit: 'cover' },
+          { type: 'audio', source: musicUrl, volume: volume + '%', audio_fade_out: fadeOut }
+        ]
+      }
+    };
+
+    var createRes = await fetch('https://api.creatomate.com/v1/renders', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + _SK.cm, 'Content-Type': 'application/json' },
+      body: JSON.stringify(renderPayload)
+    });
+    if (!createRes.ok) throw new Error('Creatomate error: ' + createRes.status + ' - ' + (await createRes.text()));
+
+    var renders = await createRes.json();
+    var renderId = (Array.isArray(renders) ? renders[0] : renders).id;
+    statusEl.textContent = 'Renderizando...'; barEl.style.width = '40%';
+
+    for (var poll = 0; poll < 120; poll++) {
+      await new Promise(function(r) { setTimeout(r, 2000); });
+      var checkRes = await fetch('https://api.creatomate.com/v1/renders/' + renderId, { headers: { 'Authorization': 'Bearer ' + _SK.cm } });
+      var checkData = await checkRes.json();
+
+      if (checkData.status === 'succeeded') {
+        barEl.style.width = '100%';
+        _ctRenderedVideoUrlFmt = checkData.url;
+        progress.style.display = 'none'; result.style.display = '';
+        document.getElementById('ctMusicRenderPreviewFmt').src = checkData.url;
+        document.getElementById('ctMusicDownloadLinkFmt').href = checkData.url;
+        btn.disabled = false; btn.style.opacity = '1';
+        return;
+      } else if (checkData.status === 'failed') {
+        throw new Error('Falhou: ' + (checkData.error_message || 'erro'));
+      }
+      var pct = Math.min(40 + (poll / 120) * 55, 95);
+      barEl.style.width = pct + '%';
+      statusEl.textContent = 'Renderizando... (' + Math.round(pct) + '%)';
+    }
+    throw new Error('Timeout');
+  } catch(err) {
+    statusEl.textContent = '❌ ' + err.message;
+    barEl.style.width = '0%'; barEl.style.background = '#ef4444';
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+
+async function ctUseMusicVideoFmt() {
+  if (!_ctRenderedVideoUrlFmt || !ctModalTask) return;
+  try {
+    var progress = document.getElementById('ctMusicRenderProgressFmt');
+    var statusEl = document.getElementById('ctMusicRenderStatusFmt');
+    progress.style.display = ''; statusEl.textContent = 'Substituindo criativo...';
+
+    // Find the original video attachment to replace
+    var fmt = _ctActiveFormatTab;
+    var videoAtt = ctModalTask.attachments.find(function(a) {
+      return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type) && ctIsVideo(a);
+    });
+
+    // Download rendered video
+    var videoRes = await fetch(_ctRenderedVideoUrlFmt);
+    var videoBlob = await videoRes.blob();
+    var fileName = 'video_music_' + Date.now() + '.mp4';
+    var path = 'content/' + (ctCurrentClient || 'default') + '/' + fileName;
+
+    // Upload to Supabase
+    var { error } = await _supabase.storage.from('client-hub-materials').upload(path, videoBlob, { contentType: 'video/mp4', upsert: true });
+    if (error) throw error;
+    var publicUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + path;
+
+    // Delete old attachment and add new one
+    if (videoAtt) {
+      await ctApi('delete_attachment', { id: videoAtt.id });
+    }
+    await ctApi('add_attachment', {
+      task_id: ctModalTask.id, file_name: fileName, file_url: publicUrl,
+      file_type: 'video/mp4', file_size: videoBlob.size, category: 'creative',
+      uploaded_by: gpState.user, format_type: fmt
+    });
+
+    // Refresh
+    var atts = await ctApi('list_attachments', { task_id: ctModalTask.id });
+    ctModalTask.attachments = Array.isArray(atts) ? atts : (atts.attachments || []);
+    ctRenderFormatContent();
+    progress.style.display = 'none';
+    document.getElementById('ctMusicRenderResultFmt').style.display = 'none';
+  } catch(err) {
+    alert('Erro: ' + err.message);
+  }
+}
+
 var _ctMusicTab = 'url';
 var _ctRenderedVideoUrl = null;
 
@@ -13683,6 +13910,8 @@ async function ctUploadMusicFile(file) {
 function ctShowMusicSectionIfVideo() {
   var section = document.getElementById('ctMusicSection');
   if (!section) return;
+  // Hide legacy music section when formats are selected (use format-tab version instead)
+  if (_ctSelectedFormats && _ctSelectedFormats.length > 0) { section.style.display = 'none'; return; }
   if (!ctModalTask || !ctModalTask.attachments) { section.style.display = 'none'; return; }
   var hasVideo = ctModalTask.attachments.some(function(a) {
     return (a.category === 'creative' || a.category === 'final') && ctIsVideo(a);
@@ -18148,6 +18377,9 @@ function ctRenderFormatContent() {
     var showPub = ctModalTask && ['aprovado','aprovacao','agendar','agendado','publicado'].includes(ctModalTask.status);
     pubSection.style.display = showPub ? '' : 'none';
   }
+
+  // Show music section if format has video
+  if (typeof ctShowMusicSectionFormat === 'function') ctShowMusicSectionFormat();
 }
 
 function ctSaveFormatCopy(value) {
