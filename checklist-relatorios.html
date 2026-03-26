@@ -3870,6 +3870,30 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div id="calWeekGrid" class="pw-grid"></div>
           </div>
 
+          <!-- Post Preview Modal -->
+          <div id="pwPreviewOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto">
+            <div style="background:var(--card,#fff);border-radius:16px;width:680px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:inherit;overflow:hidden" onclick="event.stopPropagation()">
+              <!-- Header -->
+              <div id="pwPreviewHeader" style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border,#e5e7eb)">
+                <div id="pwPreviewAvatar" style="width:44px;height:44px;border-radius:50%;background:#f3f4f6;overflow:hidden;flex-shrink:0"></div>
+                <div style="flex:1;min-width:0">
+                  <div id="pwPreviewTitle" style="font-weight:700;font-size:0.95rem;color:var(--text,#1f2937)"></div>
+                  <div id="pwPreviewMeta" style="font-size:0.78rem;color:var(--text-secondary,#6b7280);display:flex;align-items:center;gap:6px;margin-top:2px"></div>
+                </div>
+                <button onclick="pwClosePreview()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-secondary,#6b7280);padding:4px 10px;border-radius:8px;line-height:1" onmouseover="this.style.background='var(--hover,#f3f4f6)'" onmouseout="this.style.background='none'">&times;</button>
+              </div>
+              <!-- Media -->
+              <div id="pwPreviewMedia" style="background:#000;display:none"></div>
+              <!-- Body -->
+              <div style="padding:20px">
+                <!-- Status bar -->
+                <div id="pwPreviewStatus" style="display:flex;align-items:center;gap:8px;margin-bottom:16px"></div>
+                <!-- Caption -->
+                <div id="pwPreviewCaption" style="font-size:0.9rem;line-height:1.6;color:var(--text,#1f2937);white-space:pre-wrap;word-break:break-word"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Month View -->
           <div id="calMonthView" style="display:none">
             <div class="pc-weekdays">
@@ -15840,7 +15864,7 @@ function ctOpenLightbox(url, isVideo) {
 
       gHtml += '<div class="pw-col' + (isToday ? ' today' : '') + '">';
 
-      dayPosts.forEach(function(p) {
+      dayPosts.forEach(function(p, pi) {
         var status = (p.status || '').toLowerCase();
         var platform = (p.platform || '').toLowerCase();
         var platIcon = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
@@ -15850,7 +15874,7 @@ function ctOpenLightbox(url, isVideo) {
         var imageUrl = p.image_url || '';
         var isVideo = imageUrl && /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrl);
 
-        gHtml += '<div class="pw-card">';
+        gHtml += '<div class="pw-card" onclick="pwOpenPreview(' + pi + ',\'' + iso + '\')">';
 
         // Image / Video / No-image header
         if (imageUrl && !isVideo) {
@@ -15904,13 +15928,75 @@ function ctOpenLightbox(url, isVideo) {
   var _origCalInit = window.calInit;
   window.calInit = function() {
     _origCalInit();
-    // After data loads, switch to week view
     setTimeout(function() {
       if (_calLoaded && _calView === 'week') {
         calRenderWeek();
         calUpdateNavLabel();
       }
     }, 500);
+  };
+
+  // ─── POST PREVIEW MODAL ───────────────────────────────────
+  window.pwOpenPreview = function(postIndex, isoDate) {
+    var dayPosts = calPostsForDay(isoDate);
+    if (!dayPosts[postIndex]) return;
+    var p = dayPosts[postIndex];
+
+    var overlay = document.getElementById('pwPreviewOverlay');
+    var status = (p.status || '').toLowerCase();
+    var platform = (p.platform || '').toLowerCase();
+    var platLabel = platform.indexOf('instagram') !== -1 ? 'Instagram' : 'Facebook';
+    var platIcon = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
+    var statusIcon = status === 'published' ? '\u2705' : status === 'scheduled' ? '\uD83D\uDCC5' : status === 'failed' ? '\u274C' : '\u23F3';
+    var statusLabel = calStatusLabel(p.status);
+    var statusColor = status === 'published' ? '#10b981' : status === 'scheduled' ? '#3b82f6' : status === 'failed' ? '#ef4444' : '#f59e0b';
+    var timeStr = calFormatTime(p.scheduled_for || p.created_at);
+    var imageUrl = p.image_url || '';
+    var isVideo = imageUrl && /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrl);
+
+    // Avatar
+    var avatarEl = document.getElementById('pwPreviewAvatar');
+    if (imageUrl && !isVideo) {
+      avatarEl.innerHTML = '<img src="' + imageUrl + '" style="width:100%;height:100%;object-fit:cover">';
+    } else {
+      avatarEl.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;font-weight:700;font-size:1.1rem">' + ((p.client_name || '?')[0]).toUpperCase() + '</div>';
+    }
+
+    // Title + meta
+    document.getElementById('pwPreviewTitle').textContent = p.client_name || 'Post';
+    document.getElementById('pwPreviewMeta').innerHTML = platIcon + ' ' + platLabel + ' \u00B7 ' + timeStr;
+
+    // Media
+    var mediaEl = document.getElementById('pwPreviewMedia');
+    if (imageUrl && !isVideo) {
+      mediaEl.style.display = '';
+      mediaEl.innerHTML = '<img src="' + imageUrl + '" style="width:100%;max-height:500px;object-fit:contain;display:block" onerror="this.parentElement.style.display=\'none\'">';
+    } else if (isVideo) {
+      mediaEl.style.display = '';
+      mediaEl.innerHTML = '<video src="' + imageUrl + '" controls style="width:100%;max-height:500px;display:block" preload="metadata"></video>';
+    } else {
+      mediaEl.style.display = 'none';
+      mediaEl.innerHTML = '';
+    }
+
+    // Status bar
+    document.getElementById('pwPreviewStatus').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;background:' + statusColor + '15;color:' + statusColor + ';border:1px solid ' + statusColor + '30">' + statusIcon + ' ' + statusLabel + '</span>'
+      + '<span style="font-size:0.78rem;color:var(--text-secondary,#6b7280)">' + platIcon + ' ' + platLabel + '</span>';
+
+    // Caption
+    var captionEl = document.getElementById('pwPreviewCaption');
+    captionEl.textContent = p.caption || '';
+
+    overlay.style.display = 'flex';
+    overlay.onclick = function(e) { if (e.target === overlay) pwClosePreview(); };
+  };
+
+  window.pwClosePreview = function() {
+    var overlay = document.getElementById('pwPreviewOverlay');
+    overlay.style.display = 'none';
+    // Stop any playing video
+    var vid = overlay.querySelector('video');
+    if (vid) { vid.pause(); vid.src = ''; }
   };
 
 })(); // end CALENDARIO MODULE
