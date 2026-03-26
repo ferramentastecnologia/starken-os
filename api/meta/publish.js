@@ -485,7 +485,7 @@ module.exports = async function handler(req, res) {
         post_id: publishedId,
         caption: caption || '',
         has_image: true,
-        image_url: image_url || (image_urls[0] || null),
+        image_url: image_url || video_url || (image_urls[0] || null),
         ...(task_id && { task_id }),
       });
 
@@ -647,6 +647,7 @@ module.exports = async function handler(req, res) {
       }
 
       // Salva no histórico (Supabase)
+      const fbImgUrls = req.body.image_urls || [];
       await saveToHistory({
         user_name: user || 'Sistema',
         client_key: req.body.client || tenant.key,
@@ -655,8 +656,8 @@ module.exports = async function handler(req, res) {
         status: result.status,
         post_id: result.post_id,
         caption: caption || '',
-        has_image: result.has_image || false,
-        image_url: image_url || null,
+        has_image: result.has_image || !!video_url,
+        image_url: image_url || video_url || fbImgUrls[0] || null,
         scheduled_for: result.scheduled_for || null,
         ...(task_id && { task_id }),
       });
