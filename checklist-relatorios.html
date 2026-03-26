@@ -15970,10 +15970,20 @@ function ctOpenLightbox(url, isVideo) {
     var mediaEl = document.getElementById('pwPreviewMedia');
     if (imageUrl && !isVideo) {
       mediaEl.style.display = '';
-      mediaEl.innerHTML = '<img src="' + imageUrl + '" style="width:100%;max-height:500px;object-fit:contain;display:block" onerror="this.parentElement.style.display=\'none\'">';
+      mediaEl.style.background = '#000';
+      mediaEl.innerHTML = '<img src="' + imageUrl + '" style="width:100%;max-height:500px;object-fit:contain;display:block" onerror="this.parentElement.innerHTML=\'<div style=padding:40px;text-align:center;color:#6b7280;background:#f3f4f6>Imagem indispon\u00edvel</div>\'">';
     } else if (isVideo) {
       mediaEl.style.display = '';
+      mediaEl.style.background = '#000';
       mediaEl.innerHTML = '<video src="' + imageUrl + '" controls style="width:100%;max-height:500px;display:block" preload="metadata"></video>';
+    } else if (p.has_image) {
+      // Has image but URL not saved (old posts)
+      mediaEl.style.display = '';
+      mediaEl.style.background = 'var(--bg-subtle,#f8fafc)';
+      mediaEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary,#6b7280);font-size:0.85rem">'
+        + '<div style="font-size:2rem;margin-bottom:8px">\uD83D\uDDBC\uFE0F</div>'
+        + 'Criativo publicado (preview indispon\u00edvel para posts antigos)'
+        + '</div>';
     } else {
       mediaEl.style.display = 'none';
       mediaEl.innerHTML = '';
