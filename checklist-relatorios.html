@@ -13840,12 +13840,12 @@ async function ctUseMusicVideoFmt() {
 
     // Delete old attachment and add new one
     if (videoAtt) {
-      await ctApi('delete_attachment', { id: videoAtt.id });
+      await ctApi('delete_attachment', { id: videoAtt.id, user: gpState.user });
     }
     await ctApi('add_attachment', {
       task_id: ctModalTask.id, file_name: fileName, file_url: publicUrl,
       file_type: 'video/mp4', file_size: videoBlob.size, category: 'creative',
-      uploaded_by: gpState.user, format_type: fmt
+      user: gpState.user, format_type: fmt
     });
 
     // Refresh
