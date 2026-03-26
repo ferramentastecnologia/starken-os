@@ -3317,9 +3317,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="">Selecione o cliente...</option>
             </select>
             <button class="ct-add-btn" onclick="ctShowNewGroupModal()" id="ctAddGroupBtn" style="display:none">+ Novo Grupo</button>
-            <button class="ct-add-btn" onclick="cronogramaGenerate()" id="ctCronoBtn" style="display:none;background:#8B7355;border-color:#8B7355">📄 Cronograma PDF</button>
-            <span id="ctCronoStatus" style="display:none;font-size:0.75rem;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer" onclick="ctCycleCronoStatus()" title="Clique para alterar status"></span>
-            <button id="ctCronoSendBtn" style="display:none;padding:5px 14px;border:none;border-radius:8px;background:#25d366;color:#fff;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit" onclick="ctCronoSendWhatsApp()">📱 Enviar</button>
+            <!-- Cronograma PDF removido da toolbar do client -->
+            <span id="ctCronoBtn" style="display:none"></span>
+            <span id="ctCronoStatus" style="display:none"></span>
+            <span id="ctCronoSendBtn" style="display:none"></span>
             <div style="flex:1"></div>
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
