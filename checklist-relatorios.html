@@ -13742,70 +13742,7 @@ function ctShowMusicSectionFormat() {
   section.style.display = hasVideo ? '' : 'none';
 }
 
-// FFmpeg.wasm instance (lazy loaded)
-var _ctFFmpeg = null;
-var _ctFFmpegLoading = false;
-
-async function ctFetchAsBlob(url, mimeType) {
-  var res = await fetch(url);
-  var buf = await res.arrayBuffer();
-  var blob = new Blob([buf], { type: mimeType });
-  return URL.createObjectURL(blob);
-}
-
-async function ctLoadFFmpeg(statusEl, barEl) {
-  if (_ctFFmpeg && _ctFFmpeg.loaded) return _ctFFmpeg;
-  if (_ctFFmpegLoading) {
-    while (_ctFFmpegLoading) await new Promise(function(r) { setTimeout(r, 200); });
-    return _ctFFmpeg;
-  }
-  _ctFFmpegLoading = true;
-
-  statusEl.textContent = 'Carregando FFmpeg (primeira vez ~15s, depois é instantâneo)...';
-  barEl.style.width = '5%';
-
-  // Load FFmpeg library script
-  if (!document.getElementById('ffmpeg-script')) {
-    var scriptUrl = await ctFetchAsBlob('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js', 'text/javascript');
-    await new Promise(function(resolve, reject) {
-      var s = document.createElement('script');
-      s.id = 'ffmpeg-script';
-      s.src = scriptUrl;
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-  }
-
-  barEl.style.width = '10%';
-
-  // Find FFmpeg constructor
-  var FFmpegClass = null;
-  if (window.FFmpegWASM && window.FFmpegWASM.FFmpeg) FFmpegClass = window.FFmpegWASM.FFmpeg;
-  else if (window.FFmpeg && window.FFmpeg.FFmpeg) FFmpegClass = window.FFmpeg.FFmpeg;
-  if (!FFmpegClass) throw new Error('FFmpeg.wasm nao carregou. Tente recarregar a pagina.');
-
-  _ctFFmpeg = new FFmpegClass();
-  _ctFFmpeg.on('progress', function(e) {
-    var pct = Math.round((e.progress || 0) * 100);
-    if (barEl) barEl.style.width = Math.min(30 + pct * 0.6, 90) + '%';
-    if (statusEl) statusEl.textContent = 'Processando... ' + pct + '%';
-  });
-
-  statusEl.textContent = 'Baixando engine FFmpeg (~12MB, cacheia no browser)...';
-  barEl.style.width = '15%';
-
-  // Download core files as blob URLs to avoid CORS worker issues
-  var baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
-  var coreURL = await ctFetchAsBlob(baseURL + '/ffmpeg-core.js', 'text/javascript');
-  barEl.style.width = '20%';
-  var wasmURL = await ctFetchAsBlob(baseURL + '/ffmpeg-core.wasm', 'application/wasm');
-  barEl.style.width = '28%';
-
-  await _ctFFmpeg.load({ coreURL: coreURL, wasmURL: wasmURL });
-
-  _ctFFmpegLoading = false;
-  return _ctFFmpeg;
-}
+var FFMPEG_SERVER = 'http://localhost:7777';
 
 async function ctRenderVideoWithMusicFmt() {
   if (!ctModalTask || !ctModalTask.attachments) return alert('Nenhum criativo encontrado');
@@ -13818,7 +13755,7 @@ async function ctRenderVideoWithMusicFmt() {
   var musicUrl = document.getElementById('ctMusicUrlFmt').value.trim();
   if (!musicUrl) return alert('Cole a URL da música ou faça upload de um MP3');
 
-  var volume = parseInt(document.getElementById('ctMusicVolumeFmt').value) / 100;
+  var volume = parseInt(document.getElementById('ctMusicVolumeFmt').value);
   var fadeOut = parseFloat(document.getElementById('ctMusicFadeOutFmt').value) || 2;
 
   var btn = document.getElementById('ctMusicRenderBtnFmt');
@@ -13832,67 +13769,51 @@ async function ctRenderVideoWithMusicFmt() {
   barEl.style.background = 'linear-gradient(90deg,#8b5cf6,#6d28d9)';
 
   try {
-    // 1. Load FFmpeg
-    var ffmpeg = await ctLoadFFmpeg(statusEl, barEl);
+    // Check if local FFmpeg server is running
+    statusEl.textContent = 'Conectando ao FFmpeg local...'; barEl.style.width = '10%';
+    var healthRes = await fetch(FFMPEG_SERVER + '/health', { signal: AbortSignal.timeout(3000) }).catch(function() { return null; });
 
-    // 2. Download video
-    statusEl.textContent = 'Baixando vídeo...'; barEl.style.width = '15%';
-    var videoRes = await fetch(videoAtt.file_url);
-    var videoData = new Uint8Array(await videoRes.arrayBuffer());
-    await ffmpeg.writeFile('input.mp4', videoData);
-
-    // 3. Download audio
-    statusEl.textContent = 'Baixando áudio...'; barEl.style.width = '25%';
-    var audioRes = await fetch(musicUrl);
-    var audioData = new Uint8Array(await audioRes.arrayBuffer());
-    var audioExt = musicUrl.split('.').pop().split('?')[0] || 'mp3';
-    await ffmpeg.writeFile('input.' + audioExt, audioData);
-
-    // 4. Merge with -c:v copy (NO re-encoding of video!)
-    statusEl.textContent = 'Mesclando vídeo + música (sem perda de qualidade)...'; barEl.style.width = '30%';
-
-    var audioFilter = 'volume=' + volume;
-    // afade needs video duration - for now use a high start time, -shortest will handle it
-    if (fadeOut > 0) {
-      audioFilter += ',afade=t=out:st=999:d=' + fadeOut;
+    if (!healthRes || !healthRes.ok) {
+      throw new Error('FFmpeg server não está rodando! Abra um terminal e rode: node ffmpeg-server.js');
     }
 
-    await ffmpeg.exec([
-      '-i', 'input.mp4',
-      '-i', 'input.' + audioExt,
-      '-c:v', 'copy',
-      '-c:a', 'aac',
-      '-b:a', '192k',
-      '-map', '0:v:0',
-      '-map', '1:a:0',
-      '-af', audioFilter,
-      '-shortest',
-      '-movflags', '+faststart',
-      'output.mp4'
-    ]);
+    // Send merge request
+    statusEl.textContent = 'Processando vídeo + música (qualidade 100%)...'; barEl.style.width = '30%';
 
-    // 5. Read output
-    statusEl.textContent = 'Finalizando...'; barEl.style.width = '95%';
-    var outputData = await ffmpeg.readFile('output.mp4');
-    var blob = new Blob([outputData.buffer], { type: 'video/mp4' });
-    var blobUrl = URL.createObjectURL(blob);
+    var mergeRes = await fetch(FFMPEG_SERVER + '/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        videoUrl: videoAtt.file_url,
+        audioUrl: musicUrl,
+        volume: volume,
+        fadeOut: fadeOut
+      })
+    });
 
-    // Cleanup virtual FS
-    try { await ffmpeg.deleteFile('input.mp4'); } catch(e) {}
-    try { await ffmpeg.deleteFile('input.' + audioExt); } catch(e) {}
-    try { await ffmpeg.deleteFile('output.mp4'); } catch(e) {}
+    if (!mergeRes.ok) {
+      var errData = await mergeRes.json().catch(function() { return { error: 'Erro desconhecido' }; });
+      throw new Error(errData.error || 'Erro no FFmpeg: ' + mergeRes.status);
+    }
 
-    // 6. Show result
+    barEl.style.width = '90%';
+    statusEl.textContent = 'Finalizando...';
+
+    var videoBlob = await mergeRes.blob();
+    var blobUrl = URL.createObjectURL(videoBlob);
+    var sizeMB = (videoBlob.size / 1024 / 1024).toFixed(1);
+    var origMB = mergeRes.headers.get('X-Original-Size') ? (parseInt(mergeRes.headers.get('X-Original-Size')) / 1024 / 1024).toFixed(1) : '?';
+    var time = mergeRes.headers.get('X-Processing-Time') || '?';
+
     barEl.style.width = '100%';
     _ctRenderedVideoUrlFmt = blobUrl;
-    _ctRenderedVideoBlobFmt = blob;
+    _ctRenderedVideoBlobFmt = videoBlob;
     progress.style.display = 'none'; result.style.display = '';
     document.getElementById('ctMusicRenderPreviewFmt').src = blobUrl;
     document.getElementById('ctMusicDownloadLinkFmt').href = blobUrl;
     document.getElementById('ctMusicDownloadLinkFmt').download = 'video_com_musica.mp4';
 
-    var sizeMB = (blob.size / 1024 / 1024).toFixed(1);
-    statusEl.textContent = '✅ Pronto! ' + sizeMB + ' MB (qualidade original preservada)';
+    statusEl.textContent = '✅ ' + sizeMB + 'MB (original: ' + origMB + 'MB) — ' + time + 's — Qualidade 100%';
     btn.disabled = false; btn.style.opacity = '1';
 
   } catch(err) {
