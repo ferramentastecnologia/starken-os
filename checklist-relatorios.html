@@ -18577,7 +18577,9 @@ async function ctPublishFormat() {
           caption: fmt === 'story' ? '' : copy,
           scheduled_for: scheduledFor,
           task_id: ctModalTask.id,
-          content_type: fmt,
+          post_type: fmt,
+          media_type: (fmt === 'reels' || videos.length > 0) ? 'REELS' : null,
+          user_name: gpState.user,
         };
         if (fmt === 'carrossel') {
           queueBody.image_urls = imageUrls;
@@ -18600,7 +18602,7 @@ async function ctPublishFormat() {
         var body = {
           action: 'publish',
           client_key: ctCurrentClient,
-          platform: 'fb',
+          destination: 'fb',
           caption: copy,
         };
 
