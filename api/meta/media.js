@@ -26,6 +26,7 @@ const { validateTenant } = require('./_lib/tenants');
 
 const POLL_INTERVAL = 5000;
 const POLL_MAX_ATTEMPTS = 12;
+const POLL_MAX_ATTEMPTS_VIDEO = 36; // 36 × 5s = 180s for videos
 const SUPABASE_BUCKET = 'media-uploads';
 
 // ─── Supabase Storage helpers ───
@@ -158,18 +159,20 @@ async function createBucket() {
   }
 }
 
-async function pollContainerStatus(containerId, pageToken) {
-  for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
-    const params = { fields: 'status_code' };
+async function pollContainerStatus(containerId, pageToken, isVideo) {
+  const maxAttempts = isVideo ? POLL_MAX_ATTEMPTS_VIDEO : POLL_MAX_ATTEMPTS;
+  for (let i = 0; i < maxAttempts; i++) {
+    const params = { fields: 'status_code,status' };
     if (pageToken) params.access_token = pageToken;
     const status = await graphGet(`/${containerId}`, params);
     if (status.status_code === 'FINISHED') return true;
     if (status.status_code === 'ERROR') {
-      throw { error: true, code: 'MEDIA_ERROR', message: 'Container de mídia falhou no processamento' };
+      throw { error: true, code: 'MEDIA_ERROR', message: 'Container de mídia falhou: ' + (status.status || 'erro de processamento') };
     }
     await new Promise(r => setTimeout(r, POLL_INTERVAL));
   }
-  throw { error: true, code: 'MEDIA_TIMEOUT', message: 'Timeout aguardando processamento da mídia (60s)' };
+  const totalSec = Math.round(maxAttempts * POLL_INTERVAL / 1000);
+  throw { error: true, code: 'MEDIA_TIMEOUT', message: `Timeout aguardando processamento da mídia (${totalSec}s)` };
 }
 
 module.exports = async function handler(req, res) {
@@ -298,8 +301,9 @@ module.exports = async function handler(req, res) {
       }
 
       // Single image/video/reel
+      const isVideoMedia = media_type === 'VIDEO' || media_type === 'REELS';
       const body = { image_url: resolvedImageUrl };
-      if (media_type === 'VIDEO' || media_type === 'REELS') {
+      if (isVideoMedia) {
         body.video_url = resolvedImageUrl;
         delete body.image_url;
         body.media_type = media_type === 'REELS' ? 'REELS' : 'VIDEO';
@@ -307,8 +311,8 @@ module.exports = async function handler(req, res) {
       if (caption) body.caption = caption;
       if (tenant.pageAccessToken) body.access_token = tenant.pageAccessToken;
 
-      const containerRes = await graphPost(`/${tenant.igUserId}/media`, body);
-      await pollContainerStatus(containerRes.id, tenant.pageAccessToken);
+      const containerRes = await graphPost(`/${tenant.igUserId}/media`, body, isVideoMedia ? { videoMode: true } : {});
+      await pollContainerStatus(containerRes.id, tenant.pageAccessToken, isVideoMedia);
 
       return res.status(201).json({
         container_id: containerRes.id,

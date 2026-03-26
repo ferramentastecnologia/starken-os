@@ -10,7 +10,7 @@
  *   { destination, client, caption, type, image_url, scheduled_publish_time, user }
  */
 
-const { graphPost, graphPostForm, graphDelete } = require('./_lib/graph');
+const { graphPost, graphPostForm, graphDelete, verifyMediaUrl } = require('./_lib/graph');
 const { validateTenant } = require('./_lib/tenants');
 
 // ─── Supabase helpers ───
@@ -70,15 +70,27 @@ async function processPublishQueue() {
       let publishedId;
 
       if (item.platform === 'ig') {
-        // Helper: wait for container
+        // Helper: wait for container (extended timeout for videos: 60 polls × 3s = 180s)
+        const isVideoItem = item.media_type === 'REELS' || item.media_type === 'VIDEO' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrls[0] || '');
+        const maxPolls = isVideoItem ? 60 : 15;
+        const pollDelay = isVideoItem ? 3000 : 2000;
+
         async function waitIG(cid) {
-          for (let i = 0; i < 15; i++) {
-            await new Promise(r => setTimeout(r, 2000));
-            const ck = await fetch(`https://graph.facebook.com/v25.0/${cid}?fields=status_code&access_token=${igToken}`);
+          for (let i = 0; i < maxPolls; i++) {
+            await new Promise(r => setTimeout(r, pollDelay));
+            const ck = await fetch(`https://graph.facebook.com/v25.0/${cid}?fields=status_code,status&access_token=${igToken}`);
             const st = await ck.json();
             if (st.status_code === 'FINISHED') return;
-            if (st.status_code === 'ERROR') throw new Error('IG processing error');
+            if (st.status_code === 'ERROR') {
+              throw new Error('IG processing error: ' + (st.status || 'container failed'));
+            }
           }
+          throw new Error('IG container timeout após ' + Math.round(maxPolls * pollDelay / 1000) + 's');
+        }
+
+        // Verify media URLs are accessible before sending to Meta
+        for (const mediaUrl of imageUrls) {
+          await verifyMediaUrl(mediaUrl);
         }
 
         if (imageUrls.length > 1) {
@@ -95,7 +107,7 @@ async function processPublishQueue() {
           publishedId = pr.id;
         } else if (imageUrls.length === 1) {
           // Check if it's a video/reels (by URL extension or media_type flag)
-          const isVideo = item.media_type === 'REELS' || item.media_type === 'VIDEO' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrls[0]);
+          const isVideo = isVideoItem;
           if (isVideo) {
             const videoBody = {
               video_url: imageUrls[0],
@@ -103,9 +115,9 @@ async function processPublishQueue() {
               media_type: (item.media_type === 'REELS') ? 'REELS' : 'VIDEO',
               access_token: igToken,
             };
-            const mr = await graphPost(`/${client.igUserId}/media`, videoBody);
+            const mr = await graphPost(`/${client.igUserId}/media`, videoBody, { videoMode: true });
             await waitIG(mr.id);
-            const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
+            const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken }, { videoMode: true });
             publishedId = pr.id;
           } else {
             const mr = await graphPost(`/${client.igUserId}/media`, { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken });
@@ -157,13 +169,20 @@ async function processPublishQueue() {
 
       results.push({ id: item.id, status: 'PUBLISHED', post_id: publishedId });
     } catch (err) {
+      // Build detailed error message
+      let errorDetail = err.message || 'Erro desconhecido';
+      if (err.meta_code === 389 || (err.message && err.message.includes('389'))) {
+        errorDetail = 'Meta não conseguiu baixar o vídeo (erro 389). Verifique se a URL é pública e acessível: ' + (imageUrls[0] || 'N/A');
+      } else if (err.code === 'MEDIA_URL_INACCESSIBLE') {
+        errorDetail = 'URL da mídia inacessível. O arquivo pode não existir ou o bucket pode estar privado: ' + (imageUrls[0] || 'N/A');
+      }
       // Mark as FAILED
       await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
         method: 'PATCH',
         headers: supabaseHeaders(),
-        body: JSON.stringify({ status: 'FAILED', error_message: err.message, processed_at: new Date().toISOString() }),
+        body: JSON.stringify({ status: 'FAILED', error_message: errorDetail, processed_at: new Date().toISOString() }),
       });
-      results.push({ id: item.id, status: 'FAILED', error: err.message });
+      results.push({ id: item.id, status: 'FAILED', error: errorDetail });
     }
   }
 
@@ -339,23 +358,28 @@ module.exports = async function handler(req, res) {
       let publishedId;
 
       // Helper: wait for IG container to be ready (polls status)
-      async function waitForContainer(containerId, maxWait = 30000) {
+      // Videos get extended timeout (180s vs 30s for images)
+      async function waitForContainer(containerId, maxWait) {
+        if (!maxWait) maxWait = 30000; // default 30s for images
+        const pollInterval = maxWait > 60000 ? 3000 : 2000;
         const start = Date.now();
         while (Date.now() - start < maxWait) {
-          await new Promise(r => setTimeout(r, 2000)); // wait 2s between checks
+          await new Promise(r => setTimeout(r, pollInterval));
           try {
             const check = await fetch(
-              `https://graph.facebook.com/v25.0/${containerId}?fields=status_code&access_token=${igToken || process.env.META_ACCESS_TOKEN}`,
+              `https://graph.facebook.com/v25.0/${containerId}?fields=status_code,status&access_token=${igToken || process.env.META_ACCESS_TOKEN}`,
               { method: 'GET' }
             );
             const status = await check.json();
             if (status.status_code === 'FINISHED') return true;
-            if (status.status_code === 'ERROR') throw new Error('IG container processing failed');
+            if (status.status_code === 'ERROR') {
+              throw new Error('IG container failed: ' + (status.status || 'processing error'));
+            }
           } catch (e) {
-            if (e.message.includes('failed')) throw e;
+            if (e.message.includes('failed') || e.message.includes('container')) throw e;
           }
         }
-        return true; // try anyway after timeout
+        throw new Error('IG container timeout após ' + Math.round(maxWait / 1000) + 's');
       }
 
       // ─── IG CARROSSEL (múltiplas imagens) ───
@@ -404,18 +428,21 @@ module.exports = async function handler(req, res) {
       }
       // ─── IG VIDEO / REELS ───
       else if (video_url) {
+        // Verify video URL is accessible before sending to Meta
+        await verifyMediaUrl(video_url);
+
         const videoBody = {
           video_url: video_url,
           caption: caption || '',
           media_type: (media_type === 'REELS') ? 'REELS' : 'VIDEO',
           ...(igToken && { access_token: igToken }),
         };
-        const mediaRes = await graphPost(`/${tenant.igUserId}/media`, videoBody);
-        await waitForContainer(mediaRes.id);
+        const mediaRes = await graphPost(`/${tenant.igUserId}/media`, videoBody, { videoMode: true });
+        await waitForContainer(mediaRes.id, 180000); // 180s for videos
         const pubRes = await graphPost(`/${tenant.igUserId}/media_publish`, {
           creation_id: mediaRes.id,
           ...(igToken && { access_token: igToken }),
-        });
+        }, { videoMode: true });
         publishedId = pubRes.id;
       }
       // ─── IG IMAGEM ÚNICA via URL direta ───
@@ -523,6 +550,9 @@ module.exports = async function handler(req, res) {
       }
       // ─── VIDEO / REELS (FB) ───
       else if (video_url) {
+        // Verify video URL is accessible before sending to Meta
+        await verifyMediaUrl(video_url);
+
         const videoBody = {
           file_url: video_url,
           description: caption || '',
@@ -532,7 +562,7 @@ module.exports = async function handler(req, res) {
           videoBody.scheduled_publish_time = scheduled_publish_time;
           videoBody.published = false;
         }
-        const videoRes = await graphPost(`/${tenant.pageId}/videos`, videoBody);
+        const videoRes = await graphPost(`/${tenant.pageId}/videos`, videoBody, { videoMode: true });
         result = {
           post_id: videoRes.id,
           status: scheduled_publish_time ? 'SCHEDULED' : 'PUBLISHED',

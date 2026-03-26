@@ -9,6 +9,7 @@
 
 const BASE_URL = 'https://graph.facebook.com/v25.0';
 const TIMEOUT_MS = 15000;
+const TIMEOUT_VIDEO_MS = 120000; // 120s for video uploads (Meta needs time to download large files)
 const MAX_RETRIES = 2;
 
 function getToken() {
@@ -30,9 +31,9 @@ function normalizeError(metaError, status) {
   };
 }
 
-async function fetchWithTimeout(url, options) {
+async function fetchWithTimeout(url, options, timeoutMs) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs || TIMEOUT_MS);
   try {
     const response = await fetch(url, { ...options, signal: controller.signal });
     return response;
@@ -41,13 +42,13 @@ async function fetchWithTimeout(url, options) {
   }
 }
 
-async function requestWithRetry(url, options, retries = 0) {
-  const response = await fetchWithTimeout(url, options);
+async function requestWithRetry(url, options, retries = 0, timeoutMs) {
+  const response = await fetchWithTimeout(url, options, timeoutMs);
 
   if (response.status === 429 && retries < MAX_RETRIES) {
     const retryAfter = parseInt(response.headers.get('Retry-After') || '2', 10);
     await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-    return requestWithRetry(url, options, retries + 1);
+    return requestWithRetry(url, options, retries + 1, timeoutMs);
   }
 
   return response;
@@ -82,13 +83,15 @@ async function graphGet(path, params = {}) {
  * POST request to Graph API
  * @param {string} path - e.g. '/{page_id}/feed'
  * @param {object} body - request body fields
+ * @param {object} opts - { videoMode: true } for extended timeout on video uploads
  * @returns {Promise<object>} parsed JSON response
  */
-async function graphPost(path, body = {}) {
+async function graphPost(path, body = {}, opts = {}) {
   const token = getToken();
   const url = `${BASE_URL}${path}`;
 
   const postBody = { access_token: token, ...body };
+  const timeoutMs = opts.videoMode ? TIMEOUT_VIDEO_MS : undefined;
 
   const response = await requestWithRetry(url, {
     method: 'POST',
@@ -97,7 +100,7 @@ async function graphPost(path, body = {}) {
       'Accept': 'application/json',
     },
     body: JSON.stringify(postBody),
-  });
+  }, 0, timeoutMs);
 
   const data = await response.json();
 
@@ -165,4 +168,28 @@ async function graphDelete(path, params = {}) {
   return data;
 }
 
-module.exports = { graphGet, graphPost, graphPostForm, graphDelete, BASE_URL };
+/**
+ * Verify a media URL is accessible before sending to Meta API
+ * Returns { ok, size, contentType } or throws with details
+ */
+async function verifyMediaUrl(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    const res = await fetch(url, { method: 'HEAD', signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) {
+      throw { error: true, code: 'MEDIA_URL_INACCESSIBLE', message: `Mídia inacessível (HTTP ${res.status}): ${url}` };
+    }
+    return {
+      ok: true,
+      size: parseInt(res.headers.get('content-length') || '0', 10),
+      contentType: res.headers.get('content-type') || 'unknown',
+    };
+  } catch (e) {
+    if (e.code === 'MEDIA_URL_INACCESSIBLE') throw e;
+    throw { error: true, code: 'MEDIA_URL_INACCESSIBLE', message: `Não foi possível acessar a mídia: ${e.message}. URL: ${url}` };
+  }
+}
+
+module.exports = { graphGet, graphPost, graphPostForm, graphDelete, verifyMediaUrl, BASE_URL, TIMEOUT_VIDEO_MS };
