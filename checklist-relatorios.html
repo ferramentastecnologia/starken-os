@@ -13746,6 +13746,13 @@ function ctShowMusicSectionFormat() {
 var _ctFFmpeg = null;
 var _ctFFmpegLoading = false;
 
+async function ctFetchAsBlob(url, mimeType) {
+  var res = await fetch(url);
+  var buf = await res.arrayBuffer();
+  var blob = new Blob([buf], { type: mimeType });
+  return URL.createObjectURL(blob);
+}
+
 async function ctLoadFFmpeg(statusEl, barEl) {
   if (_ctFFmpeg && _ctFFmpeg.loaded) return _ctFFmpeg;
   if (_ctFFmpegLoading) {
@@ -13754,46 +13761,47 @@ async function ctLoadFFmpeg(statusEl, barEl) {
   }
   _ctFFmpegLoading = true;
 
-  statusEl.textContent = 'Carregando FFmpeg (primeira vez pode demorar ~15s)...';
-  barEl.style.width = '10%';
+  statusEl.textContent = 'Carregando FFmpeg (primeira vez ~15s, depois é instantâneo)...';
+  barEl.style.width = '5%';
 
-  // Load FFmpeg.wasm via script tags
-  if (!window.FFmpegWASM) {
+  // Load FFmpeg library script
+  if (!document.getElementById('ffmpeg-script')) {
+    var scriptUrl = await ctFetchAsBlob('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js', 'text/javascript');
     await new Promise(function(resolve, reject) {
       var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js';
-      s.onload = resolve; s.onerror = reject;
-      document.head.appendChild(s);
-    });
-    await new Promise(function(resolve, reject) {
-      var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.min.js';
+      s.id = 'ffmpeg-script';
+      s.src = scriptUrl;
       s.onload = resolve; s.onerror = reject;
       document.head.appendChild(s);
     });
   }
 
-  var FFmpeg = window.FFmpegWASM ? window.FFmpegWASM.FFmpeg : (window.FFmpeg ? window.FFmpeg.FFmpeg : null);
-  if (!FFmpeg) throw new Error('FFmpeg.wasm nao carregou');
+  barEl.style.width = '10%';
 
-  _ctFFmpeg = new FFmpeg();
+  // Find FFmpeg constructor
+  var FFmpegClass = null;
+  if (window.FFmpegWASM && window.FFmpegWASM.FFmpeg) FFmpegClass = window.FFmpegWASM.FFmpeg;
+  else if (window.FFmpeg && window.FFmpeg.FFmpeg) FFmpegClass = window.FFmpeg.FFmpeg;
+  if (!FFmpegClass) throw new Error('FFmpeg.wasm nao carregou. Tente recarregar a pagina.');
+
+  _ctFFmpeg = new FFmpegClass();
   _ctFFmpeg.on('progress', function(e) {
     var pct = Math.round((e.progress || 0) * 100);
     if (barEl) barEl.style.width = Math.min(30 + pct * 0.6, 90) + '%';
     if (statusEl) statusEl.textContent = 'Processando... ' + pct + '%';
   });
 
-  var baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
-  var toBlobURL = window.FFmpegUtil ? window.FFmpegUtil.toBlobURL : (window.FFmpegWASMUtil ? window.FFmpegWASMUtil.toBlobURL : null);
+  statusEl.textContent = 'Baixando engine FFmpeg (~12MB, cacheia no browser)...';
+  barEl.style.width = '15%';
 
-  if (toBlobURL) {
-    await _ctFFmpeg.load({
-      coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
-      wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
-    });
-  } else {
-    await _ctFFmpeg.load({ coreURL: baseURL + '/ffmpeg-core.js', wasmURL: baseURL + '/ffmpeg-core.wasm' });
-  }
+  // Download core files as blob URLs to avoid CORS worker issues
+  var baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  var coreURL = await ctFetchAsBlob(baseURL + '/ffmpeg-core.js', 'text/javascript');
+  barEl.style.width = '20%';
+  var wasmURL = await ctFetchAsBlob(baseURL + '/ffmpeg-core.wasm', 'application/wasm');
+  barEl.style.width = '28%';
+
+  await _ctFFmpeg.load({ coreURL: coreURL, wasmURL: wasmURL });
 
   _ctFFmpegLoading = false;
   return _ctFFmpeg;
