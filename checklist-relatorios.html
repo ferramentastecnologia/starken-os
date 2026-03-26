@@ -18600,8 +18600,7 @@ async function ctPublishFormat() {
       } else {
         // Facebook direct
         var body = {
-          action: 'publish',
-          client_key: ctCurrentClient,
+          client: ctCurrentClient,
           destination: 'fb',
           caption: copy,
         };
