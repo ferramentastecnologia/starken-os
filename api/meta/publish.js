@@ -164,6 +164,7 @@ async function processPublishQueue() {
         post_id: publishedId,
         caption: item.caption || '',
         has_image: imageUrls.length > 0,
+        image_url: imageUrls[0] || null,
         scheduled_for: item.scheduled_for,
       });
 
@@ -325,6 +326,7 @@ module.exports = async function handler(req, res) {
         user_name: user_name || 'Sistema', client_key, client_name: client_name || client_key,
         platform, status: 'SCHEDULED', post_id: queued.id,
         caption: caption || '', has_image: (image_urls || []).length > 0,
+        image_url: (image_urls || [])[0] || null,
         scheduled_for, ...(task_id && { task_id }),
       });
 

@@ -3324,6 +3324,60 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button class="ct-ab-delete" onclick="ctBulkDelete()">🗑️ Excluir</button>
             <button onclick="ctClearSelection()" style="font-size:0.75rem;padding:6px 10px">✕</button>
           </div>
+
+          <!-- Bulk Schedule Modal -->
+          <div id="ctBulkSchedOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center">
+            <div style="background:var(--card,#fff);border-radius:16px;width:520px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:inherit">
+              <!-- Header -->
+              <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border,#e5e7eb);display:flex;justify-content:space-between;align-items:center">
+                <h3 style="margin:0;font-size:1.1rem;color:var(--text,#1f2937)">🚀 Agendar em Massa <span id="bsCount" style="font-weight:400;color:var(--text-secondary,#6b7280);font-size:0.9rem"></span></h3>
+                <button onclick="ctCloseBulkSched()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#6b7280);padding:4px 8px;border-radius:6px" onmouseover="this.style.background='var(--hover,#f3f4f6)'" onmouseout="this.style.background='none'">✕</button>
+              </div>
+              <!-- Body -->
+              <div style="padding:20px 24px">
+                <!-- Plataforma -->
+                <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary,#6b7280);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px">Plataforma</label>
+                <div style="display:flex;gap:10px;margin-bottom:20px">
+                  <button id="bsPlatFb" onclick="bsTogglePlat('fb')" style="flex:1;padding:10px;border:2px solid var(--border,#e5e7eb);border-radius:10px;background:var(--card,#fff);cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;color:var(--text,#1f2937);transition:all 0.2s">📘 Facebook</button>
+                  <button id="bsPlatIg" onclick="bsTogglePlat('ig')" style="flex:1;padding:10px;border:2px solid var(--border,#e5e7eb);border-radius:10px;background:var(--card,#fff);cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:600;color:var(--text,#1f2937);transition:all 0.2s">📸 Instagram</button>
+                </div>
+
+                <!-- Modo -->
+                <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary,#6b7280);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px">Quando publicar</label>
+                <div style="display:flex;gap:10px;margin-bottom:20px">
+                  <label style="flex:1;padding:10px 14px;border:2px solid var(--border,#e5e7eb);border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.88rem;transition:all 0.2s" id="bsModeNowLabel">
+                    <input type="radio" name="bsMode" value="now" onchange="bsModeChange()" checked> ⚡ Publicar agora
+                  </label>
+                  <label style="flex:1;padding:10px 14px;border:2px solid var(--border,#e5e7eb);border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.88rem;transition:all 0.2s" id="bsModeSchedLabel">
+                    <input type="radio" name="bsMode" value="schedule" onchange="bsModeChange()"> 📅 Agendar
+                  </label>
+                </div>
+
+                <!-- Data/Hora (visível só no modo agendar) -->
+                <div id="bsDateSection" style="display:none;margin-bottom:20px">
+                  <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary,#6b7280);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px">Data e hora do 1º post</label>
+                  <div style="display:flex;gap:10px">
+                    <input type="datetime-local" id="bsDatetime" onchange="bsUpdatePreview()" style="flex:1;padding:10px 14px;border:2px solid var(--border,#e5e7eb);border-radius:10px;font-family:inherit;font-size:0.88rem;background:var(--card,#fff);color:var(--text,#1f2937)">
+                  </div>
+                  <div style="font-size:0.75rem;color:var(--text-secondary,#6b7280);margin-top:6px">Intervalo de 1h entre cada post</div>
+                </div>
+
+                <!-- Preview -->
+                <label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary,#6b7280);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:8px">Preview</label>
+                <div id="bsPreviewList" style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;max-height:240px;overflow-y:auto"></div>
+
+                <!-- Warnings -->
+                <div id="bsWarnings" style="margin-top:12px;font-size:0.82rem;color:#d97706;display:none"></div>
+              </div>
+
+              <!-- Footer -->
+              <div style="padding:16px 24px 20px;border-top:1px solid var(--border,#e5e7eb);display:flex;justify-content:flex-end;gap:10px">
+                <button onclick="ctCloseBulkSched()" style="padding:10px 20px;border:1px solid var(--border,#e5e7eb);border-radius:10px;background:var(--card,#fff);cursor:pointer;font-family:inherit;font-size:0.88rem;color:var(--text,#1f2937)">Cancelar</button>
+                <button id="bsSubmitBtn" onclick="bsExecute()" style="padding:10px 24px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;cursor:pointer;font-family:inherit;font-size:0.88rem;font-weight:700;box-shadow:0 2px 8px rgba(59,130,246,0.3)">🚀 Agendar Tudo</button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -3777,12 +3831,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           </div>
           <div class="pc-grid" id="calGrid"></div>
           <!-- Detail panel -->
-          <div class="pc-detail" id="calDetailPanel" style="display:none">
-            <div class="pc-detail-header">
-              <div class="pc-detail-title" id="calDetailTitle">—</div>
-              <button class="pc-detail-close" onclick="document.getElementById('calDetailPanel').style.display='none'">&times;</button>
+          <div class="pc-detail" id="calDetailPanel" style="display:none;border-radius:16px;border:1px solid var(--border,#e5e7eb);box-shadow:0 4px 16px rgba(0,0,0,0.08);margin-top:16px">
+            <div class="pc-detail-header" style="padding:16px 20px;border-bottom:1px solid var(--border,#e5e7eb);display:flex;justify-content:space-between;align-items:center">
+              <div class="pc-detail-title" id="calDetailTitle" style="font-size:1rem;font-weight:600">—</div>
+              <button class="pc-detail-close" onclick="document.getElementById('calDetailPanel').style.display='none'" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-secondary,#6b7280);padding:4px 8px;border-radius:6px;line-height:1" onmouseover="this.style.background='var(--hover,#f3f4f6)'" onmouseout="this.style.background='none'">&times;</button>
             </div>
-            <div class="pc-detail-list" id="calDetailList"></div>
+            <div class="pc-detail-list" id="calDetailList" style="padding:16px 20px;max-height:400px;overflow-y:auto"></div>
           </div>
         </div>
       </div>
@@ -12172,7 +12226,14 @@ function ctRenderPublishColumn(publishConfig) {
     let label = '', icon = '';
     if (st === 'published') {
       icon = '✅';
-      label = 'Publicado';
+      // Show date/time when available
+      var pubDate = e.published_at || e.scheduled_for;
+      if (pubDate) {
+        var d = new Date(pubDate);
+        label = 'Publicado ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      } else {
+        label = 'Publicado';
+      }
     } else if (st === 'scheduled' && e.scheduled_for) {
       icon = '📅';
       const d = new Date(e.scheduled_for);
@@ -14533,78 +14594,169 @@ function ctClearSelection() {
   ctUpdateSelection();
 }
 
+// ─── BULK SCHEDULE MODAL ───
+var _bsTasks = [];    // loaded tasks
+var _bsReady = [];    // tasks ready to publish
+var _bsNotReady = []; // tasks missing copy/creative
+var _bsPlats = {};    // { fb: true/false, ig: true/false }
+
 async function ctBulkSchedule() {
   if (ctSelectedIds.size === 0) return;
 
   // Load full data for each selected task
-  const tasks = [];
+  _bsTasks = [];
   for (const id of ctSelectedIds) {
     const data = await ctApi('get_task', { id });
-    const task = data.task || data;
-    tasks.push(task);
+    _bsTasks.push(data.task || data);
   }
 
-  // Validate: each task needs copy_text and at least one creative attachment
-  const ready = [];
-  const notReady = [];
-  tasks.forEach(t => {
-    const hasCopy = t.copy_text && t.copy_text.trim().length > 0;
-    const atts = (t.attachments || []).filter(a => a.category === 'creative' || a.category === 'final');
-    const hasCreative = atts.length > 0;
+  // Validate
+  _bsReady = []; _bsNotReady = [];
+  _bsTasks.forEach(t => {
+    var hasCopy = t.copy_text && t.copy_text.trim().length > 0;
+    var atts = (t.attachments || []).filter(a => a.category === 'creative' || a.category === 'final');
+    var hasCreative = atts.length > 0;
     if (hasCopy && hasCreative) {
-      ready.push({ ...t, creativeUrl: atts[0].file_url, allCreativeUrls: atts.map(a => a.file_url) });
+      _bsReady.push({ ...t, allCreativeUrls: atts.map(a => a.file_url) });
     } else {
-      notReady.push({ name: t.name, hasCopy, hasCreative });
+      _bsNotReady.push({ name: t.name, hasCopy, hasCreative });
     }
   });
 
-  if (notReady.length > 0) {
-    const missing = notReady.map(t => '• ' + t.name + (!t.hasCopy ? ' (sem copy)' : '') + (!t.hasCreative ? ' (sem criativo)' : '')).join('\n');
-    alert('⚠️ ' + notReady.length + ' task(s) não estão prontas para agendar:\n\n' + missing + '\n\nAdicione copy e criativo antes de agendar.');
-    if (ready.length === 0) return;
+  // Reset state
+  _bsPlats = { fb: false, ig: false };
+  document.getElementById('bsPlatFb').style.borderColor = 'var(--border,#e5e7eb)';
+  document.getElementById('bsPlatFb').style.background = 'var(--card,#fff)';
+  document.getElementById('bsPlatIg').style.borderColor = 'var(--border,#e5e7eb)';
+  document.getElementById('bsPlatIg').style.background = 'var(--card,#fff)';
+  document.querySelector('input[name="bsMode"][value="now"]').checked = true;
+  document.getElementById('bsDateSection').style.display = 'none';
+  document.getElementById('bsDatetime').value = '';
+
+  // Set default datetime to now + 1h rounded to next hour
+  var now = new Date();
+  now.setHours(now.getHours() + 1, 0, 0, 0);
+  var iso = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + 'T' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('bsDatetime').value = iso;
+
+  document.getElementById('bsCount').textContent = '(' + _bsTasks.length + ' posts)';
+  document.getElementById('bsSubmitBtn').textContent = '🚀 Agendar Tudo';
+  document.getElementById('bsSubmitBtn').disabled = false;
+
+  bsUpdatePreview();
+
+  // Show modal
+  var overlay = document.getElementById('ctBulkSchedOverlay');
+  overlay.style.display = 'flex';
+}
+
+function ctCloseBulkSched() {
+  document.getElementById('ctBulkSchedOverlay').style.display = 'none';
+}
+
+function bsTogglePlat(p) {
+  _bsPlats[p] = !_bsPlats[p];
+  var btn = document.getElementById(p === 'fb' ? 'bsPlatFb' : 'bsPlatIg');
+  if (_bsPlats[p]) {
+    btn.style.borderColor = '#3b82f6';
+    btn.style.background = 'rgba(59,130,246,0.08)';
+  } else {
+    btn.style.borderColor = 'var(--border,#e5e7eb)';
+    btn.style.background = 'var(--card,#fff)';
   }
+  bsUpdatePreview();
+}
 
-  // Show scheduling dialog
-  const platform = prompt('Plataforma?\n\n1 = Facebook\n2 = Instagram\n3 = Facebook + Instagram\n\nDigite 1, 2 ou 3:');
-  if (!platform) return;
-  const platforms = platform === '1' ? ['fb'] : platform === '2' ? ['ig'] : platform === '3' ? ['fb','ig'] : [];
-  if (platforms.length === 0) { alert('Opção inválida'); return; }
+function bsModeChange() {
+  var isSchedule = document.querySelector('input[name="bsMode"]:checked').value === 'schedule';
+  document.getElementById('bsDateSection').style.display = isSchedule ? '' : 'none';
+  document.getElementById('bsSubmitBtn').textContent = isSchedule ? '📅 Agendar Tudo' : '🚀 Publicar Tudo';
+  bsUpdatePreview();
+}
 
-  const schedMode = prompt('Modo de publicação?\n\n1 = Publicar agora\n2 = Agendar (escolher data/hora)\n\nDigite 1 ou 2:');
-  if (!schedMode) return;
+function bsUpdatePreview() {
+  var list = document.getElementById('bsPreviewList');
+  var warns = document.getElementById('bsWarnings');
+  var isSchedule = document.querySelector('input[name="bsMode"]:checked').value === 'schedule';
+  var dateVal = document.getElementById('bsDatetime').value;
+  var startTime = isSchedule && dateVal ? new Date(dateVal) : null;
+  var platNames = [];
+  if (_bsPlats.fb) platNames.push('📘 FB');
+  if (_bsPlats.ig) platNames.push('📸 IG');
+  var platStr = platNames.length > 0 ? platNames.join(' + ') : '<span style="color:#ef4444">Selecione</span>';
 
-  let scheduledTime = null;
-  if (schedMode === '2') {
-    const dateStr = prompt('Data e hora do primeiro post (dd/mm/yyyy hh:mm):\n\nOs demais serão agendados com intervalo de 1 hora entre cada.');
-    if (!dateStr) return;
-    const parts = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
-    if (!parts) { alert('Formato inválido. Use dd/mm/yyyy hh:mm'); return; }
-    scheduledTime = new Date(parts[3], parts[2]-1, parts[1], parts[4], parts[5]);
-    if (isNaN(scheduledTime.getTime())) { alert('Data inválida'); return; }
+  var html = '';
+  _bsReady.forEach(function(t, i) {
+    var timeStr = '';
+    if (isSchedule && startTime && !isNaN(startTime.getTime())) {
+      var postTime = new Date(startTime.getTime() + i * 3600000);
+      timeStr = postTime.getDate() + '/' + String(postTime.getMonth()+1).padStart(2,'0') + ' ' + String(postTime.getHours()).padStart(2,'0') + ':' + String(postTime.getMinutes()).padStart(2,'0');
+    } else if (!isSchedule) {
+      timeStr = 'Agora';
+    }
+    html += '<div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border,#e5e7eb);font-size:0.85rem">'
+      + '<span style="color:var(--text-secondary,#6b7280);font-weight:600;min-width:20px">' + (i+1) + '.</span>'
+      + '<span style="flex:1;font-weight:500;color:var(--text,#1f2937);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || 'Sem nome') + '</span>'
+      + '<span style="font-size:0.78rem;color:var(--text-secondary,#6b7280)">' + timeStr + '</span>'
+      + '<span style="font-size:0.75rem">' + platStr + '</span>'
+      + '</div>';
+  });
+
+  // Not ready tasks
+  _bsNotReady.forEach(function(t) {
+    html += '<div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border,#e5e7eb);font-size:0.85rem;background:rgba(239,68,68,0.05)">'
+      + '<span style="min-width:20px">⚠️</span>'
+      + '<span style="flex:1;color:#ef4444;font-weight:500">' + t.name + '</span>'
+      + '<span style="font-size:0.75rem;color:#ef4444">' + (!t.hasCopy ? 'Sem copy' : '') + (!t.hasCopy && !t.hasCreative ? ' + ' : '') + (!t.hasCreative ? 'Sem criativo' : '') + '</span>'
+      + '</div>';
+  });
+
+  if (html === '') {
+    html = '<div style="padding:20px;text-align:center;color:var(--text-secondary,#6b7280)">Nenhum post selecionado</div>';
   }
+  list.innerHTML = html;
 
-  const platNames = platforms.map(p => p === 'fb' ? 'Facebook' : 'Instagram').join(' + ');
-  const confirmMsg = '🚀 Agendar ' + ready.length + ' posts em ' + platNames + '?\n\n' + ready.map((t, i) => {
-    const time = scheduledTime ? new Date(scheduledTime.getTime() + i * 3600000).toLocaleString('pt-BR') : 'Agora';
-    return (i+1) + '. ' + t.name + ' → ' + time;
-  }).join('\n');
+  // Warnings
+  if (_bsNotReady.length > 0) {
+    warns.style.display = '';
+    warns.innerHTML = '⚠️ ' + _bsNotReady.length + ' task(s) sem copy ou criativo (serão ignoradas)';
+  } else {
+    warns.style.display = 'none';
+  }
+}
 
-  if (!confirm(confirmMsg)) return;
+async function bsExecute() {
+  if (_bsReady.length === 0) { alert('Nenhuma task pronta para publicar'); return; }
+  if (!_bsPlats.fb && !_bsPlats.ig) { alert('Selecione pelo menos uma plataforma'); return; }
 
-  // Process each task
-  let successCount = 0;
-  let failCount = 0;
+  var isSchedule = document.querySelector('input[name="bsMode"]:checked').value === 'schedule';
+  var dateVal = document.getElementById('bsDatetime').value;
+  var startTime = isSchedule && dateVal ? new Date(dateVal) : null;
+  if (isSchedule && (!startTime || isNaN(startTime.getTime()))) { alert('Selecione data e hora'); return; }
 
-  for (let i = 0; i < ready.length; i++) {
-    const task = ready[i];
-    const postTime = scheduledTime ? new Date(scheduledTime.getTime() + i * 3600000) : null;
+  var platforms = [];
+  if (_bsPlats.fb) platforms.push('fb');
+  if (_bsPlats.ig) platforms.push('ig');
 
-    for (const plat of platforms) {
+  var btn = document.getElementById('bsSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Processando...';
+
+  var successCount = 0, failCount = 0;
+
+  for (var i = 0; i < _bsReady.length; i++) {
+    var task = _bsReady[i];
+    var postTime = startTime ? new Date(startTime.getTime() + i * 3600000) : null;
+
+    for (var j = 0; j < platforms.length; j++) {
+      var plat = platforms[j];
       try {
-        const imageUrls = task.allCreativeUrls;
+        var imageUrls = task.allCreativeUrls;
+        // Check if has video
+        var hasVideo = imageUrls.some(function(u) { return /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(u); });
 
-        if (plat === 'ig' && postTime) {
-          // IG scheduled → queue
+        if (plat === 'ig') {
+          var scheduledFor = postTime ? postTime.toISOString() : new Date(Date.now() + 60000).toISOString();
           await fetch(metaApiBase() + '/api/meta/publish', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -14615,22 +14767,29 @@ async function ctBulkSchedule() {
               platform: 'ig',
               caption: task.copy_text,
               image_urls: imageUrls,
-              scheduled_for: postTime.toISOString(),
+              media_type: hasVideo ? 'REELS' : undefined,
+              scheduled_for: scheduledFor,
               user_name: ctGetUser(),
             }),
           });
         } else {
-          // FB or immediate publish
-          const body = {
+          var body = {
             destination: plat,
             client: ctCurrentClient,
             caption: task.copy_text,
-            type: imageUrls.length > 1 ? 'carousel' : 'feed',
             user: ctGetUser(),
           };
-          if (imageUrls.length > 1) body.image_urls = imageUrls;
-          else if (imageUrls.length === 1) body.image_url = imageUrls[0];
-          if (plat === 'fb' && postTime) {
+          if (hasVideo) {
+            body.video_url = imageUrls[0];
+            body.media_type = 'VIDEO';
+          } else if (imageUrls.length > 1) {
+            body.type = 'carousel';
+            body.image_urls = imageUrls;
+          } else if (imageUrls.length === 1) {
+            body.type = 'feed';
+            body.image_url = imageUrls[0];
+          }
+          if (postTime) {
             body.scheduled_publish_time = Math.floor(postTime.getTime() / 1000);
           }
           await fetch(metaApiBase() + '/api/meta/publish', {
@@ -14645,11 +14804,12 @@ async function ctBulkSchedule() {
       }
     }
 
-    // Update task status to 'agendado' or 'publicado'
-    const newStatus = postTime ? 'agendado' : 'publicado';
+    // Update task status
+    var newStatus = postTime ? 'agendado' : 'publicado';
     await ctApi('change_status', { id: task.id, status: newStatus, user: ctGetUser() });
   }
 
+  ctCloseBulkSched();
   alert('✅ ' + successCount + ' publicações processadas!' + (failCount > 0 ? '\n⚠️ ' + failCount + ' falhas.' : ''));
   ctClearSelection();
   ctLoadGroups();
@@ -15305,16 +15465,46 @@ function ctOpenLightbox(url, isVideo) {
       listEl.innerHTML = dayPosts.map(function(p) {
         var status    = (p.status || 'UNKNOWN').toLowerCase();
         var platform  = (p.platform || '').toLowerCase();
-        var icon      = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF7' : '\uD83D\uDCC4';
-        var timeStr   = calFormatTime(p.scheduled_for || p.created_at);
+        var platLabel = platform.indexOf('instagram') !== -1 ? 'Instagram' : platform.indexOf('facebook') !== -1 ? 'Facebook' : (p.platform || '');
+        var platIcon  = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
+        var timeStr   = calFormatTimeShort(p.scheduled_for || p.created_at);
         var caption   = (p.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        var hasImage  = p.has_image ? ' \uD83D\uDDBC\uFE0F' : '';
-        return '<div class="pc-detail-item">'
-          + '<div><div class="pc-detail-badge ' + status + '">' + icon + ' ' + calStatusLabel(p.status) + '</div></div>'
-          + '<div class="pc-detail-info">'
-          +   '<div class="pc-detail-client">' + (p.client_name || 'Cliente') + hasImage + '</div>'
-          +   '<div class="pc-detail-time">' + timeStr + ' \u00B7 ' + (p.platform || '') + '</div>'
-          +   (caption ? '<div class="pc-detail-caption">' + caption + '</div>' : '')
+        var imageUrl  = p.image_url || '';
+        var isVideo   = imageUrl && /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrl);
+        var borderColor = status === 'published' ? '#10b981' : status === 'scheduled' ? '#3b82f6' : status === 'failed' ? '#ef4444' : status === 'queued' ? '#f59e0b' : '#9ca3af';
+        var statusIcon = status === 'published' ? '\u2705' : status === 'scheduled' ? '\uD83D\uDCC5' : status === 'failed' ? '\u274C' : status === 'queued' ? '\u23F3' : '\uD83D\uDCCC';
+
+        // Thumbnail
+        var thumb = '';
+        if (imageUrl && !isVideo) {
+          thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f3f4f6">'
+            + '<img src="' + imageUrl + '" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem>\uD83D\uDDBC\uFE0F</div>\'">'
+            + '</div>';
+        } else if (isVideo) {
+          thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;position:relative">'
+            + '<div style="width:32px;height:32px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center">'
+            + '<div style="width:0;height:0;border-left:12px solid #1a1a2e;border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:2px"></div>'
+            + '</div>'
+            + '<div style="position:absolute;bottom:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.55rem;padding:1px 4px;border-radius:2px">\uD83C\uDFA5</div>'
+            + '</div>';
+        } else if (p.has_image) {
+          thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--hover,#f3f4f6);display:flex;align-items:center;justify-content:center;font-size:1.5rem">\uD83D\uDDBC\uFE0F</div>';
+        }
+
+        return '<div style="display:flex;gap:14px;padding:14px 16px;border-left:4px solid ' + borderColor + ';background:var(--card,#fff);border-radius:0 12px 12px 0;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:box-shadow 0.2s" onmouseover="this.style.boxShadow=\'0 3px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.boxShadow=\'0 1px 4px rgba(0,0,0,0.06)\'">'
+          + thumb
+          + '<div style="flex:1;min-width:0">'
+          +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+          +     '<span style="font-weight:600;font-size:0.9rem;color:var(--text,#1f2937)">' + (p.client_name || 'Cliente') + '</span>'
+          +   '</div>'
+          +   '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:0.8rem;color:var(--text-secondary,#6b7280)">'
+          +     '<span>' + statusIcon + ' ' + calStatusLabel(p.status) + '</span>'
+          +     '<span>\u00B7</span>'
+          +     '<span>' + platIcon + ' ' + platLabel + '</span>'
+          +     '<span>\u00B7</span>'
+          +     '<span style="font-weight:500">' + timeStr + '</span>'
+          +   '</div>'
+          +   (caption ? '<div style="font-size:0.82rem;color:var(--text,#1f2937);line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + caption + '</div>' : '')
           + '</div>'
           + '</div>';
       }).join('');
