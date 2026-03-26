@@ -13147,7 +13147,12 @@ async function ctDeleteAttachment(attachmentId) {
   await ctApi('delete_attachment', { id: attachmentId, user: ctGetUser() });
   // Reload attachments
   const attData = await ctApi('list_attachments', { task_id: ctModalTask.id });
-  ctRenderModalAttachments(Array.isArray(attData) ? attData : (attData.attachments || []));
+  ctModalTask.attachments = Array.isArray(attData) ? attData : (attData.attachments || []);
+  ctRenderModalAttachments(ctModalTask.attachments);
+  // Refresh format tab content if formats are active
+  if (_ctSelectedFormats && _ctSelectedFormats.length > 0 && typeof ctRenderFormatContent === 'function') {
+    ctRenderFormatContent();
+  }
   // Reload activity
   const actData = await ctApi('list_activity', { task_id: ctModalTask.id });
   ctRenderModalActivity(Array.isArray(actData) ? actData : (actData.activity || []));
