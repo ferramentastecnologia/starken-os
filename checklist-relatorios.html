@@ -13740,9 +13740,8 @@ async function ctRenderVideoWithMusic() {
           {
             type: 'audio',
             source: musicUrl,
-            volume: volume,
-            audio_fade_out: fadeOut,
-            duration: null
+            volume: (volume * 100) + '%',
+            audio_fade_out: fadeOut
           }
         ]
       }
