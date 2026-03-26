@@ -12711,6 +12711,8 @@ async function ctOpenModal(taskId) {
   if (legacySection) legacySection.style.display = hasFormats ? 'none' : '';
   if (legacyCopy) legacyCopy.style.display = hasFormats ? 'none' : '';
   if (legacyPublish && hasFormats) legacyPublish.style.display = 'none';
+  // Re-check music section now that formats are initialized
+  if (typeof ctShowMusicSectionIfVideo === 'function') ctShowMusicSectionIfVideo();
 
   // Load comments
   ctRenderModalComments(data.comments || []);
@@ -13771,15 +13773,13 @@ async function ctRenderVideoWithMusicFmt() {
         width: 1080,
         height: 1920,
         frame_rate: 30,
-        metadata: { bitrate: '8M' },
+        metadata: { bitrate: '15M' },
         elements: [
           { type: 'video', source: videoAtt.file_url, fit: 'cover', clip: true },
           { type: 'audio', source: musicUrl, volume: volume + '%', audio_fade_out: fadeOut, duration: '100%' }
         ]
       },
-      render_scale: 1,
-      max_width: 1080,
-      max_height: 1920
+      render_scale: 1
     };
 
     var createRes = await fetch('https://api.creatomate.com/v1/renders', {
@@ -13972,20 +13972,25 @@ async function ctRenderVideoWithMusic() {
         output_format: 'mp4',
         width: 1080,
         height: 1920,
+        frame_rate: 30,
+        metadata: { bitrate: '15M' },
         elements: [
           {
             type: 'video',
             source: videoAtt.file_url,
-            fit: 'cover'
+            fit: 'cover',
+            clip: true
           },
           {
             type: 'audio',
             source: musicUrl,
             volume: (volume * 100) + '%',
-            audio_fade_out: fadeOut
+            audio_fade_out: fadeOut,
+            duration: '100%'
           }
         ]
-      }
+      },
+      render_scale: 1
     };
 
     var createRes = await fetch('https://api.creatomate.com/v1/renders', {
