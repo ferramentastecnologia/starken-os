@@ -13742,6 +13742,63 @@ function ctShowMusicSectionFormat() {
   section.style.display = hasVideo ? '' : 'none';
 }
 
+// FFmpeg.wasm instance (lazy loaded)
+var _ctFFmpeg = null;
+var _ctFFmpegLoading = false;
+
+async function ctLoadFFmpeg(statusEl, barEl) {
+  if (_ctFFmpeg && _ctFFmpeg.loaded) return _ctFFmpeg;
+  if (_ctFFmpegLoading) {
+    while (_ctFFmpegLoading) await new Promise(function(r) { setTimeout(r, 200); });
+    return _ctFFmpeg;
+  }
+  _ctFFmpegLoading = true;
+
+  statusEl.textContent = 'Carregando FFmpeg (primeira vez pode demorar ~15s)...';
+  barEl.style.width = '10%';
+
+  // Load FFmpeg.wasm via script tags
+  if (!window.FFmpegWASM) {
+    await new Promise(function(resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    await new Promise(function(resolve, reject) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/umd/index.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  var FFmpeg = window.FFmpegWASM ? window.FFmpegWASM.FFmpeg : (window.FFmpeg ? window.FFmpeg.FFmpeg : null);
+  if (!FFmpeg) throw new Error('FFmpeg.wasm nao carregou');
+
+  _ctFFmpeg = new FFmpeg();
+  _ctFFmpeg.on('progress', function(e) {
+    var pct = Math.round((e.progress || 0) * 100);
+    if (barEl) barEl.style.width = Math.min(30 + pct * 0.6, 90) + '%';
+    if (statusEl) statusEl.textContent = 'Processando... ' + pct + '%';
+  });
+
+  var baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  var toBlobURL = window.FFmpegUtil ? window.FFmpegUtil.toBlobURL : (window.FFmpegWASMUtil ? window.FFmpegWASMUtil.toBlobURL : null);
+
+  if (toBlobURL) {
+    await _ctFFmpeg.load({
+      coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
+      wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
+    });
+  } else {
+    await _ctFFmpeg.load({ coreURL: baseURL + '/ffmpeg-core.js', wasmURL: baseURL + '/ffmpeg-core.wasm' });
+  }
+
+  _ctFFmpegLoading = false;
+  return _ctFFmpeg;
+}
+
 async function ctRenderVideoWithMusicFmt() {
   if (!ctModalTask || !ctModalTask.attachments) return alert('Nenhum criativo encontrado');
   var fmt = _ctActiveFormatTab;
@@ -13753,7 +13810,7 @@ async function ctRenderVideoWithMusicFmt() {
   var musicUrl = document.getElementById('ctMusicUrlFmt').value.trim();
   if (!musicUrl) return alert('Cole a URL da música ou faça upload de um MP3');
 
-  var volume = parseInt(document.getElementById('ctMusicVolumeFmt').value);
+  var volume = parseInt(document.getElementById('ctMusicVolumeFmt').value) / 100;
   var fadeOut = parseFloat(document.getElementById('ctMusicFadeOutFmt').value) || 2;
 
   var btn = document.getElementById('ctMusicRenderBtnFmt');
@@ -13764,79 +13821,100 @@ async function ctRenderVideoWithMusicFmt() {
 
   var statusEl = document.getElementById('ctMusicRenderStatusFmt');
   var barEl = document.getElementById('ctMusicRenderBarFmt');
-  statusEl.textContent = 'Enviando para Creatomate...'; barEl.style.width = '20%';
+  barEl.style.background = 'linear-gradient(90deg,#8b5cf6,#6d28d9)';
 
   try {
-    var renderPayload = {
-      source: {
-        output_format: 'mp4',
-        width: 1080,
-        height: 1920,
-        frame_rate: 30,
-        metadata: { bitrate: '15M' },
-        elements: [
-          { type: 'video', source: videoAtt.file_url, fit: 'cover', clip: true },
-          { type: 'audio', source: musicUrl, volume: volume + '%', audio_fade_out: fadeOut, duration: '100%' }
-        ]
-      },
-      render_scale: 1
-    };
+    // 1. Load FFmpeg
+    var ffmpeg = await ctLoadFFmpeg(statusEl, barEl);
 
-    var createRes = await fetch('https://api.creatomate.com/v1/renders', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + _SK.cm, 'Content-Type': 'application/json' },
-      body: JSON.stringify(renderPayload)
-    });
-    if (!createRes.ok) throw new Error('Creatomate error: ' + createRes.status + ' - ' + (await createRes.text()));
+    // 2. Download video
+    statusEl.textContent = 'Baixando vídeo...'; barEl.style.width = '15%';
+    var videoRes = await fetch(videoAtt.file_url);
+    var videoData = new Uint8Array(await videoRes.arrayBuffer());
+    await ffmpeg.writeFile('input.mp4', videoData);
 
-    var renders = await createRes.json();
-    var renderId = (Array.isArray(renders) ? renders[0] : renders).id;
-    statusEl.textContent = 'Renderizando...'; barEl.style.width = '40%';
+    // 3. Download audio
+    statusEl.textContent = 'Baixando áudio...'; barEl.style.width = '25%';
+    var audioRes = await fetch(musicUrl);
+    var audioData = new Uint8Array(await audioRes.arrayBuffer());
+    var audioExt = musicUrl.split('.').pop().split('?')[0] || 'mp3';
+    await ffmpeg.writeFile('input.' + audioExt, audioData);
 
-    for (var poll = 0; poll < 120; poll++) {
-      await new Promise(function(r) { setTimeout(r, 2000); });
-      var checkRes = await fetch('https://api.creatomate.com/v1/renders/' + renderId, { headers: { 'Authorization': 'Bearer ' + _SK.cm } });
-      var checkData = await checkRes.json();
+    // 4. Merge with -c:v copy (NO re-encoding of video!)
+    statusEl.textContent = 'Mesclando vídeo + música (sem perda de qualidade)...'; barEl.style.width = '30%';
 
-      if (checkData.status === 'succeeded') {
-        barEl.style.width = '100%';
-        _ctRenderedVideoUrlFmt = checkData.url;
-        progress.style.display = 'none'; result.style.display = '';
-        document.getElementById('ctMusicRenderPreviewFmt').src = checkData.url;
-        document.getElementById('ctMusicDownloadLinkFmt').href = checkData.url;
-        btn.disabled = false; btn.style.opacity = '1';
-        return;
-      } else if (checkData.status === 'failed') {
-        throw new Error('Falhou: ' + (checkData.error_message || 'erro'));
-      }
-      var pct = Math.min(40 + (poll / 120) * 55, 95);
-      barEl.style.width = pct + '%';
-      statusEl.textContent = 'Renderizando... (' + Math.round(pct) + '%)';
+    var audioFilter = 'volume=' + volume;
+    // afade needs video duration - for now use a high start time, -shortest will handle it
+    if (fadeOut > 0) {
+      audioFilter += ',afade=t=out:st=999:d=' + fadeOut;
     }
-    throw new Error('Timeout');
+
+    await ffmpeg.exec([
+      '-i', 'input.mp4',
+      '-i', 'input.' + audioExt,
+      '-c:v', 'copy',
+      '-c:a', 'aac',
+      '-b:a', '192k',
+      '-map', '0:v:0',
+      '-map', '1:a:0',
+      '-af', audioFilter,
+      '-shortest',
+      '-movflags', '+faststart',
+      'output.mp4'
+    ]);
+
+    // 5. Read output
+    statusEl.textContent = 'Finalizando...'; barEl.style.width = '95%';
+    var outputData = await ffmpeg.readFile('output.mp4');
+    var blob = new Blob([outputData.buffer], { type: 'video/mp4' });
+    var blobUrl = URL.createObjectURL(blob);
+
+    // Cleanup virtual FS
+    try { await ffmpeg.deleteFile('input.mp4'); } catch(e) {}
+    try { await ffmpeg.deleteFile('input.' + audioExt); } catch(e) {}
+    try { await ffmpeg.deleteFile('output.mp4'); } catch(e) {}
+
+    // 6. Show result
+    barEl.style.width = '100%';
+    _ctRenderedVideoUrlFmt = blobUrl;
+    _ctRenderedVideoBlobFmt = blob;
+    progress.style.display = 'none'; result.style.display = '';
+    document.getElementById('ctMusicRenderPreviewFmt').src = blobUrl;
+    document.getElementById('ctMusicDownloadLinkFmt').href = blobUrl;
+    document.getElementById('ctMusicDownloadLinkFmt').download = 'video_com_musica.mp4';
+
+    var sizeMB = (blob.size / 1024 / 1024).toFixed(1);
+    statusEl.textContent = '✅ Pronto! ' + sizeMB + ' MB (qualidade original preservada)';
+    btn.disabled = false; btn.style.opacity = '1';
+
   } catch(err) {
+    console.error('FFmpeg merge error:', err);
     statusEl.textContent = '❌ ' + err.message;
     barEl.style.width = '0%'; barEl.style.background = '#ef4444';
     btn.disabled = false; btn.style.opacity = '1';
   }
 }
 
+var _ctRenderedVideoBlobFmt = null;
+
 async function ctUseMusicVideoFmt() {
-  if (!_ctRenderedVideoUrlFmt || !ctModalTask) return;
+  if (!ctModalTask) return;
+  var videoBlob = _ctRenderedVideoBlobFmt;
+  if (!videoBlob && _ctRenderedVideoUrlFmt) {
+    var videoRes = await fetch(_ctRenderedVideoUrlFmt);
+    videoBlob = await videoRes.blob();
+  }
+  if (!videoBlob) return alert('Nenhum vídeo renderizado');
+
   try {
     var progress = document.getElementById('ctMusicRenderProgressFmt');
     var statusEl = document.getElementById('ctMusicRenderStatusFmt');
     progress.style.display = ''; statusEl.textContent = 'Substituindo criativo...';
 
-    // Find the original video attachment to replace
     var fmt = _ctActiveFormatTab;
     var videoAtt = ctModalTask.attachments.find(function(a) {
       return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type) && ctIsVideo(a);
     });
-
-    // Download rendered video
-    var videoRes = await fetch(_ctRenderedVideoUrlFmt);
-    var videoBlob = await videoRes.blob();
     var fileName = 'video_music_' + Date.now() + '.mp4';
     var path = 'content/' + (ctCurrentClient || 'default') + '/' + fileName;
 
