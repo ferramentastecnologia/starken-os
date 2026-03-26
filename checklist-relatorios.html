@@ -13765,7 +13765,7 @@ async function ctRenderVideoWithMusicFmt() {
         height: 1920,
         elements: [
           { type: 'video', source: videoAtt.file_url, fit: 'cover' },
-          { type: 'audio', source: musicUrl, volume: volume + '%', audio_fade_out: fadeOut }
+          { type: 'audio', source: musicUrl, volume: volume + '%', audio_fade_out: fadeOut, duration: '100%' }
         ]
       }
     };
