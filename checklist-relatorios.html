@@ -1475,13 +1475,13 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 /* ═══ TASK MODAL ═══ */
 .ct-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.4);backdrop-filter:blur(2px);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;opacity:0;transition:opacity var(--transition-base); }
 .ct-modal-overlay.open { opacity:1; }
-.ct-modal { background:var(--bg-surface);border-radius:12px;width:100%;max-width:1400px;height:calc(100vh - 48px);max-height:900px;display:grid;grid-template-columns:220px 1fr 280px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); }
+.ct-modal { background:var(--bg-surface);border-radius:12px;width:calc(100% - 32px);max-width:1400px;height:calc(100vh - 48px);max-height:900px;display:grid;grid-template-columns:200px 1fr 260px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); }
 .ct-modal-sidebar { background:var(--bg-elevated);padding:16px;border-right:1px solid var(--border-default);overflow-y:auto;font-size:var(--text-sm); }
 .ct-modal-sidebar .ct-tree-item { padding:7px 12px;border-radius:var(--radius-sm);cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background var(--transition-fast); }
 .ct-modal-sidebar .ct-tree-item:hover { background:var(--border-subtle); }
 .ct-modal-sidebar .ct-tree-item.active { background:var(--brand);color:#fff;font-weight:600; }
 .ct-modal-main { padding:28px 32px;overflow-y:auto; }
-.ct-modal-activity { background:var(--surface-container-low,#f2f4f7);padding:20px;border-left:1px solid rgba(196,197,215,0.1);overflow-y:auto;font-size:12px;width:280px; }
+.ct-modal-activity { background:var(--surface-container-low,#f2f4f7);padding:16px;border-left:1px solid rgba(196,197,215,0.1);overflow-y:auto;font-size:12px;min-width:0; }
 /* Lightbox para visualizar imagens */
 .ct-lightbox { position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:40px; }
 .ct-lightbox img { max-width:95%;max-height:95vh;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,0.5); }
