@@ -2761,6 +2761,23 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .ci-short { min-height:50px; }
 .ci-tall { min-height:160px; }
 .ci-footer { text-align:center; font-size:11px; color:var(--text-secondary); padding:8px 0 20px; }
+/* ═══ MINHAS TASKS ═══ */
+.mt-client-section { margin-bottom:24px; }
+.mt-client-header { display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface-container-low,#f2f4f7);border-radius:8px;margin-bottom:8px;cursor:pointer; }
+.mt-client-header:hover { background:var(--surface-container,#eceef1); }
+.mt-client-avatar { width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white; }
+.mt-client-name { font-size:14px;font-weight:600;flex:1; }
+.mt-client-count { font-size:11px;font-weight:700;color:var(--text-tertiary);background:var(--surface-container,#eceef1);padding:2px 8px;border-radius:4px; }
+.mt-list { border:1px solid rgba(196,197,215,0.15);border-radius:10px;overflow:hidden;margin-bottom:4px; }
+.mt-header-row { display:grid;gap:0;background:var(--surface-container-low,#f2f4f7);padding:0 16px;height:36px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--on-surface-variant,#444654);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant,#c4c5d7);align-items:center; }
+.mt-header-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 50px; }
+.mt-header-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 50px; }
+.mt-row { display:grid;gap:0;padding:0 16px;height:42px;border-bottom:1px solid rgba(196,197,215,0.15);font-size:13px;align-items:center;transition:background 0.08s;cursor:pointer; }
+.mt-row:hover { background:#f8fafc; }
+.mt-row:last-child { border-bottom:none; }
+.mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 50px; }
+.mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 50px; }
+.mt-empty { text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:14px; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -4735,6 +4752,32 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div><!-- end #tab-client-info -->
 
+      <!-- ═══ MINHAS TASKS ═══ -->
+      <div id="tab-minhas-tasks" class="tab-content" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <h2 style="font-size:20px;font-weight:700;letter-spacing:-0.025em;margin:0">🎯 Minhas Tasks</h2>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="display:flex;background:var(--surface-container,#eceef1);border-radius:8px;overflow:hidden">
+              <button id="mtViewClient" onclick="mtSetView('client')" style="padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;border:none;cursor:pointer;font-family:inherit;background:var(--brand);color:white">Por Cliente</button>
+              <button id="mtViewList" onclick="mtSetView('list')" style="padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:var(--text-secondary)">Lista Única</button>
+            </div>
+            <select id="mtStatusFilter" onchange="mtRender()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg-surface)">
+              <option value="">Todos os status</option>
+              <option value="a-fazer">A Fazer</option>
+              <option value="em-andamento">Em Andamento</option>
+              <option value="criacao-conteudo">Criação</option>
+              <option value="design">Design</option>
+              <option value="aprovacao">Aprovação</option>
+              <option value="agendar">Agendar</option>
+              <option value="agendado">Agendado</option>
+              <option value="publicado">Publicado</option>
+            </select>
+            <span id="mtCount" style="font-size:13px;color:var(--text-secondary);font-weight:600"></span>
+          </div>
+        </div>
+        <div id="mtContent" style="min-height:200px"></div>
+      </div><!-- end #tab-minhas-tasks -->
+
     </div>
   </div>
 </div>
@@ -5598,6 +5641,7 @@ function getCurrentMonthKey() {
 // ============ SIDEBAR MENU DATA & RENDER ============
 let SIDEBAR_MENU = [
   { type: 'item', id: 'dashboard', label: 'Dashboard', icon: '&#9632;', tab: 'dashboard' },
+  { type: 'item', id: 'minhas-tasks', label: 'Minhas Tasks', icon: '🎯', tab: 'minhas-tasks' },
   { type: 'category', id: 'cat-conteudo', label: 'Conteúdo', items: [
     { type: 'item', id: 'calendario', label: 'Calendário de Postagens', icon: '📅', tab: 'calendario' },
     { type: 'folder', id: 'folder-starken' },
@@ -5928,7 +5972,8 @@ const TAB_TITLES = {
   'meta-publish':      'Agendamento de Posts',
   'calendario':        'Calendário de Posts',
   'client-hub':        'Client Hub',
-  'client-info':       'Info do Cliente'
+  'client-info':       'Info do Cliente',
+  'minhas-tasks':      'Minhas Tasks'
 };
 
 function switchTab(tabName) {
@@ -5953,7 +5998,8 @@ function switchTab(tabName) {
     if (navBar) navBar.style.display = 'none';
     if (navBarCal) navBarCal.style.display = 'none';
   }
-  if (tabName === 'content-approval') caInitTab();
+  if (tabName === 'minhas-tasks') mtInit();
+  else if (tabName === 'content-approval') caInitTab();
   else if (tabName === 'asana-tasks') asanaInitTab();
   else if (tabName === 'gestao') { if (typeof Gestao !== 'undefined') { Gestao.populateClientFilter(); Gestao.renderCurrentView(); } }
   else if (tabName === 'ai-squads') { /* sem init necessário */ }
@@ -18835,6 +18881,159 @@ function cronogramaGetWeekLabel(tasks) {
   var months = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
   var weekNum = Math.ceil(d.getDate() / 7);
   return months[d.getMonth()] + '_' + weekNum + 'SEMANA';
+}
+
+// ═══ MINHAS TASKS ═══
+let mtTasks = [];
+let mtView = 'client'; // 'client' or 'list'
+
+async function mtInit() {
+  if (!gpState.user) return;
+  const el = document.getElementById('mtContent');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">Carregando...</div>';
+  try {
+    const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
+    mtTasks = Array.isArray(res) ? res : (res.data || []);
+    mtRender();
+  } catch (e) {
+    el.innerHTML = '<div class="mt-empty">Erro ao carregar tasks: ' + e.message + '</div>';
+  }
+}
+
+function mtSetView(mode) {
+  mtView = mode;
+  document.getElementById('mtViewClient').style.background = mode === 'client' ? 'var(--brand)' : 'transparent';
+  document.getElementById('mtViewClient').style.color = mode === 'client' ? 'white' : 'var(--text-secondary)';
+  document.getElementById('mtViewList').style.background = mode === 'list' ? 'var(--brand)' : 'transparent';
+  document.getElementById('mtViewList').style.color = mode === 'list' ? 'white' : 'var(--text-secondary)';
+  mtRender();
+}
+
+function mtRender() {
+  const el = document.getElementById('mtContent');
+  const statusFilter = document.getElementById('mtStatusFilter').value;
+
+  let tasks = mtTasks;
+  if (statusFilter) {
+    tasks = tasks.filter(t => {
+      const s = (t.status || 'a-fazer').toLowerCase().replace(/\s+/g, '-').replace(/[áàã]/g,'a').replace(/[éê]/g,'e').replace(/[í]/g,'i').replace(/[óô]/g,'o').replace(/[ú]/g,'u').replace(/ç/g,'c');
+      return s === statusFilter;
+    });
+  }
+
+  document.getElementById('mtCount').textContent = tasks.length + ' task' + (tasks.length !== 1 ? 's' : '');
+
+  if (!tasks.length) {
+    el.innerHTML = '<div class="mt-empty">🎉 Nenhuma task encontrada' + (statusFilter ? ' com esse filtro' : '') + '</div>';
+    return;
+  }
+
+  if (mtView === 'client') {
+    mtRenderByClient(el, tasks);
+  } else {
+    mtRenderList(el, tasks);
+  }
+}
+
+function mtRenderByClient(el, tasks) {
+  // Group by client_id
+  const groups = {};
+  tasks.forEach(t => {
+    const cid = t.client_id || 'sem-cliente';
+    if (!groups[cid]) groups[cid] = [];
+    groups[cid].push(t);
+  });
+
+  let html = '';
+  const clients = _metaClients || [];
+
+  Object.keys(groups).forEach(cid => {
+    const clientTasks = groups[cid];
+    const client = clients.find(c => c.client_id === cid);
+    const clientName = client ? client.client_name : (clientTasks[0]?.group_name || cid);
+    const color = client ? (client.tenant === 'starken' ? 'var(--brand)' : 'var(--brand-alpha)') : '#6b7280';
+    const initials = clientName.substring(0, 2).toUpperCase();
+
+    html += '<div class="mt-client-section">';
+    html += '<div class="mt-client-header">';
+    html += '<div class="mt-client-avatar" style="background:' + color + '">' + initials + '</div>';
+    html += '<span class="mt-client-name">' + clientName + '</span>';
+    html += '<span class="mt-client-count">' + clientTasks.length + '</span>';
+    html += '</div>';
+    html += '<div class="mt-list">';
+    html += '<div class="mt-header-row by-client">';
+    html += '<span>NOME</span><span>FORMATO</span><span>STATUS</span><span>RESPONSÁVEL</span><span>DATA</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
+    html += '</div>';
+    clientTasks.forEach(t => {
+      html += mtRenderRow(t, 'by-client');
+    });
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function mtRenderList(el, tasks) {
+  let html = '<div class="mt-list">';
+  html += '<div class="mt-header-row by-list">';
+  html += '<span>CLIENTE</span><span>NOME</span><span>FORMATO</span><span>STATUS</span><span>DATA</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
+  html += '</div>';
+  tasks.forEach(t => {
+    html += mtRenderRow(t, 'by-list');
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function mtRenderRow(task, mode) {
+  const status = GP_STATUSES ? GP_STATUSES.find(s => s.key === (task.status || 'a-fazer')) : null;
+  const statusLabel = status ? status.label : (task.status || 'A Fazer');
+  const statusKey = (task.status || 'a-fazer').toLowerCase().replace(/\s+/g, '-').replace(/[áàã]/g,'a').replace(/[éê]/g,'e').replace(/[í]/g,'i').replace(/[óô]/g,'o').replace(/[ú]/g,'u').replace(/ç/g,'c');
+
+  const user = CT_USERS.find(u => u.name === task.assignee);
+  const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+
+  const clients = _metaClients || [];
+  const client = clients.find(c => c.client_id === task.client_id);
+  const clientName = client ? client.client_name : (task.group_name || '');
+
+  let pubHtml = '—';
+  if (task.publish_config) {
+    try {
+      const pc = typeof task.publish_config === 'string' ? JSON.parse(task.publish_config) : task.publish_config;
+      if (pc.history && pc.history.length) {
+        pubHtml = pc.history.slice(0, 2).map(h => {
+          const plat = h.platform === 'facebook' ? '📘FB' : '📷IG';
+          const st = h.status === 'published' ? '✅' : h.status === 'failed' ? '❌' : '📅';
+          return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#ecfdf5;color:#047857;white-space:nowrap">' + st + ' ' + plat + '</span>';
+        }).join(' ');
+      }
+    } catch(e) {}
+  }
+
+  const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
+  const priorityIcon = task.priority === 'alta' ? '🔴' : task.priority === 'media' ? '🟡' : task.priority === 'baixa' ? '🟢' : '⚪';
+
+  let html = '<div class="mt-row ' + mode + '" onclick="ctOpenModal(\'' + task.id + '\')">';
+
+  if (mode === 'by-list') {
+    html += '<div style="font-size:12px;font-weight:500;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + clientName + '</div>';
+  }
+
+  html += '<div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (task.name || '') + '</div>';
+  html += formatBadge;
+  html += '<div><span class="ct-status" data-status="' + statusKey + '">' + statusLabel + '</span></div>';
+
+  if (mode === 'by-client') {
+    html += '<div class="ct-assignee">' + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '—') + '</div>';
+  }
+
+  html += '<div style="font-size:12px;color:var(--text-secondary)">' + dueStr + '</div>';
+  html += '<div style="display:flex;gap:4px;flex-wrap:wrap">' + pubHtml + '</div>';
+  html += '<div style="font-size:14px;text-align:center">' + priorityIcon + '</div>';
+  html += '</div>';
+
+  return html;
 }
 
 // ═══ POST FORMAT ═══

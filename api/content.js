@@ -207,6 +207,27 @@ async function listTasks({ group_id, client_id }) {
   return ok(result);
 }
 
+async function listMyTasks({ assignee }) {
+  if (!assignee) return fail('assignee is required');
+
+  // Get all tasks assigned to this user across all clients
+  const tasks = await supaSelect(
+    'content_tasks',
+    `select=*,content_groups!inner(id,name,client_id)&assignee=eq.${encodeURIComponent(assignee)}&parent_id=is.null&order=due_date.asc.nullslast,created_at.desc`
+  );
+
+  // Flatten with group/client info
+  const result = tasks.map(t => ({
+    ...t,
+    group_name: t.content_groups?.name || '',
+    client_id: t.content_groups?.client_id || '',
+    group_id: t.content_groups?.id || t.group_id,
+    content_groups: undefined,
+  }));
+
+  return ok(result);
+}
+
 async function getTask({ id }) {
   if (!id) return fail('id is required');
 
@@ -538,6 +559,7 @@ const ACTIONS = {
   delete_group: deleteGroup,
   // Tasks
   list_tasks: listTasks,
+  list_my_tasks: listMyTasks,
   get_task: getTask,
   upsert_task: upsertTask,
   delete_task: deleteTask,
