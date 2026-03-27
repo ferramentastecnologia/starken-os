@@ -1149,7 +1149,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 .meta-bi-tpl-btn.active { background: var(--starken) !important; color: #fff !important; }
 
-.meta-bi-kpi-card { border-radius: 8px; padding: 20px; background: var(--surface-container-low, #f2f4f7); box-shadow: none; border: none; transition: all 0.2s ease; }
+.meta-bi-kpi-card { border-radius: 8px; padding: 20px; transition: all 0.2s ease; }
 .meta-bi-kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 .view-filters { margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 0; flex-wrap:wrap; }
@@ -1299,8 +1299,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .mc-field.full { grid-column: 1 / -1; }
 .mc-field label { font-size: 11px; color: var(--on-surface-variant, #444654); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
 .mc-field select, .mc-field input {
-  padding: 5px 8px; font-size: 0.78rem; border: 1px solid var(--border);
-  border-radius: 6px; background: var(--bg-subtle); color: var(--text);
+  padding: 10px 14px; font-size: 13px; border: none;
+  border-radius: 8px; background: var(--surface-container-low, #f2f4f7); color: var(--text);
   font-family: inherit; width: 100%;
 }
 .mc-field select:focus, .mc-field input:focus { outline: none; border-color: var(--starken); }
@@ -2231,6 +2231,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   line-height: 1;
 }
 .ch-btn-remove:hover { color: var(--danger); background: #fef2f2; }
+.ch-save-btn { background: var(--brand); border-radius: 4px; font-size: 11px; text-transform: uppercase; font-weight: 700; color: white; border: none; padding: 8px 16px; cursor: pointer; transition: opacity 0.15s; }
+.ch-save-btn:hover { opacity: 0.88; }
 
 /* Copy example card */
 .ch-copy-example {
