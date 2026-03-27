@@ -1149,7 +1149,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 .meta-bi-tpl-btn.active { background: var(--starken) !important; color: #fff !important; }
 
-.meta-bi-kpi-card { border-radius: 8px; padding: 20px; transition: all 0.2s ease; }
+.meta-bi-kpi-card { border-radius: 8px; padding: 20px; background: var(--surface-container-low, #f2f4f7); box-shadow: none; border: none; transition: all 0.2s ease; }
 .meta-bi-kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 .view-filters { margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 0; flex-wrap:wrap; }
@@ -1313,6 +1313,55 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   color: var(--text-secondary); font-size: 0.85rem;
   background: var(--bg-subtle); border-radius: 10px;
   border: 2px dashed var(--border);
+}
+
+/* ═══ META CONFIG SAVE BUTTON ═══ */
+#metaConfigSaveBtn {
+  background: var(--brand, var(--starken));
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+/* ═══ META CONFIG / BALANCE SECTION HEADERS ═══ */
+#tab-meta-config .card-title,
+#tab-meta-balance .card-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  color: var(--on-surface-variant, #444654);
+}
+
+/* ═══ META BALANCE GRID CARDS ═══ */
+#metaBalanceGrid .stat-card {
+  padding: 24px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* ═══ CLIENTS TAB TABLE HEADERS ═══ */
+#tab-clients th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  color: var(--on-surface-variant, #444654);
+}
+
+/* ═══ STATUS BADGES (Stitch-aligned) ═══ */
+#tab-clients .badge,
+#tab-meta-config .badge {
+  font-size: 9px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 /* ═══ PUBLICAÇÃO - Estilos aprimorados ═══ */
