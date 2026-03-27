@@ -18945,12 +18945,12 @@ function mtRenderByClient(el, tasks) {
   });
 
   let html = '';
-  const clients = _metaClients || [];
+  const clients = _metaClients || {};
 
   Object.keys(groups).forEach(cid => {
     const clientTasks = groups[cid];
-    const client = clients.find(c => c.client_id === cid);
-    const clientName = client ? client.client_name : (clientTasks[0]?.group_name || cid);
+    const client = clients[cid] || null;
+    const clientName = client ? (client.pageName || client.name || client.client_name || cid) : (clientTasks[0]?.group_name || cid);
     const color = client ? (client.tenant === 'starken' ? 'var(--brand)' : 'var(--brand-alpha)') : '#6b7280';
     const initials = clientName.substring(0, 2).toUpperCase();
 
@@ -18993,9 +18993,9 @@ function mtRenderRow(task, mode) {
   const user = CT_USERS.find(u => u.name === task.assignee);
   const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
 
-  const clients = _metaClients || [];
-  const client = clients.find(c => c.client_id === task.client_id);
-  const clientName = client ? client.client_name : (task.group_name || '');
+  const clients = _metaClients || {};
+  const client = clients[task.client_id] || null;
+  const clientName = client ? (client.pageName || client.name || task.client_id) : (task.group_name || '');
 
   let pubHtml = '—';
   if (task.publish_config) {
