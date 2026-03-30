@@ -14607,8 +14607,10 @@ async function ctHandleFileUpload(files, category) {
     // Show progress bar
     var sizeMB = (file.size / 1024 / 1024).toFixed(1);
     var progressId = 'ctUploadProgress_' + Date.now();
+    var fmtType = window._ctUploadFormatType || _ctActiveFormatTab || 'feed';
     var section = category === 'reference' ? document.getElementById('ctRefSection') :
-      (document.getElementById('ctFormatCreatives') && _ctSelectedFormats && _ctSelectedFormats.length > 0 ? document.getElementById('ctFormatCreatives').parentElement : document.getElementById('ctCreativeSection') || document.getElementById('ctLegacyCreativeSection'));
+      (document.getElementById('ctFormatCreatives_' + fmtType) ? document.getElementById('ctFormatCreatives_' + fmtType).parentElement :
+      (document.getElementById('ctFormatCreatives') && _ctSelectedFormats && _ctSelectedFormats.length > 0 ? document.getElementById('ctFormatCreatives').parentElement : document.getElementById('ctCreativeSection') || document.getElementById('ctLegacyCreativeSection')));
     var progressEl = document.createElement('div');
     progressEl.id = progressId;
     progressEl.innerHTML = '<div style="padding:10px 0">'
@@ -14660,20 +14662,10 @@ async function ctHandleFileUpload(files, category) {
         var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         var storagePath = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + Date.now() + '_' + safeName;
 
-        updateProgress(20, 'Enviando ' + sizeMB + ' MB...');
+        updateProgress(5, 'Preparando upload de ' + sizeMB + ' MB...');
 
-        if (_supabase && _supabase.storage) {
-          // Use Supabase JS SDK with client-hub-materials bucket (has public RLS)
-          var upRes = await _supabase.storage.from('client-hub-materials').upload(storagePath, file, {
-            contentType: file.type || 'application/octet-stream',
-            upsert: true
-          });
-          if (upRes.error) throw new Error(upRes.error.message);
-          var urlRes = _supabase.storage.from('client-hub-materials').getPublicUrl(storagePath);
-          publicUrl = urlRes.data.publicUrl;
-          updateProgress(100, '✅ Upload concluído!');
-        } else {
-          // Fallback: direct REST with XMLHttpRequest for progress
+        {
+          // Always use XMLHttpRequest for real-time progress percentage
           var uploadUrl = SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + storagePath;
           await new Promise(function(resolve, reject) {
             var xhr = new XMLHttpRequest();
@@ -14699,7 +14691,6 @@ async function ctHandleFileUpload(files, category) {
             xhr.send(file);
           });
         }
-      }
 
       if (publicUrl) {
         updateProgress(100, '✅ Salvando...');
@@ -14732,8 +14723,12 @@ async function ctHandleFileUpload(files, category) {
   ctRenderModalAttachments(ctModalTask.attachments);
   ctRenderModalActivity(data.activity || []);
   // Refresh format tab content if multi-format is active
-  if (_ctSelectedFormats && _ctSelectedFormats.length > 0 && typeof ctRenderFormatContent === 'function') {
-    ctRenderFormatContent();
+  if (_ctSelectedFormats && _ctSelectedFormats.length > 0) {
+    if (_ctSelectedFormats.length === 2 && _ctSelectedFormats.includes('feed') && _ctSelectedFormats.includes('story') && typeof ctRenderTwoColumnContent === 'function') {
+      ctRenderTwoColumnContent();
+    } else if (typeof ctRenderFormatContent === 'function') {
+      ctRenderFormatContent();
+    }
   }
 }
 
