@@ -1629,7 +1629,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 /* Drag & Drop */
 .ct-row:hover .ct-drag-handle { opacity:1; }
 .ct-row .ct-drag-handle { opacity:0.3;transition:opacity 0.15s; }
-.ct-row:hover .ct-move-btn { opacity:0.5; }
+.ct-move-btn { opacity:0 !important; transition:opacity 0.15s; }
+.ct-row:hover .ct-move-btn { opacity:0.5 !important; }
 .ct-move-btn:hover { opacity:1 !important; color:var(--brand,#3b82f6) !important; }
 .ct-row.drag-over-top { border-top:2px solid var(--accent,#3b82f6) !important;margin-top:-2px; }
 .ct-row.drag-over-center { background:rgba(59,130,246,0.08) !important;outline:2px dashed var(--accent,#3b82f6);outline-offset:-2px;border-radius:6px; }
@@ -12987,8 +12988,8 @@ function ctRenderList() {
           + '<div class="ct-name">'
           + '<input type="checkbox" class="ct-select-check" data-id="' + task.id + '" onclick="event.stopPropagation();ctUpdateSelection()" style="margin-right:4px;cursor:pointer;accent-color:var(--accent,#3b82f6);flex-shrink:0">'
           + '<span class="ct-reorder-btns" style="display:inline-flex;flex-direction:column;margin-right:2px;flex-shrink:0;gap:0;line-height:1">'
-          + '<button onclick="event.stopPropagation();ctMoveTask(\'' + task.id + '\',\'up\')" class="ct-move-btn" title="Mover para cima" style="border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted,#9ca3af);padding:1px 3px;line-height:1;opacity:0;transition:opacity 0.15s">▲</button>'
-          + '<button onclick="event.stopPropagation();ctMoveTask(\'' + task.id + '\',\'down\')" class="ct-move-btn" title="Mover para baixo" style="border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted,#9ca3af);padding:1px 3px;line-height:1;opacity:0;transition:opacity 0.15s">▼</button>'
+          + '<button onclick="event.stopPropagation();ctMoveTask(\'' + task.id + '\',\'up\')" class="ct-move-btn" title="Mover para cima" style="border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted,#9ca3af);padding:1px 3px;line-height:1">▲</button>'
+          + '<button onclick="event.stopPropagation();ctMoveTask(\'' + task.id + '\',\'down\')" class="ct-move-btn" title="Mover para baixo" style="border:none;background:none;cursor:pointer;font-size:10px;color:var(--text-muted,#9ca3af);padding:1px 3px;line-height:1">▼</button>'
           + '</span>'
           + '<span class="ct-drag-handle" draggable="true" ondragstart="ctDragStart(event)" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.85rem;user-select:none;flex-shrink:0">⠿</span>'
           + (depth > 0 ? '<span style="width:' + (depth * 24) + 'px;flex-shrink:0"></span>' : '')
