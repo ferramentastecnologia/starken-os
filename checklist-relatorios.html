@@ -19726,7 +19726,7 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
   // PAGES 3-N: POSTS (multi-format aware)
   tasks.forEach(function(task) {
     var config = task.publish_config || {};
-    var selectedFormats = config.selected_formats || [];
+    var selectedFormats = config.formats || config.selected_formats || [];
     var attachments = task._attachments || [];
 
     // If task has multiple formats, generate one page per format
