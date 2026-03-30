@@ -139,56 +139,78 @@ module.exports = async function handler(req, res) {
           continue;
         }
 
-        // Remap image hashes or use URLs as fallback
+        // Remap image hashes to new hashes in target account
         const newImages = (spec.images || []).map(img => {
           const newHash = hashMapping[img.hash];
-          const imgUrl = hashToUrl[img.hash];
-          if (newHash) {
-            return { hash: newHash }; // Clean: only hash, no old adlabels
-          }
-          if (useUrlFallback && imgUrl) {
-            return { url: imgUrl }; // Use URL directly (no upload needed)
-          }
-          return null;
+          if (!newHash) return null; // Only include successfully mapped images
+          return { hash: newHash }; // Clean: only hash, no adlabels
         }).filter(Boolean);
 
-        if (newImages.length === 0) {
-          results.push({ source_ad: ad.name, status: 'skipped', reason: 'No images could be transferred' });
-          continue;
+        // Determine creative type
+        let newCreative;
+        const firstImageUrl = hashToUrl[Object.keys(hashToUrl)[0]];
+
+        // If image upload succeeded: use asset_feed_spec (carousel format)
+        if (newImages.length > 0) {
+          const newSpec = {
+            images: newImages,
+            bodies: (spec.bodies || []).map(b => ({ text: b.text })),
+            call_to_action_types: spec.call_to_action_types,
+            titles: (spec.titles || []).map(t => ({ text: t.text })),
+            descriptions: (spec.descriptions || []).map(d => ({ text: d.text })),
+            link_urls: (spec.link_urls || []).map(l => ({
+              website_url: l.website_url,
+              display_url: l.display_url,
+            })),
+            ad_formats: spec.ad_formats,
+            optimization_type: spec.optimization_type,
+          };
+
+          if (spec.additional_data) {
+            newSpec.additional_data = spec.additional_data;
+          }
+
+          const storySpec = {
+            page_id: targetClientObj.pageId || ad.creative.object_story_spec?.page_id,
+            instagram_user_id: targetClientObj.igUserId || ad.creative.object_story_spec?.instagram_user_id,
+          };
+
+          try {
+            newCreative = await graphPostForm(`/${targetAdAccount}/adcreatives`, {
+              name: ad.creative.name || ad.name,
+              object_story_spec: storySpec,
+              asset_feed_spec: newSpec,
+            });
+          } catch (creativeErr) {
+            throw new Error(`Asset feed creative failed: ${creativeErr.message}`);
+          }
         }
+        // Fallback: use simple object_story_spec with image_url
+        else if (useUrlFallback && firstImageUrl) {
+          const storySpec = {
+            page_id: targetClientObj.pageId || ad.creative.object_story_spec?.page_id,
+            link_data: {
+              message: ad.creative.object_story_spec?.link_data?.message || ad.name,
+              link: ad.creative.object_story_spec?.link_data?.link || 'https://example.com',
+              image_hash: firstImageUrl, // Can use URL here
+              name: spec.bodies?.[0]?.text || ad.creative.name || ad.name,
+              description: spec.descriptions?.[0]?.text || '',
+              caption: spec.titles?.[0]?.text || '',
+            },
+            instagram_user_id: targetClientObj.igUserId || ad.creative.object_story_spec?.instagram_user_id,
+          };
 
-        // Build new asset_feed_spec without adlabels (they're account-specific)
-        const newSpec = {
-          images: newImages,
-          bodies: (spec.bodies || []).map(b => ({ text: b.text })),
-          call_to_action_types: spec.call_to_action_types,
-          titles: (spec.titles || []).map(t => ({ text: t.text })),
-          descriptions: (spec.descriptions || []).map(d => ({ text: d.text })),
-          link_urls: (spec.link_urls || []).map(l => ({
-            website_url: l.website_url,
-            display_url: l.display_url,
-          })),
-          ad_formats: spec.ad_formats,
-          optimization_type: spec.optimization_type,
-        };
-
-        // Include additional_data (welcome messages, etc.)
-        if (spec.additional_data) {
-          newSpec.additional_data = spec.additional_data;
+          try {
+            newCreative = await graphPostForm(`/${targetAdAccount}/adcreatives`, {
+              name: ad.creative.name || ad.name,
+              object_story_spec: storySpec,
+            });
+          } catch (creativeErr) {
+            throw new Error(`URL fallback creative failed: ${creativeErr.message}`);
+          }
+        } else {
+          throw new Error('No images available for creative');
         }
-
-        // Build object_story_spec with target page/ig
-        const storySpec = {
-          page_id: targetClientObj.pageId || ad.creative.object_story_spec?.page_id,
-          instagram_user_id: targetClientObj.igUserId || ad.creative.object_story_spec?.instagram_user_id,
-        };
-
-        // Create creative (use form-urlencoded — Meta requires it for complex nested objects)
-        const newCreative = await graphPostForm(`/${targetAdAccount}/adcreatives`, {
-          name: ad.creative.name || ad.name,
-          object_story_spec: storySpec,
-          asset_feed_spec: newSpec,
-        });
 
         // Create ad
         const newAd = await graphPostForm(`/${targetAdAccount}/ads`, {
@@ -212,6 +234,8 @@ module.exports = async function handler(req, res) {
           source_ad_id: ad.id,
           status: 'error',
           error: adErr.message || JSON.stringify(adErr),
+          error_code: adErr.code,
+          error_status: adErr.status,
         });
       }
     }
