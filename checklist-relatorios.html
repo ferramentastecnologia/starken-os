@@ -18695,11 +18695,27 @@ function cronogramaPreview() {
   var cardW = Math.round(960 * scale);
   var cardH = Math.round(680 * scale);
 
+  // Store pages globally for title editing
+  window._cronoPages = pages;
+
   pages.forEach(function(pageHtml, i) {
-    cards += '<div style="width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:relative;background:#b5aa9a">'
+    // Extract current title from the page header
+    var titleMatch = pageHtml.match(/font-weight:800;color:#fff;text-transform:uppercase[^>]*>([^<]+)/);
+    var currentTitle = titleMatch ? titleMatch[1] : '';
+
+    cards += '<div style="width:' + cardW + 'px;position:relative">'
+      // Editable title bar (only for post pages, not cover/separator/closing)
+      + (currentTitle ? '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+        + '<input type="text" value="' + currentTitle.replace(/"/g, '&quot;') + '" '
+        + 'data-page-idx="' + i + '" '
+        + 'onchange="cronogramaEditTitle(' + i + ',this.value)" '
+        + 'style="flex:1;font-size:10px;font-weight:700;padding:3px 8px;border:1px solid var(--border,#ddd);border-radius:4px;background:var(--card,#fff);color:var(--text,#333);text-transform:uppercase;letter-spacing:0.5px;font-family:inherit">'
+        + '<span style="font-size:9px;color:var(--text-secondary,#999)" title="Edite o título da página">✏️</span>'
+        + '</div>' : '')
+      + '<div style="width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:relative;background:#b5aa9a">'
       + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:960px;height:680px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
       + '<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;font-size:10px;padding:3px 14px;border-radius:10px;font-weight:600">' + (i + 1) + ' / ' + total + '</div>'
-      + '</div>';
+      + '</div></div>';
   });
 
   area.innerHTML = '<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px">'
@@ -18707,6 +18723,17 @@ function cronogramaPreview() {
     + '<span style="font-size:0.72rem;color:var(--text-secondary,#64748b)">' + total + ' páginas · ' + tasks.length + ' post' + (tasks.length > 1 ? 's' : '') + '</span>'
     + '</div>'
     + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:8px 0 14px">' + cards + '</div>';
+}
+
+// Edit page title in preview
+function cronogramaEditTitle(pageIdx, newTitle) {
+  if (!window._cronoPages || !window._cronoPages[pageIdx]) return;
+  var page = window._cronoPages[pageIdx];
+  // Replace the title text in the page HTML header bar
+  window._cronoPages[pageIdx] = page.replace(
+    /(font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">)([^<]+)/,
+    '$1' + newTitle.toUpperCase()
+  );
 }
 
 // Gerar PDF e salvar no Supabase (sem baixar) — disponível no cronograma semanal
@@ -18731,7 +18758,8 @@ async function cronogramaBuildPdf(opts) {
 
   try {
     var s = _cronoState;
-    var pages = cronogramaBuildPages(s.clientName, s.clientLogo, s.tenant, tasks);
+    // Use edited pages if available (titles may have been changed), otherwise rebuild
+    var pages = (window._cronoPages && window._cronoPages.length > 0) ? window._cronoPages : cronogramaBuildPages(s.clientName, s.clientLogo, s.tenant, tasks);
 
     var modal = document.getElementById('cronoModal');
     if (modal) modal.style.display = 'none';
