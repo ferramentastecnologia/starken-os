@@ -9574,10 +9574,26 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
     // CRONOGRAMA: send PDF + message directly (no Meta Ads data needed)
     if (type === 'sched-weekly') {
       showStatus('⏳ Buscando PDF do cronograma...', 'blue');
-      // Find the cronograma PDF URL from the report
-      var report = data.clients.find(function(c) { return c.id === clientId; });
-      var cronoReport = report ? data.reports.find(function(r) { return r.clientId === clientId && r.type === 'sched-weekly'; }) : null;
-      var pdfUrl = cronoReport ? cronoReport.cronogramaPdfUrl : null;
+      // Get PDF URL from Supabase cronograma_status or from data.reports
+      var pdfUrl = null;
+      // Try Supabase first
+      if (typeof getCronogramaStatus === 'function') {
+        var csData = getCronogramaStatus(clientId, periodKey);
+        if (csData && csData.pdf_url) pdfUrl = csData.pdf_url;
+      }
+      // Fallback: check data.reports
+      if (!pdfUrl) {
+        var cronoReport = data.reports.find(function(r) { return r.clientId === clientId && r.type === 'sched-weekly'; });
+        if (cronoReport && cronoReport.cronogramaPdfUrl) pdfUrl = cronoReport.cronogramaPdfUrl;
+      }
+      // Fallback: check localStorage
+      if (!pdfUrl) {
+        try {
+          var lsKey = 'cronograma_pdf_' + clientId;
+          var lsData = localStorage.getItem(lsKey);
+          if (lsData) { var parsed = JSON.parse(lsData); pdfUrl = parsed.pdf_url || parsed.url; }
+        } catch(e) {}
+      }
       if (!pdfUrl) throw new Error('PDF do cronograma não foi gerado ainda. Gere o PDF primeiro.');
 
       showStatus('📤 Enviando cronograma via WhatsApp...', 'blue');
