@@ -19799,11 +19799,14 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
       // STORY: phone mockups side by side (supports multiple stories)
       p += '<div style="display:flex;align-items:center;justify-content:center;height:600px;overflow:hidden;gap:16px;padding:0 20px">';
       if (allImages.length > 0) {
-        // Show all story images as phone mockups side by side
-        var phoneW = allImages.length === 1 ? 260 : allImages.length === 2 ? 200 : 160;
-        var phoneH = allImages.length === 1 ? 460 : allImages.length === 2 ? 360 : 290;
-        var phoneR = allImages.length === 1 ? 28 : 22;
-        for (var si = 0; si < Math.min(allImages.length, 4); si++) {
+        // Show all story images as phone mockups side by side (up to 6)
+        var n = allImages.length;
+        var phoneW = n === 1 ? 260 : n === 2 ? 200 : n <= 4 ? 160 : n <= 6 ? 120 : 100;
+        var phoneH = n === 1 ? 460 : n === 2 ? 360 : n <= 4 ? 290 : n <= 6 ? 220 : 180;
+        var phoneR = n <= 2 ? 28 : n <= 4 ? 22 : 16;
+        var gap = n <= 4 ? 16 : 10;
+        p = p.replace('gap:16px', 'gap:' + gap + 'px');
+        for (var si = 0; si < Math.min(n, 6); si++) {
           p += '<div style="flex-direction:column;display:flex;align-items:center;gap:6px">';
           p += '<div style="width:' + phoneW + 'px;height:' + phoneH + 'px;background:#000;border-radius:' + phoneR + 'px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden">';
           p += '<img src="' + allImages[si].file_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:' + (phoneR - 4) + 'px" crossorigin="anonymous">';
