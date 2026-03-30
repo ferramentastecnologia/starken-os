@@ -18704,15 +18704,14 @@ function cronogramaPreview() {
     var currentTitle = titleMatch ? titleMatch[1] : '';
 
     cards += '<div style="width:' + cardW + 'px;position:relative">'
-      // Editable title bar (only for post pages, not cover/separator/closing)
-      + (currentTitle ? '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-        + '<input type="text" value="' + currentTitle.replace(/"/g, '&quot;') + '" '
-        + 'data-page-idx="' + i + '" '
-        + 'onchange="cronogramaEditTitle(' + i + ',this.value)" '
-        + 'style="flex:1;font-size:10px;font-weight:700;padding:3px 8px;border:1px solid var(--border,#ddd);border-radius:4px;background:var(--card,#fff);color:var(--text,#333);text-transform:uppercase;letter-spacing:0.5px;font-family:inherit">'
-        + '<span style="font-size:9px;color:var(--text-secondary,#999)" title="Edite o título da página">✏️</span>'
+      // Editable title bar (only for post pages with headers)
+      + (currentTitle ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">'
+        + '<input type="text" id="cronoTitle_' + i + '" value="' + currentTitle.replace(/"/g, '&quot;') + '" '
+        + 'style="flex:1;font-size:10px;font-weight:700;padding:4px 8px;border:1.5px solid var(--border,#ddd);border-radius:6px;background:var(--card,#fff);color:var(--text,#333);text-transform:uppercase;letter-spacing:0.5px;font-family:inherit">'
+        + '<button onclick="cronogramaEditTitle(' + i + ',document.getElementById(\'cronoTitle_' + i + '\').value);this.textContent=\'✅\';setTimeout(function(){this.textContent=\'💾\';}.bind(this),1500)" '
+        + 'style="padding:3px 8px;border:1.5px solid var(--brand,#3b82f6);border-radius:6px;background:var(--brand,#3b82f6);color:#fff;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap" title="Salvar título">💾</button>'
         + '</div>' : '')
-      + '<div style="width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:relative;background:#b5aa9a">'
+      + '<div id="cronoPageCard_' + i + '" style="width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:relative;background:#b5aa9a">'
       + '<div style="transform:scale(' + scale + ');transform-origin:top left;width:960px;height:680px;pointer-events:none;font-family:Inter,-apple-system,sans-serif">' + pageHtml + '</div>'
       + '<div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);color:#fff;font-size:10px;padding:3px 14px;border-radius:10px;font-weight:600">' + (i + 1) + ' / ' + total + '</div>'
       + '</div></div>';
@@ -18725,15 +18724,22 @@ function cronogramaPreview() {
     + '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:8px 0 14px">' + cards + '</div>';
 }
 
-// Edit page title in preview
+// Edit page title in preview — updates both data and visual preview
 function cronogramaEditTitle(pageIdx, newTitle) {
   if (!window._cronoPages || !window._cronoPages[pageIdx]) return;
   var page = window._cronoPages[pageIdx];
-  // Replace the title text in the page HTML header bar
+  // Replace ALL title spans in the header bar (may have multiple for type + date)
   window._cronoPages[pageIdx] = page.replace(
-    /(font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">)([^<]+)/,
-    '$1' + newTitle.toUpperCase()
+    /<div style="background:rgba\(0,0,0,0\.25\);padding:14px 36px;border-bottom:2px solid rgba\(255,255,255,0\.2\)">[\s\S]*?<\/div>/,
+    '<div style="background:rgba(0,0,0,0.25);padding:14px 36px;border-bottom:2px solid rgba(255,255,255,0.2)">'
+    + '<span style="font-size:15px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px">' + newTitle.toUpperCase() + '</span></div>'
   );
+  // Update the visual preview card
+  var card = document.getElementById('cronoPageCard_' + pageIdx);
+  if (card) {
+    var inner = card.querySelector('div');
+    if (inner) inner.innerHTML = window._cronoPages[pageIdx];
+  }
 }
 
 // Gerar PDF e salvar no Supabase (sem baixar) — disponível no cronograma semanal
