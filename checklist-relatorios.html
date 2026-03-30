@@ -19341,12 +19341,12 @@ function ctRenderFormatContent() {
   var emptyMsg = document.getElementById('ctFormatCreativeEmpty');
 
   if (creatives.length === 0) {
-    grid.innerHTML = '';
-    emptyMsg.style.display = '';
+    if (grid) grid.innerHTML = '';
+    if (emptyMsg) emptyMsg.style.display = '';
   } else {
-    emptyMsg.style.display = 'none';
+    if (emptyMsg) emptyMsg.style.display = 'none';
     var ratio = fmt === 'reels' || fmt === 'story' ? '9/16' : fmt === 'carrossel' ? '4/5' : '1/1';
-    grid.innerHTML = creatives.map(function(a, idx) {
+    if (grid) grid.innerHTML = creatives.map(function(a, idx) {
       var card = ctBuildAttCard(a, (idx + 1) + '°', '#10b981');
       return card.replace('aspect-ratio:1;object-fit:cover', 'aspect-ratio:' + ratio + ';object-fit:cover');
     }).join('');
@@ -19418,6 +19418,7 @@ var _ctFmtPlatforms = [];
 
 function ctFmtSelectPlatform(plat) {
   var btn = document.getElementById(plat === 'fb' ? 'ctFmtPubFb' : 'ctFmtPubIg');
+  if (!btn) return;
   var idx = _ctFmtPlatforms.indexOf(plat);
   if (idx >= 0) {
     _ctFmtPlatforms.splice(idx, 1);
