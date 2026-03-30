@@ -6396,7 +6396,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
 
       // Cronograma PDF button + download last PDF
       if (metaKey) {
-        html += '<button class="btn btn-sm" style="background:#8B7355;color:#fff;border:1px solid #7a6349;padding:4px 8px" onclick="event.stopPropagation();cronogramaFromSchedule(\'' + metaKey + '\',\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Gerar Cronograma PDF">📄</button>';
+        html += '<button id="cronoBtn_' + c.id + '" class="btn btn-sm" style="background:#8B7355;color:#fff;border:1px solid #7a6349;padding:4px 8px" onclick="event.stopPropagation();this.innerHTML=\'⏳\';this.disabled=true;cronogramaFromSchedule(\'' + metaKey + '\',\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Gerar Cronograma PDF">📄</button>';
         // Show download button if PDF was generated
         var cronoPdfUrl = report && report.cronogramaPdfUrl;
         if (cronoPdfUrl) {
@@ -18598,18 +18598,6 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
 
   // Close any existing cronograma modal
   var existingModal = document.getElementById('cronoModal'); if (existingModal) existingModal.remove();
-  var existingLoader = document.getElementById('cronoLoader'); if (existingLoader) existingLoader.remove();
-
-  // Show fullscreen loading
-  var loader = document.createElement('div');
-  loader.id = 'cronoLoader';
-  loader.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
-  loader.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;padding:32px 48px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
-    + '<div style="width:40px;height:40px;border:3px solid var(--border,#e2e8f0);border-top-color:var(--brand,#3b82f6);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px"></div>'
-    + '<div style="font-size:0.95rem;font-weight:700;color:var(--text,#1a1a2e)">Carregando cronograma...</div>'
-    + '<div style="font-size:0.78rem;color:var(--text-secondary,#64748b);margin-top:6px">Buscando tasks e criativos</div>'
-    + '</div>';
-  document.body.appendChild(loader);
 
   try {
     // Fetch tasks for this client
@@ -18697,13 +18685,15 @@ async function cronogramaGenerate() {
     }
 
     _cronoState = { tasks: allTasks, clientName: clientName, clientLogo: clientLogo, tenant: tenant, clientId: clientId, scheduleContext: null };
-    // Remove loading before showing modal
-    document.querySelectorAll('#cronoLoader').forEach(function(el) { el.remove(); });
     _cronoLoading = false;
+    // Reset button
+    var cronoBtn = document.getElementById('cronoBtn_' + clientId);
+    if (cronoBtn) { cronoBtn.innerHTML = '📄'; cronoBtn.disabled = false; }
     cronogramaShowModal();
   } catch(err) {
-    document.querySelectorAll('#cronoLoader').forEach(function(el) { el.remove(); });
     _cronoLoading = false;
+    var cronoBtn = document.getElementById('cronoBtn_' + clientId);
+    if (cronoBtn) { cronoBtn.innerHTML = '📄'; cronoBtn.disabled = false; }
     console.error('Cronograma error:', err);
     alert('Erro ao carregar tasks: ' + err.message);
   }
