@@ -18593,6 +18593,10 @@ function ctCronoSendWhatsApp() {
 async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
   if (!clientSlug) { alert('Cliente não encontrado no Meta Config'); return; }
 
+  // Close any existing cronograma modal
+  var existingModal = document.getElementById('cronoModal'); if (existingModal) existingModal.remove();
+  var existingLoader = document.getElementById('cronoLoader'); if (existingLoader) existingLoader.remove();
+
   // Show fullscreen loading
   var loader = document.createElement('div');
   loader.id = 'cronoLoader';
