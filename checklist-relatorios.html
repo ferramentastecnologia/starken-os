@@ -13607,8 +13607,12 @@ async function ctDeleteAttachment(attachmentId) {
   ctModalTask.attachments = Array.isArray(attData) ? attData : (attData.attachments || []);
   ctRenderModalAttachments(ctModalTask.attachments);
   // Refresh format tab content if formats are active
-  if (_ctSelectedFormats && _ctSelectedFormats.length > 0 && typeof ctRenderFormatContent === 'function') {
-    ctRenderFormatContent();
+  if (_ctSelectedFormats && _ctSelectedFormats.length > 0) {
+    if (_ctSelectedFormats.length === 2 && _ctSelectedFormats.includes('feed') && _ctSelectedFormats.includes('story') && typeof ctRenderTwoColumnContent === 'function') {
+      ctRenderTwoColumnContent();
+    } else if (typeof ctRenderFormatContent === 'function') {
+      ctRenderFormatContent();
+    }
   }
   // Reload activity
   const actData = await ctApi('list_activity', { task_id: ctModalTask.id });
@@ -19402,9 +19406,9 @@ function ctUploadFormatAttachment() {
 }
 
 async function ctHandleFormatFileUpload(files) {
-  if (!files || !files.length || !_ctActiveFormatTab) return;
-  // Reuse existing upload logic but pass format_type
-  window._ctUploadFormatType = _ctActiveFormatTab;
+  if (!files || !files.length) return;
+  // Preserve format_type set by the column button onclick, fallback to active tab
+  if (!window._ctUploadFormatType) window._ctUploadFormatType = _ctActiveFormatTab || 'feed';
   await ctHandleFileUpload(files, 'creative');
   window._ctUploadFormatType = null;
 }
