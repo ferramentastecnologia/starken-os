@@ -19163,7 +19163,8 @@ function ctRenderFormatTabs() {
       + '<div id="ctFormatCol_feed" style="background:var(--bg-secondary,#f8fafc);border:1px solid var(--border);border-radius:12px;padding:14px">'
       + '<div style="font-size:0.85rem;font-weight:700;color:#3b82f6;margin-bottom:10px;display:flex;align-items:center;gap:6px">📷 Feed</div>'
       + '<div class="ct-modal-section" style="margin-bottom:10px">'
-      + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'feed\';document.getElementById(\'ctFileInputFormatCreative\').click()">+ Upload</button></div>'
+      + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'feed\';document.getElementById(\'ctFileInputFeed\').click()">+ Upload</button></div>'
+      + '<input type="file" id="ctFileInputFeed" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">'
       + '<div class="ct-attachment-grid" id="ctFormatCreatives_feed"></div>'
       + '</div>'
       + '<div class="ct-modal-section" style="margin-bottom:10px">'
@@ -19176,13 +19177,13 @@ function ctRenderFormatTabs() {
       + '<div id="ctFormatCol_story" style="background:var(--bg-secondary,#f8fafc);border:1px solid var(--border);border-radius:12px;padding:14px">'
       + '<div style="font-size:0.85rem;font-weight:700;color:#ec4899;margin-bottom:10px;display:flex;align-items:center;gap:6px">📱 Story</div>'
       + '<div class="ct-modal-section" style="margin-bottom:10px">'
-      + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'story\';document.getElementById(\'ctFileInputFormatCreative\').click()">+ Upload</button></div>'
+      + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'story\';document.getElementById(\'ctFileInputStory\').click()">+ Upload</button></div>'
+      + '<input type="file" id="ctFileInputStory" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">'
       + '<div class="ct-attachment-grid" id="ctFormatCreatives_story"></div>'
       + '</div>'
       + '<div id="ctFormatPub_story"></div>'
       + '</div>'
-      + '</div>'
-      + '<input type="file" id="ctFileInputFormatCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">';
+      + '</div>';
 
     // Populate both columns
     ctRenderTwoColumnContent();
