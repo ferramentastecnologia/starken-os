@@ -93,7 +93,7 @@ module.exports = async function handler(req, res) {
       try {
         // Get story media (IG Stories API)
         const storiesResult = await graphGet(`/${igUserId}/stories`, {
-          fields: 'id,media_type,timestamp,caption,insights.metric(impressions,exits,replies,reach,taps_forward,taps_back)',
+          fields: 'id,media_type,timestamp,caption,insights.metric(impressions,replies)',
           limit: '100',
         });
 
@@ -107,16 +107,13 @@ module.exports = async function handler(req, res) {
 
           let impressions = 0;
           let replies = 0;
-          let reach = 0;
 
           if (story.insights?.data) {
             const impData = story.insights.data.find(i => i.name === 'impressions');
             const repliesData = story.insights.data.find(i => i.name === 'replies');
-            const reachData = story.insights.data.find(i => i.name === 'reach');
 
             impressions = impData?.values?.[0]?.value || 0;
             replies = repliesData?.values?.[0]?.value || 0;
-            reach = reachData?.values?.[0]?.value || 0;
           }
 
           report.instagram_stories.stories.push({
@@ -125,7 +122,6 @@ module.exports = async function handler(req, res) {
             caption: (story.caption || '').substring(0, 200),
             created_at: story.timestamp,
             impressions,
-            reach,
             replies,
             engagement_rate: impressions > 0 ? ((replies / impressions) * 100).toFixed(2) + '%' : '0%',
           });
