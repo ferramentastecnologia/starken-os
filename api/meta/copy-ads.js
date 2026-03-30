@@ -185,31 +185,9 @@ module.exports = async function handler(req, res) {
             throw new Error(`Asset feed creative failed: ${creativeErr.message}`);
           }
         }
-        // Fallback: use simple object_story_spec with image_url
-        else if (useUrlFallback && firstImageUrl) {
-          const storySpec = {
-            page_id: targetClientObj.pageId || ad.creative.object_story_spec?.page_id,
-            link_data: {
-              message: ad.creative.object_story_spec?.link_data?.message || ad.name,
-              link: ad.creative.object_story_spec?.link_data?.link || 'https://example.com',
-              image_hash: firstImageUrl, // Can use URL here
-              name: spec.bodies?.[0]?.text || ad.creative.name || ad.name,
-              description: spec.descriptions?.[0]?.text || '',
-              caption: spec.titles?.[0]?.text || '',
-            },
-            instagram_user_id: targetClientObj.igUserId || ad.creative.object_story_spec?.instagram_user_id,
-          };
-
-          try {
-            newCreative = await graphPostForm(`/${targetAdAccount}/adcreatives`, {
-              name: ad.creative.name || ad.name,
-              object_story_spec: storySpec,
-            });
-          } catch (creativeErr) {
-            throw new Error(`URL fallback creative failed: ${creativeErr.message}`);
-          }
-        } else {
-          throw new Error('No images available for creative');
+        // Fallback: skip ad if no images uploaded (requires hash)
+        else {
+          throw new Error('No image hashes available — image upload failed with permission error');
         }
 
         // Create ad
@@ -240,16 +218,23 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    const uploadSuccessCount = Object.values(hashMapping).filter(v => v).length;
+    const uploadFailedCount = Object.values(hashMapping).filter(v => !v).length;
+
+    // Diagnose permission issue
+    const hasPermissionError = uploadErrors.some(e => e.error.includes('capability'));
+
     return res.status(200).json({
-      success: true,
+      success: uploadSuccessCount > 0 || results.some(r => r.status === 'created'),
+      diagnosis: hasPermissionError
+        ? `⚠️ PERMISSION ERROR: The app token for ${targetAdAccount} lacks 'ads_management' permission. Configure in Meta Business Manager.`
+        : null,
       source_adset: source_adset_id,
       target_adset: target_adset_id,
       target_account: targetAdAccount,
-      image_hashes_mapped: Object.keys(hashMapping).length,
-      image_hashes_failed: Object.values(hashMapping).filter(v => !v).length,
-      used_url_fallback: useUrlFallback,
+      image_hashes_mapped: uploadSuccessCount,
+      image_hashes_failed: uploadFailedCount,
       upload_errors: uploadErrors,
-      hash_mapping: hashMapping,
       ads: results,
     });
 
