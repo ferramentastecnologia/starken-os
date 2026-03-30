@@ -18590,8 +18590,11 @@ function ctCronoSendWhatsApp() {
 }
 
 // Bridge: open cronograma modal from weekly schedule page
+var _cronoLoading = false;
 async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
   if (!clientSlug) { alert('Cliente não encontrado no Meta Config'); return; }
+  if (_cronoLoading) return; // Prevent double-click
+  _cronoLoading = true;
 
   // Close any existing cronograma modal
   var existingModal = document.getElementById('cronoModal'); if (existingModal) existingModal.remove();
@@ -18694,11 +18697,13 @@ async function cronogramaGenerate() {
     }
 
     _cronoState = { tasks: allTasks, clientName: clientName, clientLogo: clientLogo, tenant: tenant, clientId: clientId, scheduleContext: null };
-    // Remove loading
-    var ld = document.getElementById('cronoLoader'); if (ld) ld.remove();
+    // Remove loading before showing modal
+    document.querySelectorAll('#cronoLoader').forEach(function(el) { el.remove(); });
+    _cronoLoading = false;
     cronogramaShowModal();
   } catch(err) {
-    var ld = document.getElementById('cronoLoader'); if (ld) ld.remove();
+    document.querySelectorAll('#cronoLoader').forEach(function(el) { el.remove(); });
+    _cronoLoading = false;
     console.error('Cronograma error:', err);
     alert('Erro ao carregar tasks: ' + err.message);
   }
