@@ -1,13 +1,60 @@
 /**
  * /api/meta/organic-insights — Relatório de posts orgânicos (sem anúncios)
  *
- * GET ?client=mortadella-blumenau&days=30
- *   → Posts do Facebook + Stories + Métricas
- *   → Posts do Instagram + Stories + Métricas
+ * GET ?client=mortadella-blumenau&period=last_30d
+ * GET ?client=mortadella-blumenau&month=2026-03  (specific month: YYYY-MM)
+ * GET ?client=mortadella-blumenau&year=2026     (all months in year)
+ *
+ * Períodos suportados:
+ *   last_7d, last_30d, last_90d, last_year
+ *   2026-03 (mês específico)
+ *   2026 (ano inteiro)
  */
 
 const { graphGet } = require('./_lib/graph');
 const { getClient } = require('./_lib/tenants');
+
+function getDateRange(period, month, year) {
+  let since, until;
+
+  if (month) {
+    // Format: 2026-03
+    const [y, m] = month.split('-');
+    since = new Date(parseInt(y), parseInt(m) - 1, 1);
+    until = new Date(parseInt(y), parseInt(m), 0, 23, 59, 59);
+  } else if (year) {
+    // Format: 2026
+    const y = parseInt(year);
+    since = new Date(y, 0, 1);
+    until = new Date(y, 11, 31, 23, 59, 59);
+  } else {
+    // Default periods
+    until = new Date();
+    switch (period || 'last_30d') {
+      case 'last_7d':
+        since = new Date(until);
+        since.setDate(since.getDate() - 7);
+        break;
+      case 'last_90d':
+        since = new Date(until);
+        since.setDate(since.getDate() - 90);
+        break;
+      case 'last_year':
+        since = new Date(until);
+        since.setFullYear(since.getFullYear() - 1);
+        break;
+      default: // last_30d
+        since = new Date(until);
+        since.setDate(since.getDate() - 30);
+    }
+  }
+
+  return {
+    since: Math.floor(since.getTime() / 1000),
+    until: Math.floor(until.getTime() / 1000),
+    label: month || year || period || 'last_30d',
+  };
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,10 +64,12 @@ module.exports = async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
   const clientKey = req.query.client;
-  const days = parseInt(req.query.days) || 30;
+  const period = req.query.period;
+  const month = req.query.month;
+  const year = req.query.year;
 
   if (!clientKey) {
-    return res.status(400).json({ error: 'Need ?client=X' });
+    return res.status(400).json({ error: 'Need ?client=X&period=last_30d (or &month=2026-03 or &year=2026)' });
   }
 
   try {
@@ -32,15 +81,19 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Client has no Facebook page or Instagram account configured' });
     }
 
-    const sinceDate = new Date();
-    sinceDate.setDate(sinceDate.getDate() - days);
-    const since = Math.floor(sinceDate.getTime() / 1000);
+    const dateRange = getDateRange(period, month, year);
+    const since = dateRange.since;
+    const until = dateRange.until;
 
     const report = {
       client: clientKey,
-      period: `Last ${days} days`,
-      facebook: { posts: [], total_engagement: 0, total_reach: 0 },
-      instagram: { posts: [], total_engagement: 0, total_reach: 0 },
+      period: dateRange.label,
+      date_range: {
+        since: new Date(since * 1000).toISOString().split('T')[0],
+        until: new Date(until * 1000).toISOString().split('T')[0],
+      },
+      facebook: { posts: [], total_engagement: 0, total_reach: 0, total_impressions: 0 },
+      instagram: { posts: [], total_engagement: 0, total_reach: 0, total_impressions: 0 },
     };
 
     // ─── Facebook Posts ──────────────────────────────────────────────────
@@ -84,6 +137,7 @@ module.exports = async function handler(req, res) {
 
           report.facebook.total_engagement += engagement;
           report.facebook.total_reach += impressions;
+          report.facebook.total_impressions += impressions;
         }
       } catch (fbErr) {
         report.facebook.error = fbErr.message || String(fbErr).substring(0, 200);
@@ -131,6 +185,7 @@ module.exports = async function handler(req, res) {
 
           report.instagram.total_engagement += engagement;
           report.instagram.total_reach += reach;
+          report.instagram.total_impressions += impressions;
         }
       } catch (igErr) {
         report.instagram.error = igErr.message || String(igErr).substring(0, 200);
