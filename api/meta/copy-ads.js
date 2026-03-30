@@ -94,22 +94,43 @@ module.exports = async function handler(req, res) {
 
     // 4. Upload images to target account and get new hashes
     const hashMapping = {}; // old hash -> new hash
+    const uploadErrors = [];
     for (const [oldHash, url] of Object.entries(hashToUrl)) {
       try {
-        const uploadResult = await graphPostForm(`/${targetAdAccount}/adimages`, {
-          url: url,
+        // Try copy_from (copies image between ad accounts using source hash)
+        const copyResult = await graphPostForm(`/${targetAdAccount}/adimages`, {
+          copy_from: `${sourceAdAccount}:${oldHash}`,
         });
-        // Meta returns: { images: { <filename>: { hash: "..." } } }
-        const uploaded = uploadResult.images;
-        if (uploaded) {
-          const firstKey = Object.keys(uploaded)[0];
-          if (firstKey && uploaded[firstKey].hash) {
-            hashMapping[oldHash] = uploaded[firstKey].hash;
+        const copied = copyResult.images;
+        if (copied) {
+          const firstKey = Object.keys(copied)[0];
+          if (firstKey && copied[firstKey].hash) {
+            hashMapping[oldHash] = copied[firstKey].hash;
+            continue;
           }
         }
-      } catch (uploadErr) {
-        // Try with bytes if URL upload fails
-        hashMapping[oldHash] = null; // Mark as failed
+        // If copy_from didn't return a hash, try URL upload as fallback
+        throw new Error('copy_from did not return hash');
+      } catch (copyErr) {
+        // Fallback: upload via URL
+        try {
+          const uploadResult = await graphPostForm(`/${targetAdAccount}/adimages`, {
+            url: url,
+          });
+          const uploaded = uploadResult.images;
+          if (uploaded) {
+            const firstKey = Object.keys(uploaded)[0];
+            if (firstKey && uploaded[firstKey].hash) {
+              hashMapping[oldHash] = uploaded[firstKey].hash;
+              continue;
+            }
+          }
+          hashMapping[oldHash] = null;
+          uploadErrors.push({ hash: oldHash, error: 'Upload returned no hash', response: JSON.stringify(uploadResult).substring(0, 200) });
+        } catch (uploadErr) {
+          hashMapping[oldHash] = null;
+          uploadErrors.push({ hash: oldHash, error: uploadErr.message || JSON.stringify(uploadErr).substring(0, 200) });
+        }
       }
     }
 
@@ -201,6 +222,8 @@ module.exports = async function handler(req, res) {
       target_account: targetAdAccount,
       image_hashes_mapped: Object.keys(hashMapping).length,
       image_hashes_failed: Object.values(hashMapping).filter(v => !v).length,
+      upload_errors: uploadErrors,
+      hash_mapping: hashMapping,
       ads: results,
     });
 

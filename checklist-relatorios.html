@@ -9750,7 +9750,18 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       // Re-render list to show updated status
       setTimeout(function() {
         var modal = document.getElementById('zappfySendModal'); if (modal) modal.remove();
-        if (typeof renderAll === 'function') renderAll();
+        // Reload cronograma status from Supabase then re-render
+        if (_supabase) {
+          _supabase.from('cronograma_status').select('*').then(function(res) {
+            if (res.data) {
+              if (typeof _cronogramaStatusCache === 'undefined') window._cronogramaStatusCache = {};
+              res.data.forEach(function(row) { _cronogramaStatusCache[row.id] = row; });
+            }
+            if (typeof renderSchedWeekly === 'function') renderSchedWeekly();
+          });
+        } else {
+          if (typeof renderAll === 'function') renderAll();
+        }
       }, 2000);
       return;
     }
