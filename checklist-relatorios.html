@@ -20178,6 +20178,719 @@ function cronogramaBuildHtml(clientName, clientLogo, tenant, tasks) {
 }
 
 
+// ═══════════════════════════════════════════════════════════════
+// GESTÃO DE TRÁFEGO (Traffic Management)
+// ═══════════════════════════════════════════════════════════════
+
+const TF_STATUSES = [
+  { key: 'planejamento',  label: 'Planejamento',  color: '#374151', bg: '#f3f4f6' },
+  { key: 'criacao',       label: 'Criação',       color: '#6d28d9', bg: '#ede9fe' },
+  { key: 'revisao',       label: 'Revisão',       color: '#dc2626', bg: '#fef2f2' },
+  { key: 'aprovado',      label: 'Aprovado',      color: '#059669', bg: '#ecfdf5' },
+  { key: 'subindo',       label: 'Subindo',       color: '#2563eb', bg: '#dbeafe' },
+  { key: 'ativo',         label: 'Ativo',         color: '#047857', bg: '#d1fae5' },
+  { key: 'otimizando',    label: 'Otimizando',    color: '#b45309', bg: '#fffbeb' },
+  { key: 'pausado',       label: 'Pausado',       color: '#0d9488', bg: '#f0fdfa' },
+  { key: 'finalizado',    label: 'Finalizado',    color: '#065f46', bg: '#d1fae5' },
+];
+
+const TF_OBJECTIVES = [
+  { key: 'OUTCOME_SALES',          label: 'Vendas',         color: '#059669', bg: '#ecfdf5' },
+  { key: 'OUTCOME_TRAFFIC',        label: 'Tráfego',        color: '#2563eb', bg: '#dbeafe' },
+  { key: 'OUTCOME_ENGAGEMENT',     label: 'Engajamento',    color: '#7c3aed', bg: '#ede9fe' },
+  { key: 'OUTCOME_LEADS',          label: 'Leads',          color: '#dc2626', bg: '#fef2f2' },
+  { key: 'OUTCOME_AWARENESS',      label: 'Reconhecimento', color: '#b45309', bg: '#fffbeb' },
+  { key: 'OUTCOME_APP_PROMOTION',  label: 'App',            color: '#0d9488', bg: '#f0fdfa' },
+];
+
+const TF_PRIORITIES = [
+  { key: 'urgente', label: 'Urgente', icon: '🚩', color: '#dc2626' },
+  { key: 'alta',    label: 'Alta',    icon: '🔴', color: '#f59e0b' },
+  { key: 'normal',  label: 'Normal',  icon: '🔵', color: '#3b82f6' },
+  { key: 'baixa',   label: 'Baixa',   icon: '⚪', color: '#6b7280' },
+];
+
+let tfGroups = [];
+let tfCurrentClient = '';
+let tfModalTask = null;
+let tfExpandedGroups = {};
+let tfSelectedIds = new Set();
+
+function tfApiBase() { return metaApiBase(); }
+
+async function tfApi(action, params) {
+  if (!params) params = {};
+  const r = await fetch(tfApiBase() + '/api/meta/traffic', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.assign({ action: action }, params))
+  });
+  return r.json();
+}
+
+function tfInit() {
+  const sel = document.getElementById('tfClientFilter');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Selecione o cliente...</option>';
+  var clients = _metaClients || {};
+  Object.entries(clients).forEach(function(entry) {
+    var key = entry[0];
+    var c = entry[1];
+    sel.innerHTML += '<option value="' + key + '">' + (c.name || key) + '</option>';
+  });
+  const sf = document.getElementById('tfStatusFilter');
+  if (sf) {
+    sf.innerHTML = '<option value="">Todos os status</option>';
+    TF_STATUSES.forEach(function(s) {
+      sf.innerHTML += '<option value="' + s.key + '">' + s.label + '</option>';
+    });
+  }
+  if (tfCurrentClient) {
+    sel.value = tfCurrentClient;
+    tfLoadGroups();
+  }
+}
+
+async function tfLoadGroups() {
+  const clientId = document.getElementById('tfClientFilter') ? document.getElementById('tfClientFilter').value : '';
+  const addBtn = document.getElementById('tfAddGroupBtn');
+  if (!clientId) {
+    tfGroups = [];
+    tfRenderList();
+    if (addBtn) addBtn.style.display = 'none';
+    return;
+  }
+  tfCurrentClient = clientId;
+  if (addBtn) addBtn.style.display = '';
+
+  const gRes = await tfApi('list_groups', { client_id: clientId });
+  const groups = gRes.data || [];
+
+  for (var i = 0; i < groups.length; i++) {
+    const tRes = await tfApi('list_tasks', { group_id: groups[i].id });
+    groups[i].tasks = tRes.data || [];
+  }
+  tfGroups = groups;
+  tfRenderList();
+}
+
+function tfGetStatus(key) { return TF_STATUSES.find(function(s) { return s.key === key; }) || TF_STATUSES[0]; }
+function tfGetObjective(key) { return TF_OBJECTIVES.find(function(o) { return o.key === key; }) || null; }
+function tfGetPriority(key) { return TF_PRIORITIES.find(function(p) { return p.key === key; }) || TF_PRIORITIES[2]; }
+
+function tfRenderList() {
+  const body = document.getElementById('tfListBody');
+  if (!body) return;
+
+  const statusFilter = document.getElementById('tfStatusFilter') ? document.getElementById('tfStatusFilter').value : '';
+  const assigneeFilter = document.getElementById('tfAssigneeFilter') ? document.getElementById('tfAssigneeFilter').value : '';
+
+  if (!tfGroups.length) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">'
+      + '<div style="font-size:2rem;margin-bottom:8px">📣</div>'
+      + (tfCurrentClient ? 'Nenhum grupo criado. Clique em "+ Novo Grupo"' : 'Selecione um cliente para ver as campanhas')
+      + '</div>';
+    return;
+  }
+
+  let html = '';
+  tfGroups.forEach(function(g) {
+    const expanded = tfExpandedGroups[g.id] !== false;
+    const taskCount = g.tasks ? g.tasks.length : (g.task_count || 0);
+
+    html += '<div class="ct-group-row" onclick="tfToggleGroup(\'' + g.id + '\')">'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<span style="font-size:0.7rem;transition:transform 0.2s;transform:rotate(' + (expanded ? 90 : 0) + 'deg)">▶</span>'
+      + '<span style="font-size:0.85rem">📁</span>'
+      + '<strong>' + g.name + '</strong>'
+      + '<span style="color:var(--text-secondary);font-size:0.8rem">(' + taskCount + ')</span>'
+      + '</div>'
+      + '<div style="display:flex;gap:4px">'
+      + '<button onclick="event.stopPropagation();tfDeleteGroup(\'' + g.id + '\',\'' + g.name.replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;font-size:0.9rem;padding:4px 8px;border-radius:6px;opacity:0.5" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.5">🗑️</button>'
+      + '</div>'
+      + '</div>';
+
+    if (expanded && g.tasks) {
+      g.tasks.forEach(function(task) {
+        if (statusFilter && task.status !== statusFilter) return;
+        if (assigneeFilter && task.assignee !== assigneeFilter) return;
+
+        const st = tfGetStatus(task.status);
+        const obj = tfGetObjective(task.campaign_objective);
+        const pri = tfGetPriority(task.priority);
+        const user = (typeof CT_USERS !== 'undefined' ? CT_USERS : []).find(function(u) { return u.name === task.assignee; });
+        const metrics = task.metrics || {};
+
+        html += '<div class="tf-task-row" data-id="' + task.id + '">'
+          + '<div style="display:flex;align-items:center;gap:8px;min-width:0">'
+          + '<input type="checkbox" ' + (tfSelectedIds.has(task.id) ? 'checked' : '') + ' onclick="event.stopPropagation();tfToggleSelect(\'' + task.id + '\')" style="cursor:pointer;accent-color:var(--accent,#3b82f6)">'
+          + '<span class="ct-task-name" onclick="tfOpenModal(\'' + task.id + '\')" style="cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + task.name + '</span>'
+          + (task.campaign_id ? '<span style="font-size:0.6rem;background:#dbeafe;color:#2563eb;padding:1px 5px;border-radius:4px;margin-left:4px">LINKED</span>' : '')
+          + '</div>'
+          + '<div>' + (obj ? '<span class="tf-obj-badge" style="background:' + obj.bg + ';color:' + obj.color + '">' + obj.label + '</span>' : '<span style="color:var(--text-secondary);font-size:0.8rem">—</span>') + '</div>'
+          + '<div><button class="ct-status-btn" style="background:' + st.bg + ';color:' + st.color + ';border:none;padding:4px 10px;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer" onclick="event.stopPropagation();tfShowStatusDropdown(event,\'' + task.id + '\')">' + st.label + '</button></div>'
+          + '<div>' + (task.assignee ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:0.7rem;font-weight:700;color:#fff;background:' + (user ? user.color : '#6b7280') + ';cursor:pointer" onclick="event.stopPropagation();tfShowAssigneeDropdown(event,\'' + task.id + '\')" title="' + task.assignee + '">' + task.assignee.substring(0,2).toUpperCase() + '</span>' : '<span style="color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();tfShowAssigneeDropdown(event,\'' + task.id + '\')">—</span>') + '</div>'
+          + '<div class="tf-budget">' + (task.budget_amount ? 'R$ ' + Number(task.budget_amount).toFixed(0) + '/' + (task.budget_type === 'lifetime' ? 'total' : 'dia') : '<span style="color:var(--text-secondary)">—</span>') + '</div>'
+          + '<div class="tf-metrics-mini">' + (metrics.spend ? '<span>R$' + Number(metrics.spend).toFixed(0) + '</span><span>CPC ' + Number(metrics.cpc || 0).toFixed(2) + '</span><span>CTR ' + Number(metrics.ctr || 0).toFixed(1) + '%</span>' : '<span style="color:var(--text-secondary);font-size:0.75rem">Sem métricas</span>') + '</div>'
+          + '<div style="cursor:pointer" onclick="event.stopPropagation();tfShowPriorityDropdown(event,\'' + task.id + '\')">' + pri.icon + '</div>'
+          + '</div>';
+      });
+
+      html += '<div style="padding:8px 16px 8px 48px">'
+        + '<input type="text" placeholder="+ Adicionar campanha..." '
+        + 'style="width:100%;border:none;background:transparent;font-size:0.85rem;color:var(--text);outline:none;padding:6px 0;border-bottom:1px solid transparent;font-family:inherit"'
+        + ' onfocus="this.style.borderBottomColor=\'var(--accent,#3b82f6)\'"'
+        + ' onblur="this.style.borderBottomColor=\'transparent\'"'
+        + ' onkeydown="if(event.key===\'Enter\'&&this.value.trim()){tfAddTask(\'' + g.id + '\',this.value.trim());this.value=\'\'}">'
+        + '</div>';
+    }
+  });
+
+  body.innerHTML = html;
+  tfUpdateActionBar();
+}
+
+function tfToggleGroup(id) {
+  tfExpandedGroups[id] = tfExpandedGroups[id] === false ? true : (tfExpandedGroups[id] === undefined ? false : !tfExpandedGroups[id]);
+  tfRenderList();
+}
+
+async function tfAddTask(groupId, name) {
+  await tfApi('upsert_task', {
+    group_id: groupId,
+    client_id: tfCurrentClient,
+    name: name,
+    user: typeof _currentUser !== 'undefined' ? _currentUser : 'Juan'
+  });
+  await tfLoadGroups();
+}
+
+async function tfDeleteGroup(id, name) {
+  if (!confirm('Excluir grupo "' + name + '"?')) return;
+  await tfApi('delete_group', { id: id });
+  await tfLoadGroups();
+}
+
+// ── Status/Assignee/Priority Dropdowns ──
+
+function tfShowStatusDropdown(event, taskId) {
+  event.stopPropagation();
+  const btn = event.target;
+  const rect = btn.getBoundingClientRect();
+
+  document.querySelectorAll('.tf-dropdown').forEach(function(d) { d.remove(); });
+
+  const dd = document.createElement('div');
+  dd.className = 'tf-dropdown';
+  dd.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;background:var(--card,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;padding:6px;min-width:160px';
+
+  TF_STATUSES.forEach(function(s) {
+    const opt = document.createElement('div');
+    opt.style.cssText = 'padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;font-weight:500;display:flex;align-items:center;gap:8px';
+    opt.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + s.color + '"></span>' + s.label;
+    opt.onmouseover = function() { opt.style.background = 'var(--hover,#f3f4f6)'; };
+    opt.onmouseout = function() { opt.style.background = 'none'; };
+    opt.onclick = async function() {
+      dd.remove();
+      btn.textContent = s.label;
+      btn.style.background = s.bg;
+      btn.style.color = s.color;
+      await tfApi('change_status', { id: taskId, status: s.key, user: typeof _currentUser !== 'undefined' ? _currentUser : 'Juan' });
+      for (var i = 0; i < tfGroups.length; i++) {
+        var t = (tfGroups[i].tasks || []).find(function(x) { return x.id === taskId; });
+        if (t) { t.status = s.key; break; }
+      }
+    };
+    dd.appendChild(opt);
+  });
+
+  document.body.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function handler() {
+      dd.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 10);
+}
+
+function tfShowAssigneeDropdown(event, taskId) {
+  event.stopPropagation();
+  const el = event.target;
+  const rect = el.getBoundingClientRect();
+
+  document.querySelectorAll('.tf-dropdown').forEach(function(d) { d.remove(); });
+
+  const users = typeof CT_USERS !== 'undefined' ? CT_USERS : [
+    { name: 'Juan', color: '#3b82f6' },
+    { name: 'Henrique', color: '#10b981' },
+    { name: 'Emily', color: '#f59e0b' },
+    { name: 'Leonardo', color: '#8b5cf6' },
+    { name: 'Dante', color: '#ef4444' },
+  ];
+
+  const dd = document.createElement('div');
+  dd.className = 'tf-dropdown';
+  dd.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;background:var(--card,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;padding:6px;min-width:140px';
+
+  const unOpt = document.createElement('div');
+  unOpt.style.cssText = 'padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;color:var(--text-secondary)';
+  unOpt.textContent = '— Remover';
+  unOpt.onmouseover = function() { unOpt.style.background = 'var(--hover,#f3f4f6)'; };
+  unOpt.onmouseout = function() { unOpt.style.background = 'none'; };
+  unOpt.onclick = async function() {
+    dd.remove();
+    await tfApi('upsert_task', { id: taskId, assignee: null });
+    await tfLoadGroups();
+  };
+  dd.appendChild(unOpt);
+
+  users.forEach(function(u) {
+    const opt = document.createElement('div');
+    opt.style.cssText = 'padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:8px';
+    opt.innerHTML = '<span style="width:22px;height:22px;border-radius:50%;background:' + u.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700">' + u.name.substring(0,2).toUpperCase() + '</span>' + u.name;
+    opt.onmouseover = function() { opt.style.background = 'var(--hover,#f3f4f6)'; };
+    opt.onmouseout = function() { opt.style.background = 'none'; };
+    opt.onclick = async function() {
+      dd.remove();
+      await tfApi('upsert_task', { id: taskId, assignee: u.name });
+      await tfLoadGroups();
+    };
+    dd.appendChild(opt);
+  });
+
+  document.body.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function handler() {
+      dd.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 10);
+}
+
+function tfShowPriorityDropdown(event, taskId) {
+  event.stopPropagation();
+  const el = event.target;
+  const rect = el.getBoundingClientRect();
+
+  document.querySelectorAll('.tf-dropdown').forEach(function(d) { d.remove(); });
+
+  const dd = document.createElement('div');
+  dd.className = 'tf-dropdown';
+  dd.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;background:var(--card,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;padding:6px;min-width:140px';
+
+  TF_PRIORITIES.forEach(function(p) {
+    const opt = document.createElement('div');
+    opt.style.cssText = 'padding:6px 10px;border-radius:6px;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;gap:8px';
+    opt.innerHTML = p.icon + ' ' + p.label;
+    opt.onmouseover = function() { opt.style.background = 'var(--hover,#f3f4f6)'; };
+    opt.onmouseout = function() { opt.style.background = 'none'; };
+    opt.onclick = async function() {
+      dd.remove();
+      await tfApi('upsert_task', { id: taskId, priority: p.key });
+      for (var i = 0; i < tfGroups.length; i++) {
+        var t = (tfGroups[i].tasks || []).find(function(x) { return x.id === taskId; });
+        if (t) { t.priority = p.key; break; }
+      }
+      tfRenderList();
+    };
+    dd.appendChild(opt);
+  });
+
+  document.body.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function handler() {
+      dd.remove();
+      document.removeEventListener('click', handler);
+    });
+  }, 10);
+}
+
+// ── Selection ──
+
+function tfToggleSelect(id) {
+  if (tfSelectedIds.has(id)) tfSelectedIds.delete(id);
+  else tfSelectedIds.add(id);
+  tfUpdateActionBar();
+}
+
+function tfToggleSelectAll() {
+  const all = document.getElementById('tfSelectAll');
+  tfSelectedIds.clear();
+  if (all && all.checked) {
+    tfGroups.forEach(function(g) {
+      (g.tasks || []).forEach(function(t) { tfSelectedIds.add(t.id); });
+    });
+  }
+  tfRenderList();
+}
+
+function tfClearSelection() {
+  tfSelectedIds.clear();
+  const all = document.getElementById('tfSelectAll');
+  if (all) all.checked = false;
+  tfRenderList();
+}
+
+function tfUpdateActionBar() {
+  const bar = document.getElementById('tfActionBar');
+  const count = document.getElementById('tfSelCount');
+  if (!bar) return;
+  if (tfSelectedIds.size > 0) {
+    bar.style.display = 'flex';
+    if (count) count.textContent = tfSelectedIds.size;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+// ── Bulk Operations ──
+
+async function tfBulkChangeStatus() {
+  document.querySelectorAll('.tf-dropdown').forEach(function(d) { d.remove(); });
+  const dd = document.createElement('div');
+  dd.className = 'tf-dropdown';
+  dd.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;padding:8px;min-width:180px';
+  TF_STATUSES.forEach(function(s) {
+    const opt = document.createElement('div');
+    opt.style.cssText = 'padding:8px 12px;border-radius:8px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:8px';
+    opt.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:' + s.color + '"></span>' + s.label;
+    opt.onmouseover = function() { opt.style.background = 'var(--hover,#f3f4f6)'; };
+    opt.onmouseout = function() { opt.style.background = 'none'; };
+    opt.onclick = async function() {
+      dd.remove();
+      var ids = Array.from(tfSelectedIds);
+      for (var i = 0; i < ids.length; i++) {
+        await tfApi('change_status', { id: ids[i], status: s.key, user: typeof _currentUser !== 'undefined' ? _currentUser : 'Juan' });
+      }
+      tfClearSelection();
+      await tfLoadGroups();
+    };
+    dd.appendChild(opt);
+  });
+  document.body.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function handler(e) {
+      if (!dd.contains(e.target)) { dd.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 10);
+}
+
+async function tfBulkChangeAssignee() {
+  const name = prompt('Nome do responsável (Juan, Henrique, Emily, Leonardo, Dante):');
+  if (!name) return;
+  var ids = Array.from(tfSelectedIds);
+  for (var i = 0; i < ids.length; i++) {
+    await tfApi('upsert_task', { id: ids[i], assignee: name });
+  }
+  tfClearSelection();
+  await tfLoadGroups();
+}
+
+async function tfBulkChangePriority() {
+  document.querySelectorAll('.tf-dropdown').forEach(function(d) { d.remove(); });
+  const dd = document.createElement('div');
+  dd.className = 'tf-dropdown';
+  dd.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card,#fff);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.15);z-index:9999;padding:8px;min-width:160px';
+  TF_PRIORITIES.forEach(function(p) {
+    const opt = document.createElement('div');
+    opt.style.cssText = 'padding:8px 12px;border-radius:8px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;gap:8px';
+    opt.innerHTML = p.icon + ' ' + p.label;
+    opt.onmouseover = function() { opt.style.background = 'var(--hover,#f3f4f6)'; };
+    opt.onmouseout = function() { opt.style.background = 'none'; };
+    opt.onclick = async function() {
+      dd.remove();
+      var ids = Array.from(tfSelectedIds);
+      for (var i = 0; i < ids.length; i++) {
+        await tfApi('upsert_task', { id: ids[i], priority: p.key });
+      }
+      tfClearSelection();
+      await tfLoadGroups();
+    };
+    dd.appendChild(opt);
+  });
+  document.body.appendChild(dd);
+  setTimeout(function() {
+    document.addEventListener('click', function handler(e) {
+      if (!dd.contains(e.target)) { dd.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 10);
+}
+
+async function tfBulkSyncMetrics() {
+  if (!tfCurrentClient) return;
+  const res = await tfApi('bulk_sync_metrics', { client_id: tfCurrentClient });
+  if (res.error) { alert('Erro: ' + res.message); return; }
+  alert('Métricas atualizadas: ' + (res.synced || 0) + ' campanhas');
+  await tfLoadGroups();
+}
+
+async function tfBulkDelete() {
+  if (!confirm('Excluir ' + tfSelectedIds.size + ' campanhas?')) return;
+  var ids = Array.from(tfSelectedIds);
+  for (var i = 0; i < ids.length; i++) {
+    await tfApi('delete_task', { id: ids[i] });
+  }
+  tfClearSelection();
+  await tfLoadGroups();
+}
+
+// ── New Group Modal ──
+
+function tfShowNewGroupModal() {
+  document.querySelectorAll('.tf-new-group-overlay').forEach(function(d) { d.remove(); });
+
+  const overlay = document.createElement('div');
+  overlay.className = 'tf-new-group-overlay open';
+  overlay.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    + '<div style="padding:20px 24px;border-bottom:1px solid var(--border)">'
+    + '<h3 style="margin:0;font-size:1.1rem">📣 Novo Grupo de Campanhas</h3>'
+    + '</div>'
+    + '<div style="padding:20px 24px">'
+    + '<label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Nome do Grupo</label>'
+    + '<input type="text" id="tfNewGroupName" placeholder="Ex: Campanhas Abril, Black Friday, Vagas..." '
+    + 'style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.95rem;font-family:inherit;background:var(--bg);color:var(--text)"'
+    + ' onkeydown="if(event.key===\'Enter\')tfCreateNewGroup()">'
+    + '<label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);display:block;margin-top:16px;margin-bottom:6px">Campanhas iniciais (uma por linha)</label>'
+    + '<textarea id="tfNewGroupTasks" rows="5" placeholder="[VENDAS][01]&#10;[TRAFEGO][PERFIL]&#10;[LEADS][FORM]" '
+    + 'style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:0.88rem;font-family:inherit;resize:vertical;background:var(--bg);color:var(--text)"></textarea>'
+    + '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
+    + '<button onclick="document.querySelectorAll(\'.tf-new-group-overlay\').forEach(function(d){d.remove()})" style="padding:8px 20px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit">Cancelar</button>'
+    + '<button onclick="tfCreateNewGroup()" style="padding:8px 20px;border:none;border-radius:8px;background:#3b82f6;color:#fff;cursor:pointer;font-weight:600;font-family:inherit">Criar Grupo</button>'
+    + '</div>'
+    + '</div>'
+    + '</div>';
+
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+  var inp = document.getElementById('tfNewGroupName');
+  if (inp) inp.focus();
+}
+
+async function tfCreateNewGroup() {
+  const nameEl = document.getElementById('tfNewGroupName');
+  const name = nameEl ? nameEl.value.trim() : '';
+  if (!name) return;
+
+  const res = await tfApi('upsert_group', {
+    client_id: tfCurrentClient,
+    name: name,
+    user: typeof _currentUser !== 'undefined' ? _currentUser : 'Juan'
+  });
+
+  if (res.data && res.data.id) {
+    const tasksEl = document.getElementById('tfNewGroupTasks');
+    const lines = tasksEl ? tasksEl.value.split('\n').map(function(l) { return l.trim(); }).filter(Boolean) : [];
+    for (var i = 0; i < lines.length; i++) {
+      await tfApi('upsert_task', {
+        group_id: res.data.id,
+        client_id: tfCurrentClient,
+        name: lines[i],
+        user: typeof _currentUser !== 'undefined' ? _currentUser : 'Juan'
+      });
+    }
+  }
+
+  document.querySelectorAll('.tf-new-group-overlay').forEach(function(d) { d.remove(); });
+  await tfLoadGroups();
+}
+
+// ── Task Modal ──
+
+async function tfOpenModal(taskId) {
+  const res = await tfApi('get_task', { id: taskId });
+  if (res.error) return;
+  tfModalTask = res.data;
+
+  document.querySelectorAll('.tf-modal-overlay').forEach(function(d) { d.remove(); });
+
+  const task = tfModalTask;
+  const st = tfGetStatus(task.status);
+  const metrics = task.metrics || {};
+
+  var commentsHtml = (task.comments || []).map(function(c) {
+    return '<div style="padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+      + '<strong style="font-size:0.8rem">' + c.author + '</strong>'
+      + '<span style="font-size:0.7rem;color:var(--text-secondary)">' + new Date(c.created_at).toLocaleString('pt-BR') + '</span>'
+      + '</div>'
+      + '<div style="font-size:0.85rem">' + c.body + '</div>'
+      + '</div>';
+  }).join('');
+
+  var activityHtml = (task.activity || []).map(function(a) {
+    return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:0.78rem;display:flex;gap:8px">'
+      + '<span style="color:var(--text-secondary)">' + new Date(a.created_at).toLocaleString('pt-BR') + '</span>'
+      + '<strong>' + a.actor + '</strong>'
+      + '<span>' + a.action + (a.details ? ': ' + a.details : '') + '</span>'
+      + '</div>';
+  }).join('');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'tf-modal-overlay open';
+
+  overlay.innerHTML = '<div class="tf-modal">'
+    + '<div class="tf-modal-header">'
+    + '<input type="text" value="' + (task.name || '').replace(/"/g, '&quot;') + '" id="tfModalName"'
+    + ' style="border:none;font-size:1.1rem;font-weight:700;flex:1;background:transparent;color:var(--text);font-family:inherit;outline:none"'
+    + ' onchange="tfSaveTaskField(\'name\',this.value)">'
+    + '<div style="display:flex;gap:8px;align-items:center">'
+    + (task.campaign_id ? '<span style="font-size:0.7rem;background:#dbeafe;color:#2563eb;padding:3px 8px;border-radius:6px">ID: ' + task.campaign_id + '</span>' : '')
+    + '<button onclick="tfSyncTaskMetrics(\'' + task.id + '\')" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer;font-size:0.8rem;font-family:inherit">📊 Sync</button>'
+    + '<button onclick="tfCloseModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary);padding:4px 8px;border-radius:6px">✕</button>'
+    + '</div>'
+    + '</div>'
+    + '<div class="tf-modal-body">'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">'
+    + '<button class="ct-status-btn" style="background:' + st.bg + ';color:' + st.color + ';border:none;padding:6px 14px;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer" onclick="tfShowModalStatusDropdown(event)">' + st.label + '</button>'
+    + '<select onchange="tfSaveTaskField(\'assignee\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit">'
+    + '<option value="">Sem responsável</option>'
+    + '<option value="Juan"' + (task.assignee==='Juan'?' selected':'') + '>Juan</option>'
+    + '<option value="Henrique"' + (task.assignee==='Henrique'?' selected':'') + '>Henrique</option>'
+    + '<option value="Emily"' + (task.assignee==='Emily'?' selected':'') + '>Emily</option>'
+    + '<option value="Leonardo"' + (task.assignee==='Leonardo'?' selected':'') + '>Leonardo</option>'
+    + '<option value="Dante"' + (task.assignee==='Dante'?' selected':'') + '>Dante</option>'
+    + '</select>'
+    + '<input type="date" value="' + (task.due_date || '') + '" onchange="tfSaveTaskField(\'due_date\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);font-family:inherit">'
+    + '<select onchange="tfSaveTaskField(\'priority\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit">'
+    + TF_PRIORITIES.map(function(p) { return '<option value="' + p.key + '"' + (task.priority===p.key?' selected':'') + '>' + p.icon + ' ' + p.label + '</option>'; }).join('')
+    + '</select>'
+    + '</div>'
+    + '<div class="tf-modal-section"><h4>Configuração da Campanha</h4>'
+    + '<div class="tf-field-grid">'
+    + '<div class="tf-field"><label>Objetivo</label><select id="tfModalObjective" onchange="tfSaveTaskField(\'campaign_objective\',this.value)"><option value="">Selecione...</option>'
+    + TF_OBJECTIVES.map(function(o) { return '<option value="' + o.key + '"' + (task.campaign_objective===o.key?' selected':'') + '>' + o.label + '</option>'; }).join('')
+    + '</select></div>'
+    + '<div class="tf-field"><label>Plataforma</label><select onchange="tfSaveTaskField(\'platform\',this.value)"><option value="both"' + (task.platform==='both'?' selected':'') + '>Facebook + Instagram</option><option value="facebook"' + (task.platform==='facebook'?' selected':'') + '>Facebook</option><option value="instagram"' + (task.platform==='instagram'?' selected':'') + '>Instagram</option></select></div>'
+    + '<div class="tf-field"><label>Tipo de Orçamento</label><select id="tfModalBudgetType" onchange="tfSaveTaskField(\'budget_type\',this.value)"><option value="daily"' + (task.budget_type==='daily'?' selected':'') + '>Diário</option><option value="lifetime"' + (task.budget_type==='lifetime'?' selected':'') + '>Vitalício</option></select></div>'
+    + '<div class="tf-field"><label>Valor (R$)</label><input type="number" value="' + (task.budget_amount || '') + '" placeholder="0.00" step="0.01" onchange="tfSaveTaskField(\'budget_amount\',this.value)"></div>'
+    + '</div></div>'
+    + '<div class="tf-modal-section"><h4>Público-Alvo</h4><div class="tf-field"><textarea placeholder="Descreva o público-alvo, segmentação, interesses..." onchange="tfSaveTaskField(\'target_audience\',this.value)">' + (task.target_audience || '') + '</textarea></div></div>'
+    + '<div class="tf-modal-section"><h4>Vincular Campanha Meta</h4>'
+    + '<div style="display:flex;gap:8px">'
+    + '<input type="text" id="tfModalCampaignId" value="' + (task.campaign_id || '') + '" placeholder="ID da campanha Meta" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--bg);color:var(--text)">'
+    + '<button onclick="tfLinkCampaign(\'' + task.id + '\')" style="padding:8px 16px;border:none;border-radius:8px;background:#3b82f6;color:#fff;cursor:pointer;font-weight:600;font-size:0.85rem;font-family:inherit">Vincular</button>'
+    + '<button onclick="tfLoadCampaigns()" style="padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--card);cursor:pointer;font-size:0.85rem;font-family:inherit">🔍</button>'
+    + '</div>'
+    + '<div id="tfCampaignList" style="margin-top:8px"></div>'
+    + '</div>'
+    + '<div class="tf-modal-section"><h4>Métricas ' + (task.metrics_updated_at ? '<span style="font-weight:400;font-size:0.7rem;color:var(--text-secondary)">Atualizado: ' + new Date(task.metrics_updated_at).toLocaleString('pt-BR') + '</span>' : '') + '</h4>'
+    + '<div class="tf-metrics-grid">'
+    + tfRenderMetricCard('Investimento', metrics.spend ? 'R$ ' + Number(metrics.spend).toFixed(2) : '—')
+    + tfRenderMetricCard('Impressões', metrics.impressions ? Number(metrics.impressions).toLocaleString('pt-BR') : '—')
+    + tfRenderMetricCard('Cliques', metrics.clicks ? Number(metrics.clicks).toLocaleString('pt-BR') : '—')
+    + tfRenderMetricCard('CPC', metrics.cpc ? 'R$ ' + Number(metrics.cpc).toFixed(2) : '—')
+    + tfRenderMetricCard('CTR', metrics.ctr ? Number(metrics.ctr).toFixed(2) + '%' : '—')
+    + tfRenderMetricCard('CPM', metrics.cpm ? 'R$ ' + Number(metrics.cpm).toFixed(2) : '—')
+    + tfRenderMetricCard('Alcance', metrics.reach ? Number(metrics.reach).toLocaleString('pt-BR') : '—')
+    + tfRenderMetricCard('ROAS', metrics.purchase_roas ? Number(metrics.purchase_roas).toFixed(2) + 'x' : '—')
+    + tfRenderMetricCard('Compras', metrics.purchases || '—')
+    + tfRenderMetricCard('Custo/Compra', metrics.cost_per_purchase ? 'R$ ' + Number(metrics.cost_per_purchase).toFixed(2) : '—')
+    + tfRenderMetricCard('Leads', metrics.leads || '—')
+    + tfRenderMetricCard('Add to Cart', metrics.add_to_cart || '—')
+    + '</div></div>'
+    + '<div class="tf-modal-section"><h4>Notas</h4><div class="tf-field"><textarea rows="3" placeholder="Observações, anotações..." onchange="tfSaveTaskField(\'notes\',this.value)">' + (task.notes || '') + '</textarea></div></div>'
+    + '<div class="tf-modal-section"><h4>Descrição</h4><div class="tf-field"><textarea rows="3" placeholder="Descrição detalhada da campanha..." onchange="tfSaveTaskField(\'description\',this.value)">' + (task.description || '') + '</textarea></div></div>'
+    + '<div class="tf-modal-section"><h4>Comentários</h4>'
+    + '<div id="tfModalComments">' + commentsHtml + '</div>'
+    + '<div style="display:flex;gap:8px;margin-top:8px">'
+    + '<input type="text" id="tfCommentInput" placeholder="Adicionar comentário..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--bg);color:var(--text)" onkeydown="if(event.key===\'Enter\')tfAddComment()">'
+    + '<button onclick="tfAddComment()" style="padding:8px 16px;border:none;border-radius:8px;background:#3b82f6;color:#fff;cursor:pointer;font-size:0.85rem;font-family:inherit">Enviar</button>'
+    + '</div></div>'
+    + '<div class="tf-modal-section"><h4>Atividade</h4>'
+    + '<div id="tfModalActivity" style="max-height:200px;overflow-y:auto">' + activityHtml + '</div>'
+    + '</div>'
+    + '</div></div>';
+
+  overlay.onclick = function(e) { if (e.target === overlay) tfCloseModal(); };
+  document.body.appendChild(overlay);
+}
+
+function tfRenderMetricCard(label, value) {
+  return '<div class="tf-metric-card"><div class="tf-metric-value">' + value + '</div><div class="tf-metric-label">' + label + '</div></div>';
+}
+
+function tfCloseModal() {
+  document.querySelectorAll('.tf-modal-overlay').forEach(function(d) { d.remove(); });
+  tfModalTask = null;
+  tfLoadGroups();
+}
+
+async function tfSaveTaskField(field, value) {
+  if (!tfModalTask) return;
+  var payload = { id: tfModalTask.id };
+  payload[field] = value;
+  await tfApi('upsert_task', payload);
+  tfModalTask[field] = value;
+}
+
+function tfShowModalStatusDropdown(event) {
+  if (!tfModalTask) return;
+  tfShowStatusDropdown(event, tfModalTask.id);
+}
+
+async function tfAddComment() {
+  if (!tfModalTask) return;
+  const input = document.getElementById('tfCommentInput');
+  const body = input ? input.value.trim() : '';
+  if (!body) return;
+
+  await tfApi('add_comment', {
+    task_id: tfModalTask.id,
+    author: typeof _currentUser !== 'undefined' ? _currentUser : 'Juan',
+    body: body
+  });
+  if (input) input.value = '';
+  tfOpenModal(tfModalTask.id);
+}
+
+async function tfSyncTaskMetrics(taskId) {
+  if (!tfCurrentClient) return;
+  const res = await tfApi('sync_metrics', { task_id: taskId, client_id: tfCurrentClient });
+  if (res.error) { alert('Erro: ' + (res.message || 'Falha ao sincronizar')); return; }
+  tfOpenModal(taskId);
+}
+
+async function tfLinkCampaign(taskId) {
+  const el = document.getElementById('tfModalCampaignId');
+  const campaignId = el ? el.value.trim() : '';
+  if (!campaignId) return;
+
+  const res = await tfApi('link_campaign', {
+    task_id: taskId,
+    campaign_id: campaignId,
+    client_id: tfCurrentClient
+  });
+  if (res.error) { alert('Erro: ' + (res.message || 'Falha ao vincular')); return; }
+  tfOpenModal(taskId);
+}
+
+async function tfLoadCampaigns() {
+  const listEl = document.getElementById('tfCampaignList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="padding:8px;font-size:0.8rem;color:var(--text-secondary)">Carregando campanhas...</div>';
+
+  try {
+    const res = await fetch(tfApiBase() + '/api/meta/campaigns?client=' + tfCurrentClient);
+    const data = await res.json();
+
+    if (!data.campaigns || !data.campaigns.length) {
+      listEl.innerHTML = '<div style="padding:8px;font-size:0.8rem;color:var(--text-secondary)">Nenhuma campanha encontrada</div>';
+      return;
+    }
+
+    listEl.innerHTML = data.campaigns.map(function(c) {
+      return '<div style="padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:4px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:0.82rem"'
+        + ' onclick="var el=document.getElementById(\'tfModalCampaignId\');if(el)el.value=\'' + c.id + '\'"'
+        + ' onmouseover="this.style.background=\'var(--hover,#f3f4f6)\'" onmouseout="this.style.background=\'\'">'
+        + '<div><strong>' + c.name + '</strong><span style="color:var(--text-secondary);margin-left:8px">' + (c.objective || '') + '</span></div>'
+        + '<span style="font-size:0.7rem;color:var(--text-secondary)">' + c.status + '</span>'
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="padding:8px;font-size:0.8rem;color:#dc2626">Erro: ' + e.message + '</div>';
+  }
+}
+
 </script>
 
 <!-- ═══ NEW GROUP MODAL ═══ -->
