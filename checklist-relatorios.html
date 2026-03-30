@@ -6115,6 +6115,23 @@ function setReportStatus(clientId, type, period, newStatus) {
   }
   saveData(data);
   showToast('Status: ' + STATUS_LABELS_SHORT[newStatus]);
+  // Sync sched-weekly status to Supabase cronograma_status
+  if (type === 'sched-weekly' && _supabase) {
+    var csId = clientId + '_' + period;
+    var upsertData = {
+      id: csId, client_id: clientId, period_key: period,
+      status: newStatus, updated_at: new Date().toISOString()
+    };
+    if (newStatus === 0) { upsertData.pdf_url = null; upsertData.pdf_name = null; upsertData.generated_at = null; }
+    _supabase.from('cronograma_status').upsert(upsertData, { onConflict: 'id' }).then(function(res) {
+      if (res.error) console.warn('cronograma_status sync error:', res.error);
+      else {
+        // Update local cache
+        _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, upsertData);
+        console.log('cronograma_status synced:', csId, '→', newStatus);
+      }
+    });
+  }
   renderAll();
 }
 
@@ -6173,6 +6190,20 @@ function saveSentDate() {
   saveData(data);
   document.getElementById('sentDateModal').classList.remove('active');
   showToast('Enviado em ' + new Date(sentDate).toLocaleDateString('pt-BR'));
+  // Sync sched-weekly sent status to Supabase
+  if (type === 'sched-weekly' && _supabase) {
+    var csId = clientId + '_' + period;
+    _supabase.from('cronograma_status').upsert({
+      id: csId, client_id: clientId, period_key: period,
+      status: 2, sent: true, sent_date: sentDate, updated_at: new Date().toISOString()
+    }, { onConflict: 'id' }).then(function(res) {
+      if (res.error) console.warn('cronograma_status sent sync error:', res.error);
+      else {
+        _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, { status: 2, sent: true, sent_date: sentDate });
+        console.log('cronograma_status sent synced:', csId);
+      }
+    });
+  }
   renderAll();
   // Atualiza modal de relatórios do cliente se estiver aberto
   if (_clientReportsCurrentId) renderClientReportsList(_clientReportsCurrentId);
