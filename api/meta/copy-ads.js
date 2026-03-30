@@ -67,7 +67,7 @@ module.exports = async function handler(req, res) {
       images.forEach(img => { if (img.hash) allHashes.add(img.hash); });
     }
 
-    // 3. Get image URLs from source account
+    // 3. Get image URLs from source account (used directly in creatives — no re-upload needed)
     let hashToUrl = {};
     if (allHashes.size > 0) {
       const hashArray = [...allHashes];
@@ -77,27 +77,26 @@ module.exports = async function handler(req, res) {
       });
 
       const images = imgResult.data || [];
-      // Meta returns images as array with hash, url, permalink_url fields
       if (Array.isArray(images)) {
         images.forEach(img => {
-          hashToUrl[img.hash] = img.permalink_url || img.url || img.url_128;
+          hashToUrl[img.hash] = img.url || img.permalink_url || img.url_128;
         });
       } else if (typeof images === 'object') {
-        // Fallback: keyed by hash
         for (const [hash, imgData] of Object.entries(images)) {
           hashToUrl[hash] = (typeof imgData === 'object')
-            ? (imgData.permalink_url || imgData.url || imgData.url_128)
+            ? (imgData.url || imgData.permalink_url || imgData.url_128)
             : imgData;
         }
       }
     }
 
-    // 4. Upload images to target account and get new hashes
-    const hashMapping = {}; // old hash -> new hash
+    // 4. Try to upload images to target account; fallback to URL-based creatives
+    const hashMapping = {}; // old hash -> new hash (null = use URL instead)
     const uploadErrors = [];
+    let useUrlFallback = false;
+
     for (const [oldHash, url] of Object.entries(hashToUrl)) {
       try {
-        // Try copy_from (copies image between ad accounts using source hash)
         const copyResult = await graphPostForm(`/${targetAdAccount}/adimages`, {
           copy_from: `${sourceAdAccount}:${oldHash}`,
         });
@@ -109,14 +108,10 @@ module.exports = async function handler(req, res) {
             continue;
           }
         }
-        // If copy_from didn't return a hash, try URL upload as fallback
         throw new Error('copy_from did not return hash');
       } catch (copyErr) {
-        // Fallback: upload via URL
         try {
-          const uploadResult = await graphPostForm(`/${targetAdAccount}/adimages`, {
-            url: url,
-          });
+          const uploadResult = await graphPostForm(`/${targetAdAccount}/adimages`, { url });
           const uploaded = uploadResult.images;
           if (uploaded) {
             const firstKey = Object.keys(uploaded)[0];
@@ -125,11 +120,11 @@ module.exports = async function handler(req, res) {
               continue;
             }
           }
-          hashMapping[oldHash] = null;
-          uploadErrors.push({ hash: oldHash, error: 'Upload returned no hash', response: JSON.stringify(uploadResult).substring(0, 200) });
+          throw new Error('URL upload returned no hash');
         } catch (uploadErr) {
           hashMapping[oldHash] = null;
-          uploadErrors.push({ hash: oldHash, error: uploadErr.message || JSON.stringify(uploadErr).substring(0, 200) });
+          useUrlFallback = true;
+          uploadErrors.push({ hash: oldHash, error: uploadErr.message || String(uploadErr).substring(0, 200) });
         }
       }
     }
@@ -144,11 +139,17 @@ module.exports = async function handler(req, res) {
           continue;
         }
 
-        // Remap image hashes
+        // Remap image hashes or use URLs as fallback
         const newImages = (spec.images || []).map(img => {
           const newHash = hashMapping[img.hash];
-          if (!newHash) return null;
-          return { ...img, hash: newHash, adlabels: undefined }; // Remove old adlabels
+          const imgUrl = hashToUrl[img.hash];
+          if (newHash) {
+            return { hash: newHash }; // Clean: only hash, no old adlabels
+          }
+          if (useUrlFallback && imgUrl) {
+            return { url: imgUrl }; // Use URL directly (no upload needed)
+          }
+          return null;
         }).filter(Boolean);
 
         if (newImages.length === 0) {
@@ -222,6 +223,7 @@ module.exports = async function handler(req, res) {
       target_account: targetAdAccount,
       image_hashes_mapped: Object.keys(hashMapping).length,
       image_hashes_failed: Object.values(hashMapping).filter(v => !v).length,
+      used_url_fallback: useUrlFallback,
       upload_errors: uploadErrors,
       hash_mapping: hashMapping,
       ads: results,
