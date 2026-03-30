@@ -99,9 +99,11 @@ module.exports = async function handler(req, res) {
     // ─── Facebook Posts ──────────────────────────────────────────────────
     if (pageId) {
       try {
-        const fbResult = await graphGet(`/${pageId}/feed`, {
-          fields: 'id,message,story,type,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0),insights.metric(post_impressions,post_engaged_users,post_clicks)',
+        // Try with page token first (simpler fields)
+        const fbResult = await graphGet(`/${pageId}/posts`, {
+          fields: 'id,message,story,type,created_time,permalink_url,shares,likes.summary(true).limit(0),comments.summary(true).limit(0)',
           since: since.toString(),
+          until: until.toString(),
           limit: '50',
         });
 
@@ -111,15 +113,6 @@ module.exports = async function handler(req, res) {
           const comments = post.comments?.summary?.total_count || 0;
           const shares = post.shares || 0;
           const engagement = likes + comments + shares;
-
-          let impressions = 0;
-          let clicks = 0;
-          if (post.insights?.data) {
-            const impData = post.insights.data.find(i => i.name === 'post_impressions');
-            const clickData = post.insights.data.find(i => i.name === 'post_clicks');
-            impressions = impData?.values?.[0]?.value || 0;
-            clicks = clickData?.values?.[0]?.value || 0;
-          }
 
           report.facebook.posts.push({
             id: post.id,
@@ -131,13 +124,11 @@ module.exports = async function handler(req, res) {
             comments,
             shares,
             engagement,
-            impressions,
-            clicks,
+            impressions: 0, // Not available without page insights permission
+            clicks: 0,
           });
 
           report.facebook.total_engagement += engagement;
-          report.facebook.total_reach += impressions;
-          report.facebook.total_impressions += impressions;
         }
       } catch (fbErr) {
         report.facebook.error = fbErr.message || String(fbErr).substring(0, 200);
@@ -148,27 +139,21 @@ module.exports = async function handler(req, res) {
     if (igUserId) {
       try {
         const igResult = await graphGet(`/${igUserId}/media`, {
-          fields: 'id,caption,media_type,timestamp,permalink,like_count,comments_count,insights.metric(engagement,impressions,reach)',
-          limit: '50',
+          fields: 'id,caption,media_type,timestamp,permalink,like_count,comments_count',
+          limit: '100',
         });
 
         const igPosts = igResult.data || [];
         for (const post of igPosts) {
           const postDate = new Date(post.timestamp);
-          if (postDate.getTime() / 1000 < since) continue; // Skip if before since date
+          const postTimestamp = Math.floor(postDate.getTime() / 1000);
+
+          // Filter by date range
+          if (postTimestamp < since || postTimestamp > until) continue;
 
           const likes = post.like_count || 0;
           const comments = post.comments_count || 0;
           const engagement = likes + comments;
-
-          let impressions = 0;
-          let reach = 0;
-          if (post.insights?.data) {
-            const impData = post.insights.data.find(i => i.name === 'impressions');
-            const reachData = post.insights.data.find(i => i.name === 'reach');
-            impressions = impData?.values?.[0]?.value || 0;
-            reach = reachData?.values?.[0]?.value || 0;
-          }
 
           report.instagram.posts.push({
             id: post.id,
@@ -179,13 +164,24 @@ module.exports = async function handler(req, res) {
             likes,
             comments,
             engagement,
-            impressions,
-            reach,
           });
 
           report.instagram.total_engagement += engagement;
-          report.instagram.total_reach += reach;
-          report.instagram.total_impressions += impressions;
+        }
+
+        // Try to get insights if available
+        try {
+          const insightsResult = await graphGet(`/${igUserId}/insights`, {
+            metric: 'impressions,reach,profile_views',
+            period: 'day',
+            since: since.toString(),
+            until: until.toString(),
+          });
+          if (insightsResult.data) {
+            report.instagram.account_insights = insightsResult.data;
+          }
+        } catch (insightErr) {
+          // Silently fail - insights may not be available
         }
       } catch (igErr) {
         report.instagram.error = igErr.message || String(igErr).substring(0, 200);
