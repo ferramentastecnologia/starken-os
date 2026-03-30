@@ -9551,10 +9551,14 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
   var tenant = metaClient ? metaClient.tenant : 'starken';
   var statusEl = document.getElementById('zappfySendStatus');
   var btn = document.getElementById('zappfySendBtn');
-  var dateStart = document.getElementById('zappfySendStart').value;
-  var dateEnd = document.getElementById('zappfySendEnd').value;
+  var startEl = document.getElementById('zappfySendStart');
+  var endEl = document.getElementById('zappfySendEnd');
+  var dateStart = startEl ? startEl.value : '';
+  var dateEnd = endEl ? endEl.value : '';
+  var cronoMsg = document.getElementById('zappfyCronoMsg') ? document.getElementById('zappfyCronoMsg').value : '';
 
-  if (!dateStart || !dateEnd) { alert('Selecione o período'); return; }
+  // For reports, require dates. For cronograma, skip date validation
+  if (type !== 'sched-weekly' && (!dateStart || !dateEnd)) { alert('Selecione o período'); return; }
 
   function showStatus(msg, color) {
     statusEl.style.display = 'block';
@@ -9564,9 +9568,44 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
   }
 
   btn.disabled = true;
-  btn.innerHTML = '⏳ Buscando dados...';
+  btn.innerHTML = '⏳ Enviando...';
 
   try {
+    // CRONOGRAMA: send PDF + message directly (no Meta Ads data needed)
+    if (type === 'sched-weekly') {
+      showStatus('⏳ Buscando PDF do cronograma...', 'blue');
+      // Find the cronograma PDF URL from the report
+      var report = data.clients.find(function(c) { return c.id === clientId; });
+      var cronoReport = report ? data.reports.find(function(r) { return r.clientId === clientId && r.type === 'sched-weekly'; }) : null;
+      var pdfUrl = cronoReport ? cronoReport.cronogramaPdfUrl : null;
+      if (!pdfUrl) throw new Error('PDF do cronograma não foi gerado ainda. Gere o PDF primeiro.');
+
+      showStatus('📤 Enviando cronograma via WhatsApp...', 'blue');
+      var msgText = cronoMsg || 'Segue o cronograma semanal para aprovação. 📋';
+      var zappfyUrl = localStorage.getItem('zappfy_url') || 'https://api.zfrankly.com';
+      // Send message first
+      await fetch(zappfyUrl + '/message/sendText/' + token, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: groupJid, text: msgText })
+      });
+      // Then send PDF
+      await fetch(zappfyUrl + '/message/sendMedia/' + token, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: groupJid, mediatype: 'document', media: pdfUrl, fileName: 'Cronograma_Semanal.pdf', caption: '' })
+      });
+
+      showStatus('✅ Cronograma enviado com sucesso!', 'green');
+      btn.innerHTML = '✅ Enviado!';
+      // Update status to 'enviado'
+      if (cronoReport) {
+        cronoReport.status = 'enviado';
+        cronoReport.sentAt = new Date().toISOString();
+        saveReports();
+      }
+      setTimeout(function() { document.getElementById('zappfySendModal').remove(); }, 2000);
+      return;
+    }
+
     showStatus('⏳ Buscando dados da Meta Ads...', 'blue');
     var adAccount = metaClient ? metaClient.adAccountId : '';
     if (!adAccount || adAccount === 'act_000000000') {
