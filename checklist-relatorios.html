@@ -9598,16 +9598,21 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
 
       showStatus('📤 Enviando cronograma via WhatsApp...', 'blue');
       var msgText = cronoMsg || 'Segue o cronograma semanal para aprovação. 📋';
-      var zappfyUrl = localStorage.getItem('zappfy_url') || 'https://api.zfrankly.com';
       // Send message first
-      await fetch(zappfyUrl + '/message/sendText/' + token, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+      var sendRes = await fetch('https://api.zappfy.io/send/text', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'token': token },
         body: JSON.stringify({ number: groupJid, text: msgText })
       });
-      // Then send PDF
-      await fetch(zappfyUrl + '/message/sendMedia/' + token, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ number: groupJid, mediatype: 'document', media: pdfUrl, fileName: 'Cronograma_Semanal.pdf', caption: '' })
+      var sendJson = await sendRes.json();
+      if (sendJson.error) throw new Error('Zappfy: ' + (sendJson.message || JSON.stringify(sendJson)));
+
+      // Wait 1.5s then send PDF document
+      await new Promise(function(r) { setTimeout(r, 1500); });
+      showStatus('📄 Enviando PDF...', 'blue');
+      var clientName = client ? client.name : '';
+      await fetch('https://api.zappfy.io/send/media', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'token': token },
+        body: JSON.stringify({ number: groupJid, type: 'document', file: pdfUrl, docName: 'Cronograma_' + clientName.replace(/\s+/g, '_') + '.pdf', text: '📋 Cronograma Semanal - ' + clientName })
       });
 
       showStatus('✅ Cronograma enviado com sucesso!', 'green');
