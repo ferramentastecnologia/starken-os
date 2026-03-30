@@ -16,7 +16,7 @@
  * 5. Cria ad vinculado ao ad set destino
  */
 
-const { graphGet, graphPost } = require('./_lib/graph');
+const { graphGet, graphPost, graphPostForm } = require('./_lib/graph');
 const { getClient } = require('./_lib/tenants');
 
 module.exports = async function handler(req, res) {
@@ -76,18 +76,19 @@ module.exports = async function handler(req, res) {
         fields: 'hash,url,url_128,permalink_url',
       });
 
-      const images = imgResult.data?.images || imgResult.data || {};
-      // Meta returns images keyed by hash
-      if (typeof images === 'object' && !Array.isArray(images)) {
-        for (const [hash, imgData] of Object.entries(images)) {
-          hashToUrl[hash] = imgData.url || imgData.permalink_url || imgData.url_128;
-        }
-      }
-      // Also check if it's in array format
+      const images = imgResult.data || [];
+      // Meta returns images as array with hash, url, permalink_url fields
       if (Array.isArray(images)) {
         images.forEach(img => {
-          hashToUrl[img.hash] = img.url || img.permalink_url || img.url_128;
+          hashToUrl[img.hash] = img.permalink_url || img.url || img.url_128;
         });
+      } else if (typeof images === 'object') {
+        // Fallback: keyed by hash
+        for (const [hash, imgData] of Object.entries(images)) {
+          hashToUrl[hash] = (typeof imgData === 'object')
+            ? (imgData.permalink_url || imgData.url || imgData.url_128)
+            : imgData;
+        }
       }
     }
 
@@ -95,7 +96,7 @@ module.exports = async function handler(req, res) {
     const hashMapping = {}; // old hash -> new hash
     for (const [oldHash, url] of Object.entries(hashToUrl)) {
       try {
-        const uploadResult = await graphPost(`/${targetAdAccount}/adimages`, {
+        const uploadResult = await graphPostForm(`/${targetAdAccount}/adimages`, {
           url: url,
         });
         // Meta returns: { images: { <filename>: { hash: "..." } } }
@@ -160,15 +161,15 @@ module.exports = async function handler(req, res) {
           instagram_user_id: targetClientObj.igUserId || ad.creative.object_story_spec?.instagram_user_id,
         };
 
-        // Create creative
-        const newCreative = await graphPost(`/${targetAdAccount}/adcreatives`, {
+        // Create creative (use form-urlencoded — Meta requires it for complex nested objects)
+        const newCreative = await graphPostForm(`/${targetAdAccount}/adcreatives`, {
           name: ad.creative.name || ad.name,
           object_story_spec: storySpec,
           asset_feed_spec: newSpec,
         });
 
         // Create ad
-        const newAd = await graphPost(`/${targetAdAccount}/ads`, {
+        const newAd = await graphPostForm(`/${targetAdAccount}/ads`, {
           name: ad.name,
           adset_id: target_adset_id,
           creative: { creative_id: newCreative.id },

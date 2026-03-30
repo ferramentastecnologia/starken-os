@@ -9718,16 +9718,23 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       showStatus('✅ Cronograma enviado com sucesso!', 'green');
       btn.innerHTML = '✅ Enviado!';
 
-      // Update status to 'enviado' in Supabase
+      // Update status to 'enviado' in Supabase (match existing pattern)
       if (_supabase && clientId) {
         try {
+          var csId = clientId + '_' + periodKey;
           await _supabase.from('cronograma_status').upsert({
+            id: csId,
             client_id: clientId,
             period_key: periodKey,
             sent: true,
             sent_date: new Date().toISOString(),
-            status: 'enviado'
-          }, { onConflict: 'client_id,period_key' });
+            status: 2,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+          // Update local cache
+          if (typeof _cronogramaStatusCache !== 'undefined') {
+            _cronogramaStatusCache[csId] = { status: 2, sent: true, sent_date: new Date().toISOString(), pdf_url: pdfUrl };
+          }
         } catch(e) { console.warn('Supabase sent status error:', e); }
       }
 
