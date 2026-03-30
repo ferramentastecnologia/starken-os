@@ -84,7 +84,7 @@ module.exports = async function handler(req, res) {
         since: new Date(since * 1000).toISOString().split('T')[0],
         until: new Date(until * 1000).toISOString().split('T')[0],
       },
-      instagram_stories: { stories: [], total_impressions: 0, total_exits: 0, total_replies: 0 },
+      instagram_stories: { stories: [], total_impressions: 0, total_replies: 0 },
       facebook_stories: { stories: [], total_engagement: 0 },
     };
 
@@ -106,23 +106,17 @@ module.exports = async function handler(req, res) {
           if (storyTimestamp < since || storyTimestamp > until) continue;
 
           let impressions = 0;
-          let exits = 0;
           let replies = 0;
-          let tapsForward = 0;
-          let tapsBack = 0;
+          let reach = 0;
 
           if (story.insights?.data) {
             const impData = story.insights.data.find(i => i.name === 'impressions');
-            const exitsData = story.insights.data.find(i => i.name === 'exits');
             const repliesData = story.insights.data.find(i => i.name === 'replies');
-            const tapsForwardData = story.insights.data.find(i => i.name === 'taps_forward');
-            const tapsBackData = story.insights.data.find(i => i.name === 'taps_back');
+            const reachData = story.insights.data.find(i => i.name === 'reach');
 
             impressions = impData?.values?.[0]?.value || 0;
-            exits = exitsData?.values?.[0]?.value || 0;
             replies = repliesData?.values?.[0]?.value || 0;
-            tapsForward = tapsForwardData?.values?.[0]?.value || 0;
-            tapsBack = tapsBackData?.values?.[0]?.value || 0;
+            reach = reachData?.values?.[0]?.value || 0;
           }
 
           report.instagram_stories.stories.push({
@@ -131,15 +125,12 @@ module.exports = async function handler(req, res) {
             caption: (story.caption || '').substring(0, 200),
             created_at: story.timestamp,
             impressions,
-            exits,
+            reach,
             replies,
-            taps_forward: tapsForward,
-            taps_back: tapsBack,
-            engagement_rate: impressions > 0 ? ((exits + replies) / impressions * 100).toFixed(2) + '%' : '0%',
+            engagement_rate: impressions > 0 ? ((replies / impressions) * 100).toFixed(2) + '%' : '0%',
           });
 
           report.instagram_stories.total_impressions += impressions;
-          report.instagram_stories.total_exits += exits;
           report.instagram_stories.total_replies += replies;
         }
       } catch (igErr) {
