@@ -1627,8 +1627,10 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-add-inline button:hover { background:var(--accent,#3b82f6);color:#fff;border-color:var(--accent,#3b82f6); }
 
 /* Drag & Drop */
-.ct-row[draggable="true"]:hover .ct-drag-handle { opacity:1; }
-.ct-row[draggable="true"] .ct-drag-handle { opacity:0.3;transition:opacity 0.15s; }
+.ct-row:hover .ct-drag-handle { opacity:1; }
+.ct-row .ct-drag-handle { opacity:0.3;transition:opacity 0.15s; }
+.ct-row:hover .ct-move-btn { opacity:0.5; }
+.ct-move-btn:hover { opacity:1 !important; color:var(--brand,#3b82f6) !important; }
 .ct-row.drag-over-top { border-top:2px solid var(--accent,#3b82f6) !important;margin-top:-2px; }
 .ct-row.drag-over-center { background:rgba(59,130,246,0.08) !important;outline:2px dashed var(--accent,#3b82f6);outline-offset:-2px;border-radius:6px; }
 .ct-row.dragging { opacity:0.4;background:var(--starken-bg); }
@@ -2779,6 +2781,42 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 50px; }
 .mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 50px; }
 .mt-empty { text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:14px; }
+
+/* ═══════════════════════════════════════════════════════════════ */
+/* Traffic Management - Gestão de Tráfego                         */
+/* ═══════════════════════════════════════════════════════════════ */
+.tf-header-row { grid-template-columns: 2fr 1fr 1fr 1fr 0.8fr 1.5fr 0.6fr !important; }
+.tf-task-row { display:grid;grid-template-columns: 2fr 1fr 1fr 1fr 0.8fr 1.5fr 0.6fr !important;gap:0;padding:0 16px;min-height:42px;border-bottom:var(--ghost-border,1px solid rgba(196,197,215,0.15));font-size:var(--text-base,0.85rem);align-items:center;transition:background var(--transition-fast,0.1s); }
+.tf-task-row:hover { background:var(--hover,#f8fafc); }
+.ct-group-row { display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:38px;background:var(--surface-container-low,#f2f4f7);border-bottom:1px solid var(--outline-variant,#e5e7eb);cursor:pointer;font-weight:700;font-size:0.85rem; }
+.ct-group-row:hover { background:var(--hover,#eceef1); }
+.ct-task-name { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500; }
+.ct-status-btn { padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;border:none;font-family:inherit; }
+.tf-obj-badge { display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:600; }
+.tf-metrics-mini { display:flex;gap:6px;font-size:0.7rem; }
+.tf-metrics-mini span { background:var(--hover,#f3f4f6);padding:2px 6px;border-radius:4px; }
+.tf-budget { font-size:0.8rem;font-weight:600; }
+
+/* Traffic Modal */
+.tf-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center; }
+.tf-modal-overlay.open { display:flex; }
+.tf-modal { background:var(--card,#fff);border-radius:16px;width:900px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.tf-modal-header { padding:20px 24px;border-bottom:1px solid var(--border,#e5e7eb);display:flex;justify-content:space-between;align-items:center; }
+.tf-modal-body { padding:24px;overflow-y:auto;flex:1; }
+.tf-modal-section { margin-bottom:20px; }
+.tf-modal-section h4 { font-size:0.8rem;font-weight:600;color:var(--text-secondary,#6b7280);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px; }
+.tf-field-grid { display:grid;grid-template-columns:1fr 1fr;gap:12px; }
+.tf-field label { display:block;font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.3px; }
+.tf-field input, .tf-field select, .tf-field textarea { width:100%;padding:8px 12px;border:1px solid var(--border,#e5e7eb);border-radius:8px;font-family:inherit;font-size:0.88rem;background:var(--bg,#fff);color:var(--text,#1f2937); }
+.tf-field textarea { resize:vertical;min-height:60px; }
+.tf-metrics-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:10px; }
+.tf-metric-card { background:var(--hover,#f9fafb);border:1px solid var(--border,#e5e7eb);border-radius:10px;padding:12px;text-align:center; }
+.tf-metric-card .tf-metric-value { font-size:1.2rem;font-weight:700;color:var(--text,#1f2937); }
+.tf-metric-card .tf-metric-label { font-size:0.65rem;color:var(--text-secondary,#6b7280);text-transform:uppercase;margin-top:2px; }
+
+/* New Group Modal for Traffic */
+.tf-new-group-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:none;align-items:center;justify-content:center; }
+.tf-new-group-overlay.open { display:flex; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
@@ -4779,6 +4817,62 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <div id="mtContent" style="min-height:200px"></div>
       </div><!-- end #tab-minhas-tasks -->
 
+      <div id="tab-traffic" class="tab-content">
+        <div style="padding:20px">
+          <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px">📣 Gestão de Tráfego</h2>
+
+          <!-- Toolbar -->
+          <div class="ct-toolbar" id="tfToolbar">
+            <select id="tfClientFilter" onchange="tfLoadGroups()">
+              <option value="">Selecione o cliente...</option>
+            </select>
+            <button class="ct-add-btn" onclick="tfShowNewGroupModal()" id="tfAddGroupBtn" style="display:none">+ Novo Grupo</button>
+            <div style="flex:1"></div>
+            <select id="tfStatusFilter" onchange="tfRenderList()">
+              <option value="">Todos os status</option>
+            </select>
+            <select id="tfAssigneeFilter" onchange="tfRenderList()">
+              <option value="">Todos</option>
+              <option value="Juan">Juan</option>
+              <option value="Henrique">Henrique</option>
+              <option value="Emily">Emily</option>
+              <option value="Leonardo">Leonardo</option>
+              <option value="Dante">Dante</option>
+            </select>
+          </div>
+
+          <!-- Task List -->
+          <div class="ct-list" id="tfList">
+            <div class="ct-header-row tf-header-row">
+              <div><input type="checkbox" id="tfSelectAll" onclick="tfToggleSelectAll()" style="margin-right:6px;cursor:pointer;accent-color:var(--accent,#3b82f6)">Nome</div>
+              <div>Objetivo</div>
+              <div>Status</div>
+              <div>Responsável</div>
+              <div>Orçamento</div>
+              <div>Métricas</div>
+              <div>Prioridade</div>
+            </div>
+            <div id="tfListBody">
+              <div style="text-align:center;padding:40px;color:var(--text-secondary)">
+                <div style="font-size:2rem;margin-bottom:8px">📣</div>
+                Selecione um cliente para ver as campanhas
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating Action Bar -->
+          <div class="ct-action-bar" id="tfActionBar">
+            <span class="ct-ab-count" id="tfSelCount">0</span> <span>selecionadas</span>
+            <button onclick="tfBulkChangeStatus()">📝 Status</button>
+            <button onclick="tfBulkChangeAssignee()">👤 Responsável</button>
+            <button onclick="tfBulkChangePriority()">🏳️ Prioridade</button>
+            <button onclick="tfBulkSyncMetrics()" style="background:rgba(59,130,246,0.8)">📊 Atualizar Métricas</button>
+            <button class="ct-ab-delete" onclick="tfBulkDelete()">🗑️ Excluir</button>
+            <button onclick="tfClearSelection()" style="font-size:0.75rem;padding:6px 10px">✕</button>
+          </div>
+        </div>
+      </div><!-- end #tab-traffic -->
+
     </div>
   </div>
 </div>
@@ -5661,6 +5755,9 @@ let SIDEBAR_MENU = [
     { type: 'item', id: 'meta-bi', label: 'BI Campanhas', icon: '📊', tab: 'meta-bi' },
     { type: 'item', id: 'meta-publish', label: 'Agendamento', icon: '📤', tab: 'meta-publish' },
   ]},
+  { type: 'category', id: 'cat-trafego', label: 'Gestão de Tráfego', items: [
+    { type: 'item', id: 'traffic', label: 'Campanhas', icon: '📣', tab: 'traffic' },
+  ]},
   { type: 'category', id: 'cat-google-ads', label: 'Google Ads', items: [
     { type: 'item', id: 'google-ads', label: 'Mortadella', icon: '📈', tab: 'google-ads' },
   ]},
@@ -5974,7 +6071,8 @@ const TAB_TITLES = {
   'calendario':        'Calendário de Posts',
   'client-hub':        'Client Hub',
   'client-info':       'Info do Cliente',
-  'minhas-tasks':      'Minhas Tasks'
+  'minhas-tasks':      'Minhas Tasks',
+  'traffic':           'Gestão de Tráfego'
 };
 
 function switchTab(tabName) {
@@ -6009,6 +6107,7 @@ function switchTab(tabName) {
   else if (tabName === 'meta-bi') metaBiInit();
   else if (tabName === 'meta-publish') metaPublishInit();
   else if (tabName === 'content') ctInit();
+  else if (tabName === 'traffic') tfInit();
   else if (tabName === 'calendario') calInit();
   else if (tabName === 'client-hub') { /* hubOpen() handles init */ }
   else renderAll();
@@ -9618,13 +9717,34 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
 
       showStatus('✅ Cronograma enviado com sucesso!', 'green');
       btn.innerHTML = '✅ Enviado!';
-      // Update status to 'enviado'
-      if (cronoReport) {
-        cronoReport.status = 'enviado';
-        cronoReport.sentAt = new Date().toISOString();
-        saveReports();
+
+      // Update status to 'enviado' in Supabase
+      if (_supabase && clientId) {
+        try {
+          await _supabase.from('cronograma_status').upsert({
+            client_id: clientId,
+            period_key: periodKey,
+            sent: true,
+            sent_date: new Date().toISOString(),
+            status: 'enviado'
+          }, { onConflict: 'client_id,period_key' });
+        } catch(e) { console.warn('Supabase sent status error:', e); }
       }
-      setTimeout(function() { document.getElementById('zappfySendModal').remove(); }, 2000);
+
+      // Update local data.reports
+      var cronoRpt = data.reports.find(function(r) { return r.clientId === clientId && r.type === 'sched-weekly'; });
+      if (cronoRpt) {
+        cronoRpt.status = 'enviado';
+        cronoRpt.sent = true;
+        cronoRpt.sentDate = new Date().toISOString();
+      }
+      try { saveReports(); } catch(e) {}
+
+      // Re-render list to show updated status
+      setTimeout(function() {
+        var modal = document.getElementById('zappfySendModal'); if (modal) modal.remove();
+        if (typeof renderAll === 'function') renderAll();
+      }, 2000);
       return;
     }
 
@@ -12848,6 +12968,10 @@ function ctRenderList() {
         let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" data-task-name="' + (task.name||'').replace(/"/g,'&quot;') + '" style="padding-left:36px">'
           + '<div class="ct-name">'
           + '<input type="checkbox" class="ct-select-check" data-id="' + task.id + '" onclick="event.stopPropagation();ctUpdateSelection()" style="margin-right:4px;cursor:pointer;accent-color:var(--accent,#3b82f6);flex-shrink:0">'
+          + '<span class="ct-reorder-btns" style="display:inline-flex;flex-direction:column;margin-right:2px;flex-shrink:0;gap:0;line-height:1">'
+          + '<button onclick="event.stopPropagation();ctMoveTask(\'' + task.id + '\',\'up\')" class="ct-move-btn" title="Mover para cima" style="border:none;background:none;cursor:pointer;font-size:8px;color:var(--text-muted,#9ca3af);padding:0 2px;line-height:1;opacity:0;transition:opacity 0.15s">▲</button>'
+          + '<button onclick="event.stopPropagation();ctMoveTask(\'' + task.id + '\',\'down\')" class="ct-move-btn" title="Mover para baixo" style="border:none;background:none;cursor:pointer;font-size:8px;color:var(--text-muted,#9ca3af);padding:0 2px;line-height:1;opacity:0;transition:opacity 0.15s">▼</button>'
+          + '</span>'
           + '<span class="ct-drag-handle" draggable="true" ondragstart="ctDragStart(event)" title="Arrastar" style="cursor:grab;margin-right:4px;color:var(--text-muted);font-size:0.85rem;user-select:none;flex-shrink:0">⠿</span>'
           + (depth > 0 ? '<span style="width:' + (depth * 24) + 'px;flex-shrink:0"></span>' : '')
           + (hasSubtasks ? '<span class="ct-chevron ' + (taskExpanded ? 'open' : '') + '" onclick="event.stopPropagation();ctToggleTask(\'' + task.id + '\')">▶</span>' : '<span style="width:20px"></span>')
@@ -15531,6 +15655,58 @@ function ctDragEnd(e) {
     r.classList.remove('drag-over-center');
     r.style.borderBottomColor = '';
   });
+}
+
+// ─── MOVE TASK UP/DOWN ───
+async function ctMoveTask(taskId, direction) {
+  // Find the task row in the DOM
+  var row = document.querySelector('.ct-row[data-task-id="' + taskId + '"]');
+  if (!row) return;
+  var groupId = row.dataset.groupId;
+  var parentId = row.dataset.parentId || null;
+
+  // Get sibling rows (same group, same parent, same depth)
+  var depth = parseInt(row.dataset.depth || '0');
+  var allRows = Array.from(document.querySelectorAll('.ct-row[data-group-id="' + groupId + '"]'));
+  var siblings = allRows.filter(function(r) {
+    return (r.dataset.parentId || '') === (parentId || '') && parseInt(r.dataset.depth || '0') === depth;
+  });
+
+  var idx = siblings.indexOf(row);
+  if (idx < 0) return;
+  var targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (targetIdx < 0 || targetIdx >= siblings.length) return;
+
+  var targetRow = siblings[targetIdx];
+
+  // Swap sort_order in backend
+  try {
+    // Visual swap first (optimistic)
+    if (direction === 'up') {
+      row.parentElement.insertBefore(row, targetRow);
+    } else {
+      if (targetRow.nextSibling) {
+        row.parentElement.insertBefore(row, targetRow.nextSibling);
+      } else {
+        row.parentElement.appendChild(row);
+      }
+    }
+    // Flash animation
+    row.style.transition = 'background 0.3s';
+    row.style.background = 'var(--brand-light, #eef1ff)';
+    setTimeout(function() { row.style.background = ''; }, 400);
+
+    // Save new order to backend
+    var taskIds = Array.from(document.querySelectorAll('.ct-row[data-group-id="' + groupId + '"]'))
+      .filter(function(r) { return (r.dataset.parentId || '') === (parentId || '') && parseInt(r.dataset.depth || '0') === depth; })
+      .map(function(r) { return r.dataset.taskId; });
+
+    await ctApi('reorder_tasks', { task_ids: taskIds, group_id: groupId });
+  } catch(e) {
+    console.warn('Move task error:', e);
+    // Rerender to fix any visual issues
+    ctRenderList();
+  }
 }
 
 // ─── ADD SUBTASK FROM LIST ───
