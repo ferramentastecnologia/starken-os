@@ -18671,6 +18671,10 @@ async function loadCronogramaStatus() {
     if (error) { console.warn('cronograma_status load error:', error); return; }
     _cronogramaStatusCache = {};
     (rows || []).forEach(function(r) {
+      // Key by client_id + period_key (used by getCronogramaStatus lookup)
+      var lookupKey = r.client_id + '_' + r.period_key;
+      _cronogramaStatusCache[lookupKey] = r;
+      // Also keep by UUID for direct access
       _cronogramaStatusCache[r.id] = r;
     });
     console.log('Cronograma status loaded:', Object.keys(_cronogramaStatusCache).length, 'entries');
@@ -18681,7 +18685,16 @@ async function loadCronogramaStatus() {
 
 function getCronogramaStatus(clientId, periodKey) {
   var key = clientId + '_' + periodKey;
-  return _cronogramaStatusCache[key] || null;
+  if (_cronogramaStatusCache[key]) return _cronogramaStatusCache[key];
+  // Try matching via meta key (findMetaClientKey maps legacy ID → meta slug)
+  if (typeof findMetaClientKey === 'function') {
+    var metaKey = findMetaClientKey(clientId);
+    if (metaKey && metaKey !== clientId) {
+      var altKey = metaKey + '_' + periodKey;
+      if (_cronogramaStatusCache[altKey]) return _cronogramaStatusCache[altKey];
+    }
+  }
+  return null;
 }
 
 function cronogramaUpdateButton() {
