@@ -2820,10 +2820,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .tf-new-group-overlay.open { display:flex; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
 </head>
 <body>
 
@@ -9753,7 +9753,7 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
         var modal = document.getElementById('zappfySendModal'); if (modal) modal.remove();
         // Reload cronograma status from Supabase then re-render
         if (_supabase) {
-          _supabase.from('cronograma_status').select('*').then(function(res) {
+          _supabase.from('cronograma_status').select('id,client_id,type,period_key,status,pdf_url,generated_at,sent_at').limit(500).then(function(res) {
             if (res.data) {
               if (typeof _cronogramaStatusCache === 'undefined') window._cronogramaStatusCache = {};
               res.data.forEach(function(row) { _cronogramaStatusCache[row.id] = row; });
@@ -18667,7 +18667,7 @@ var _cronogramaStatusCache = {}; // { "clientId_periodKey": { status, pdf_url, p
 async function loadCronogramaStatus() {
   if (!_supabase) return;
   try {
-    var { data: rows, error } = await _supabase.from('cronograma_status').select('*');
+    var { data: rows, error } = await _supabase.from('cronograma_status').select('id,client_id,type,period_key,status,pdf_url,generated_at,sent_at').limit(500);
     if (error) { console.warn('cronograma_status load error:', error); return; }
     _cronogramaStatusCache = {};
     (rows || []).forEach(function(r) {
@@ -18800,31 +18800,24 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
     var allTasks = tasksRes.data || tasksRes || [];
     allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
 
-    // Fetch attachments
-    for (var i = 0; i < allTasks.length; i++) {
-      try {
-        var attRes = await ctApi('list_attachments', { task_id: allTasks[i].id });
-        allTasks[i]._attachments = attRes.data || attRes || [];
-      } catch(e) { allTasks[i]._attachments = []; }
-    }
-
-    // Get client info
+    // Fetch attachments in PARALLEL + hub data simultaneously
     var clientName = '', clientLogo = '', tenant = '';
     if (typeof _metaClients !== 'undefined' && _metaClients[clientSlug]) {
       clientName = _metaClients[clientSlug].name || clientSlug;
       tenant = _metaClients[clientSlug].tenant || '';
     }
     if (!clientName) clientName = clientSlug.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-    if (_supabase) {
-      try {
-        var hubRes = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientSlug);
-        var hubRow = hubRes.data && hubRes.data.length > 0 ? hubRes.data[0] : null;
-        if (hubRow) {
-          if (hubRow.logo_url) clientLogo = hubRow.logo_url;
-          if (hubRow.client_name) clientName = hubRow.client_name;
-        }
-      } catch(e) { console.warn('Hub logo fetch error:', e); }
-    }
+
+    var hubPromise = _supabase ? _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientSlug).then(function(r) {
+      var row = r.data && r.data[0]; if (row) { if (row.logo_url) clientLogo = row.logo_url; if (row.client_name) clientName = row.client_name; }
+    }).catch(function(){}) : Promise.resolve();
+
+    await Promise.all([
+      hubPromise,
+      ...allTasks.map(async function(task) {
+        try { var r = await ctApi('list_attachments', { task_id: task.id }); task._attachments = r.data || r || []; } catch(e) { task._attachments = []; }
+      })
+    ]);
 
     // Store state with schedule context for status update after download
     _cronoState = {
@@ -18853,31 +18846,24 @@ async function cronogramaGenerate() {
     var allTasks = tasksRes.data || tasksRes || [];
     allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
 
-    // Fetch attachments for each
-    for (var i = 0; i < allTasks.length; i++) {
-      try {
-        var attRes = await ctApi('list_attachments', { task_id: allTasks[i].id });
-        allTasks[i]._attachments = attRes.data || attRes || [];
-      } catch(e) { allTasks[i]._attachments = []; }
-    }
-
-    // Get client info
+    // Fetch attachments in PARALLEL + hub data simultaneously
     var clientName = '', clientLogo = '', tenant = '';
     if (typeof _metaClients !== 'undefined' && _metaClients[clientId]) {
       clientName = _metaClients[clientId].name || clientId;
       tenant = _metaClients[clientId].tenant || '';
     }
     if (!clientName) clientName = clientId.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
-    if (_supabase) {
-      try {
-        var hubRes2 = await _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientId);
-        var hubRow2 = hubRes2.data && hubRes2.data.length > 0 ? hubRes2.data[0] : null;
-        if (hubRow2) {
-          if (hubRow2.logo_url) clientLogo = hubRow2.logo_url;
-          if (hubRow2.client_name) clientName = hubRow2.client_name;
-        }
-      } catch(e) { console.warn('Hub logo fetch error:', e); }
-    }
+
+    var hubP2 = _supabase ? _supabase.from('client_hub').select('logo_url,client_name').eq('client_slug', clientId).then(function(r) {
+      var row = r.data && r.data[0]; if (row) { if (row.logo_url) clientLogo = row.logo_url; if (row.client_name) clientName = row.client_name; }
+    }).catch(function(){}) : Promise.resolve();
+
+    await Promise.all([
+      hubP2,
+      ...allTasks.map(async function(task) {
+        try { var r = await ctApi('list_attachments', { task_id: task.id }); task._attachments = r.data || r || []; } catch(e) { task._attachments = []; }
+      })
+    ]);
 
     _cronoState = { tasks: allTasks, clientName: clientName, clientLogo: clientLogo, tenant: tenant, clientId: clientId, scheduleContext: null };
     _cronoLoading = false;
@@ -18914,7 +18900,7 @@ function cronogramaShowModal() {
     var shortDate = hasDate ? t.due_date.slice(8,10) + '/' + t.due_date.slice(5,7) : '?';
 
     // Compact chip-style task selector
-    taskRows += '<label style="display:flex;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;cursor:pointer;white-space:nowrap;font-size:0.75rem;background:var(--card,#fff)" onchange="cronogramaPreview()">'
+    taskRows += '<label style="display:flex;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;cursor:pointer;white-space:nowrap;font-size:0.75rem;background:var(--card,#fff)" onchange="cronogramaPreviewDebounced()">'
       + '<input type="checkbox" class="crono-task-check" data-idx="' + idx + '" ' + (hasDate ? 'checked' : '') + ' style="accent-color:#8B7355;cursor:pointer">'
       + '<span style="font-weight:600;color:var(--text,#1a1a2e)">' + (t.name || 'Post') + '</span>'
       + '<span style="color:var(--text-secondary,#64748b)">' + shortDate + '</span>'
@@ -18965,6 +18951,11 @@ function cronogramaGetSelectedTasks() {
   return selected;
 }
 
+var _cronoPreviewTimer = null;
+function cronogramaPreviewDebounced() {
+  clearTimeout(_cronoPreviewTimer);
+  _cronoPreviewTimer = setTimeout(cronogramaPreview, 300);
+}
 function cronogramaPreview() {
   var tasks = cronogramaGetSelectedTasks();
   if (tasks.length === 0) { alert('Selecione pelo menos 1 post'); return; }
@@ -19087,8 +19078,21 @@ async function cronogramaBuildPdf(opts) {
       if (pctEl) pctEl.textContent = Math.round(pct) + '%';
     };
 
+    // Preload all images before rendering (prevents stalls in html2canvas)
+    updateLoading(5, 'Pré-carregando imagens...');
+    var imgUrls = [];
+    pages.forEach(function(p) { var m; var re = /src="(https?:\/\/[^"]+)"/g; while ((m = re.exec(p)) !== null) imgUrls.push(m[1]); });
+    imgUrls = [...new Set(imgUrls)];
+    await Promise.all(imgUrls.map(function(url) {
+      return new Promise(function(resolve) {
+        var img = new Image(); img.crossOrigin = 'anonymous';
+        img.onload = resolve; img.onerror = resolve;
+        img.src = url;
+      });
+    }));
+
     for (var i = 0; i < pages.length; i++) {
-      var pct = Math.round((i / pages.length) * 100);
+      var pct = 10 + Math.round((i / pages.length) * 90);
       updateLoading(pct, 'Renderizando página ' + (i + 1) + ' de ' + pages.length + '...');
 
       // Create container BEHIND the overlay (z-index lower)
@@ -19097,23 +19101,23 @@ async function cronogramaBuildPdf(opts) {
       el.innerHTML = pages[i];
       document.body.appendChild(el);
 
-      await new Promise(function(r) { setTimeout(r, 100); });
+      await new Promise(function(r) { requestAnimationFrame(r); });
 
       var canvas = await html2canvas(el, {
-        width: W, height: H, scale: 2,
-        useCORS: true, backgroundColor: '#b5aa9a'
+        width: W, height: H, scale: 1.5,
+        useCORS: true, backgroundColor: '#b5aa9a',
+        logging: false
       });
 
       document.body.removeChild(el);
 
-      var imgData = canvas.toDataURL('image/jpeg', 0.98);
+      var imgData = canvas.toDataURL('image/jpeg', 0.92);
       if (i > 0) pdf.addPage([297, 210], 'landscape');
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
 
-      // Add clickable video link if page has video URL
-      var videoEl = document.createElement('div');
-      videoEl.innerHTML = pages[i];
-      var vidLink = videoEl.querySelector('[data-video-url]');
+      // Extract video URL via regex (avoids creating DOM element)
+      var vidMatch = pages[i].match(/data-video-url="([^"]+)"/);
+      var vidLink = vidMatch ? { getAttribute: function() { return vidMatch[1]; } } : null;
       if (vidLink) {
         var vidUrl = vidLink.getAttribute('data-video-url');
         if (vidUrl) {
