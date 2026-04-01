@@ -12855,11 +12855,12 @@ function ctRenderPublishHistory(publishConfig) {
     return;
   }
   let html = '';
-  publishConfig.entries.slice().reverse().forEach(e => {
+  publishConfig.entries.slice().reverse().forEach((e, idx) => {
     const plat = e.platform === 'facebook' ? 'FB' : 'IG';
     const platIcon = e.platform === 'facebook' ? '📄' : '📷';
     const st = e.status || 'scheduled';
-    const stLabel = st === 'scheduled' ? '📅 Agendado' : st === 'published' ? '✅ Publicado' : '❌ Falhou';
+    const stLabel = st === 'scheduled' ? '📅 Agendado' : st === 'published' ? '✅ Publicado' : st === 'cancelled' ? '🚫 Cancelado' : '❌ Falhou';
+    const stBg = st === 'scheduled' ? '#fef3c7;color:#b45309' : st === 'published' ? '#d1fae5;color:#059669' : st === 'cancelled' ? '#f3f4f6;color:#6b7280' : '#fecaca;color:#dc2626';
     let dateStr = '';
     if (st === 'scheduled' && e.scheduled_for) {
       const d = new Date(e.scheduled_for);
@@ -12868,13 +12869,69 @@ function ctRenderPublishHistory(publishConfig) {
       const d = new Date(e.published_at);
       dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
-    html += '<div class="ct-ph-entry ' + st + '">'
+    // Cancel button for scheduled entries
+    let cancelBtn = '';
+    if (st === 'scheduled' && e.post_id) {
+      cancelBtn = '<button onclick="ctCancelPublishEntry(' + (publishConfig.entries.length - 1 - idx) + ',\'' + (e.post_id || '') + '\',\'' + (e.history_id || '') + '\')" '
+        + 'style="margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid #f59e0b;background:transparent;color:#b45309;cursor:pointer;font-size:0.65rem;font-family:inherit;font-weight:600;transition:all 0.15s" '
+        + 'onmouseenter="this.style.background=\'#fffbeb\'" onmouseleave="this.style.background=\'transparent\'">'
+        + '⏹️ Cancelar</button>';
+    }
+    html += '<div class="ct-ph-entry ' + st + '" style="display:flex;align-items:center;gap:6px">'
       + '<span class="ct-ph-platform">' + platIcon + ' ' + plat + '</span>'
-      + '<span class="ct-ph-status" style="background:' + (st === 'scheduled' ? '#fef3c7;color:#b45309' : st === 'published' ? '#d1fae5;color:#059669' : '#fecaca;color:#dc2626') + '">' + stLabel + '</span>'
+      + '<span class="ct-ph-status" style="background:' + stBg + '">' + stLabel + '</span>'
       + (dateStr ? '<span class="ct-ph-date">' + dateStr + '</span>' : '')
+      + cancelBtn
       + '</div>';
   });
   container.innerHTML = html;
+}
+
+// Cancel a scheduled publish entry from the task modal
+async function ctCancelPublishEntry(entryIdx, postId, historyId) {
+  if (!ctModalTask) return;
+  if (!confirm('Cancelar este agendamento?\n\nO post não será publicado.')) return;
+
+  try {
+    const clientKey = ctModalTask.client_id || gpState.space;
+    const res = await fetch(metaApiBase() + '/api/meta/publish', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        post_id: postId,
+        history_id: historyId,
+        client: clientKey,
+        user: gpState.user ? gpState.user.name : 'Sistema',
+      }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert('Erro ao cancelar: ' + data.message);
+      return;
+    }
+
+    // Update local entry
+    const config = ctModalTask.publish_config || {};
+    if (config.entries && config.entries[entryIdx]) {
+      config.entries[entryIdx].status = 'cancelled';
+    }
+
+    // Save updated config to backend
+    await ctApi('update_task', {
+      task_id: ctModalTask.id,
+      publish_config: config,
+    });
+
+    // Re-render
+    ctRenderPublishHistory(config);
+    const alwaysListEl = document.getElementById('ctPublishHistoryListAlways');
+    if (alwaysListEl) alwaysListEl.innerHTML = document.getElementById('ctPublishHistoryList').innerHTML;
+
+    alert('Agendamento cancelado com sucesso!');
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
 }
 
 // ─── MINI CALENDAR (modal) ───
@@ -19830,20 +19887,76 @@ function ctRenderFormatPublishHistory() {
     return;
   }
 
-  el.innerHTML = entries.map(function(e) {
+  el.innerHTML = entries.map(function(e, idx) {
     var icon = e.platform === 'facebook' ? '📄' : '📷';
     var platName = e.platform === 'facebook' ? 'Facebook' : 'Instagram';
-    var statusColor = e.status === 'published' ? '#10b981' : e.status === 'scheduled' ? '#f59e0b' : e.status === 'failed' ? '#ef4444' : '#6b7280';
-    var statusLabel = e.status === 'published' ? 'Publicado' : e.status === 'scheduled' ? 'Agendado' : e.status === 'failed' ? 'Falhou' : e.status;
+    var statusColor = e.status === 'published' ? '#10b981' : e.status === 'scheduled' ? '#f59e0b' : e.status === 'failed' ? '#ef4444' : e.status === 'cancelled' ? '#6b7280' : '#6b7280';
+    var statusLabel = e.status === 'published' ? 'Publicado' : e.status === 'scheduled' ? 'Agendado' : e.status === 'failed' ? 'Falhou' : e.status === 'cancelled' ? 'Cancelado' : e.status;
     var date = e.published_at || e.scheduled_for;
     var dateStr = date ? new Date(date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    var cancelBtn = '';
+    if (e.status === 'scheduled' && e.post_id) {
+      cancelBtn = '<button onclick="ctCancelFormatEntry(\'' + _ctActiveFormatTab + '\',' + idx + ',\'' + (e.post_id || '') + '\',\'' + (e.history_id || '') + '\')" '
+        + 'style="margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid #f59e0b;background:transparent;color:#b45309;cursor:pointer;font-size:0.65rem;font-family:inherit;font-weight:600;transition:all 0.15s" '
+        + 'onmouseenter="this.style.background=\'#fffbeb\'" onmouseleave="this.style.background=\'transparent\'">'
+        + '⏹ Cancelar</button>';
+    }
     return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0">'
       + '<span>' + icon + '</span>'
       + '<span style="font-weight:600">' + platName + '</span>'
       + '<span style="background:' + statusColor + '20;color:' + statusColor + ';padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">' + statusLabel + '</span>'
       + '<span style="font-size:0.7rem;color:var(--text-secondary)">' + dateStr + '</span>'
+      + cancelBtn
       + '</div>';
   }).join('');
+}
+
+// Cancel a scheduled entry from multi-format publish history
+async function ctCancelFormatEntry(fmt, entryIdx, postId, historyId) {
+  if (!ctModalTask) return;
+  if (!confirm('Cancelar este agendamento?\n\nO post não será publicado.')) return;
+
+  try {
+    var clientKey = ctModalTask.client_id || gpState.space;
+    var res = await fetch(metaApiBase() + '/api/meta/publish', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        post_id: postId,
+        history_id: historyId,
+        client: clientKey,
+        user: gpState.user ? gpState.user.name : 'Sistema',
+      }),
+    });
+    var data = await res.json();
+
+    if (data.error) {
+      alert('Erro ao cancelar: ' + data.message);
+      return;
+    }
+
+    // Update local entry
+    var config = ctModalTask.publish_config || {};
+    var fmtConfig = config[fmt] || {};
+    if (fmtConfig.entries && fmtConfig.entries[entryIdx]) {
+      fmtConfig.entries[entryIdx].status = 'cancelled';
+    }
+    // Also update legacy entries if present
+    if (config.entries) {
+      config.entries.forEach(function(e) { if (e.post_id === postId) e.status = 'cancelled'; });
+    }
+
+    // Save updated config
+    await ctApi('update_task', { task_id: ctModalTask.id, publish_config: config });
+
+    // Re-render
+    ctRenderFormatPublishHistory();
+    if (typeof ctRenderPublishHistory === 'function') ctRenderPublishHistory(config);
+
+    alert('Agendamento cancelado com sucesso!');
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
 }
 
 async function ctPublishFormat() {
