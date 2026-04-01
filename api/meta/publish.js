@@ -305,38 +305,62 @@ module.exports = async function handler(req, res) {
         } catch (e) { /* usa token global */ }
       }
 
-      // Tenta deletar do Meta Graph API
-      let metaDeleted = false;
-      let metaError = null;
-      try {
-        const deleteParams = {};
-        if (pageToken) deleteParams.access_token = pageToken;
-        await graphDelete(`/${post_id}`, deleteParams);
-        metaDeleted = true;
-      } catch (delErr) {
-        // IG posts geralmente não podem ser deletados via API
-        metaError = delErr.message || 'Não foi possível excluir do Meta';
+      // 1. Tenta cancelar na publish_queue (agendamentos IG/FB pendentes)
+      let queueCancelled = false;
+      const url = SUPABASE_URL();
+      if (url) {
+        // post_id pode ser o queue_id para agendamentos IG
+        const queueCheck = await fetch(
+          `${url}/rest/v1/publish_queue?id=eq.${post_id}&status=in.(QUEUED,PROCESSING)&select=id,status`,
+          { headers: { 'apikey': SUPABASE_KEY(), 'Authorization': `Bearer ${SUPABASE_KEY()}` } }
+        );
+        if (queueCheck.ok) {
+          const queueItems = await queueCheck.json();
+          if (queueItems.length > 0) {
+            await fetch(`${url}/rest/v1/publish_queue?id=eq.${post_id}`, {
+              method: 'PATCH',
+              headers: supabaseHeaders(),
+              body: JSON.stringify({ status: 'CANCELLED', processed_at: new Date().toISOString() }),
+            });
+            queueCancelled = true;
+          }
+        }
       }
 
-      // Atualiza status no histórico (Supabase) independente do resultado Meta
-      if (history_id) {
-        const url = SUPABASE_URL();
-        if (url) {
-          await fetch(`${url}/rest/v1/publish_history?id=eq.${history_id}`, {
-            method: 'PATCH',
-            headers: { ...supabaseHeaders(), 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ status: 'DELETED' }),
-          });
+      // 2. Tenta deletar do Meta Graph API (FB scheduled/published posts)
+      let metaDeleted = false;
+      let metaError = null;
+      if (!queueCancelled) {
+        try {
+          const deleteParams = {};
+          if (pageToken) deleteParams.access_token = pageToken;
+          await graphDelete(`/${post_id}`, deleteParams);
+          metaDeleted = true;
+        } catch (delErr) {
+          // IG posts geralmente não podem ser deletados via API
+          metaError = delErr.message || 'Não foi possível excluir do Meta';
         }
+      }
+
+      // 3. Atualiza status no histórico (Supabase)
+      if (history_id && url) {
+        await fetch(`${url}/rest/v1/publish_history?id=eq.${history_id}`, {
+          method: 'PATCH',
+          headers: { ...supabaseHeaders(), 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ status: 'DELETED' }),
+        });
       }
 
       return res.status(200).json({
         ok: true,
         deleted: post_id,
         meta_deleted: metaDeleted,
-        message: metaDeleted
-          ? 'Post excluído/cancelado com sucesso no Meta'
-          : 'Removido do histórico. ' + (metaError || 'Exclua manualmente no Meta Business Suite para posts do Instagram.'),
+        queue_cancelled: queueCancelled,
+        message: queueCancelled
+          ? 'Agendamento cancelado com sucesso! O post não será publicado.'
+          : metaDeleted
+            ? 'Post excluído/cancelado com sucesso no Meta'
+            : 'Removido do histórico. ' + (metaError || 'Exclua manualmente no Meta Business Suite para posts do Instagram.'),
       });
     } catch (err) {
       if (err.error) return res.status(err.status || 502).json(err);
