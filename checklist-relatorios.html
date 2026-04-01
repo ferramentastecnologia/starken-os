@@ -12918,9 +12918,10 @@ async function ctCancelPublishEntry(entryIdx, postId, historyId) {
     }
 
     // Save updated config to backend
-    await ctApi('update_task', {
-      task_id: ctModalTask.id,
+    await ctApi('upsert_task', {
+      id: ctModalTask.id,
       publish_config: config,
+      user: gpState.user ? gpState.user.name : 'Sistema',
     });
 
     // Re-render
@@ -19947,7 +19948,7 @@ async function ctCancelFormatEntry(fmt, entryIdx, postId, historyId) {
     }
 
     // Save updated config
-    await ctApi('update_task', { task_id: ctModalTask.id, publish_config: config });
+    await ctApi('upsert_task', { id: ctModalTask.id, publish_config: config, user: gpState.user ? gpState.user.name : 'Sistema' });
 
     // Re-render
     ctRenderFormatPublishHistory();
