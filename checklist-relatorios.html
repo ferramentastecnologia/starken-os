@@ -4882,14 +4882,22 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button onclick="sysLogsRefresh()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">🔄 Atualizar</button>
             <div style="flex:1"></div>
             <select id="sysLogsFilter" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
-              <option value="all">Todos</option>
-              <option value="FAILED">Falhas</option>
-              <option value="SCHEDULED">Atrasados</option>
-              <option value="PUBLISHED">Publicados</option>
-              <option value="CANCELLED">Cancelados</option>
+              <option value="all">📋 Todos os status</option>
+              <option value="FAILED">❌ Falhas</option>
+              <option value="SCHEDULED">⚠️ Atrasados</option>
+              <option value="PUBLISHED">✅ Publicados</option>
+              <option value="CANCELLED">🚫 Cancelados</option>
+            </select>
+            <select id="sysLogsPlatform" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">📡 Todas plataformas</option>
+              <option value="ig">📷 Instagram</option>
+              <option value="fb">📄 Facebook</option>
             </select>
             <select id="sysLogsClient" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
-              <option value="">Todos os clientes</option>
+              <option value="">👥 Todos os clientes</option>
+            </select>
+            <select id="sysLogsUser" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">👤 Todos os usuários</option>
             </select>
           </div>
           <div id="sysLogsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px"></div>
@@ -6097,9 +6105,26 @@ function sysLogsLoadClients() {
   var sel = document.getElementById('sysLogsClient');
   if (!sel) return;
   var clients = _metaClients || {};
-  var html = '<option value="">Todos os clientes</option>';
+  var html = '<option value="">👥 Todos os clientes</option>';
   Object.entries(clients).forEach(function(entry) {
     html += '<option value="' + entry[0] + '">' + (entry[1].name || entry[0]) + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+function sysLogsLoadUsers() {
+  var sel = document.getElementById('sysLogsUser');
+  if (!sel) return;
+  var users = {};
+  _sysLogs.forEach(function(h) {
+    if (h.user_name) {
+      var name = sysLogParseUser(h.user_name);
+      if (name && name !== 'Sistema' && name !== 'Cron') users[name] = true;
+    }
+  });
+  var html = '<option value="">👤 Todos os usuários</option>';
+  Object.keys(users).sort().forEach(function(u) {
+    html += '<option value="' + u + '">' + u + '</option>';
   });
   sel.innerHTML = html;
 }
@@ -6125,17 +6150,22 @@ async function sysLogsRefresh() {
     _sysLogs = [];
   }
 
+  sysLogsLoadUsers();
   sysLogsRender();
 }
 
 function sysLogsRender() {
   var filter = document.getElementById('sysLogsFilter').value;
   var clientFilter = document.getElementById('sysLogsClient').value;
+  var platformFilter = document.getElementById('sysLogsPlatform') ? document.getElementById('sysLogsPlatform').value : '';
+  var userFilter = document.getElementById('sysLogsUser') ? document.getElementById('sysLogsUser').value : '';
   var now = new Date();
 
   // Filter logs
   var filtered = _sysLogs.filter(function(h) {
     if (clientFilter && h.client_key !== clientFilter) return false;
+    if (platformFilter && h.platform !== platformFilter) return false;
+    if (userFilter && sysLogParseUser(h.user_name) !== userFilter) return false;
     if (filter === 'all') return true;
     if (filter === 'FAILED') return h.status === 'FAILED';
     if (filter === 'PUBLISHED') return h.status === 'PUBLISHED';
