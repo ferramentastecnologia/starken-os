@@ -1576,6 +1576,20 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-pub-pill.queued { background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe; }
 .ct-pub-pill.none { background:var(--surface-container);color:var(--text-muted);border:1px solid var(--border-default);opacity:0.6;font-weight:500; }
 
+/* Searchable Select Component */
+.ss-wrap { position:relative;display:inline-block;min-width:180px; }
+.ss-btn { display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:0.78rem;font-family:inherit;cursor:pointer;width:100%;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.ss-btn::after { content:'▾';margin-left:auto;font-size:0.6rem;opacity:0.5; }
+.ss-dropdown { display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;min-width:220px;max-height:280px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.18);z-index:9999;overflow:hidden; }
+.ss-dropdown.open { display:block; }
+.ss-search { width:100%;padding:8px 10px;border:none;border-bottom:1px solid var(--border);font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);outline:none;box-sizing:border-box; }
+.ss-search::placeholder { color:var(--text-secondary);opacity:0.6; }
+.ss-list { max-height:230px;overflow-y:auto; }
+.ss-item { padding:7px 12px;font-size:0.78rem;cursor:pointer;transition:background 0.1s; }
+.ss-item:hover { background:var(--bg-subtle,#f3f4f6); }
+.ss-item.selected { background:var(--primary,#3b82f6);color:#fff;font-weight:600; }
+.ss-item.hidden { display:none; }
+
 /* ─── New Group Modal ─── */
 #ctNewGroupModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
 #ctNewGroupModal.active { display:flex; }
@@ -3186,6 +3200,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div id="metaConfigAddClientRow" style="display:none;margin-bottom:16px">
                 <button class="btn-new-task" onclick="metaConfigAddClient()" style="font-size:0.82rem;padding:7px 16px">&#10133; Criar Cliente</button>
               </div>
+              <!-- Busca de clientes -->
+              <div style="margin-bottom:12px">
+                <input type="text" id="metaConfigSearch" placeholder="🔍 Buscar cliente..." oninput="metaConfigFilterClients(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+              </div>
               <!-- Lista de clientes agrupados por tenant -->
               <div id="metaConfigClientList" style="margin-bottom:16px"></div>
               <!-- Botão Salvar -->
@@ -3416,7 +3434,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
                   <div class="form-group">
                     <label class="form-label">&#128100; Cliente</label>
-                    <select class="form-input" id="metaPubClient" onchange="metaPublishClientChange()" style="font-weight:600">
+                    <select class="form-input" id="metaPubClient" data-searchable onchange="metaPublishClientChange()" style="font-weight:600">
                       <option value="">Selecione um cliente...</option>
                     </select>
                     <div id="metaPubClientInfo" style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px"></div>
@@ -4893,7 +4911,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="ig">📷 Instagram</option>
               <option value="fb">📄 Facebook</option>
             </select>
-            <select id="sysLogsClient" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+            <select id="sysLogsClient" data-searchable onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
               <option value="">👥 Todos os clientes</option>
             </select>
             <select id="sysLogsUser" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
@@ -6091,6 +6109,102 @@ function sidebarSetupDragDrop() {
 
 // ============ NAVIGATION ============
 // ═══════════════════════════════════════════════════════
+// SEARCHABLE SELECT COMPONENT
+// ═══════════════════════════════════════════════════════
+function ssCreate(selectEl) {
+  if (!selectEl || selectEl.dataset.ssInit) return;
+  selectEl.dataset.ssInit = '1';
+  selectEl.style.display = 'none';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'ss-wrap';
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ss-btn';
+  btn.textContent = selectEl.options[selectEl.selectedIndex]?.text || 'Selecionar...';
+
+  var dropdown = document.createElement('div');
+  dropdown.className = 'ss-dropdown';
+
+  var search = document.createElement('input');
+  search.type = 'text';
+  search.className = 'ss-search';
+  search.placeholder = '🔍 Buscar cliente...';
+
+  var list = document.createElement('div');
+  list.className = 'ss-list';
+
+  function buildItems() {
+    list.innerHTML = '';
+    Array.from(selectEl.options).forEach(function(opt) {
+      var item = document.createElement('div');
+      item.className = 'ss-item' + (opt.selected ? ' selected' : '');
+      item.textContent = opt.text;
+      item.dataset.value = opt.value;
+      item.onclick = function() {
+        selectEl.value = opt.value;
+        selectEl.dispatchEvent(new Event('change'));
+        btn.textContent = opt.text;
+        dropdown.classList.remove('open');
+        search.value = '';
+        filterItems('');
+        list.querySelectorAll('.ss-item').forEach(function(i) { i.classList.remove('selected'); });
+        item.classList.add('selected');
+      };
+      list.appendChild(item);
+    });
+  }
+
+  function filterItems(query) {
+    var q = query.toLowerCase().trim();
+    list.querySelectorAll('.ss-item').forEach(function(item) {
+      var match = !q || item.textContent.toLowerCase().includes(q);
+      item.classList.toggle('hidden', !match);
+    });
+  }
+
+  search.oninput = function() { filterItems(this.value); };
+
+  btn.onclick = function(e) {
+    e.stopPropagation();
+    var isOpen = dropdown.classList.contains('open');
+    // Close all other dropdowns
+    document.querySelectorAll('.ss-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!isOpen) {
+      buildItems();
+      dropdown.classList.add('open');
+      search.value = '';
+      filterItems('');
+      setTimeout(function() { search.focus(); }, 50);
+    }
+  };
+
+  dropdown.appendChild(search);
+  dropdown.appendChild(list);
+  selectEl.parentNode.insertBefore(wrap, selectEl);
+  wrap.appendChild(btn);
+  wrap.appendChild(dropdown);
+  wrap.appendChild(selectEl);
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (!wrap.contains(e.target)) dropdown.classList.remove('open');
+  });
+
+  // Public API to refresh
+  selectEl._ssRefresh = function() {
+    btn.textContent = selectEl.options[selectEl.selectedIndex]?.text || 'Selecionar...';
+    buildItems();
+  };
+}
+
+// Initialize searchable selects on elements with data-searchable
+function ssInitAll() {
+  document.querySelectorAll('select[data-searchable]').forEach(ssCreate);
+}
+
+// ═══════════════════════════════════════════════════════
 // SYSTEM LOGS MODULE
 // ═══════════════════════════════════════════════════════
 var _sysLogs = [];
@@ -6105,11 +6219,14 @@ function sysLogsLoadClients() {
   var sel = document.getElementById('sysLogsClient');
   if (!sel) return;
   var clients = _metaClients || {};
+  var sorted = Object.entries(clients).sort(function(a, b) { return (a[1].name || a[0]).localeCompare(b[1].name || b[0]); });
   var html = '<option value="">👥 Todos os clientes</option>';
-  Object.entries(clients).forEach(function(entry) {
+  sorted.forEach(function(entry) {
     html += '<option value="' + entry[0] + '">' + (entry[1].name || entry[0]) + '</option>';
   });
   sel.innerHTML = html;
+  if (sel._ssRefresh) sel._ssRefresh();
+  else ssCreate(sel);
 }
 
 function sysLogsLoadUsers() {
@@ -9480,6 +9597,15 @@ function metaConfigClientTenantChange(key, value) {
 }
 
 // Renderiza a lista de cards de clientes agrupados por tenant — layout em grid compacto
+function metaConfigFilterClients(query) {
+  var q = (query || '').toLowerCase().trim();
+  document.querySelectorAll('.meta-client-card').forEach(function(card) {
+    var nameEl = card.querySelector('.mc-client-name');
+    var name = nameEl ? nameEl.textContent.toLowerCase() : card.textContent.toLowerCase();
+    card.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+}
+
 function metaConfigRenderClientList() {
   populateSidebarClients();
   const container = document.getElementById('metaConfigClientList');
@@ -11878,6 +12004,8 @@ function metaPublishLoadClients() {
     html += '</optgroup>';
   }
   select.innerHTML = html;
+  if (select._ssRefresh) select._ssRefresh();
+  else ssCreate(select);
 }
 
 // ─── Quando cliente muda ───
