@@ -5273,11 +5273,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // FAILED posts
         if (h.status === 'FAILED') {
+          const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
+          const errMsg = h.error_message ? ' · ' + h.error_message.substring(0, 80) : '';
           alerts.push({
             type: 'error',
             icon: '❌',
-            title: 'Publicação falhou',
-            message: (h.client_name || 'Cliente') + ' · ' + (h.platform === 'ig' ? 'Instagram' : 'Facebook'),
+            title: 'Publicação falhou · ' + platLabel,
+            message: (h.client_name || 'Cliente') + errMsg,
             key: key,
           });
         }
@@ -11586,6 +11588,7 @@ async function metaPublishLoadHistory() {
         scheduled: h.scheduled_for,
         hasImage: h.has_image,
         user: h.user_name,
+        error_message: h.error_message || null,
       }));
       metaPublishRenderHistory();
     }
@@ -12497,7 +12500,7 @@ function metaPublishRenderHistory() {
     };
     const st = statusMap[h.status] || statusMap['PUBLISHED'];
 
-    // Data de agendamento
+    // Data de agendamento / erro
     let schedInfo = '';
     if (h.scheduled && (h.status === 'SCHEDULED' || h.status === 'DELETED')) {
       const schedDate = new Date(h.scheduled);
@@ -12506,6 +12509,9 @@ function metaPublishRenderHistory() {
         + schedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         + ' às ' + schedDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         + '</div>';
+    }
+    if (isFailed && h.error_message) {
+      schedInfo += '<div style="font-size:0.7rem;color:#dc2626;margin-top:3px;word-break:break-word">⚠️ ' + h.error_message + '</div>';
     }
 
     // Botões de ação
