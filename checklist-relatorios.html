@@ -13028,25 +13028,34 @@ function ctRenderPublishColumn(publishConfig) {
   if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) {
     return '<div class="ct-pub-col"><span class="ct-pub-pill none">— Sem agenda</span></div>';
   }
+  // Filter out cancelled entries and sort: most recent first
+  var entries = publishConfig.entries.filter(function(e) { return e.status !== 'cancelled'; });
+  // Show max 3 entries to avoid visual overflow, prioritize: failed > scheduled > published
+  var sorted = entries.slice().sort(function(a, b) {
+    var order = { failed: 0, scheduled: 1, queued: 2, published: 3 };
+    return (order[a.status] || 4) - (order[b.status] || 4);
+  });
+  var visible = sorted.slice(0, 3);
+  var hidden = sorted.length - visible.length;
+
   let html = '<div class="ct-pub-col">';
-  publishConfig.entries.forEach(e => {
-    const plat = e.platform === 'facebook' ? 'FB' : 'IG';
-    const platIcon = e.platform === 'facebook' ? '📘' : '📸';
-    const st = (e.status || 'scheduled').toLowerCase();
-    let label = '', icon = '';
+  visible.forEach(function(e) {
+    var plat = e.platform === 'facebook' ? 'FB' : 'IG';
+    var platIcon = e.platform === 'facebook' ? '📘' : '📸';
+    var st = (e.status || 'scheduled').toLowerCase();
+    var label = '', icon = '';
     if (st === 'published') {
       icon = '✅';
-      // Show date/time when available
       var pubDate = e.published_at || e.scheduled_for;
       if (pubDate) {
         var d = new Date(pubDate);
-        label = 'Publicado ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       } else {
         label = 'Publicado';
       }
     } else if (st === 'scheduled' && e.scheduled_for) {
       icon = '📅';
-      const d = new Date(e.scheduled_for);
+      var d = new Date(e.scheduled_for);
       label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     } else if (st === 'scheduled') {
       icon = '📅';
@@ -13063,6 +13072,9 @@ function ctRenderPublishColumn(publishConfig) {
     }
     html += '<span class="ct-pub-pill ' + st + '" title="' + plat + ': ' + label + '">' + icon + ' ' + platIcon + plat + ' ' + label + '</span>';
   });
+  if (hidden > 0) {
+    html += '<span class="ct-pub-pill none" style="opacity:0.7;font-size:8px">+' + hidden + ' mais</span>';
+  }
   html += '</div>';
   return html;
 }
