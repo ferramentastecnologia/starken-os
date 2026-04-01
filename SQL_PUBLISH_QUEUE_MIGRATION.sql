@@ -9,7 +9,12 @@
 ALTER TABLE publish_history
   ADD COLUMN IF NOT EXISTS error_message TEXT;
 
--- 2. Adiciona coluna updated_at na publish_queue
+-- 2. Adiciona coluna published_at na publish_history
+--    (armazena o horário real de publicação para comparar com scheduled_for)
+ALTER TABLE publish_history
+  ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+
+-- 3. Adiciona coluna updated_at na publish_queue
 --    (necessário para detectar itens presos em PROCESSING)
 ALTER TABLE publish_queue
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT now();

@@ -41,6 +41,15 @@ async function processPublishQueue() {
   if (!url) return { processed: 0 };
 
   const now = new Date().toISOString();
+
+  // Auto-mark FB SCHEDULED posts as PUBLISHED when their scheduled time has passed
+  // (FB handles scheduling natively via API, so we just update our history)
+  await fetch(`${url}/rest/v1/publish_history?status=eq.SCHEDULED&platform=eq.fb&scheduled_for=lte.${now}`, {
+    method: 'PATCH',
+    headers: supabaseHeaders(),
+    body: JSON.stringify({ status: 'PUBLISHED', published_at: now }),
+  });
+
   // Reset items stuck in PROCESSING for more than 5 minutes (function timeout recovery)
   const stuckCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   await fetch(`${url}/rest/v1/publish_queue?status=eq.PROCESSING&updated_at=lte.${stuckCutoff}`, {
@@ -166,7 +175,8 @@ async function processPublishQueue() {
         body: JSON.stringify({ status: 'PUBLISHED', post_id: publishedId, processed_at: new Date().toISOString() }),
       });
 
-      // Save to history
+      // Save to history with published_at timestamp
+      const publishedAt = new Date().toISOString();
       await saveToHistory({
         user_name: item.user_name || 'Cron',
         client_key: item.client_key,
@@ -178,7 +188,59 @@ async function processPublishQueue() {
         has_image: imageUrls.length > 0,
         image_url: imageUrls[0] || null,
         scheduled_for: item.scheduled_for,
+        published_at: publishedAt,
       });
+
+      // Auto-update task status to 'publicado' if task_id is present
+      if (item.task_id) {
+        try {
+          await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}`, {
+            method: 'PATCH',
+            headers: supabaseHeaders(),
+            body: JSON.stringify({
+              status: 'publicado',
+              updated_at: publishedAt,
+            }),
+          });
+          // Update publish_config entries in the task
+          const taskRes = await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}&select=publish_config`, {
+            headers: { 'apikey': SUPABASE_KEY(), 'Authorization': `Bearer ${SUPABASE_KEY()}` },
+          });
+          if (taskRes.ok) {
+            const taskRows = await taskRes.json();
+            if (taskRows.length > 0 && taskRows[0].publish_config) {
+              const pc = taskRows[0].publish_config;
+              let updated = false;
+              // Update matching entries in format configs and legacy entries
+              const updateEntries = (entries) => {
+                if (!entries) return;
+                entries.forEach(e => {
+                  if (e.post_id === item.id && e.status === 'scheduled') {
+                    e.status = 'published';
+                    e.published_at = publishedAt;
+                    e.post_id = publishedId;
+                    updated = true;
+                  }
+                });
+              };
+              updateEntries(pc.entries);
+              // Check format-specific entries (feed, story, carrossel, reels)
+              ['feed', 'story', 'carrossel', 'reels'].forEach(f => {
+                if (pc[f] && pc[f].entries) updateEntries(pc[f].entries);
+              });
+              if (updated) {
+                await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}`, {
+                  method: 'PATCH',
+                  headers: supabaseHeaders(),
+                  body: JSON.stringify({ publish_config: pc }),
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[publish_queue] Failed to update task status:', e.message);
+        }
+      }
 
       results.push({ id: item.id, status: 'PUBLISHED', post_id: publishedId });
     } catch (err) {

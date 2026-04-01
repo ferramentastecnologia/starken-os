@@ -6227,7 +6227,11 @@ function sysLogsRender() {
     var dateStr = h.created_at ? new Date(h.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
     var schedStr = '';
     if (h.scheduled_for) {
-      schedStr = '📅 ' + new Date(h.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      schedStr = '📅 Agendado: ' + new Date(h.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+    var pubStr = '';
+    if (h.published_at) {
+      pubStr = '✅ Publicado: ' + new Date(h.published_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
     html += '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:' + st.bg + ';border:1px solid ' + st.border + '">'
@@ -6247,9 +6251,10 @@ function sysLogsRender() {
       html += '<div style="font-size:0.75rem;color:#dc2626;margin-top:4px;padding:6px 8px;background:#fef2f220;border-radius:6px;border:1px solid #fecaca;word-break:break-word">🐛 ' + h.error_message + '</div>';
     }
 
-    html += '<div style="display:flex;gap:12px;margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">'
-      + '<span>🕐 ' + dateStr + '</span>'
+    html += '<div style="display:flex;gap:12px;margin-top:4px;font-size:0.7rem;color:var(--text-secondary);flex-wrap:wrap">'
+      + '<span>🕐 Criado: ' + dateStr + '</span>'
       + (schedStr ? '<span>' + schedStr + '</span>' : '')
+      + (pubStr ? '<span style="color:#059669;font-weight:600">' + pubStr + '</span>' : '')
       + (h.user_name ? '<span>👤 ' + sysLogParseUser(h.user_name) + '</span>' : '')
       + '</div>'
       + '</div></div>';
@@ -11810,6 +11815,7 @@ async function metaPublishLoadHistory() {
         hasImage: h.has_image,
         user: h.user_name,
         error_message: h.error_message || null,
+        published_at: h.published_at || null,
       }));
       metaPublishRenderHistory();
     }
@@ -20246,16 +20252,18 @@ async function ctPublishFormat() {
       if (plat === 'ig') {
         // Instagram via queue
         var scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 5000).toISOString();
+        var clientName = (_metaClients && _metaClients[ctCurrentClient]) ? _metaClients[ctCurrentClient].name : ctCurrentClient;
         var queueBody = {
           action: 'queue',
           client_key: ctCurrentClient,
+          client_name: clientName,
           platform: 'ig',
           caption: fmt === 'story' ? '' : copy,
           scheduled_for: scheduledFor,
           task_id: ctModalTask.id,
           post_type: fmt,
           media_type: (fmt === 'reels' || videos.length > 0) ? 'REELS' : null,
-          user_name: gpState.user,
+          user_name: gpState.user ? gpState.user.name : 'Sistema',
         };
         if (fmt === 'carrossel') {
           queueBody.image_urls = imageUrls;
