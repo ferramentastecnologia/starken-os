@@ -4874,6 +4874,31 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div><!-- end #tab-traffic -->
 
+      <!-- ═══ SYSTEM LOGS TAB ═══ -->
+      <div id="tab-system-logs" class="tab-content">
+        <div style="padding:20px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+            <h2 style="font-size:1.2rem;font-weight:700;margin:0">🛠️ Logs do Sistema</h2>
+            <button onclick="sysLogsRefresh()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">🔄 Atualizar</button>
+            <div style="flex:1"></div>
+            <select id="sysLogsFilter" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="all">Todos</option>
+              <option value="FAILED">Falhas</option>
+              <option value="SCHEDULED">Atrasados</option>
+              <option value="PUBLISHED">Publicados</option>
+              <option value="CANCELLED">Cancelados</option>
+            </select>
+            <select id="sysLogsClient" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">Todos os clientes</option>
+            </select>
+          </div>
+          <div id="sysLogsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px"></div>
+          <div id="sysLogsList" style="font-size:0.82rem">
+            <div style="text-align:center;padding:40px;color:var(--text-secondary)">Carregando logs...</div>
+          </div>
+        </div>
+      </div><!-- end #tab-system-logs -->
+
     </div>
   </div>
 </div>
@@ -5181,33 +5206,6 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
     </div>
   </div>
 </div>
-
-      <!-- ═══ SYSTEM LOGS TAB ═══ -->
-      <div id="tab-system-logs" class="tab-content">
-        <div style="padding:20px">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
-            <h2 style="font-size:1.2rem;font-weight:700;margin:0">🛠️ Logs do Sistema</h2>
-            <button onclick="sysLogsRefresh()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">🔄 Atualizar</button>
-            <div style="flex:1"></div>
-            <select id="sysLogsFilter" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
-              <option value="all">Todos</option>
-              <option value="FAILED">Falhas</option>
-              <option value="SCHEDULED">Atrasados</option>
-              <option value="PUBLISHED">Publicados</option>
-              <option value="CANCELLED">Cancelados</option>
-            </select>
-            <select id="sysLogsClient" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
-              <option value="">Todos os clientes</option>
-            </select>
-          </div>
-          <!-- Summary cards -->
-          <div id="sysLogsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:20px"></div>
-          <!-- Log entries -->
-          <div id="sysLogsList" style="font-size:0.82rem">
-            <div style="text-align:center;padding:40px;color:var(--text-secondary)">Carregando logs...</div>
-          </div>
-        </div>
-      </div>
 
 <!-- Modal Revisão -->
 <div class="modal-overlay" id="caRevisionModal">
@@ -6222,13 +6220,22 @@ function sysLogsRender() {
     html += '<div style="display:flex;gap:12px;margin-top:4px;font-size:0.7rem;color:var(--text-secondary)">'
       + '<span>🕐 ' + dateStr + '</span>'
       + (schedStr ? '<span>' + schedStr + '</span>' : '')
-      + (h.user_name ? '<span>👤 ' + h.user_name + '</span>' : '')
+      + (h.user_name ? '<span>👤 ' + sysLogParseUser(h.user_name) + '</span>' : '')
       + '</div>'
       + '</div></div>';
   });
 
   html += '</div>';
   listEl.innerHTML = html;
+}
+
+function sysLogParseUser(u) {
+  if (!u) return '';
+  if (typeof u === 'object') return u.name || JSON.stringify(u);
+  if (typeof u === 'string' && u.startsWith('{')) {
+    try { var obj = JSON.parse(u); return obj.name || u; } catch(e) { return u; }
+  }
+  return u;
 }
 
 function sysLogCard(label, count, color, bg, border) {
