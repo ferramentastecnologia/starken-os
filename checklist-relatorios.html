@@ -1576,6 +1576,20 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-pub-pill.queued { background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe; }
 .ct-pub-pill.none { background:var(--surface-container);color:var(--text-muted);border:1px solid var(--border-default);opacity:0.6;font-weight:500; }
 
+/* Searchable Select Component */
+.ss-wrap { position:relative;display:inline-block;min-width:180px; }
+.ss-btn { display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:0.78rem;font-family:inherit;cursor:pointer;width:100%;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.ss-btn::after { content:'▾';margin-left:auto;font-size:0.6rem;opacity:0.5; }
+.ss-dropdown { display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;min-width:220px;max-height:280px;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,0.18);z-index:9999;overflow:hidden; }
+.ss-dropdown.open { display:block; }
+.ss-search { width:100%;padding:8px 10px;border:none;border-bottom:1px solid var(--border);font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);outline:none;box-sizing:border-box; }
+.ss-search::placeholder { color:var(--text-secondary);opacity:0.6; }
+.ss-list { max-height:230px;overflow-y:auto; }
+.ss-item { padding:7px 12px;font-size:0.78rem;cursor:pointer;transition:background 0.1s; }
+.ss-item:hover { background:var(--bg-subtle,#f3f4f6); }
+.ss-item.selected { background:var(--primary,#3b82f6);color:#fff;font-weight:600; }
+.ss-item.hidden { display:none; }
+
 /* ─── New Group Modal ─── */
 #ctNewGroupModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
 #ctNewGroupModal.active { display:flex; }
@@ -3186,6 +3200,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div id="metaConfigAddClientRow" style="display:none;margin-bottom:16px">
                 <button class="btn-new-task" onclick="metaConfigAddClient()" style="font-size:0.82rem;padding:7px 16px">&#10133; Criar Cliente</button>
               </div>
+              <!-- Busca de clientes -->
+              <div style="margin-bottom:12px">
+                <input type="text" id="metaConfigSearch" placeholder="🔍 Buscar cliente..." oninput="metaConfigFilterClients(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+              </div>
               <!-- Lista de clientes agrupados por tenant -->
               <div id="metaConfigClientList" style="margin-bottom:16px"></div>
               <!-- Botão Salvar -->
@@ -3416,7 +3434,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
                   <div class="form-group">
                     <label class="form-label">&#128100; Cliente</label>
-                    <select class="form-input" id="metaPubClient" onchange="metaPublishClientChange()" style="font-weight:600">
+                    <select class="form-input" id="metaPubClient" data-searchable onchange="metaPublishClientChange()" style="font-weight:600">
                       <option value="">Selecione um cliente...</option>
                     </select>
                     <div id="metaPubClientInfo" style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px"></div>
@@ -4874,6 +4892,39 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div><!-- end #tab-traffic -->
 
+      <!-- ═══ SYSTEM LOGS TAB ═══ -->
+      <div id="tab-system-logs" class="tab-content">
+        <div style="padding:20px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+            <h2 style="font-size:1.2rem;font-weight:700;margin:0">🛠️ Logs do Sistema</h2>
+            <button onclick="sysLogsRefresh()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">🔄 Atualizar</button>
+            <div style="flex:1"></div>
+            <select id="sysLogsFilter" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="all">📋 Todos os status</option>
+              <option value="FAILED">❌ Falhas</option>
+              <option value="SCHEDULED">⚠️ Atrasados</option>
+              <option value="PUBLISHED">✅ Publicados</option>
+              <option value="CANCELLED">🚫 Cancelados</option>
+            </select>
+            <select id="sysLogsPlatform" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">📡 Todas plataformas</option>
+              <option value="ig">📷 Instagram</option>
+              <option value="fb">📄 Facebook</option>
+            </select>
+            <select id="sysLogsClient" data-searchable onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">👥 Todos os clientes</option>
+            </select>
+            <select id="sysLogsUser" onchange="sysLogsRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">👤 Todos os usuários</option>
+            </select>
+          </div>
+          <div id="sysLogsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:20px"></div>
+          <div id="sysLogsList" style="font-size:0.82rem">
+            <div style="text-align:center;padding:40px;color:var(--text-secondary)">Carregando logs...</div>
+          </div>
+        </div>
+      </div><!-- end #tab-system-logs -->
+
     </div>
   </div>
 </div>
@@ -5273,11 +5324,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // FAILED posts
         if (h.status === 'FAILED') {
+          const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
+          const errMsg = h.error_message ? ' · ' + h.error_message.substring(0, 80) : '';
           alerts.push({
             type: 'error',
             icon: '❌',
-            title: 'Publicação falhou',
-            message: (h.client_name || 'Cliente') + ' · ' + (h.platform === 'ig' ? 'Instagram' : 'Facebook'),
+            title: 'Publicação falhou · ' + platLabel,
+            message: (h.client_name || 'Cliente') + errMsg,
             key: key,
           });
         }
@@ -5765,6 +5818,7 @@ let SIDEBAR_MENU = [
   { type: 'category', id: 'cat-geral', label: 'Geral', items: [
     { type: 'item', id: 'clients', label: 'Clientes', icon: '&#128101;', tab: 'clients' },
     { type: 'item', id: 'history', label: 'Histórico', icon: '📋', tab: 'history' },
+    { type: 'item', id: 'system-logs', label: 'Logs do Sistema', icon: '🛠️', tab: 'system-logs' },
   ]},
   { type: 'category', id: 'cat-agents', label: 'Agents', items: [
     { type: 'item', id: 'ai-squads', label: 'AI Squads', icon: '🤖', tab: 'ai-squads' },
@@ -6054,6 +6108,295 @@ function sidebarSetupDragDrop() {
 }
 
 // ============ NAVIGATION ============
+// ═══════════════════════════════════════════════════════
+// SEARCHABLE SELECT COMPONENT
+// ═══════════════════════════════════════════════════════
+function ssCreate(selectEl) {
+  if (!selectEl || selectEl.dataset.ssInit) return;
+  selectEl.dataset.ssInit = '1';
+  selectEl.style.display = 'none';
+
+  var wrap = document.createElement('div');
+  wrap.className = 'ss-wrap';
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ss-btn';
+  btn.textContent = selectEl.options[selectEl.selectedIndex]?.text || 'Selecionar...';
+
+  var dropdown = document.createElement('div');
+  dropdown.className = 'ss-dropdown';
+
+  var search = document.createElement('input');
+  search.type = 'text';
+  search.className = 'ss-search';
+  search.placeholder = '🔍 Buscar cliente...';
+
+  var list = document.createElement('div');
+  list.className = 'ss-list';
+
+  function buildItems() {
+    list.innerHTML = '';
+    Array.from(selectEl.options).forEach(function(opt) {
+      var item = document.createElement('div');
+      item.className = 'ss-item' + (opt.selected ? ' selected' : '');
+      item.textContent = opt.text;
+      item.dataset.value = opt.value;
+      item.onclick = function() {
+        selectEl.value = opt.value;
+        selectEl.dispatchEvent(new Event('change'));
+        btn.textContent = opt.text;
+        dropdown.classList.remove('open');
+        search.value = '';
+        filterItems('');
+        list.querySelectorAll('.ss-item').forEach(function(i) { i.classList.remove('selected'); });
+        item.classList.add('selected');
+      };
+      list.appendChild(item);
+    });
+  }
+
+  function filterItems(query) {
+    var q = query.toLowerCase().trim();
+    list.querySelectorAll('.ss-item').forEach(function(item) {
+      var match = !q || item.textContent.toLowerCase().includes(q);
+      item.classList.toggle('hidden', !match);
+    });
+  }
+
+  search.oninput = function() { filterItems(this.value); };
+
+  btn.onclick = function(e) {
+    e.stopPropagation();
+    var isOpen = dropdown.classList.contains('open');
+    // Close all other dropdowns
+    document.querySelectorAll('.ss-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
+    if (!isOpen) {
+      buildItems();
+      dropdown.classList.add('open');
+      search.value = '';
+      filterItems('');
+      setTimeout(function() { search.focus(); }, 50);
+    }
+  };
+
+  dropdown.appendChild(search);
+  dropdown.appendChild(list);
+  selectEl.parentNode.insertBefore(wrap, selectEl);
+  wrap.appendChild(btn);
+  wrap.appendChild(dropdown);
+  wrap.appendChild(selectEl);
+
+  // Close on outside click
+  document.addEventListener('click', function(e) {
+    if (!wrap.contains(e.target)) dropdown.classList.remove('open');
+  });
+
+  // Public API to refresh
+  selectEl._ssRefresh = function() {
+    btn.textContent = selectEl.options[selectEl.selectedIndex]?.text || 'Selecionar...';
+    buildItems();
+  };
+}
+
+// Initialize searchable selects on elements with data-searchable
+function ssInitAll() {
+  document.querySelectorAll('select[data-searchable]').forEach(ssCreate);
+}
+
+// ═══════════════════════════════════════════════════════
+// SYSTEM LOGS MODULE
+// ═══════════════════════════════════════════════════════
+var _sysLogs = [];
+var _sysQueue = [];
+
+async function sysLogsInit() {
+  sysLogsLoadClients();
+  await sysLogsRefresh();
+}
+
+function sysLogsLoadClients() {
+  var sel = document.getElementById('sysLogsClient');
+  if (!sel) return;
+  var clients = _metaClients || {};
+  var sorted = Object.entries(clients).sort(function(a, b) { return (a[1].name || a[0]).localeCompare(b[1].name || b[0]); });
+  var html = '<option value="">👥 Todos os clientes</option>';
+  sorted.forEach(function(entry) {
+    html += '<option value="' + entry[0] + '">' + (entry[1].name || entry[0]) + '</option>';
+  });
+  sel.innerHTML = html;
+  if (sel._ssRefresh) sel._ssRefresh();
+  else ssCreate(sel);
+}
+
+function sysLogsLoadUsers() {
+  var sel = document.getElementById('sysLogsUser');
+  if (!sel) return;
+  var users = {};
+  _sysLogs.forEach(function(h) {
+    if (h.user_name) {
+      var name = sysLogParseUser(h.user_name);
+      if (name && name !== 'Sistema' && name !== 'Cron') users[name] = true;
+    }
+  });
+  var html = '<option value="">👤 Todos os usuários</option>';
+  Object.keys(users).sort().forEach(function(u) {
+    html += '<option value="' + u + '">' + u + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+async function sysLogsRefresh() {
+  var listEl = document.getElementById('sysLogsList');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">⏳ Carregando...</div>';
+
+  try {
+    // Load publish_history (last 200) and publish_queue in parallel
+    var [histRes, queueRes] = await Promise.all([
+      fetch(metaApiBase() + '/api/meta/publish?limit=200'),
+      fetch(metaApiBase() + '/api/meta/publish?cron=process'),
+    ]);
+    var histData = await histRes.json();
+    _sysLogs = histData.history || [];
+
+    // Reload history after cron to get latest statuses
+    var histRes2 = await fetch(metaApiBase() + '/api/meta/publish?limit=200');
+    var histData2 = await histRes2.json();
+    _sysLogs = histData2.history || [];
+  } catch (e) {
+    _sysLogs = [];
+  }
+
+  sysLogsLoadUsers();
+  sysLogsRender();
+}
+
+function sysLogsRender() {
+  var filter = document.getElementById('sysLogsFilter').value;
+  var clientFilter = document.getElementById('sysLogsClient').value;
+  var platformFilter = document.getElementById('sysLogsPlatform') ? document.getElementById('sysLogsPlatform').value : '';
+  var userFilter = document.getElementById('sysLogsUser') ? document.getElementById('sysLogsUser').value : '';
+  var now = new Date();
+
+  // Filter logs
+  var filtered = _sysLogs.filter(function(h) {
+    if (clientFilter && h.client_key !== clientFilter) return false;
+    if (platformFilter && h.platform !== platformFilter) return false;
+    if (userFilter && sysLogParseUser(h.user_name) !== userFilter) return false;
+    if (filter === 'all') return true;
+    if (filter === 'FAILED') return h.status === 'FAILED';
+    if (filter === 'PUBLISHED') return h.status === 'PUBLISHED';
+    if (filter === 'CANCELLED') return h.status === 'DELETED';
+    if (filter === 'SCHEDULED') {
+      if (h.status !== 'SCHEDULED') return false;
+      if (!h.scheduled_for) return false;
+      return (now - new Date(h.scheduled_for)) > 5 * 60 * 1000;
+    }
+    return true;
+  });
+
+  // Summary cards
+  var total = _sysLogs.length;
+  var failed = _sysLogs.filter(function(h) { return h.status === 'FAILED'; }).length;
+  var delayed = _sysLogs.filter(function(h) {
+    return h.status === 'SCHEDULED' && h.scheduled_for && (now - new Date(h.scheduled_for)) > 5 * 60 * 1000;
+  }).length;
+  var published = _sysLogs.filter(function(h) { return h.status === 'PUBLISHED'; }).length;
+  var cancelled = _sysLogs.filter(function(h) { return h.status === 'DELETED'; }).length;
+
+  var summaryEl = document.getElementById('sysLogsSummary');
+  if (summaryEl) {
+    summaryEl.innerHTML =
+      sysLogCard('❌ Falhas', failed, '#dc2626', '#fef2f2', '#fecaca') +
+      sysLogCard('⚠️ Atrasados', delayed, '#b45309', '#fffbeb', '#fde68a') +
+      sysLogCard('✅ Publicados', published, '#059669', '#ecfdf5', '#a7f3d0') +
+      sysLogCard('🚫 Cancelados', cancelled, '#6b7280', '#f3f4f6', '#d1d5db') +
+      sysLogCard('📊 Total', total, '#1d4ed8', '#eff6ff', '#bfdbfe');
+  }
+
+  // Render list
+  var listEl = document.getElementById('sysLogsList');
+  if (!listEl) return;
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">Nenhum log encontrado para este filtro</div>';
+    return;
+  }
+
+  var html = '<div style="display:flex;flex-direction:column;gap:8px">';
+  filtered.forEach(function(h) {
+    var platIcon = h.platform === 'ig' ? '📷' : '📄';
+    var platName = h.platform === 'ig' ? 'Instagram' : 'Facebook';
+    var statusMap = {
+      'PUBLISHED': { bg: '#ecfdf5', border: '#a7f3d0', color: '#059669', icon: '✅', label: 'Publicado' },
+      'SCHEDULED': { bg: '#fffbeb', border: '#fde68a', color: '#b45309', icon: '📅', label: 'Agendado' },
+      'FAILED':    { bg: '#fef2f2', border: '#fecaca', color: '#dc2626', icon: '❌', label: 'Falhou' },
+      'DELETED':   { bg: '#f3f4f6', border: '#d1d5db', color: '#6b7280', icon: '🚫', label: 'Cancelado' },
+    };
+    var st = statusMap[h.status] || { bg: '#f3f4f6', border: '#d1d5db', color: '#6b7280', icon: '❓', label: h.status };
+
+    // Check if delayed
+    var isDelayed = h.status === 'SCHEDULED' && h.scheduled_for && (now - new Date(h.scheduled_for)) > 5 * 60 * 1000;
+    if (isDelayed) {
+      st = { bg: '#fef2f2', border: '#fecaca', color: '#dc2626', icon: '⚠️', label: 'Atrasado (' + Math.round((now - new Date(h.scheduled_for)) / 60000) + ' min)' };
+    }
+
+    var dateStr = h.created_at ? new Date(h.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    var schedStr = '';
+    if (h.scheduled_for) {
+      schedStr = '📅 Agendado: ' + new Date(h.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+    var pubStr = '';
+    if (h.published_at) {
+      pubStr = '✅ Publicado: ' + new Date(h.published_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    html += '<div style="display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:' + st.bg + ';border:1px solid ' + st.border + '">'
+      + '<div style="font-size:1.3rem;line-height:1">' + st.icon + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<span style="font-weight:700;font-size:0.85rem">' + (h.client_name || 'Cliente') + '</span>'
+      + '<span style="font-size:0.75rem;color:var(--text-secondary)">' + platIcon + ' ' + platName + '</span>'
+      + '<span style="background:' + st.color + '20;color:' + st.color + ';padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700">' + st.label + '</span>'
+      + '</div>';
+
+    if (h.caption) {
+      html += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + (h.caption || '').substring(0, 100) + '</div>';
+    }
+
+    if (h.error_message) {
+      html += '<div style="font-size:0.75rem;color:#dc2626;margin-top:4px;padding:6px 8px;background:#fef2f220;border-radius:6px;border:1px solid #fecaca;word-break:break-word">🐛 ' + h.error_message + '</div>';
+    }
+
+    html += '<div style="display:flex;gap:12px;margin-top:4px;font-size:0.7rem;color:var(--text-secondary);flex-wrap:wrap">'
+      + '<span>🕐 Criado: ' + dateStr + '</span>'
+      + (schedStr ? '<span>' + schedStr + '</span>' : '')
+      + (pubStr ? '<span style="color:#059669;font-weight:600">' + pubStr + '</span>' : '')
+      + (h.user_name ? '<span>👤 ' + sysLogParseUser(h.user_name) + '</span>' : '')
+      + '</div>'
+      + '</div></div>';
+  });
+
+  html += '</div>';
+  listEl.innerHTML = html;
+}
+
+function sysLogParseUser(u) {
+  if (!u) return '';
+  if (typeof u === 'object') return u.name || JSON.stringify(u);
+  if (typeof u === 'string' && u.startsWith('{')) {
+    try { var obj = JSON.parse(u); return obj.name || u; } catch(e) { return u; }
+  }
+  return u;
+}
+
+function sysLogCard(label, count, color, bg, border) {
+  return '<div style="padding:14px;border-radius:10px;background:' + bg + ';border:1px solid ' + border + ';text-align:center">'
+    + '<div style="font-size:1.6rem;font-weight:800;color:' + color + '">' + count + '</div>'
+    + '<div style="font-size:0.72rem;font-weight:600;color:' + color + ';opacity:0.8">' + label + '</div>'
+    + '</div>';
+}
+
 const TAB_TITLES = {
   gestao:        'Gestão de Projetos',
   dashboard:     'Dashboard',
@@ -6073,7 +6416,8 @@ const TAB_TITLES = {
   'client-hub':        'Client Hub',
   'client-info':       'Info do Cliente',
   'minhas-tasks':      'Minhas Tasks',
-  'traffic':           'Gestão de Tráfego'
+  'traffic':           'Gestão de Tráfego',
+  'system-logs':       'Logs do Sistema'
 };
 
 function switchTab(tabName) {
@@ -6110,6 +6454,7 @@ function switchTab(tabName) {
   else if (tabName === 'content') ctInit();
   else if (tabName === 'traffic') tfInit();
   else if (tabName === 'calendario') calInit();
+  else if (tabName === 'system-logs') sysLogsInit();
   else if (tabName === 'client-hub') { /* hubOpen() handles init */ }
   else renderAll();
 }
@@ -9252,6 +9597,15 @@ function metaConfigClientTenantChange(key, value) {
 }
 
 // Renderiza a lista de cards de clientes agrupados por tenant — layout em grid compacto
+function metaConfigFilterClients(query) {
+  var q = (query || '').toLowerCase().trim();
+  document.querySelectorAll('.meta-client-card').forEach(function(card) {
+    var nameEl = card.querySelector('.mc-client-name');
+    var name = nameEl ? nameEl.textContent.toLowerCase() : card.textContent.toLowerCase();
+    card.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
+}
+
 function metaConfigRenderClientList() {
   populateSidebarClients();
   const container = document.getElementById('metaConfigClientList');
@@ -11586,6 +11940,8 @@ async function metaPublishLoadHistory() {
         scheduled: h.scheduled_for,
         hasImage: h.has_image,
         user: h.user_name,
+        error_message: h.error_message || null,
+        published_at: h.published_at || null,
       }));
       metaPublishRenderHistory();
     }
@@ -11648,6 +12004,8 @@ function metaPublishLoadClients() {
     html += '</optgroup>';
   }
   select.innerHTML = html;
+  if (select._ssRefresh) select._ssRefresh();
+  else ssCreate(select);
 }
 
 // ─── Quando cliente muda ───
@@ -12497,7 +12855,7 @@ function metaPublishRenderHistory() {
     };
     const st = statusMap[h.status] || statusMap['PUBLISHED'];
 
-    // Data de agendamento
+    // Data de agendamento / erro
     let schedInfo = '';
     if (h.scheduled && (h.status === 'SCHEDULED' || h.status === 'DELETED')) {
       const schedDate = new Date(h.scheduled);
@@ -12506,6 +12864,9 @@ function metaPublishRenderHistory() {
         + schedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
         + ' às ' + schedDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         + '</div>';
+    }
+    if (isFailed && h.error_message) {
+      schedInfo += '<div style="font-size:0.7rem;color:#dc2626;margin-top:3px;word-break:break-word">⚠️ ' + h.error_message + '</div>';
     }
 
     // Botões de ação
@@ -12801,25 +13162,34 @@ function ctRenderPublishColumn(publishConfig) {
   if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) {
     return '<div class="ct-pub-col"><span class="ct-pub-pill none">— Sem agenda</span></div>';
   }
+  // Filter out cancelled entries and sort: most recent first
+  var entries = publishConfig.entries.filter(function(e) { return e.status !== 'cancelled'; });
+  // Show max 3 entries to avoid visual overflow, prioritize: failed > scheduled > published
+  var sorted = entries.slice().sort(function(a, b) {
+    var order = { failed: 0, scheduled: 1, queued: 2, published: 3 };
+    return (order[a.status] || 4) - (order[b.status] || 4);
+  });
+  var visible = sorted.slice(0, 3);
+  var hidden = sorted.length - visible.length;
+
   let html = '<div class="ct-pub-col">';
-  publishConfig.entries.forEach(e => {
-    const plat = e.platform === 'facebook' ? 'FB' : 'IG';
-    const platIcon = e.platform === 'facebook' ? '📘' : '📸';
-    const st = (e.status || 'scheduled').toLowerCase();
-    let label = '', icon = '';
+  visible.forEach(function(e) {
+    var plat = e.platform === 'facebook' ? 'FB' : 'IG';
+    var platIcon = e.platform === 'facebook' ? '📘' : '📸';
+    var st = (e.status || 'scheduled').toLowerCase();
+    var label = '', icon = '';
     if (st === 'published') {
       icon = '✅';
-      // Show date/time when available
       var pubDate = e.published_at || e.scheduled_for;
       if (pubDate) {
         var d = new Date(pubDate);
-        label = 'Publicado ' + d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+        label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
       } else {
         label = 'Publicado';
       }
     } else if (st === 'scheduled' && e.scheduled_for) {
       icon = '📅';
-      const d = new Date(e.scheduled_for);
+      var d = new Date(e.scheduled_for);
       label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
     } else if (st === 'scheduled') {
       icon = '📅';
@@ -12836,6 +13206,9 @@ function ctRenderPublishColumn(publishConfig) {
     }
     html += '<span class="ct-pub-pill ' + st + '" title="' + plat + ': ' + label + '">' + icon + ' ' + platIcon + plat + ' ' + label + '</span>';
   });
+  if (hidden > 0) {
+    html += '<span class="ct-pub-pill none" style="opacity:0.7;font-size:8px">+' + hidden + ' mais</span>';
+  }
   html += '</div>';
   return html;
 }
@@ -12849,11 +13222,12 @@ function ctRenderPublishHistory(publishConfig) {
     return;
   }
   let html = '';
-  publishConfig.entries.slice().reverse().forEach(e => {
+  publishConfig.entries.slice().reverse().forEach((e, idx) => {
     const plat = e.platform === 'facebook' ? 'FB' : 'IG';
     const platIcon = e.platform === 'facebook' ? '📄' : '📷';
     const st = e.status || 'scheduled';
-    const stLabel = st === 'scheduled' ? '📅 Agendado' : st === 'published' ? '✅ Publicado' : '❌ Falhou';
+    const stLabel = st === 'scheduled' ? '📅 Agendado' : st === 'published' ? '✅ Publicado' : st === 'cancelled' ? '🚫 Cancelado' : '❌ Falhou';
+    const stBg = st === 'scheduled' ? '#fef3c7;color:#b45309' : st === 'published' ? '#d1fae5;color:#059669' : st === 'cancelled' ? '#f3f4f6;color:#6b7280' : '#fecaca;color:#dc2626';
     let dateStr = '';
     if (st === 'scheduled' && e.scheduled_for) {
       const d = new Date(e.scheduled_for);
@@ -12862,13 +13236,70 @@ function ctRenderPublishHistory(publishConfig) {
       const d = new Date(e.published_at);
       dateStr = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     }
-    html += '<div class="ct-ph-entry ' + st + '">'
+    // Cancel button for scheduled entries
+    let cancelBtn = '';
+    if (st === 'scheduled' && e.post_id) {
+      cancelBtn = '<button onclick="ctCancelPublishEntry(' + (publishConfig.entries.length - 1 - idx) + ',\'' + (e.post_id || '') + '\',\'' + (e.history_id || '') + '\')" '
+        + 'style="margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid #f59e0b;background:transparent;color:#b45309;cursor:pointer;font-size:0.65rem;font-family:inherit;font-weight:600;transition:all 0.15s" '
+        + 'onmouseenter="this.style.background=\'#fffbeb\'" onmouseleave="this.style.background=\'transparent\'">'
+        + '⏹️ Cancelar</button>';
+    }
+    html += '<div class="ct-ph-entry ' + st + '" style="display:flex;align-items:center;gap:6px">'
       + '<span class="ct-ph-platform">' + platIcon + ' ' + plat + '</span>'
-      + '<span class="ct-ph-status" style="background:' + (st === 'scheduled' ? '#fef3c7;color:#b45309' : st === 'published' ? '#d1fae5;color:#059669' : '#fecaca;color:#dc2626') + '">' + stLabel + '</span>'
+      + '<span class="ct-ph-status" style="background:' + stBg + '">' + stLabel + '</span>'
       + (dateStr ? '<span class="ct-ph-date">' + dateStr + '</span>' : '')
+      + cancelBtn
       + '</div>';
   });
   container.innerHTML = html;
+}
+
+// Cancel a scheduled publish entry from the task modal
+async function ctCancelPublishEntry(entryIdx, postId, historyId) {
+  if (!ctModalTask) return;
+  if (!confirm('Cancelar este agendamento?\n\nO post não será publicado.')) return;
+
+  try {
+    const clientKey = ctModalTask.client_id || gpState.space;
+    const res = await fetch(metaApiBase() + '/api/meta/publish', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        post_id: postId,
+        history_id: historyId,
+        client: clientKey,
+        user: gpState.user ? gpState.user.name : 'Sistema',
+      }),
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert('Erro ao cancelar: ' + data.message);
+      return;
+    }
+
+    // Update local entry
+    const config = ctModalTask.publish_config || {};
+    if (config.entries && config.entries[entryIdx]) {
+      config.entries[entryIdx].status = 'cancelled';
+    }
+
+    // Save updated config to backend
+    await ctApi('upsert_task', {
+      id: ctModalTask.id,
+      publish_config: config,
+      user: gpState.user ? gpState.user.name : 'Sistema',
+    });
+
+    // Re-render
+    ctRenderPublishHistory(config);
+    const alwaysListEl = document.getElementById('ctPublishHistoryListAlways');
+    if (alwaysListEl) alwaysListEl.innerHTML = document.getElementById('ctPublishHistoryList').innerHTML;
+
+    alert('Agendamento cancelado com sucesso!');
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
 }
 
 // ─── MINI CALENDAR (modal) ───
@@ -19824,20 +20255,76 @@ function ctRenderFormatPublishHistory() {
     return;
   }
 
-  el.innerHTML = entries.map(function(e) {
+  el.innerHTML = entries.map(function(e, idx) {
     var icon = e.platform === 'facebook' ? '📄' : '📷';
     var platName = e.platform === 'facebook' ? 'Facebook' : 'Instagram';
-    var statusColor = e.status === 'published' ? '#10b981' : e.status === 'scheduled' ? '#f59e0b' : e.status === 'failed' ? '#ef4444' : '#6b7280';
-    var statusLabel = e.status === 'published' ? 'Publicado' : e.status === 'scheduled' ? 'Agendado' : e.status === 'failed' ? 'Falhou' : e.status;
+    var statusColor = e.status === 'published' ? '#10b981' : e.status === 'scheduled' ? '#f59e0b' : e.status === 'failed' ? '#ef4444' : e.status === 'cancelled' ? '#6b7280' : '#6b7280';
+    var statusLabel = e.status === 'published' ? 'Publicado' : e.status === 'scheduled' ? 'Agendado' : e.status === 'failed' ? 'Falhou' : e.status === 'cancelled' ? 'Cancelado' : e.status;
     var date = e.published_at || e.scheduled_for;
     var dateStr = date ? new Date(date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    var cancelBtn = '';
+    if (e.status === 'scheduled' && e.post_id) {
+      cancelBtn = '<button onclick="ctCancelFormatEntry(\'' + _ctActiveFormatTab + '\',' + idx + ',\'' + (e.post_id || '') + '\',\'' + (e.history_id || '') + '\')" '
+        + 'style="margin-left:auto;padding:2px 8px;border-radius:5px;border:1px solid #f59e0b;background:transparent;color:#b45309;cursor:pointer;font-size:0.65rem;font-family:inherit;font-weight:600;transition:all 0.15s" '
+        + 'onmouseenter="this.style.background=\'#fffbeb\'" onmouseleave="this.style.background=\'transparent\'">'
+        + '⏹ Cancelar</button>';
+    }
     return '<div style="display:flex;align-items:center;gap:6px;padding:4px 0">'
       + '<span>' + icon + '</span>'
       + '<span style="font-weight:600">' + platName + '</span>'
       + '<span style="background:' + statusColor + '20;color:' + statusColor + ';padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:600">' + statusLabel + '</span>'
       + '<span style="font-size:0.7rem;color:var(--text-secondary)">' + dateStr + '</span>'
+      + cancelBtn
       + '</div>';
   }).join('');
+}
+
+// Cancel a scheduled entry from multi-format publish history
+async function ctCancelFormatEntry(fmt, entryIdx, postId, historyId) {
+  if (!ctModalTask) return;
+  if (!confirm('Cancelar este agendamento?\n\nO post não será publicado.')) return;
+
+  try {
+    var clientKey = ctModalTask.client_id || gpState.space;
+    var res = await fetch(metaApiBase() + '/api/meta/publish', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        post_id: postId,
+        history_id: historyId,
+        client: clientKey,
+        user: gpState.user ? gpState.user.name : 'Sistema',
+      }),
+    });
+    var data = await res.json();
+
+    if (data.error) {
+      alert('Erro ao cancelar: ' + data.message);
+      return;
+    }
+
+    // Update local entry
+    var config = ctModalTask.publish_config || {};
+    var fmtConfig = config[fmt] || {};
+    if (fmtConfig.entries && fmtConfig.entries[entryIdx]) {
+      fmtConfig.entries[entryIdx].status = 'cancelled';
+    }
+    // Also update legacy entries if present
+    if (config.entries) {
+      config.entries.forEach(function(e) { if (e.post_id === postId) e.status = 'cancelled'; });
+    }
+
+    // Save updated config
+    await ctApi('upsert_task', { id: ctModalTask.id, publish_config: config, user: gpState.user ? gpState.user.name : 'Sistema' });
+
+    // Re-render
+    ctRenderFormatPublishHistory();
+    if (typeof ctRenderPublishHistory === 'function') ctRenderPublishHistory(config);
+
+    alert('Agendamento cancelado com sucesso!');
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  }
 }
 
 async function ctPublishFormat() {
@@ -19893,16 +20380,18 @@ async function ctPublishFormat() {
       if (plat === 'ig') {
         // Instagram via queue
         var scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 5000).toISOString();
+        var clientName = (_metaClients && _metaClients[ctCurrentClient]) ? _metaClients[ctCurrentClient].name : ctCurrentClient;
         var queueBody = {
           action: 'queue',
           client_key: ctCurrentClient,
+          client_name: clientName,
           platform: 'ig',
           caption: fmt === 'story' ? '' : copy,
           scheduled_for: scheduledFor,
           task_id: ctModalTask.id,
           post_type: fmt,
           media_type: (fmt === 'reels' || videos.length > 0) ? 'REELS' : null,
-          user_name: gpState.user,
+          user_name: gpState.user ? gpState.user.name : 'Sistema',
         };
         if (fmt === 'carrossel') {
           queueBody.image_urls = imageUrls;

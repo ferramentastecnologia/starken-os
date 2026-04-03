@@ -41,6 +41,23 @@ async function processPublishQueue() {
   if (!url) return { processed: 0 };
 
   const now = new Date().toISOString();
+
+  // Auto-mark FB SCHEDULED posts as PUBLISHED when their scheduled time has passed
+  // (FB handles scheduling natively via API, so we just update our history)
+  await fetch(`${url}/rest/v1/publish_history?status=eq.SCHEDULED&platform=eq.fb&scheduled_for=lte.${now}`, {
+    method: 'PATCH',
+    headers: supabaseHeaders(),
+    body: JSON.stringify({ status: 'PUBLISHED', published_at: now }),
+  });
+
+  // Reset items stuck in PROCESSING for more than 5 minutes (function timeout recovery)
+  const stuckCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  await fetch(`${url}/rest/v1/publish_queue?status=eq.PROCESSING&updated_at=lte.${stuckCutoff}`, {
+    method: 'PATCH',
+    headers: supabaseHeaders(),
+    body: JSON.stringify({ status: 'QUEUED' }),
+  });
+
   // Busca posts QUEUED que já passaram da hora
   const queueRes = await fetch(
     `${url}/rest/v1/publish_queue?status=eq.QUEUED&scheduled_for=lte.${now}&order=scheduled_for.asc&limit=10`,
@@ -54,11 +71,11 @@ async function processPublishQueue() {
   const results = [];
 
   for (const item of items) {
-    // Mark as PROCESSING
+    // Mark as PROCESSING (with timestamp so stuck-detection can reset it)
     await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
       method: 'PATCH',
       headers: supabaseHeaders(),
-      body: JSON.stringify({ status: 'PROCESSING' }),
+      body: JSON.stringify({ status: 'PROCESSING', updated_at: new Date().toISOString() }),
     });
 
     try {
@@ -70,6 +87,10 @@ async function processPublishQueue() {
       let publishedId;
 
       if (item.platform === 'ig') {
+        if (!client.igUserId) {
+          throw new Error('igUserId não configurado para o cliente "' + item.client_key + '". Configure o Instagram User ID nas definições Meta.');
+        }
+
         // Helper: wait for container (extended timeout for videos: 60 polls × 3s = 180s)
         const isVideoItem = item.media_type === 'REELS' || item.media_type === 'VIDEO' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrls[0] || '');
         const maxPolls = isVideoItem ? 60 : 15;
@@ -154,7 +175,8 @@ async function processPublishQueue() {
         body: JSON.stringify({ status: 'PUBLISHED', post_id: publishedId, processed_at: new Date().toISOString() }),
       });
 
-      // Save to history
+      // Save to history with published_at timestamp
+      const publishedAt = new Date().toISOString();
       await saveToHistory({
         user_name: item.user_name || 'Cron',
         client_key: item.client_key,
@@ -166,23 +188,104 @@ async function processPublishQueue() {
         has_image: imageUrls.length > 0,
         image_url: imageUrls[0] || null,
         scheduled_for: item.scheduled_for,
+        published_at: publishedAt,
       });
+
+      // Auto-update task status to 'publicado' if task_id is present
+      if (item.task_id) {
+        try {
+          await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}`, {
+            method: 'PATCH',
+            headers: supabaseHeaders(),
+            body: JSON.stringify({
+              status: 'publicado',
+              updated_at: publishedAt,
+            }),
+          });
+          // Update publish_config entries in the task
+          const taskRes = await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}&select=publish_config`, {
+            headers: { 'apikey': SUPABASE_KEY(), 'Authorization': `Bearer ${SUPABASE_KEY()}` },
+          });
+          if (taskRes.ok) {
+            const taskRows = await taskRes.json();
+            if (taskRows.length > 0 && taskRows[0].publish_config) {
+              const pc = taskRows[0].publish_config;
+              let updated = false;
+              // Update matching entries in format configs and legacy entries
+              const updateEntries = (entries) => {
+                if (!entries) return;
+                entries.forEach(e => {
+                  if (e.post_id === item.id && e.status === 'scheduled') {
+                    e.status = 'published';
+                    e.published_at = publishedAt;
+                    e.post_id = publishedId;
+                    updated = true;
+                  }
+                });
+              };
+              updateEntries(pc.entries);
+              // Check format-specific entries (feed, story, carrossel, reels)
+              ['feed', 'story', 'carrossel', 'reels'].forEach(f => {
+                if (pc[f] && pc[f].entries) updateEntries(pc[f].entries);
+              });
+              if (updated) {
+                await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}`, {
+                  method: 'PATCH',
+                  headers: supabaseHeaders(),
+                  body: JSON.stringify({ publish_config: pc }),
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('[publish_queue] Failed to update task status:', e.message);
+        }
+      }
 
       results.push({ id: item.id, status: 'PUBLISHED', post_id: publishedId });
     } catch (err) {
       // Build detailed error message
       let errorDetail = err.message || 'Erro desconhecido';
-      if (err.meta_code === 389 || (err.message && err.message.includes('389'))) {
-        errorDetail = 'Meta não conseguiu baixar o vídeo (erro 389). Verifique se a URL é pública e acessível: ' + (imageUrls[0] || 'N/A');
+
+      if (err.meta_code === 190 || err.code === 'TOKEN_EXPIRED') {
+        errorDetail = 'Token de acesso expirado. Reconecte a conta Meta nas configurações.';
+      } else if (err.meta_code === 389 || (err.message && err.message.includes('389'))) {
+        errorDetail = 'Meta não conseguiu baixar a mídia (erro 389). URL: ' + (imageUrls[0] || 'N/A');
       } else if (err.code === 'MEDIA_URL_INACCESSIBLE') {
-        errorDetail = 'URL da mídia inacessível. O arquivo pode não existir ou o bucket pode estar privado: ' + (imageUrls[0] || 'N/A');
+        errorDetail = 'URL da mídia inacessível (bucket privado?): ' + (imageUrls[0] || 'N/A');
+      } else if (err.message && err.message.includes('igUserId')) {
+        errorDetail = 'Instagram User ID não configurado para o cliente "' + item.client_key + '". Configure nas definições Meta.';
+      } else if (err.message && err.message.includes('CLIENT_NOT_CONFIGURED')) {
+        errorDetail = 'Cliente "' + item.client_key + '" não encontrado na configuração Meta.';
+      } else if (err.message && err.message.includes('timeout')) {
+        errorDetail = 'Tempo limite atingido ao processar mídia no Instagram. Tente publicar novamente.';
+      } else if (err.meta_code) {
+        errorDetail = 'Erro Meta API ' + err.meta_code + ': ' + (err.message || 'Erro desconhecido');
       }
-      // Mark as FAILED
+
+      console.error('[publish_queue] FAILED item', item.id, 'client:', item.client_key, 'platform:', item.platform, '| error:', errorDetail);
+
+      // Mark as FAILED in queue
       await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
         method: 'PATCH',
         headers: supabaseHeaders(),
         body: JSON.stringify({ status: 'FAILED', error_message: errorDetail, processed_at: new Date().toISOString() }),
       });
+
+      // Save FAILED entry to history so user sees it
+      await saveToHistory({
+        user_name: item.user_name || 'Cron',
+        client_key: item.client_key,
+        client_name: item.client_name,
+        platform: item.platform,
+        status: 'FAILED',
+        caption: item.caption || '',
+        has_image: (item.image_urls || []).length > 0,
+        image_url: (item.image_urls || [])[0] || null,
+        scheduled_for: item.scheduled_for,
+        error_message: errorDetail,
+      });
+
       results.push({ id: item.id, status: 'FAILED', error: errorDetail });
     }
   }
@@ -264,38 +367,62 @@ module.exports = async function handler(req, res) {
         } catch (e) { /* usa token global */ }
       }
 
-      // Tenta deletar do Meta Graph API
-      let metaDeleted = false;
-      let metaError = null;
-      try {
-        const deleteParams = {};
-        if (pageToken) deleteParams.access_token = pageToken;
-        await graphDelete(`/${post_id}`, deleteParams);
-        metaDeleted = true;
-      } catch (delErr) {
-        // IG posts geralmente não podem ser deletados via API
-        metaError = delErr.message || 'Não foi possível excluir do Meta';
+      // 1. Tenta cancelar na publish_queue (agendamentos IG/FB pendentes)
+      let queueCancelled = false;
+      const url = SUPABASE_URL();
+      if (url) {
+        // post_id pode ser o queue_id para agendamentos IG
+        const queueCheck = await fetch(
+          `${url}/rest/v1/publish_queue?id=eq.${post_id}&status=in.(QUEUED,PROCESSING)&select=id,status`,
+          { headers: { 'apikey': SUPABASE_KEY(), 'Authorization': `Bearer ${SUPABASE_KEY()}` } }
+        );
+        if (queueCheck.ok) {
+          const queueItems = await queueCheck.json();
+          if (queueItems.length > 0) {
+            await fetch(`${url}/rest/v1/publish_queue?id=eq.${post_id}`, {
+              method: 'PATCH',
+              headers: supabaseHeaders(),
+              body: JSON.stringify({ status: 'CANCELLED', processed_at: new Date().toISOString() }),
+            });
+            queueCancelled = true;
+          }
+        }
       }
 
-      // Atualiza status no histórico (Supabase) independente do resultado Meta
-      if (history_id) {
-        const url = SUPABASE_URL();
-        if (url) {
-          await fetch(`${url}/rest/v1/publish_history?id=eq.${history_id}`, {
-            method: 'PATCH',
-            headers: { ...supabaseHeaders(), 'Prefer': 'return=minimal' },
-            body: JSON.stringify({ status: 'DELETED' }),
-          });
+      // 2. Tenta deletar do Meta Graph API (FB scheduled/published posts)
+      let metaDeleted = false;
+      let metaError = null;
+      if (!queueCancelled) {
+        try {
+          const deleteParams = {};
+          if (pageToken) deleteParams.access_token = pageToken;
+          await graphDelete(`/${post_id}`, deleteParams);
+          metaDeleted = true;
+        } catch (delErr) {
+          // IG posts geralmente não podem ser deletados via API
+          metaError = delErr.message || 'Não foi possível excluir do Meta';
         }
+      }
+
+      // 3. Atualiza status no histórico (Supabase)
+      if (history_id && url) {
+        await fetch(`${url}/rest/v1/publish_history?id=eq.${history_id}`, {
+          method: 'PATCH',
+          headers: { ...supabaseHeaders(), 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ status: 'DELETED' }),
+        });
       }
 
       return res.status(200).json({
         ok: true,
         deleted: post_id,
         meta_deleted: metaDeleted,
-        message: metaDeleted
-          ? 'Post excluído/cancelado com sucesso no Meta'
-          : 'Removido do histórico. ' + (metaError || 'Exclua manualmente no Meta Business Suite para posts do Instagram.'),
+        queue_cancelled: queueCancelled,
+        message: queueCancelled
+          ? 'Agendamento cancelado com sucesso! O post não será publicado.'
+          : metaDeleted
+            ? 'Post excluído/cancelado com sucesso no Meta'
+            : 'Removido do histórico. ' + (metaError || 'Exclua manualmente no Meta Business Suite para posts do Instagram.'),
       });
     } catch (err) {
       if (err.error) return res.status(err.status || 502).json(err);
