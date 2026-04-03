@@ -16435,24 +16435,30 @@ function ctShowDatePicker(event) {
 
 async function ctForceDownload(url, filename) {
   try {
-    var btn = event.target;
-    btn.textContent = '⏳ Baixando...';
+    var btn = event.currentTarget || event.target;
+    btn.innerHTML = '⏳ Baixando...';
     btn.disabled = true;
-    var resp = await fetch(url);
-    var blob = await resp.blob();
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(a.href);
-    btn.textContent = '✅ Baixado!';
-    setTimeout(function() { btn.textContent = '⬇ Baixar arquivo'; btn.disabled = false; }, 2000);
+    // Add ?download to Supabase URL to force download headers
+    var downloadUrl = url;
+    if (url.includes('supabase.co/storage')) {
+      downloadUrl = url + (url.includes('?') ? '&' : '?') + 'download=' + encodeURIComponent(filename);
+    }
+    // Method 1: Use Supabase download parameter
+    var link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(function() { document.body.removeChild(link); }, 100);
+    btn.innerHTML = '✅ Baixado!';
+    setTimeout(function() { btn.innerHTML = '⬇ Baixar arquivo'; btn.disabled = false; }, 2000);
   } catch(e) {
     console.error('Download error:', e);
-    btn.textContent = '❌ Erro';
-    setTimeout(function() { btn.textContent = '⬇ Baixar arquivo'; btn.disabled = false; }, 2000);
+    btn.innerHTML = '❌ Erro';
+    setTimeout(function() { btn.innerHTML = '⬇ Baixar arquivo'; btn.disabled = false; }, 2000);
   }
 }
 
