@@ -9753,7 +9753,7 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
         var modal = document.getElementById('zappfySendModal'); if (modal) modal.remove();
         // Reload cronograma status from Supabase then re-render
         if (_supabase) {
-          _supabase.from('cronograma_status').select('id,client_id,type,period_key,status,pdf_url,generated_at,sent_at').limit(500).then(function(res) {
+          _supabase.from('cronograma_status').select('*').limit(500).then(function(res) {
             if (res.data) {
               if (typeof _cronogramaStatusCache === 'undefined') window._cronogramaStatusCache = {};
               res.data.forEach(function(row) { _cronogramaStatusCache[row.id] = row; });
@@ -18667,7 +18667,7 @@ var _cronogramaStatusCache = {}; // { "clientId_periodKey": { status, pdf_url, p
 async function loadCronogramaStatus() {
   if (!_supabase) return;
   try {
-    var { data: rows, error } = await _supabase.from('cronograma_status').select('id,client_id,type,period_key,status,pdf_url,generated_at,sent_at').limit(500);
+    var { data: rows, error } = await _supabase.from('cronograma_status').select('*').limit(500);
     if (error) { console.warn('cronograma_status load error:', error); return; }
     _cronogramaStatusCache = {};
     (rows || []).forEach(function(r) {
