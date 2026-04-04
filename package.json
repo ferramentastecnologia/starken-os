@@ -2,5 +2,17 @@
   "name": "starken-performance",
   "version": "3.0.0",
   "private": true,
-  "description": "Plataforma de gestão — Starken Performance"
+  "description": "Plataforma de gestão — Starken Performance",
+  "scripts": {
+    "lint": "eslint api/",
+    "lint:strict": "eslint api/ --max-warnings 0",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "ci": "npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.0",
+    "vitest": "^4.1.2"
+  }
 }
