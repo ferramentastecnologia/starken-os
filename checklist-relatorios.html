@@ -13581,17 +13581,32 @@ function ctShowDuplicateGroupModal(groupId, groupName) {
   document.getElementById('ctDupGroupModal').classList.add('active');
   document.getElementById('ctDupSourceName').textContent = groupName;
   document.getElementById('ctDupNewName').value = 'Cópia de ' + groupName;
-  // Populate client dropdown
+  // Populate client dropdown using same keys as ctClientFilter
   const sel = document.getElementById('ctDupClientSelect');
   sel.innerHTML = '';
-  const allClients = [...GP_STARKEN, ...GP_ALPHA];
-  allClients.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c;
-    opt.textContent = c;
-    if (c === ctCurrentClient) opt.selected = true;
-    sel.appendChild(opt);
+  let clients = _metaClients;
+  if (!clients || Object.keys(clients).length === 0) {
+    try { clients = JSON.parse(localStorage.getItem(META_CLIENTS_LS_KEY) || '{}'); } catch(e) {}
+  }
+  const starken = [], alpha = [];
+  Object.entries(clients || {}).forEach(([key, c]) => {
+    if (c.tenant === 'alpha') alpha.push({ key, name: c.name || key });
+    else starken.push({ key, name: c.name || key });
   });
+  starken.sort((a,b) => a.name.localeCompare(b.name));
+  alpha.sort((a,b) => a.name.localeCompare(b.name));
+  let optHtml = '';
+  if (starken.length) {
+    optHtml += '<optgroup label="🟢 Starken">';
+    starken.forEach(c => optHtml += '<option value="' + c.key + '"' + (c.key === ctCurrentClient ? ' selected' : '') + '>' + c.name + '</option>');
+    optHtml += '</optgroup>';
+  }
+  if (alpha.length) {
+    optHtml += '<optgroup label="🟡 Alpha">';
+    alpha.forEach(c => optHtml += '<option value="' + c.key + '"' + (c.key === ctCurrentClient ? ' selected' : '') + '>' + c.name + '</option>');
+    optHtml += '</optgroup>';
+  }
+  sel.innerHTML = optHtml;
 }
 
 function ctHideDuplicateGroupModal() {
