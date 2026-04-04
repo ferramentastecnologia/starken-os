@@ -8160,7 +8160,11 @@ async function trelloLoadBoardDetails() {
 
     // Load Asana sections for the current project
     const projectGid = (_asanaConfig && _asanaConfig.default_project_gid) || ASANA_DEFAULT_PROJECT;
-    const secRes = await fetch(asanaApiBase() + '/api/asana/sections?project=' + projectGid);
+    const secRes = await fetch(asanaApiBase() + '/api/asana/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'list_sections', project: projectGid }),
+    });
     const secData = secRes.ok ? await secRes.json() : { data: [] };
     const asanaSections = secData.data || [];
 
@@ -8531,7 +8535,11 @@ async function asanaOpenConfig() {
   // If connected, try to load projects for quick select
   if (_asanaConnected) {
     try {
-      const res = await fetch(asanaApiBase() + '/api/asana/projects?workspace=' + currentWorkspace);
+      const res = await fetch(asanaApiBase() + '/api/asana/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_projects', workspace: currentWorkspace }),
+      });
       if (res.ok) {
         const projData = await res.json();
         if (projData.data && projData.data.length > 0) {

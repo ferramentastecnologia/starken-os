@@ -1,11 +1,12 @@
 /**
- * /api/asana/config — Configuração do Asana
+ * /api/asana/config — Asana configuration + consolidated actions
  *
- * GET  — Retorna configuração atual (workspace, mapeamento)
- * POST — Salva configuração
- *
- * A configuração é armazenada no Supabase na tabela asana_config,
- * ou localmente via JSON se Supabase não estiver disponível.
+ * GET  — Returns current config (workspace, mapping) + validates token
+ * POST — Action-based routing:
+ *   { action: "save_config", ... }   — Save configuration
+ *   { action: "list_projects", workspace }  — List workspace projects
+ *   { action: "list_sections", project }    — List project sections
+ *   (no action / legacy) — Save configuration (backwards compat)
  */
 
 const ASANA_BASE = 'https://app.asana.com/api/1.0';
@@ -20,7 +21,7 @@ module.exports = async function handler(req, res) {
   const supabaseUrl = process.env.SUPABASE_URL || '';
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY || '';
 
-  // ─── GET: Retorna config + valida token ───────────────────
+  // ─── GET: Return config + validate token ──────────────────
   if (req.method === 'GET') {
     const result = {
       connected: !!token,
@@ -29,7 +30,6 @@ module.exports = async function handler(req, res) {
       config: null,
     };
 
-    // Validate token by fetching user info
     if (token) {
       try {
         const meRes = await fetch(`${ASANA_BASE}/users/me?opt_fields=name,email,workspaces.name`, {
@@ -49,7 +49,6 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // Try to read config from Supabase
     if (supabaseUrl && supabaseKey) {
       try {
         const cfgRes = await fetch(
@@ -66,16 +65,62 @@ module.exports = async function handler(req, res) {
           if (rows.length > 0) result.config = rows[0];
         }
       } catch (e) {
-        // Config não disponível — ok, frontend vai usar defaults
+        // Config not available — frontend uses defaults
       }
     }
 
     return res.status(200).json(result);
   }
 
-  // ─── POST: Salva config ───────────────────────────────────
+  // ─── POST: Action-based routing ───────────────────────────
   if (req.method === 'POST') {
-    const { workspace_gid, default_assignee_gid, default_project_gid, client_project_map } = req.body || {};
+    const body = req.body || {};
+    const action = body.action || 'save_config';
+
+    // ── list_projects ───────────────────────────────────────
+    if (action === 'list_projects') {
+      if (!token) return res.status(500).json({ error: 'ASANA_PAT not configured' });
+      const workspace = body.workspace;
+      if (!workspace) return res.status(400).json({ error: 'workspace field required' });
+
+      try {
+        const url = `${ASANA_BASE}/projects?workspace=${workspace}&opt_fields=name,color,archived,created_at,modified_at,notes,owner.name&limit=100&archived=false`;
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          return res.status(response.status).json({ error: 'Asana API error', details: err });
+        }
+        return res.status(200).json(await response.json());
+      } catch (e) {
+        return res.status(500).json({ error: 'Internal error', message: e.message });
+      }
+    }
+
+    // ── list_sections ───────────────────────────────────────
+    if (action === 'list_sections') {
+      if (!token) return res.status(500).json({ error: 'ASANA_PAT not configured' });
+      const project = body.project;
+      if (!project) return res.status(400).json({ error: 'project field required' });
+
+      try {
+        const url = `${ASANA_BASE}/projects/${project}/sections?opt_fields=name,created_at`;
+        const response = await fetch(url, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          return res.status(response.status).json({ error: 'Asana API error', details: err });
+        }
+        return res.status(200).json(await response.json());
+      } catch (e) {
+        return res.status(500).json({ error: 'Internal error', message: e.message });
+      }
+    }
+
+    // ── save_config (default) ───────────────────────────────
+    const { workspace_gid, default_assignee_gid, default_project_gid, client_project_map } = body;
 
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({ error: 'Supabase not configured on server' });
