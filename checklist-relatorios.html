@@ -1593,6 +1593,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 /* ─── New Group Modal ─── */
 #ctNewGroupModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
 #ctNewGroupModal.active { display:flex; }
+#ctDupGroupModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
 #ctDupGroupModal.active { display:flex; }
 .ct-ngm-card { background:var(--card); border-radius:16px; padding:28px; width:520px; max-width:95vw; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
 .ct-ngm-title { font-size:1.15rem; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
@@ -21582,7 +21583,7 @@ async function tfLoadCampaigns() {
 </div>
 
 <!-- ═══ DUPLICATE GROUP MODAL ═══ -->
-<div id="ctDupGroupModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+<div id="ctDupGroupModal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
   <div class="ct-ngm-card" style="max-width:420px">
     <div class="ct-ngm-title">📋 Duplicar Grupo</div>
     <div style="margin-bottom:12px;color:var(--text-secondary);font-size:0.85rem">Grupo de origem: <strong id="ctDupSourceName"></strong></div>
