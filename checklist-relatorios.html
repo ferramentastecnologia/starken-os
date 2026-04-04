@@ -3770,7 +3770,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <!-- Briefing -->
             <div class="ct-modal-section">
               <div class="ct-modal-section-title">📋 Briefing / Direcionamento</div>
-              <textarea class="ct-modal-textarea" id="ctModalBriefing" placeholder="Instruções para o designer, referências, direcionamento criativo..." onchange="ctSaveTaskField('briefing',this.value)"></textarea>
+              <textarea class="ct-modal-textarea" id="ctModalBriefing" placeholder="Instruções para o designer, referências, direcionamento criativo..." oninput="ctAutoResizeTextarea(this)" onchange="ctSaveTaskField('briefing',this.value)"></textarea>
             </div>
 
             <!-- References (attachments with category=reference) -->
@@ -4014,7 +4014,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <!-- Copy Text (legacy - hidden when formats are selected) -->
             <div class="ct-modal-section" id="ctLegacyCopySection">
               <div class="ct-modal-section-title">✏️ Copy do Post</div>
-              <textarea class="ct-modal-textarea copy-area" id="ctModalCopy" placeholder="Texto/legenda que será publicado nas redes sociais..." onchange="ctSaveTaskField('copy_text',this.value)"></textarea>
+              <textarea class="ct-modal-textarea copy-area" id="ctModalCopy" placeholder="Texto/legenda que será publicado nas redes sociais..." oninput="ctAutoResizeTextarea(this)" onchange="ctSaveTaskField('copy_text',this.value)"></textarea>
               <div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctModalCopyCount">0</span> / 2.200 caracteres</div>
 
               <!-- AI Copy Generator -->
@@ -4058,7 +4058,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <!-- Description / Notes -->
             <div class="ct-modal-section">
               <div class="ct-modal-section-title">📝 Descrição / Notas</div>
-              <textarea class="ct-modal-textarea" id="ctModalDescription" placeholder="Informações gerais, notas internas, instruções adicionais..." onchange="ctSaveTaskField('description',this.value)"></textarea>
+              <textarea class="ct-modal-textarea" id="ctModalDescription" placeholder="Informações gerais, notas internas, instruções adicionais..." oninput="ctAutoResizeTextarea(this)" onchange="ctSaveTaskField('description',this.value)"></textarea>
             </div>
 
             <!-- Subtasks -->
@@ -13826,8 +13826,10 @@ async function ctOpenModal(taskId) {
   overlay.style.display = 'flex';
   setTimeout(() => {
     overlay.classList.add('open');
-    // Auto-resize all textareas after modal is visible
-    overlay.querySelectorAll('.ct-modal-textarea').forEach(ctAutoResizeTextarea);
+    // Auto-resize all textareas after modal is visible (double-pass for reliability)
+    requestAnimationFrame(() => {
+      overlay.querySelectorAll('.ct-modal-textarea').forEach(ctAutoResizeTextarea);
+    });
   }, 10);
 }
 
