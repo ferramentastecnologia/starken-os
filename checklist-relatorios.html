@@ -1432,8 +1432,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 /* List */
 .ct-list { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
-.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(200px,auto) 60px;gap:0;background:var(--surface-container-low);padding:0 16px;height:36px;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant);align-items:center; }
-.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(200px,auto) 60px;gap:0;padding:0 16px;height:42px;border-bottom:var(--ghost-border);font-size:var(--text-base);align-items:center;transition:background var(--transition-fast);cursor:pointer; }
+.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(200px,auto) 110px;gap:0;background:var(--surface-container-low);padding:0 16px;height:36px;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant);align-items:center; }
+.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(200px,auto) 110px;gap:0;padding:0 16px;height:42px;border-bottom:var(--ghost-border);font-size:var(--text-base);align-items:center;transition:background var(--transition-fast);cursor:pointer; }
 .ct-row:hover { background:#f8fafc; }
 .ct-row.group { background:var(--surface-container-low);font-weight:700;font-size:var(--text-md);height:38px;border-bottom:1px solid var(--outline-variant); }
 .ct-row.subtask { padding-left:56px;font-size:var(--text-sm);color:var(--text-secondary); }
@@ -13418,6 +13418,9 @@ function ctRenderList() {
 
         const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
         const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
+        const _prioColors = { urgente:{bg:'#fef2f2',color:'#dc2626',border:'#fecaca'}, alta:{bg:'#fffbeb',color:'#b45309',border:'#fde68a'}, normal:{bg:'#eff6ff',color:'#1d4ed8',border:'#bfdbfe'}, baixa:{bg:'#f9fafb',color:'#6b7280',border:'#e5e7eb'} };
+        const _pc = _prioColors[priority.key] || _prioColors.normal;
+        const priorityBadgeHtml = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid ' + _pc.border + ';background:' + _pc.bg + ';color:' + _pc.color + ';white-space:nowrap;letter-spacing:0.3px">' + priority.icon + ' ' + priority.label.toUpperCase() + '</span>';
         const user = CT_USERS.find(u => u.name === task.assignee);
         const hasSubtasks = task.subtasks && task.subtasks.length > 0;
         const taskExpanded = ctExpandedTasks[task.id] !== false;
@@ -13445,7 +13448,7 @@ function ctRenderList() {
           + '</div>'
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
           + ctRenderPublishColumn(task.publish_config)
-          + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')">' + priority.icon + '</div>'
+          + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')" style="display:flex;align-items:center;justify-content:center">' + priorityBadgeHtml + '</div>'
           + '</div>';
 
         // Render subtasks recursively
