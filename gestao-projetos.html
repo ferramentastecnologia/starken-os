@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestão de Projetos - Starken & Alpha</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   --primary: #3b82f6;
@@ -559,19 +560,115 @@ const ALPHA_CLIENTS = [
   { name:'Fratellis Pizzaria', segment:'Gastronomia', package:'2feed',        responsible:'Juan'   }
 ];
 
+// ============================================================
+// SUPABASE
+// ============================================================
+const GP_SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
+const GP_SUPABASE_KEY = 'sb_publishable_z-uy5pBapfR74IIQyag5vA_i6IKJLHB';
+const gpDb = window.supabase ? window.supabase.createClient(GP_SUPABASE_URL, GP_SUPABASE_KEY) : null;
+
+function dbToTask(row) {
+  const extra = row.labels || {};
+  return {
+    id: row.id,
+    space: extra.space || 'starken',
+    title: row.title || '',
+    cliente: extra.cliente || '',
+    tipo: row.content_type || 'feed',
+    status: row.status || 'a_fazer',
+    responsavel: extra.responsavel || '',
+    revisao: extra.revisao || '',
+    prioridade: row.priority || 'normal',
+    semana: row.week_label || '',
+    dataPostagem: row.publish_date || '',
+    dataVencimento: row.due_date || '',
+    caption: row.caption || '',
+    subtasks: extra.subtasks || []
+  };
+}
+
+function taskToDb(task) {
+  return {
+    title: task.title,
+    status: task.status || 'a_fazer',
+    content_type: task.tipo || 'feed',
+    priority: task.prioridade || 'normal',
+    due_date: task.dataVencimento || null,
+    publish_date: task.dataPostagem || null,
+    week_label: task.semana || null,
+    caption: task.caption || null,
+    labels: {
+      gp: true,
+      space: task.space || 'starken',
+      cliente: task.cliente || '',
+      responsavel: task.responsavel || '',
+      revisao: task.revisao || '',
+      subtasks: task.subtasks || []
+    }
+  };
+}
+
+async function loadTasksFromDb() {
+  if (!gpDb) return [];
+  const { data, error } = await gpDb
+    .from('tasks')
+    .select('*')
+    .eq('labels->>gp', 'true')
+    .order('created_at', { ascending: true });
+  if (error) { console.error('Erro ao carregar tasks:', error); return []; }
+  return (data || []).map(dbToTask);
+}
+
+async function saveTaskToDb(task) {
+  if (!gpDb) return task;
+  const dbRow = taskToDb(task);
+  if (task.id && typeof task.id === 'string' && task.id.includes('-')) {
+    const { data, error } = await gpDb.from('tasks').update(dbRow).eq('id', task.id).select().single();
+    if (error) { console.error('Erro ao atualizar task:', error); return task; }
+    return dbToTask(data);
+  } else {
+    const { data, error } = await gpDb.from('tasks').insert(dbRow).select().single();
+    if (error) { console.error('Erro ao inserir task:', error); return task; }
+    return dbToTask(data);
+  }
+}
+
+async function deleteTaskFromDb(taskId) {
+  if (!gpDb) return;
+  const { error } = await gpDb.from('tasks').delete().eq('id', taskId);
+  if (error) console.error('Erro ao excluir task:', error);
+}
+
+async function migrateLocalStorageToDb() {
+  if (localStorage.getItem('gp_tasks_migrated')) return null;
+  const localTasks = JSON.parse(localStorage.getItem('gp_tasks') || '[]');
+  if (localTasks.length === 0) { localStorage.setItem('gp_tasks_migrated', 'true'); return null; }
+  if (!gpDb) return null;
+  const dbRows = localTasks.map(taskToDb);
+  const { data, error } = await gpDb.from('tasks').insert(dbRows).select();
+  if (!error && data) {
+    localStorage.setItem('gp_tasks_migrated', 'true');
+    localStorage.removeItem('gp_tasks');
+    console.log('Migrados ' + data.length + ' tasks para Supabase');
+    return data.map(dbToTask);
+  }
+  console.error('Erro na migração:', error);
+  return null;
+}
+
 // Local state
 let state = {
   user: null,
   space: 'starken',
   view: 'lista',
-  tasks: JSON.parse(localStorage.getItem('gp_tasks') || '[]'),
+  tasks: [],
   expandedGroups: {},
   expandedTasks: {},
   calDate: new Date()
 };
 
 function saveTasks() {
-  localStorage.setItem('gp_tasks', JSON.stringify(state.tasks));
+  // Legacy no-op: persistence now handled by Supabase per-operation
 }
 
 function getClients() {
@@ -621,7 +718,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 // ============================================================
 // INIT APP
 // ============================================================
-function initApp() {
+async function initApp() {
   const u = state.user;
   document.getElementById('sbAvatar').textContent = u.name.substring(0,2).toUpperCase();
   document.getElementById('sbAvatar').style.background = u.color;
@@ -680,6 +777,19 @@ function initApp() {
     state.calDate.setMonth(state.calDate.getMonth() + 1);
     renderCalendar();
   });
+
+  // Load tasks from Supabase (migrate localStorage first if needed)
+  if (gpDb) {
+    const migrated = await migrateLocalStorageToDb();
+    if (migrated) {
+      state.tasks = migrated;
+    } else {
+      state.tasks = await loadTasksFromDb();
+    }
+  } else {
+    // Fallback to localStorage if Supabase unavailable
+    state.tasks = JSON.parse(localStorage.getItem('gp_tasks') || '[]');
+  }
 
   populateClientFilter();
   populateWeekFilter();
@@ -875,8 +985,8 @@ function buildTaskRow(task, status) {
       if (btn.dataset.action === 'edit') openModal(task.id);
       if (btn.dataset.action === 'delete') {
         if (confirm('Excluir tarefa?')) {
+          deleteTaskFromDb(task.id);
           state.tasks = state.tasks.filter(t => t.id !== task.id);
-          saveTasks();
           renderCurrentView();
         }
       }
@@ -1072,12 +1182,12 @@ function closeModal() {
   editingId = null;
 }
 
-function saveTask() {
+async function saveTask() {
   const title = document.getElementById('ftTitle').value.trim();
   if (!title) { alert('Digite um título'); return; }
 
   const taskData = {
-    id: editingId || Date.now().toString(),
+    id: editingId || null,
     space: state.space,
     title,
     cliente: document.getElementById('ftCliente').value,
@@ -1093,13 +1203,14 @@ function saveTask() {
     subtasks: editingId ? (state.tasks.find(t => t.id === editingId)?.subtasks || []) : []
   };
 
+  const saved = await saveTaskToDb(taskData);
+
   if (editingId) {
-    state.tasks = state.tasks.map(t => t.id === editingId ? taskData : t);
+    state.tasks = state.tasks.map(t => t.id === editingId ? saved : t);
   } else {
-    state.tasks.push(taskData);
+    state.tasks.push(saved);
   }
 
-  saveTasks();
   populateWeekFilter();
   closeModal();
   renderCurrentView();
