@@ -1593,6 +1593,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 /* ─── New Group Modal ─── */
 #ctNewGroupModal { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center; }
 #ctNewGroupModal.active { display:flex; }
+#ctDupGroupModal.active { display:flex; }
 .ct-ngm-card { background:var(--card); border-radius:16px; padding:28px; width:520px; max-width:95vw; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
 .ct-ngm-title { font-size:1.15rem; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
 .ct-ngm-field { margin-bottom:16px; }
@@ -13405,7 +13406,7 @@ function ctRenderList() {
     html += '<div class="ct-row group" onclick="ctToggleGroup(\'' + group.id + '\')">'
       + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span>📁 ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span></span></div>'
       + '<div></div><div></div><div></div><div></div>'
-      + '<div style="text-align:center"><button onclick="ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">🗑️</button></div>'
+      + '<div style="text-align:center;display:flex;gap:2px;justify-content:center"><button onclick="event.stopPropagation();ctShowDuplicateGroupModal(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Duplicar grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#dbeafe\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">📋</button><button onclick="ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">🗑️</button></div>'
       + '</div>';
 
     if (expanded) {
@@ -13568,6 +13569,61 @@ async function ctCreateNewGroup() {
   } catch (err) {
     console.error('Erro ao criar grupo e tarefas:', err);
     alert('Erro ao criar grupo: ' + err.message);
+  }
+}
+
+// ─── DUPLICATE GROUP ───
+let _ctDupGroupId = '';
+
+function ctShowDuplicateGroupModal(groupId, groupName) {
+  _ctDupGroupId = groupId;
+  document.getElementById('ctDupGroupModal').classList.add('active');
+  document.getElementById('ctDupSourceName').textContent = groupName;
+  document.getElementById('ctDupNewName').value = 'Cópia de ' + groupName;
+  // Populate client dropdown
+  const sel = document.getElementById('ctDupClientSelect');
+  sel.innerHTML = '';
+  const allClients = [...GP_STARKEN, ...GP_ALPHA];
+  allClients.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    if (c === ctCurrentClient) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function ctHideDuplicateGroupModal() {
+  document.getElementById('ctDupGroupModal').classList.remove('active');
+}
+
+async function ctDuplicateGroup() {
+  const newName = document.getElementById('ctDupNewName').value.trim();
+  const targetClient = document.getElementById('ctDupClientSelect').value;
+  if (!newName) { alert('Digite o nome do grupo'); return; }
+  if (!targetClient) { alert('Selecione um cliente'); return; }
+
+  const btn = document.querySelector('#ctDupGroupModal .ct-ngm-create');
+  btn.disabled = true;
+  btn.textContent = 'Duplicando...';
+
+  try {
+    const res = await ctApi('duplicate_group', {
+      source_group_id: _ctDupGroupId,
+      target_client_id: targetClient,
+      new_name: newName,
+      user: ctGetUser()
+    });
+    ctHideDuplicateGroupModal();
+    ctLoadGroups();
+    const count = res?.tasks_copied || res?.data?.tasks_copied || 0;
+    alert('Grupo duplicado com sucesso! ' + count + ' tarefas copiadas.');
+  } catch (err) {
+    console.error('Erro ao duplicar grupo:', err);
+    alert('Erro ao duplicar: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Duplicar';
   }
 }
 
@@ -21521,6 +21577,26 @@ async function tfLoadCampaigns() {
     <div class="ct-ngm-actions">
       <button class="ct-ngm-cancel" onclick="ctHideNewGroupModal()">Cancelar</button>
       <button class="ct-ngm-create" onclick="ctCreateNewGroup()">Criar Grupo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DUPLICATE GROUP MODAL ═══ -->
+<div id="ctDupGroupModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center">
+  <div class="ct-ngm-card" style="max-width:420px">
+    <div class="ct-ngm-title">📋 Duplicar Grupo</div>
+    <div style="margin-bottom:12px;color:var(--text-secondary);font-size:0.85rem">Grupo de origem: <strong id="ctDupSourceName"></strong></div>
+    <div class="ct-ngm-field">
+      <label>Nome do Novo Grupo</label>
+      <input type="text" id="ctDupNewName" placeholder="ex: Conteúdo Abril" />
+    </div>
+    <div class="ct-ngm-field">
+      <label>Cliente de Destino</label>
+      <select id="ctDupClientSelect" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;background:var(--bg-primary);color:var(--text-primary)"></select>
+    </div>
+    <div class="ct-ngm-actions">
+      <button class="ct-ngm-cancel" onclick="ctHideDuplicateGroupModal()">Cancelar</button>
+      <button class="ct-ngm-create" onclick="ctDuplicateGroup()">Duplicar</button>
     </div>
   </div>
 </div>

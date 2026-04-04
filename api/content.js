@@ -165,6 +165,83 @@ async function deleteGroup({ id, user }) {
   return ok(data);
 }
 
+async function duplicateGroup({ source_group_id, target_client_id, new_name, user }) {
+  if (!source_group_id) return fail('source_group_id is required');
+  if (!target_client_id) return fail('target_client_id is required');
+  if (!user) return fail('user is required');
+
+  const now = new Date().toISOString();
+
+  // Fetch source group
+  const srcGroups = await supaSelect('content_groups', `select=*&id=eq.${source_group_id}`);
+  if (!srcGroups.length) return fail('Source group not found', 404);
+  const srcGroup = srcGroups[0];
+
+  // Create new group
+  const groupData = await supaInsert('content_groups', {
+    client_id: target_client_id,
+    name: new_name || srcGroup.name,
+    position: 0,
+    created_by: user,
+    created_at: now,
+    updated_at: now,
+    archived: false,
+  });
+  const newGroupId = groupData[0]?.id || groupData.id;
+  if (!newGroupId) return fail('Failed to create group');
+
+  // Fetch all tasks from source group
+  const allTasks = await supaSelect(
+    'content_tasks',
+    `select=*&group_id=eq.${source_group_id}&order=position.asc`
+  );
+
+  // Recursive copy: map old IDs to new IDs for parent_id references
+  const idMap = {};
+  let copiedCount = 0;
+
+  // Sort: parents first (null parent_id), then children
+  const sorted = allTasks.sort((a, b) => {
+    if (!a.parent_id && b.parent_id) return -1;
+    if (a.parent_id && !b.parent_id) return 1;
+    return (a.position || 0) - (b.position || 0);
+  });
+
+  for (const task of sorted) {
+    const newParentId = task.parent_id ? idMap[task.parent_id] : null;
+    // Skip orphaned subtasks whose parent wasn't copied
+    if (task.parent_id && !newParentId) continue;
+
+    const record = {
+      group_id: newGroupId,
+      parent_id: newParentId || null,
+      client_id: target_client_id,
+      name: task.name,
+      description: task.description || null,
+      briefing: task.briefing || null,
+      copy_text: task.copy_text || null,
+      status: 'backlog',
+      assignee: task.assignee || null,
+      priority: task.priority || 'medium',
+      due_date: null,
+      position: task.position || 0,
+      publish_config: null,
+      created_by: user,
+      created_at: now,
+      updated_at: now,
+    };
+
+    const created = await supaInsert('content_tasks', record);
+    const newId = created[0]?.id || created.id;
+    if (newId) {
+      idMap[task.id] = newId;
+      copiedCount++;
+    }
+  }
+
+  return ok({ group: groupData[0] || groupData, tasks_copied: copiedCount });
+}
+
 // =============================================================================
 // Task Actions
 // =============================================================================
@@ -567,6 +644,7 @@ const ACTIONS = {
   list_groups: listGroups,
   upsert_group: upsertGroup,
   delete_group: deleteGroup,
+  duplicate_group: duplicateGroup,
   // Tasks
   list_tasks: listTasks,
   list_my_tasks: listMyTasks,
