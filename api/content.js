@@ -288,6 +288,16 @@ async function upsertTask(params) {
       });
     }
 
+    // Cascade priority to child tasks
+    if (priority !== undefined) {
+      const children = await supaSelect('content_tasks', `select=id&parent_id=eq.${id}`);
+      if (children.length) {
+        await Promise.all(children.map(c =>
+          supaUpdate('content_tasks', c.id, { priority, updated_at: now })
+        ));
+      }
+    }
+
     return ok(data);
   }
 

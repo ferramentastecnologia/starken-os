@@ -19858,7 +19858,8 @@ function mtRenderRow(task, mode) {
   }
 
   const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
-  const priorityIcon = task.priority === 'alta' ? '🔴' : task.priority === 'media' ? '🟡' : task.priority === 'baixa' ? '🟢' : '⚪';
+  const priorityMatch = CT_PRIORITIES.find(p => p.key === (task.priority || 'normal')) || CT_PRIORITIES[2];
+  const priorityIcon = priorityMatch.icon;
 
   let html = '<div class="mt-row ' + mode + '" onclick="ctOpenModal(\'' + task.id + '\')">';
 
