@@ -1496,7 +1496,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-modal-meta span,.ct-modal-meta button { background:var(--surface-container,#eceef1);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500; }
 .ct-modal-section { margin-bottom:20px; }
 .ct-modal-section-title { font-size:11px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700;color:var(--on-surface-variant,#444654);margin-bottom:8px;display:flex;align-items:center;gap:6px; }
-.ct-modal-textarea { width:100%;padding:16px;border:none;background:var(--surface-container-low,#f2f4f7);border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;min-height:80px;line-height:1.5;transition:box-shadow 0.2s; }
+.ct-modal-textarea { width:100%;padding:16px;border:none;background:var(--surface-container-low,#f2f4f7);border-radius:8px;font-family:inherit;font-size:13px;resize:none;min-height:80px;line-height:1.5;transition:box-shadow 0.2s;overflow:hidden; }
 .ct-modal-textarea:focus { outline:none;box-shadow:0 0 0 1px var(--brand); }
 .ct-modal-textarea.copy-area { background:#fffbeb;border:1px solid #fde68a;min-height:320px; }
 
@@ -13824,7 +13824,11 @@ async function ctOpenModal(taskId) {
   // Show modal
   const overlay = document.getElementById('ctModalOverlay');
   overlay.style.display = 'flex';
-  setTimeout(() => overlay.classList.add('open'), 10);
+  setTimeout(() => {
+    overlay.classList.add('open');
+    // Auto-resize all textareas after modal is visible
+    overlay.querySelectorAll('.ct-modal-textarea').forEach(ctAutoResizeTextarea);
+  }, 10);
 }
 
 function ctCloseModal() {
@@ -13872,6 +13876,19 @@ async function ctSaveAllFields(silent) {
     if (!silent && statusEl) { statusEl.textContent = '❌ Erro'; setTimeout(function() { statusEl.textContent = ''; }, 3000); }
   }
 }
+
+function ctAutoResizeTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// Wire auto-resize on all modal textareas
+document.addEventListener('input', function(e) {
+  if (e.target.classList.contains('ct-modal-textarea')) {
+    ctAutoResizeTextarea(e.target);
+  }
+});
 
 async function ctSaveTaskField(field, value) {
   if (!ctModalTask) return;
