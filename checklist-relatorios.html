@@ -13892,6 +13892,14 @@ async function ctSaveTaskField(field, value) {
     document.getElementById('ctModalPublish').style.display = (showPublishSection && !hasFormatsActive) ? 'block' : 'none';
     document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
   }
+
+  // Refresh the background list so columns update in real-time
+  if (typeof ctRenderList === 'function') ctRenderList();
+  // Also refresh Minhas Tasks if it's the active tab
+  var mtTab = document.getElementById('tab-minhas-tasks');
+  if (mtTab && mtTab.classList.contains('active') && typeof mtRender === 'function') {
+    mtRender();
+  }
 }
 
 async function ctChangeModalStatus(newStatus) {
@@ -14254,6 +14262,8 @@ async function ctDeleteAttachment(attachmentId) {
   if (!ctModalTask || !attachmentId) return;
   if (!confirm('Remover este arquivo?')) return;
   await ctApi('delete_attachment', { id: attachmentId, user: ctGetUser() });
+  // Small delay to ensure Supabase processes the delete before re-fetching
+  await new Promise(r => setTimeout(r, 300));
   // Reload attachments
   const attData = await ctApi('list_attachments', { task_id: ctModalTask.id });
   ctModalTask.attachments = Array.isArray(attData) ? attData : (attData.attachments || []);
@@ -19961,7 +19971,7 @@ function ctRenderFormatTabs() {
       + '<div style="font-size:0.85rem;font-weight:700;color:#3b82f6;margin-bottom:10px;display:flex;align-items:center;gap:6px">📷 Feed</div>'
       + '<div class="ct-modal-section" style="margin-bottom:10px">'
       + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'feed\';document.getElementById(\'ctFileInputFeed\').click()">+ Upload</button></div>'
-      + '<input type="file" id="ctFileInputFeed" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">'
+      + '<input type="file" id="ctFileInputFeed" accept="image/*,video/*" multiple style="display:none" onchange="window._ctUploadFormatType=\'feed\';ctHandleFormatFileUpload(this.files)">'
       + '<div class="ct-attachment-grid" id="ctFormatCreatives_feed"></div>'
       + '</div>'
       + '<div class="ct-modal-section" style="margin-bottom:10px">'
@@ -19975,7 +19985,7 @@ function ctRenderFormatTabs() {
       + '<div style="font-size:0.85rem;font-weight:700;color:#ec4899;margin-bottom:10px;display:flex;align-items:center;gap:6px">📱 Story</div>'
       + '<div class="ct-modal-section" style="margin-bottom:10px">'
       + '<div class="ct-modal-section-title" style="font-size:0.78rem">🎨 Criativo <button class="ct-add-btn" style="font-size:0.65rem;padding:2px 8px;margin-left:6px;background:#10b981" onclick="window._ctUploadFormatType=\'story\';document.getElementById(\'ctFileInputStory\').click()">+ Upload</button></div>'
-      + '<input type="file" id="ctFileInputStory" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">'
+      + '<input type="file" id="ctFileInputStory" accept="image/*,video/*" multiple style="display:none" onchange="window._ctUploadFormatType=\'story\';ctHandleFormatFileUpload(this.files)">'
       + '<div class="ct-attachment-grid" id="ctFormatCreatives_story"></div>'
       + '</div>'
       + '<div id="ctFormatPub_story"></div>'
@@ -20050,7 +20060,11 @@ function ctRenderTwoColumnContent() {
 
   ['feed', 'story'].forEach(function(fmt) {
     var creatives = allAtts.filter(function(a) {
-      return (a.category === 'creative' || a.category === 'final') && (a.format_type === fmt || !a.format_type);
+      if (a.category !== 'creative' && a.category !== 'final') return false;
+      if (a.format_type === fmt) return true;
+      // Attachments without format_type default to feed only
+      if (!a.format_type && fmt === 'feed') return true;
+      return false;
     });
 
     var grid = document.getElementById('ctFormatCreatives_' + fmt);
@@ -20205,10 +20219,15 @@ function ctUploadFormatAttachment() {
 
 async function ctHandleFormatFileUpload(files) {
   if (!files || !files.length) return;
-  // Preserve format_type set by the column button onclick, fallback to active tab
-  if (!window._ctUploadFormatType) window._ctUploadFormatType = _ctActiveFormatTab || 'feed';
+  // Preserve format_type set by the column button onclick or input onchange, fallback to active tab
+  var savedFormat = window._ctUploadFormatType || _ctActiveFormatTab || 'feed';
+  window._ctUploadFormatType = savedFormat;
+  console.log('[Upload] Format type locked to:', savedFormat);
   await ctHandleFileUpload(files, 'creative');
   window._ctUploadFormatType = null;
+  // Reset the file input so the same file can be re-selected
+  var inputs = ['ctFileInputFeed', 'ctFileInputStory', 'ctFileInputFormatCreative'];
+  inputs.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
 }
 
 // ─── PER-FORMAT PUBLISH ───
