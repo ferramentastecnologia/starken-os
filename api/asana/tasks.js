@@ -441,27 +441,130 @@ const ACTIONS = {
 };
 
 // =============================================================================
+// Asana task helpers (legacy GET/PUT/POST without hub action)
+// =============================================================================
+
+const ASANA_BASE = 'https://app.asana.com/api/1.0';
+
+function asanaHeaders() {
+  const token = process.env.ASANA_PAT;
+  if (!token) throw new Error('ASANA_PAT not configured');
+  return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+async function asanaListTasks(query) {
+  const project = query.project;
+  if (!project) return { error: true, message: 'project query param is required' };
+
+  const completed = query.completed || 'false';
+  let url;
+  if (completed === 'all') {
+    url = `${ASANA_BASE}/tasks?project=${project}&opt_fields=name,completed,completed_at,due_on,assignee.name&limit=100`;
+  } else {
+    url = `${ASANA_BASE}/tasks?project=${project}&completed_since=now&opt_fields=name,completed,completed_at,due_on,assignee.name&limit=100`;
+  }
+
+  const resp = await fetch(url, { headers: asanaHeaders() });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Asana API ${resp.status}: ${err.substring(0, 300)}`);
+  }
+  return resp.json();
+}
+
+async function asanaCompleteTask(body) {
+  const { task_gid, completed } = body;
+  if (!task_gid) return { error: true, message: 'task_gid is required' };
+
+  const resp = await fetch(`${ASANA_BASE}/tasks/${task_gid}`, {
+    method: 'PUT',
+    headers: asanaHeaders(),
+    body: JSON.stringify({ data: { completed: !!completed } }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Asana API ${resp.status}: ${err.substring(0, 300)}`);
+  }
+  return resp.json();
+}
+
+async function asanaCreateTask(body) {
+  const { name, project, due_on, notes } = body;
+  if (!name) return { error: true, message: 'name is required' };
+
+  const taskData = { name };
+  if (project) taskData.projects = [project];
+  if (due_on) taskData.due_on = due_on;
+  if (notes) taskData.notes = notes;
+
+  const resp = await fetch(`${ASANA_BASE}/tasks`, {
+    method: 'POST',
+    headers: asanaHeaders(),
+    body: JSON.stringify({ data: taskData }),
+  });
+  if (!resp.ok) {
+    const err = await resp.text();
+    throw new Error(`Asana API ${resp.status}: ${err.substring(0, 300)}`);
+  }
+  return resp.json();
+}
+
+// =============================================================================
 // Main handler
 // =============================================================================
 
 module.exports = async function handler(req, res) {
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // ── GET: Legacy Asana task listing ──
+  if (req.method === 'GET') {
+    try {
+      const result = await asanaListTasks(req.query || {});
+      if (result && result.error === true) return res.status(400).json(result);
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error('[asana-tasks] GET error:', err);
+      return res.status(500).json({ error: true, message: err.message });
+    }
+  }
+
+  // ── PUT: Legacy Asana task completion ──
+  if (req.method === 'PUT') {
+    try {
+      const result = await asanaCompleteTask(req.body || {});
+      if (result && result.error === true) return res.status(400).json(result);
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error('[asana-tasks] PUT error:', err);
+      return res.status(500).json({ error: true, message: err.message });
+    }
+  }
+
+  // ── POST: Route by action field ──
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: true, message: 'Use POST' });
+    return res.status(405).json({ error: true, message: 'Method not allowed' });
   }
 
   const body = req.body || {};
   const { action, ...params } = body;
 
+  // No action field → legacy Asana task creation
   if (!action) {
-    return res.status(400).json({ error: true, message: 'action field is required' });
+    try {
+      const result = await asanaCreateTask(body);
+      if (result && result.error === true) return res.status(400).json(result);
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error('[asana-tasks] POST create error:', err);
+      return res.status(500).json({ error: true, message: err.message });
+    }
   }
 
+  // Action field present → Client Hub routing
   const fn = ACTIONS[action];
   if (!fn) {
     return res.status(400).json({
