@@ -2790,13 +2790,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .mt-client-count { font-size:11px;font-weight:700;color:var(--text-tertiary);background:var(--surface-container,#eceef1);padding:2px 8px;border-radius:4px; }
 .mt-list { border:1px solid rgba(196,197,215,0.15);border-radius:10px;overflow:hidden;margin-bottom:4px; }
 .mt-header-row { display:grid;gap:0;background:var(--surface-container-low,#f2f4f7);padding:0 16px;height:36px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--on-surface-variant,#444654);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant,#c4c5d7);align-items:center; }
-.mt-header-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 50px; }
-.mt-header-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 50px; }
+.mt-header-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 100px; }
+.mt-header-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 100px; }
 .mt-row { display:grid;gap:0;padding:0 16px;height:42px;border-bottom:1px solid rgba(196,197,215,0.15);font-size:13px;align-items:center;transition:background 0.08s;cursor:pointer; }
 .mt-row:hover { background:#f8fafc; }
 .mt-row:last-child { border-bottom:none; }
-.mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 50px; }
-.mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 50px; }
+.mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 100px; }
+.mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 100px; }
 .mt-empty { text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:14px; }
 
 /* ═══════════════════════════════════════════════════════════════ */
@@ -19950,7 +19950,14 @@ function mtRenderRow(task, mode) {
 
   const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
   const priorityMatch = CT_PRIORITIES.find(p => p.key === (task.priority || 'normal')) || CT_PRIORITIES[2];
-  const priorityIcon = priorityMatch.icon;
+  const priorityColors = {
+    urgente: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
+    alta:    { bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
+    normal:  { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+    baixa:   { bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' },
+  };
+  const pc = priorityColors[priorityMatch.key] || priorityColors.normal;
+  const priorityBadge = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid ' + pc.border + ';background:' + pc.bg + ';color:' + pc.color + ';white-space:nowrap;letter-spacing:0.3px">' + priorityMatch.icon + ' ' + priorityMatch.label.toUpperCase() + '</span>';
 
   let html = '<div class="mt-row ' + mode + '" onclick="ctOpenModal(\'' + task.id + '\')">';
 
@@ -19968,7 +19975,7 @@ function mtRenderRow(task, mode) {
 
   html += '<div style="font-size:12px;color:var(--text-secondary)">' + dueStr + '</div>';
   html += '<div style="display:flex;gap:4px;flex-wrap:wrap">' + pubHtml + '</div>';
-  html += '<div style="font-size:14px;text-align:center">' + priorityIcon + '</div>';
+  html += '<div style="text-align:center">' + priorityBadge + '</div>';
   html += '</div>';
 
   return html;
