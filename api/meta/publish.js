@@ -71,12 +71,19 @@ async function processPublishQueue() {
   const results = [];
 
   for (const item of items) {
-    // Mark as PROCESSING (with timestamp so stuck-detection can reset it)
-    await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}`, {
+    // ─── ATOMIC CLAIM: only update if status is still QUEUED ───
+    // This prevents race condition when pg_cron + frontend both call processPublishQueue simultaneously
+    const claimRes = await fetch(`${url}/rest/v1/publish_queue?id=eq.${item.id}&status=eq.QUEUED`, {
       method: 'PATCH',
-      headers: supabaseHeaders(),
+      headers: { ...supabaseHeaders(), 'Prefer': 'return=representation' },
       body: JSON.stringify({ status: 'PROCESSING', updated_at: new Date().toISOString() }),
     });
+    const claimed = await claimRes.json();
+    // If nothing was updated, another process already claimed this item — skip it
+    if (!claimed || claimed.length === 0) {
+      console.log('[publish_queue] Item', item.id, 'already claimed by another process, skipping.');
+      continue;
+    }
 
     try {
       const client = await getClient(item.client_key);

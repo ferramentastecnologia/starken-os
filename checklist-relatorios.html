@@ -5306,10 +5306,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
   let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
+  let _queueProcessing = false; // lock to prevent concurrent cron calls
 
   async function processQueueAndCheckAlerts() {
+    if (_queueProcessing) return; // already running, skip
+    _queueProcessing = true;
     try {
-      // 1. Processa fila
+      // 1. Processa fila (backup for pg_cron — atomic claim on backend prevents duplicate publishing)
       const cronRes = await fetch(metaApiBase() + '/api/meta/publish?cron=process');
       const cronData = await cronRes.json();
 
@@ -5366,7 +5369,9 @@ document.addEventListener('DOMContentLoaded', function() {
       if (cronData.processed > 0 && typeof metaPublishLoadHistory === 'function') {
         metaPublishLoadHistory();
       }
-    } catch (e) { /* silently fail */ }
+    } catch (e) { /* silently fail */ } finally {
+      _queueProcessing = false; // release lock
+    }
   }
 
   function showAlertNotifications(alerts) {
@@ -6254,18 +6259,10 @@ async function sysLogsRefresh() {
   if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">⏳ Carregando...</div>';
 
   try {
-    // Load publish_history (last 200) and publish_queue in parallel
-    var [histRes, queueRes] = await Promise.all([
-      fetch(metaApiBase() + '/api/meta/publish?limit=200'),
-      fetch(metaApiBase() + '/api/meta/publish?cron=process'),
-    ]);
+    // Load publish_history only — queue processing is handled by pg_cron + processQueueAndCheckAlerts()
+    var histRes = await fetch(metaApiBase() + '/api/meta/publish?limit=200');
     var histData = await histRes.json();
     _sysLogs = histData.history || [];
-
-    // Reload history after cron to get latest statuses
-    var histRes2 = await fetch(metaApiBase() + '/api/meta/publish?limit=200');
-    var histData2 = await histRes2.json();
-    _sysLogs = histData2.history || [];
   } catch (e) {
     _sysLogs = [];
   }
