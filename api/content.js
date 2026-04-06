@@ -636,6 +636,40 @@ async function listActivity({ task_id, limit }) {
 }
 
 // =============================================================================
+// Admin - Create User
+// =============================================================================
+
+async function adminCreateUser({ user_name, password, user_role, avatar_color }) {
+  if (!user_name || !password) return fail('user_name and password required');
+
+  // Insert into admin_secrets (login credentials)
+  const secretLabel = `Login ${user_name}`;
+  await supaInsert('admin_secrets', { label: secretLabel, value: password });
+
+  // Insert into users table
+  const userData = {
+    user_name,
+    user_role: user_role || 'designer',
+    avatar_color: avatar_color || '#ec4899',
+  };
+  const result = await supaInsert('users', userData);
+
+  return ok({ success: true, user: result });
+}
+
+async function adminUpdateUser({ user_name, user_role }) {
+  if (!user_name || !user_role) return fail('user_name and user_role required');
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/users?user_name=eq.${encodeURIComponent(user_name)}`, {
+    method: 'PATCH',
+    headers: HEADERS_RETURN,
+    body: JSON.stringify({ user_role }),
+  });
+  const data = await res.json();
+  return ok({ success: true, updated: data });
+}
+
+// =============================================================================
 // Action Router
 // =============================================================================
 
@@ -665,6 +699,9 @@ const ACTIONS = {
   // Client Info
   get_client_info: getClientInfo,
   save_client_info: saveClientInfo,
+  // Admin
+  admin_create_user: adminCreateUser,
+  admin_update_user: adminUpdateUser,
 };
 
 // =============================================================================

@@ -2860,6 +2860,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <option value="Emilly">Emilly</option>
         <option value="Leonardo">Leonardo</option>
         <option value="Dante">Dante</option>
+        <option value="Daniela">Daniela</option>
       </select>
     </div>
     <div>
@@ -5312,9 +5313,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
 
-  // Restore last active tab on reload
+  // Restore last active tab on reload (skip for designers — they go to minhas-tasks only)
+  var savedSession = null;
+  try { savedSession = JSON.parse(localStorage.getItem('starkenSession') || 'null'); } catch(e) {}
+  var isDesigner = savedSession && savedSession.role === 'designer';
+
   const lastTab = localStorage.getItem('starken_last_tab');
-  if (lastTab && document.getElementById('tab-' + lastTab)) {
+  if (!isDesigner && lastTab && document.getElementById('tab-' + lastTab)) {
     switchTab(lastTab);
   }
 
@@ -8901,10 +8906,11 @@ renderAll(); // render imediato com dados do localStorage
 // ================================================================
 const GP_USERS = [
   { name:'Juan',     role:'admin',    color:'#3b82f6' },
-  { name:'Henrique', role:'executor', color:'#8b5cf6' },
+  { name:'Henrique', role:'designer', color:'#8b5cf6' },
   { name:'Emilly',   role:'editor',   color:'#f59e0b' },
   { name:'Leonardo', role:'admin',    color:'#a855f7' },
-  { name:'Dante',    role:'executor', color:'#f97316' }
+  { name:'Dante',    role:'executor', color:'#f97316' },
+  { name:'Daniela',  role:'designer', color:'#ec4899' }
 ];
 
 const GP_STATUSES = [
@@ -8995,6 +9001,43 @@ function activateSession(user) {
   metaClientsPreload();
   // Fallback: re-populate client lists after 3s (in case Supabase loads late)
   setTimeout(function() { populateSidebarClients(); restoreSidebarFolders(); }, 3000);
+
+  // ─── ROLE-BASED RESTRICTIONS ───
+  if (user.role === 'designer') {
+    applyDesignerRestrictions();
+  }
+}
+
+function applyDesignerRestrictions() {
+  // Hide sidebar — designers don't need navigation
+  var sidebar = document.getElementById('sidebar');
+  if (sidebar) sidebar.style.display = 'none';
+  var menuBtn = document.getElementById('menuToggleBtn');
+  if (menuBtn) menuBtn.style.display = 'none';
+
+  // Force "Minhas Tasks" tab only
+  switchTab('minhas-tasks');
+
+  // Add a simplified topbar for designers
+  var topbar = document.getElementById('topbar');
+  if (topbar) {
+    topbar.style.paddingLeft = '24px';
+  }
+
+  // Hide all sidebar navigation items and remove ability to switch tabs
+  // Override switchTab to prevent navigation to other tabs
+  var _origSwitchTab = window.switchTab;
+  window.switchTab = function(tabName) {
+    if (gpState.user && gpState.user.role === 'designer') {
+      // Only allow minhas-tasks
+      if (tabName !== 'minhas-tasks') return;
+    }
+    _origSwitchTab(tabName);
+  };
+
+  // Adjust main content to full width without sidebar
+  var mainContent = document.querySelector('.main-content');
+  if (mainContent) mainContent.style.marginLeft = '0';
 }
 
 // ── Definições essenciais para preload (devem existir ANTES de restoreSession) ──
@@ -13093,8 +13136,9 @@ const CT_PRIORITIES = [
 
 const CT_USERS = [
   { name: 'Juan', color: '#3b82f6' },
-  { name: 'Henrique', color: '#10b981' },
+  { name: 'Henrique', color: '#8b5cf6' },
   { name: 'Emily', color: '#f59e0b' },
+  { name: 'Daniela', color: '#ec4899' },
 ];
 
 let ctGroups = [];
