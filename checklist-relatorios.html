@@ -6504,7 +6504,7 @@ function switchTab(tabName) {
     if (navBar) navBar.style.display = 'none';
     if (navBarCal) navBarCal.style.display = 'none';
   }
-  if (tabName === 'minhas-tasks') mtInit();
+  if (tabName === 'minhas-tasks') { if (typeof mtInit === 'function') mtInit(); else setTimeout(function(){ if (typeof mtInit === 'function') mtInit(); }, 500); }
   else if (tabName === 'content-approval') caInitTab();
   else if (tabName === 'asana-tasks') asanaInitTab();
   else if (tabName === 'gestao') { if (typeof Gestao !== 'undefined') { Gestao.populateClientFilter(); Gestao.renderCurrentView(); } }
@@ -9019,7 +9019,20 @@ function activateSession(user) {
 
   // ─── ROLE-BASED RESTRICTIONS ───
   if (user.role === 'designer') {
-    applyDesignerRestrictions();
+    // Delay to ensure all scripts (including mtInit in later <script> tags) are loaded
+    if (typeof mtInit === 'function') {
+      applyDesignerRestrictions();
+    } else {
+      // mtInit not loaded yet (script tag order), wait for DOMContentLoaded or poll
+      var _designerCheck = setInterval(function() {
+        if (typeof mtInit === 'function') {
+          clearInterval(_designerCheck);
+          applyDesignerRestrictions();
+        }
+      }, 100);
+      // Safety: clear after 5s regardless
+      setTimeout(function() { clearInterval(_designerCheck); applyDesignerRestrictions(); }, 5000);
+    }
   }
 }
 
