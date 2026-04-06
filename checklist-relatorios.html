@@ -14563,7 +14563,7 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
       file_type: 'image/jpeg',
       file_size: blob.size,
       category: 'creative',
-      format_type: window._ctUploadFormatType || (_ctActiveFormatTab) || (ctModalTask.publish_config && ctModalTask.publish_config.content_type) || 'feed',
+      format_type: window._ctUploadFormatType || _ctActiveFormatTab || 'feed',
       user: ctGetUser(),
     });
 
@@ -15453,62 +15453,39 @@ async function ctHandleFileUpload(files, category) {
     try {
       var publicUrl = '';
 
-      var isVideoFile = file.type && file.type.startsWith('video/') || ['mp4','mov','avi','webm','mkv','m4v'].includes((file.name || '').split('.').pop().toLowerCase());
-      if (file.size < 3 * 1024 * 1024 && !isVideoFile) {
-        updateProgress(10, 'Preparando...');
-        const base64 = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-          reader.readAsDataURL(file);
-        });
-        updateProgress(30, 'Enviando...');
-        const uploadRes = await fetch(ctApiBase() + '/api/meta/media', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            destination: 'fb', client: ctCurrentClient,
-            source_base64: base64, filename: file.name, media_type: 'IMAGE',
-          }),
-        });
-        updateProgress(80, 'Processando...');
-        const uploadData = await uploadRes.json();
-        if (uploadData.upload && uploadData.upload.publicUrl) publicUrl = uploadData.upload.publicUrl;
-        updateProgress(100, 'Concluído!');
-      } else {
-        // Large file: upload via Supabase JS client (handles auth automatically)
-        var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        var storagePath = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + Date.now() + '_' + safeName;
+      // ═══ DEFINITIVE UPLOAD: Always use Supabase Storage directly ═══
+      // Never use /api/meta/media for creative uploads — that endpoint is for Meta API publishing only
+      var safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      var storagePath = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + Date.now() + '_' + safeName;
 
-        updateProgress(5, 'Preparando upload de ' + sizeMB + ' MB...');
+      updateProgress(5, 'Preparando upload de ' + sizeMB + ' MB...');
 
-        {
-          // Always use XMLHttpRequest for real-time progress percentage
-          var uploadUrl = SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + storagePath;
-          await new Promise(function(resolve, reject) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', uploadUrl, true);
-            xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON);
-            xhr.setRequestHeader('apikey', SUPABASE_ANON);
-            xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-            xhr.setRequestHeader('x-upsert', 'true');
-            xhr.upload.onprogress = function(e) {
-              if (e.lengthComputable) {
-                var pct = Math.round(e.loaded / e.total * 100);
-                updateProgress(pct, pct + '% · ' + (e.loaded/1024/1024).toFixed(1) + '/' + sizeMB + ' MB');
-              }
-            };
-            xhr.onload = function() {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + storagePath;
-                updateProgress(100, '✅ Upload concluído!');
-                resolve();
-              } else { reject(new Error('Upload falhou: HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,100))); }
-            };
-            xhr.onerror = function() { reject(new Error('Erro de rede')); };
-            xhr.send(file);
-          });
-        }
+      {
+        // Always use XMLHttpRequest for real-time progress percentage — works for ALL file sizes
+        var uploadUrl = SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + storagePath;
+        await new Promise(function(resolve, reject) {
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', uploadUrl, true);
+          xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON);
+          xhr.setRequestHeader('apikey', SUPABASE_ANON);
+          xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+          xhr.setRequestHeader('x-upsert', 'true');
+          xhr.upload.onprogress = function(e) {
+            if (e.lengthComputable) {
+              var pct = Math.round(e.loaded / e.total * 100);
+              updateProgress(pct, pct + '% · ' + (e.loaded/1024/1024).toFixed(1) + '/' + sizeMB + ' MB');
+            }
+          };
+          xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + storagePath;
+              updateProgress(100, '✅ Upload concluído!');
+              resolve();
+            } else { reject(new Error('Upload falhou: HTTP ' + xhr.status + ' ' + xhr.responseText.substring(0,100))); }
+          };
+          xhr.onerror = function() { reject(new Error('Erro de rede')); };
+          xhr.send(file);
+        });
       }
 
       if (publicUrl) {
@@ -15520,9 +15497,10 @@ async function ctHandleFileUpload(files, category) {
           file_type: file.type,
           file_size: file.size,
           category: category,
-          format_type: window._ctUploadFormatType || (ctModalTask.publish_config && ctModalTask.publish_config.content_type) || 'feed',
+          format_type: window._ctUploadFormatType || _ctActiveFormatTab || 'feed',
           user: ctGetUser(),
         });
+        console.log('[Upload] Attachment saved with format_type:', window._ctUploadFormatType || _ctActiveFormatTab || 'feed', '| file:', file.name);
 
         // Thumbnail is now selected manually via frame selector button
       }
@@ -20443,18 +20421,24 @@ function ctSaveFormatCopy(value) {
 }
 
 function ctUploadFormatAttachment() {
+  // DEFINITIVE: lock format type to the active tab BEFORE opening file picker
+  window._ctUploadFormatType = _ctActiveFormatTab || 'feed';
+  console.log('[Upload] Format type pre-locked to:', window._ctUploadFormatType);
   document.getElementById('ctFileInputFormatCreative').click();
 }
 
 async function ctHandleFormatFileUpload(files) {
   if (!files || !files.length) return;
-  // Preserve format_type set by the column button onclick or input onchange, fallback to active tab
+  // DEFINITIVE: determine format from the explicit button click OR the active tab
+  // Priority: 1) _ctUploadFormatType (set by onclick of specific format button)
+  //           2) _ctActiveFormatTab (the currently visible tab)
+  //           3) 'feed' as absolute last resort
   var savedFormat = window._ctUploadFormatType || _ctActiveFormatTab || 'feed';
   window._ctUploadFormatType = savedFormat;
-  console.log('[Upload] Format type locked to:', savedFormat);
+  console.log('[Upload] Format type definitively set to:', savedFormat, '| _ctUploadFormatType was:', window._ctUploadFormatType, '| _ctActiveFormatTab:', _ctActiveFormatTab);
   await ctHandleFileUpload(files, 'creative');
   window._ctUploadFormatType = null;
-  // Reset the file input so the same file can be re-selected
+  // Reset ALL file inputs so the same file can be re-selected
   var inputs = ['ctFileInputFeed', 'ctFileInputStory', 'ctFileInputFormatCreative'];
   inputs.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
 }
