@@ -1450,6 +1450,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-status[data-status="em-andamento"] { background:#dbeafe;color:#1d4ed8; }
 .ct-status[data-status="criacao-conteudo"] { background:#ede9fe;color:#6d28d9; }
 .ct-status[data-status="design"] { background:#dbeafe;color:#2563eb; }
+.ct-status[data-status="em-revisao"] { background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;font-weight:700; }
 .ct-status[data-status="aprovacao-design"] { background:#fef2f2;color:#dc2626; }
 .ct-status[data-status="alteracao-design"] { background:#fef2f2;color:#b91c1c; }
 .ct-status[data-status="aprovacao"] { background:#ecfdf5;color:#059669; }
@@ -4833,27 +4834,33 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
       <!-- ═══ MINHAS TASKS ═══ -->
       <div id="tab-minhas-tasks" class="tab-content">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
           <h2 style="font-size:20px;font-weight:700;letter-spacing:-0.025em;margin:0">🎯 Minhas Tasks</h2>
           <div style="display:flex;align-items:center;gap:12px">
             <div style="display:flex;background:var(--surface-container,#eceef1);border-radius:8px;overflow:hidden">
-              <button id="mtViewClient" onclick="mtSetView('client')" style="padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;border:none;cursor:pointer;font-family:inherit;background:var(--brand);color:white">Por Cliente</button>
-              <button id="mtViewList" onclick="mtSetView('list')" style="padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:var(--text-secondary)">Lista Única</button>
+              <button id="mtViewClient" onclick="mtSetView('client')" style="padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:var(--text-secondary)">Por Cliente</button>
+              <button id="mtViewList" onclick="mtSetView('list')" style="padding:6px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;border:none;cursor:pointer;font-family:inherit;background:var(--brand);color:white">Lista Única</button>
             </div>
             <select id="mtStatusFilter" onchange="mtRender()" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;background:var(--bg-surface)">
               <option value="">Todos os status</option>
               <option value="a-fazer">A Fazer</option>
               <option value="em-andamento">Em Andamento</option>
-              <option value="criacao-conteudo">Criação</option>
               <option value="design">Design</option>
+              <option value="em-revisao">Em Revisão</option>
+              <option value="alteracao-design">Alteração Design</option>
               <option value="aprovacao">Aprovação</option>
-              <option value="agendar">Agendar</option>
+              <option value="aprovado">Aprovado</option>
               <option value="agendado">Agendado</option>
               <option value="publicado">Publicado</option>
             </select>
             <span id="mtCount" style="font-size:13px;color:var(--text-secondary);font-weight:600"></span>
           </div>
         </div>
+
+        <!-- Status Pipeline Pills -->
+        <div id="mtPipeline" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"></div>
+
         <div id="mtContent" style="min-height:200px"></div>
       </div><!-- end #tab-minhas-tasks -->
 
@@ -13142,8 +13149,9 @@ const CT_STATUSES = [
   { key: 'em-andamento', label: 'Em Andamento', color: '#1d4ed8', bg: '#dbeafe' },
   { key: 'criacao-conteudo', label: 'Criação de Conteúdo', color: '#6d28d9', bg: '#ede9fe' },
   { key: 'design', label: 'Design', color: '#2563eb', bg: '#dbeafe' },
+  { key: 'em-revisao', label: 'Em Revisão', color: '#c2410c', bg: '#fff7ed', designerAction: true },
   { key: 'aprovacao-design', label: 'Aprovação Design', color: '#dc2626', bg: '#fef2f2' },
-  { key: 'alteracao-design', label: 'Alteração Design', color: '#b91c1c', bg: '#fef2f2' },
+  { key: 'alteracao-design', label: 'Alteração Design', color: '#b91c1c', bg: '#fee2e2' },
   { key: 'aprovacao', label: 'Aprovação', color: '#059669', bg: '#ecfdf5' },
   { key: 'alteracao', label: 'Alteração', color: '#b45309', bg: '#fffbeb' },
   { key: 'revisao', label: 'Revisão', color: '#dc2626', bg: '#fef2f2' },
@@ -20039,7 +20047,7 @@ function cronogramaGetWeekLabel(tasks) {
 
 // ═══ MINHAS TASKS ═══
 let mtTasks = [];
-let mtView = 'client'; // 'client' or 'list'
+let mtView = 'list'; // default: lista única para designers
 
 async function mtInit() {
   if (!gpState.user) return;
@@ -20048,6 +20056,8 @@ async function mtInit() {
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
     mtTasks = Array.isArray(res) ? res : (res.data || []);
+    // Ensure lista única is default
+    mtView = 'list';
     mtRender();
   } catch (e) {
     el.innerHTML = '<div class="mt-empty">Erro ao carregar tasks: ' + e.message + '</div>';
@@ -20063,17 +20073,89 @@ function mtSetView(mode) {
   mtRender();
 }
 
+// Quick action: designer sends task to review
+async function mtSendToReview(taskId, btn) {
+  btn.disabled = true;
+  btn.textContent = '...';
+  try {
+    await ctApi('change_status', { id: taskId, status: 'em-revisao', user: gpState.user ? gpState.user.name : 'Sistema' });
+    // Update local task
+    const t = mtTasks.find(t => t.id === taskId);
+    if (t) t.status = 'em-revisao';
+    mtRender();
+    if (typeof showToast === 'function') showToast('✅ Enviado para revisão!', 'success');
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '📨 Revisão';
+    alert('Erro: ' + e.message);
+  }
+}
+
+// Render pipeline summary pills
+function mtRenderPipeline(tasks) {
+  const pipeline = document.getElementById('mtPipeline');
+  if (!pipeline) return;
+  const statusGroups = [
+    { key: 'alteracao-design', label: '✏️ Alteração', color: '#dc2626', bg: '#fee2e2', urgent: true },
+    { key: 'design', label: '🎨 Design', color: '#2563eb', bg: '#dbeafe', urgent: false },
+    { key: 'em-revisao', label: '👁️ Em Revisão', color: '#c2410c', bg: '#fff7ed', urgent: false },
+    { key: 'a-fazer', label: '📋 A Fazer', color: '#374151', bg: '#f3f4f6', urgent: false },
+  ];
+  let html = '';
+  statusGroups.forEach(sg => {
+    const count = tasks.filter(t => t.status === sg.key).length;
+    if (count === 0) return;
+    html += '<button onclick="document.getElementById(\'mtStatusFilter\').value=\'' + sg.key + '\';mtRender()" '
+      + 'style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid ' + sg.bg + ';background:' + sg.bg + ';color:' + sg.color + ';cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all 0.15s'
+      + (sg.urgent ? ';box-shadow:0 0 0 2px ' + sg.color + '40' : '') + '" '
+      + 'title="Filtrar por ' + sg.label + '">'
+      + sg.label + ' <span style="background:' + sg.color + ';color:white;border-radius:10px;padding:1px 7px;font-size:11px">' + count + '</span></button>';
+  });
+  // Reset filter button if active
+  const filterVal = document.getElementById('mtStatusFilter') ? document.getElementById('mtStatusFilter').value : '';
+  if (filterVal) {
+    html += '<button onclick="document.getElementById(\'mtStatusFilter\').value=\'\';mtRender()" '
+      + 'style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:11px;font-family:inherit">'
+      + '✕ Limpar filtro</button>';
+  }
+  pipeline.innerHTML = html;
+}
+
 function mtRender() {
   const el = document.getElementById('mtContent');
   const statusFilter = document.getElementById('mtStatusFilter').value;
 
+  // Update toggle buttons visual state
+  const viewClientBtn = document.getElementById('mtViewClient');
+  const viewListBtn = document.getElementById('mtViewList');
+  if (viewClientBtn && viewListBtn) {
+    viewClientBtn.style.background = mtView === 'client' ? 'var(--brand)' : 'transparent';
+    viewClientBtn.style.color = mtView === 'client' ? 'white' : 'var(--text-secondary)';
+    viewListBtn.style.background = mtView === 'list' ? 'var(--brand)' : 'transparent';
+    viewListBtn.style.color = mtView === 'list' ? 'white' : 'var(--text-secondary)';
+  }
+
+  // Always render pipeline with full task list (before filter)
+  mtRenderPipeline(mtTasks);
+
   let tasks = mtTasks;
   if (statusFilter) {
-    tasks = tasks.filter(t => {
-      const s = (t.status || 'a-fazer').toLowerCase().replace(/\s+/g, '-').replace(/[áàã]/g,'a').replace(/[éê]/g,'e').replace(/[í]/g,'i').replace(/[óô]/g,'o').replace(/[ú]/g,'u').replace(/ç/g,'c');
-      return s === statusFilter;
-    });
+    tasks = tasks.filter(t => (t.status || 'a-fazer') === statusFilter);
   }
+
+  // Smart sort: alteracao-design first, then design, then by priority (urgente>alta>normal>baixa), then by due_date
+  const statusOrder = { 'alteracao-design': 0, 'design': 1, 'em-revisao': 2, 'a-fazer': 3, 'em-andamento': 4 };
+  const prioOrder = { urgente: 0, alta: 1, normal: 2, baixa: 3 };
+  tasks = tasks.slice().sort((a, b) => {
+    const sA = statusOrder[a.status] ?? 9;
+    const sB = statusOrder[b.status] ?? 9;
+    if (sA !== sB) return sA - sB;
+    const pA = prioOrder[a.priority] ?? 2;
+    const pB = prioOrder[b.priority] ?? 2;
+    if (pA !== pB) return pA - pB;
+    if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+    return 0;
+  });
 
   document.getElementById('mtCount').textContent = tasks.length + ' task' + (tasks.length !== 1 ? 's' : '');
 
@@ -20140,9 +20222,10 @@ function mtRenderList(el, tasks) {
 }
 
 function mtRenderRow(task, mode) {
-  const status = GP_STATUSES ? GP_STATUSES.find(s => s.key === (task.status || 'a-fazer')) : null;
-  const statusLabel = status ? status.label : (task.status || 'A Fazer');
-  const statusKey = (task.status || 'a-fazer').toLowerCase().replace(/\s+/g, '-').replace(/[áàã]/g,'a').replace(/[éê]/g,'e').replace(/[í]/g,'i').replace(/[óô]/g,'o').replace(/[ú]/g,'u').replace(/ç/g,'c');
+  // Use CT_STATUSES for correct labels/colors
+  const statusDef = CT_STATUSES.find(s => s.key === (task.status || 'a-fazer')) || CT_STATUSES[0];
+  const statusKey = statusDef.key;
+  const statusLabel = statusDef.label;
 
   const user = CT_USERS.find(u => u.name === task.assignee);
   const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
@@ -20151,21 +20234,8 @@ function mtRenderRow(task, mode) {
   const client = clients[task.client_id] || null;
   const clientName = client ? (client.pageName || client.name || task.client_id) : (task.group_name || '');
 
-  let pubHtml = '—';
-  if (task.publish_config) {
-    try {
-      const pc = typeof task.publish_config === 'string' ? JSON.parse(task.publish_config) : task.publish_config;
-      if (pc.history && pc.history.length) {
-        pubHtml = pc.history.slice(0, 2).map(h => {
-          const plat = h.platform === 'facebook' ? '📘FB' : '📷IG';
-          const st = h.status === 'published' ? '✅' : h.status === 'failed' ? '❌' : '📅';
-          return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#ecfdf5;color:#047857;white-space:nowrap">' + st + ' ' + plat + '</span>';
-        }).join(' ');
-      }
-    } catch(e) {}
-  }
-
   const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
+
   const priorityMatch = CT_PRIORITIES.find(p => p.key === (task.priority || 'normal')) || CT_PRIORITIES[2];
   const priorityColors = {
     urgente: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' },
@@ -20176,22 +20246,42 @@ function mtRenderRow(task, mode) {
   const pc = priorityColors[priorityMatch.key] || priorityColors.normal;
   const priorityBadge = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid ' + pc.border + ';background:' + pc.bg + ';color:' + pc.color + ';white-space:nowrap;letter-spacing:0.3px">' + priorityMatch.icon + ' ' + priorityMatch.label.toUpperCase() + '</span>';
 
-  let html = '<div class="mt-row ' + mode + '" onclick="ctOpenModal(\'' + task.id + '\')">';
+  // Row highlight for tasks needing attention
+  const isAlteracao = statusKey === 'alteracao-design';
+  const rowStyle = isAlteracao ? 'border-left:3px solid #dc2626;background:#fffbfb' : '';
 
-  if (mode === 'by-list') {
-    html += '<div style="font-size:12px;font-weight:500;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + clientName + '</div>';
+  // Quick action button: only show for design status (can send to review)
+  let quickAction = '';
+  const isDesigner = gpState.user && gpState.user.role === 'designer';
+  if (isDesigner && statusKey === 'design') {
+    quickAction = '<button onclick="event.stopPropagation();mtSendToReview(\'' + task.id + '\',this)" '
+      + 'style="flex-shrink:0;padding:3px 10px;border-radius:6px;border:1px solid #fed7aa;background:#fff7ed;color:#c2410c;cursor:pointer;font-size:11px;font-weight:700;font-family:inherit;white-space:nowrap" '
+      + 'title="Enviar para revisão">📨 Revisão</button>';
+  } else if (isDesigner && statusKey === 'alteracao-design') {
+    quickAction = '<span style="font-size:10px;font-weight:700;color:#dc2626;background:#fee2e2;padding:3px 8px;border-radius:6px;white-space:nowrap">✏️ CORRIGIR</span>';
+  } else if (isDesigner && statusKey === 'em-revisao') {
+    quickAction = '<span style="font-size:10px;color:#c2410c;background:#fff7ed;padding:3px 8px;border-radius:6px;white-space:nowrap">⏳ Aguardando</span>';
   }
 
-  html += '<div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (task.name || '') + '</div>';
+  let html = '<div class="mt-row ' + mode + '" style="' + rowStyle + '" onclick="ctOpenModal(\'' + task.id + '\')">';
+
+  if (mode === 'by-list') {
+    html += '<div style="font-size:12px;font-weight:500;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + clientName + '">' + clientName + '</div>';
+  }
+
+  html += '<div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px">'
+    + '<span style="overflow:hidden;text-overflow:ellipsis">' + (task.name || '') + '</span>'
+    + quickAction
+    + '</div>';
   html += formatBadge;
-  html += '<div><span class="ct-status" data-status="' + statusKey + '">' + statusLabel + '</span></div>';
+  html += '<div><span class="ct-status" data-status="' + statusKey + '" style="background:' + statusDef.bg + ';color:' + statusDef.color + '">' + statusLabel + '</span></div>';
 
   if (mode === 'by-client') {
     html += '<div class="ct-assignee">' + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '—') + '</div>';
   }
 
   html += '<div style="font-size:12px;color:var(--text-secondary)">' + dueStr + '</div>';
-  html += '<div style="display:flex;gap:4px;flex-wrap:wrap">' + pubHtml + '</div>';
+  html += '<div>—</div>';
   html += '<div style="text-align:center">' + priorityBadge + '</div>';
   html += '</div>';
 
