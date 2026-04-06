@@ -2917,8 +2917,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   </aside>
 
   <div class="content">
-    <div class="topbar">
+    <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;padding-right:16px">
       <div class="topbar-title" id="topbarTitle">Dashboard</div>
+      <div id="designerTopbarActions" style="display:none;align-items:center;gap:10px">
+        <span id="designerUserBadge" style="font-size:13px;font-weight:600;color:var(--text-secondary)"></span>
+        <button onclick="gpLogout()" style="padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all 0.15s" onmouseenter="this.style.background='#fee2e2';this.style.color='#dc2626';this.style.borderColor='#fecaca'" onmouseleave="this.style.background='transparent';this.style.color='var(--text-secondary)';this.style.borderColor='var(--border)'">Sair →</button>
+      </div>
     </div>
 
     <div class="main">
@@ -9061,9 +9065,13 @@ function applyDesignerRestrictions() {
   if (menuBtn) menuBtn.style.display = 'none';
   if (mainContent) mainContent.style.marginLeft = '0';
 
-  // Topbar padding
-  var topbar = document.getElementById('topbar');
-  if (topbar) topbar.style.paddingLeft = '24px';
+  // Show designer topbar (user badge + logout)
+  var designerBar = document.getElementById('designerTopbarActions');
+  if (designerBar) {
+    designerBar.style.display = 'flex';
+    var badge = document.getElementById('designerUserBadge');
+    if (badge && gpState.user) badge.textContent = '👋 ' + gpState.user.name;
+  }
 
   // Lock navigation — only allow minhas-tasks
   if (!window._designerSwitchTabLocked) {
@@ -9077,7 +9085,7 @@ function applyDesignerRestrictions() {
     };
   }
 
-  // Force to Minhas Tasks and load
+  // Force to Minhas Tasks tab
   var tabEl = document.getElementById('tab-minhas-tasks');
   if (tabEl) {
     document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
@@ -9086,9 +9094,22 @@ function applyDesignerRestrictions() {
     if (titleEl) titleEl.textContent = 'Minhas Tasks';
   }
 
-  // Load tasks
+  // Load tasks — wait for mtInit to be defined (it's in a later script tag)
   if (typeof mtInit === 'function') {
     mtInit();
+  } else {
+    // mtInit not yet defined — wait for DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof mtInit === 'function') mtInit();
+    });
+    // Also poll as safety net
+    var _mtCheck = setInterval(function() {
+      if (typeof mtInit === 'function') {
+        clearInterval(_mtCheck);
+        mtInit();
+      }
+    }, 150);
+    setTimeout(function() { clearInterval(_mtCheck); }, 8000);
   }
 }
 
@@ -9156,6 +9177,15 @@ function gpLogout() {
   gpState.user = null;
   try { localStorage.removeItem('starkenSession'); } catch(e) {}
   try { localStorage.removeItem('starken_last_client'); } catch(e) {}
+  // Reset designer lock flag so next login works correctly
+  window._designerSwitchTabLocked = false;
+  // Restore sidebar and menu for next login
+  var sidebar = document.getElementById('sidebar');
+  var mainContent = document.querySelector('.main-content');
+  var designerBar = document.getElementById('designerTopbarActions');
+  if (sidebar) sidebar.style.display = '';
+  if (mainContent) mainContent.style.marginLeft = '';
+  if (designerBar) designerBar.style.display = 'none';
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('menuToggleBtn').classList.add('hidden');
