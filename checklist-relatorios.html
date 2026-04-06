@@ -5318,6 +5318,46 @@ document.addEventListener('DOMContentLoaded', function() {
     switchTab(lastTab);
   }
 
+  // ─── RESTORE LAST CLIENT after F5 ───
+  // Wait for meta clients to load, then restore selected client
+  var _restoreClientAttempts = 0;
+  function _tryRestoreClient() {
+    var lastClient = localStorage.getItem('starken_last_client');
+    if (!lastClient) return;
+    var currentTab = localStorage.getItem('starken_last_tab') || '';
+
+    // For content tab: restore client in dropdown and load groups
+    if (currentTab === 'content' || currentTab === 'calendario' || currentTab === 'client-hub') {
+      var select = document.getElementById('ctClientFilter');
+      if (select && select.querySelector('option[value="' + lastClient + '"]')) {
+        select.value = lastClient;
+        if (typeof ctLoadGroups === 'function') ctLoadGroups();
+        // Also restore sidebar highlight + client nav bar
+        if (typeof sidebarSelectClient === 'function') {
+          _hubCurrentSlug = lastClient;
+          var clientData = (_metaClients && _metaClients[lastClient]) || {};
+          _hubCurrentClientName = clientData.name || lastClient;
+          // Highlight in sidebar
+          document.querySelectorAll('.sidebar-client-btn').forEach(function(b) { b.classList.remove('active'); });
+          var activeBtn = document.querySelector('.sidebar-client-btn[data-client="' + lastClient + '"]');
+          if (activeBtn) activeBtn.classList.add('active');
+          // Show client nav bar
+          if (typeof clientNavShowBar === 'function') clientNavShowBar(currentTab);
+        }
+        console.log('[Session] Restored client:', lastClient, 'on tab:', currentTab);
+        return;
+      }
+    }
+
+    // If dropdown not ready yet, retry (meta clients may still be loading)
+    _restoreClientAttempts++;
+    if (_restoreClientAttempts < 15) {
+      setTimeout(_tryRestoreClient, 400);
+    }
+  }
+  // Start attempting after a brief delay to let session restore + preload run
+  setTimeout(_tryRestoreClient, 300);
+
   restoreSidebarFolders();
 
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
@@ -6521,6 +6561,8 @@ function sidebarSelectClient(clientKey) {
   // Store current client for hub/content/calendar navigation
   _hubCurrentSlug = clientKey;
   _hubCurrentClientName = clientName;
+  // Persist selected client for F5 restore
+  try { localStorage.setItem('starken_last_client', clientKey); } catch(e) {}
   // Open Content tab filtered to this client (primary view)
   switchTab('content');
   setTimeout(function() {
@@ -9018,6 +9060,7 @@ function metaClientsPreload() {
 function gpLogout() {
   gpState.user = null;
   try { localStorage.removeItem('starkenSession'); } catch(e) {}
+  try { localStorage.removeItem('starken_last_client'); } catch(e) {}
   document.getElementById('loginPage').classList.remove('hidden');
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('menuToggleBtn').classList.add('hidden');
@@ -13126,6 +13169,8 @@ function ctLoadStatusFilter() {
 async function ctLoadGroups() {
   const clientId = document.getElementById('ctClientFilter').value;
   ctCurrentClient = clientId;
+  // Persist selected client for F5 restore
+  if (clientId) { try { localStorage.setItem('starken_last_client', clientId); } catch(e) {} }
   const addBtn = document.getElementById('ctAddGroupBtn');
 
   if (!clientId) {
