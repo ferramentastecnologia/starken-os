@@ -8975,7 +8975,14 @@ async function doLogin() {
     let user = null;
     if (data && (Array.isArray(data) ? data.length > 0 : true)) {
       const row = (typeof data === 'string') ? JSON.parse(data) : (Array.isArray(data) ? data[0] : data);
-      user = { name: row.user_name || row.name, role: row.user_role || row.role, color: row.avatar_color || '#3b82f6' };
+      const dbName = row.user_name || row.name;
+      // GP_USERS is source of truth for role/color (overrides DB role)
+      const gpUser = GP_USERS.find(u => u.name === dbName);
+      user = {
+        name: dbName,
+        role: (gpUser && gpUser.role) || row.user_role || row.role || 'viewer',
+        color: (gpUser && gpUser.color) || row.avatar_color || '#3b82f6'
+      };
     } else {
       // Fallback: verify against admin_secrets directly + GP_USERS
       const secretLabel = 'Login ' + name;
@@ -9004,75 +9011,85 @@ async function doLogin() {
 // Ativa sessão (login ou restore)
 function activateSession(user) {
   gpState.user = user;
+
+  // ─── DESIGNER: esconde sidebar ANTES de qualquer render (evita flash) ───
+  if (user.role === 'designer') {
+    var _sb = document.getElementById('sidebar');
+    var _mb = document.getElementById('menuToggleBtn');
+    var _mc = document.querySelector('.main-content');
+    if (_sb) _sb.style.display = 'none';
+    if (_mb) _mb.style.display = 'none';
+    if (_mc) _mc.style.marginLeft = '0';
+  }
+
   document.getElementById('sbUserAvatar').textContent = user.name.substring(0,2).toUpperCase();
   document.getElementById('sbUserAvatar').style.background = user.color;
   document.getElementById('sbUserName').textContent = user.name;
   document.getElementById('loginPage').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  document.getElementById('menuToggleBtn').classList.remove('hidden');
-  // Render sidebar menu (data-driven, includes populateSidebarClients + restoreSidebarFolders)
-  renderSidebarMenu();
-  // Gestao module may not be loaded yet on F5 restore
-  try { Gestao.populateClientFilter(); } catch(e) {
-    // Retry after Gestao module loads
-    setTimeout(function() { try { Gestao.populateClientFilter(); } catch(e2) {} }, 100);
+
+  // Só mostra botão menu para não-designers
+  if (user.role !== 'designer') {
+    document.getElementById('menuToggleBtn').classList.remove('hidden');
+    // Render sidebar menu (data-driven, includes populateSidebarClients + restoreSidebarFolders)
+    renderSidebarMenu();
+    // Gestao module may not be loaded yet on F5 restore
+    try { Gestao.populateClientFilter(); } catch(e) {
+      setTimeout(function() { try { Gestao.populateClientFilter(); } catch(e2) {} }, 100);
+    }
+    // Fallback: re-populate client lists after 3s (in case Supabase loads late)
+    setTimeout(function() { populateSidebarClients(); restoreSidebarFolders(); }, 3000);
   }
+
   // Persiste sessão
   try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, role: user.role, color: user.color })); } catch(e) {}
   // Pré-carrega meta clients para todas as abas
   metaClientsPreload();
-  // Fallback: re-populate client lists after 3s (in case Supabase loads late)
-  setTimeout(function() { populateSidebarClients(); restoreSidebarFolders(); }, 3000);
 
   // ─── ROLE-BASED RESTRICTIONS ───
   if (user.role === 'designer') {
-    // Delay to ensure all scripts (including mtInit in later <script> tags) are loaded
-    if (typeof mtInit === 'function') {
-      applyDesignerRestrictions();
-    } else {
-      // mtInit not loaded yet (script tag order), wait for DOMContentLoaded or poll
-      var _designerCheck = setInterval(function() {
-        if (typeof mtInit === 'function') {
-          clearInterval(_designerCheck);
-          applyDesignerRestrictions();
-        }
-      }, 100);
-      // Safety: clear after 5s regardless
-      setTimeout(function() { clearInterval(_designerCheck); applyDesignerRestrictions(); }, 5000);
-    }
+    applyDesignerRestrictions();
   }
 }
 
 function applyDesignerRestrictions() {
-  // Hide sidebar — designers don't need navigation
+  // Sidebar & menu already hidden in activateSession — guarantee it here too
   var sidebar = document.getElementById('sidebar');
-  if (sidebar) sidebar.style.display = 'none';
   var menuBtn = document.getElementById('menuToggleBtn');
+  var mainContent = document.querySelector('.main-content');
+  if (sidebar) sidebar.style.display = 'none';
   if (menuBtn) menuBtn.style.display = 'none';
+  if (mainContent) mainContent.style.marginLeft = '0';
 
-  // Force "Minhas Tasks" tab only
-  switchTab('minhas-tasks');
-
-  // Add a simplified topbar for designers
+  // Topbar padding
   var topbar = document.getElementById('topbar');
-  if (topbar) {
-    topbar.style.paddingLeft = '24px';
+  if (topbar) topbar.style.paddingLeft = '24px';
+
+  // Lock navigation — only allow minhas-tasks
+  if (!window._designerSwitchTabLocked) {
+    window._designerSwitchTabLocked = true;
+    var _origSwitchTab = window.switchTab;
+    window.switchTab = function(tabName) {
+      if (gpState.user && gpState.user.role === 'designer') {
+        if (tabName !== 'minhas-tasks') return;
+      }
+      _origSwitchTab(tabName);
+    };
   }
 
-  // Hide all sidebar navigation items and remove ability to switch tabs
-  // Override switchTab to prevent navigation to other tabs
-  var _origSwitchTab = window.switchTab;
-  window.switchTab = function(tabName) {
-    if (gpState.user && gpState.user.role === 'designer') {
-      // Only allow minhas-tasks
-      if (tabName !== 'minhas-tasks') return;
-    }
-    _origSwitchTab(tabName);
-  };
+  // Force to Minhas Tasks and load
+  var tabEl = document.getElementById('tab-minhas-tasks');
+  if (tabEl) {
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    tabEl.classList.add('active');
+    var titleEl = document.getElementById('topbarTitle');
+    if (titleEl) titleEl.textContent = 'Minhas Tasks';
+  }
 
-  // Adjust main content to full width without sidebar
-  var mainContent = document.querySelector('.main-content');
-  if (mainContent) mainContent.style.marginLeft = '0';
+  // Load tasks
+  if (typeof mtInit === 'function') {
+    mtInit();
+  }
 }
 
 // ── Definições essenciais para preload (devem existir ANTES de restoreSession) ──
