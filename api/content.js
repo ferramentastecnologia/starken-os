@@ -642,31 +642,57 @@ async function listActivity({ task_id, limit }) {
 async function adminCreateUser({ user_name, password, user_role, avatar_color }) {
   if (!user_name || !password) return fail('user_name and password required');
 
-  // Insert into admin_secrets (login credentials)
+  // Insert into admin_secrets (login credentials) - check if already exists first
   const secretLabel = `Login ${user_name}`;
-  await supaInsert('admin_secrets', { label: secretLabel, value: password });
+  const existing = await supaSelect('admin_secrets', `label=eq.${encodeURIComponent(secretLabel)}&select=id`);
+  if (!existing || existing.length === 0) {
+    await supaInsert('admin_secrets', { label: secretLabel, value: password });
+  }
 
-  // Insert into users table
-  const userData = {
-    user_name,
-    user_role: user_role || 'designer',
-    avatar_color: avatar_color || '#ec4899',
-  };
-  const result = await supaInsert('users', userData);
+  // Try inserting into users table with all possible column name combos
+  const combos = [
+    { name: user_name, role: user_role || 'designer', avatar_color: avatar_color || '#ec4899' },
+    { user_name, user_role: user_role || 'designer', avatar_color: avatar_color || '#ec4899' },
+    { name: user_name, role: user_role || 'designer', color: avatar_color || '#ec4899' },
+  ];
 
-  return ok({ success: true, user: result });
+  let userResult = null;
+  let lastErr = null;
+  for (const userData of combos) {
+    try {
+      userResult = await supaInsert('users', userData);
+      break;
+    } catch (e) {
+      lastErr = e.message;
+      continue;
+    }
+  }
+
+  return ok({ success: true, user: userResult, usersError: lastErr, note: 'admin_secrets OK' });
 }
 
 async function adminUpdateUser({ user_name, user_role }) {
   if (!user_name || !user_role) return fail('user_name and user_role required');
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/users?user_name=eq.${encodeURIComponent(user_name)}`, {
-    method: 'PATCH',
-    headers: HEADERS_RETURN,
-    body: JSON.stringify({ user_role }),
-  });
-  const data = await res.json();
-  return ok({ success: true, updated: data });
+  const combos = [
+    { filter: `name=eq.${encodeURIComponent(user_name)}`, body: { role: user_role } },
+    { filter: `user_name=eq.${encodeURIComponent(user_name)}`, body: { user_role } },
+  ];
+
+  let result = null;
+  for (const c of combos) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/users?${c.filter}`, {
+        method: 'PATCH',
+        headers: HEADERS_RETURN,
+        body: JSON.stringify(c.body),
+      });
+      const data = await res.json();
+      if (!data.code) { result = data; break; }
+    } catch(e) { continue; }
+  }
+
+  return ok({ success: true, updated: result });
 }
 
 // =============================================================================

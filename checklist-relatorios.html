@@ -8964,12 +8964,27 @@ async function doLogin() {
   try {
     const { data, error } = await _supabase.rpc('verify_login', { p_name: name, p_password: password });
     console.log('verify_login response:', { data, error });
-    if (error || !data || (Array.isArray(data) && data.length === 0)) {
+
+    let user = null;
+    if (data && (Array.isArray(data) ? data.length > 0 : true)) {
+      const row = (typeof data === 'string') ? JSON.parse(data) : (Array.isArray(data) ? data[0] : data);
+      user = { name: row.user_name || row.name, role: row.user_role || row.role, color: row.avatar_color || '#3b82f6' };
+    } else {
+      // Fallback: verify against admin_secrets directly + GP_USERS
+      const secretLabel = 'Login ' + name;
+      const { data: secretData } = await _supabase.from('admin_secrets').select('value').eq('label', secretLabel).limit(1).single();
+      if (secretData && secretData.value === password) {
+        const gpUser = GP_USERS.find(u => u.name === name);
+        if (gpUser) {
+          user = { name: gpUser.name, role: gpUser.role, color: gpUser.color };
+        }
+      }
+    }
+
+    if (!user) {
       document.getElementById('loginError').classList.add('show');
       return;
     }
-    const row = (typeof data === 'string') ? JSON.parse(data) : (Array.isArray(data) ? data[0] : data);
-    const user = { name: row.user_name || row.name, role: row.user_role || row.role, color: row.avatar_color || '#3b82f6' };
     activateSession(user);
   } catch(e) {
     document.getElementById('loginError').classList.add('show');
