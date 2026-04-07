@@ -17150,6 +17150,14 @@ function ctOpenLightbox(url, isVideo) {
       var tasks = results[3];
       var planner = results[4];
 
+      // Debug: Log sources breakdown
+      console.log('[Cal] Data sources:');
+      console.log('  - history (API):', history.length, 'posts');
+      console.log('  - scheduled (Supabase):', scheduled.length, 'posts');
+      console.log('  - queued (publish_queue):', queued.length, 'posts');
+      console.log('  - tasks (content_tasks):', tasks.length, 'posts');
+      console.log('  - planner (Meta Graph API):', planner.length, 'posts');
+
       // Merge all sources, deduplicate by post_id
       var seen = {};
       var merged = [];
