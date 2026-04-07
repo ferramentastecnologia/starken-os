@@ -5383,6 +5383,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
   restoreSidebarFolders();
 
+  // ─── DESIGNER OVERVIEW BTN: show for non-designers after DOM ready ───
+  setTimeout(function() {
+    if (typeof showDesignerOverviewBtn === 'function') showDesignerOverviewBtn();
+  }, 600);
+
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
   let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
