@@ -17041,16 +17041,15 @@ function ctOpenLightbox(url, isVideo) {
         schedData.data.forEach(function(p) { _addMetaPost(p, 'SCHEDULED'); });
       }
 
-      // 2. Promotable posts (unpublished) — includes Business Suite scheduled posts
-      var promoUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/promotable_posts'
-        + '?is_published=false'
-        + '&fields=id,message,story,scheduled_publish_time,full_picture,attachments'
+      // 2. Unpublished/hidden feed — includes Business Suite scheduled posts
+      var hiddenUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
+        + '?include_hidden=true'
+        + '&fields=id,message,story,scheduled_publish_time,created_time,full_picture,attachments'
         + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var promoRes  = await fetch(promoUrl);
-      var promoData = await promoRes.json();
-      if (promoData.data) {
-        promoData.data.forEach(function(p) {
-          // Only include if has a scheduled time (skip drafts)
+      var hiddenRes  = await fetch(hiddenUrl);
+      var hiddenData = await hiddenRes.json();
+      if (hiddenData.data) {
+        hiddenData.data.forEach(function(p) {
           if (p.scheduled_publish_time) {
             _addMetaPost(p, 'SCHEDULED');
           }
