@@ -13420,8 +13420,8 @@ async function ctLoadGroups() {
   }));
 
   ctGroups = groups;
-  ctRenderList(); // render immediately with current state
-  ctLoadGroupsState(); // async: merge with Supabase shared state, re-renders if changed
+  ctLoadGroupsState(); // restore collapse state from localStorage (sync)
+  ctRenderList();
   cronogramaUpdateButton();
 }
 
@@ -13820,45 +13820,19 @@ function ctRenderList() {
 }
 
 // ─── TOGGLE EXPAND ───
-var _ctGroupStateKey = 'ct_groups_collapsed';
-var _ctGroupStateSaving = false;
+function _ctCollapsedKey() {
+  return 'starken_grp_collapsed_' + (ctCurrentClient || 'global');
+}
 
-// Load from Supabase on startup — merged with localStorage fallback
-async function ctLoadGroupsState() {
-  // localStorage first (instant)
+function ctLoadGroupsState() {
   try {
-    var local = localStorage.getItem('starken_groups_expanded');
-    if (local) ctExpandedGroups = JSON.parse(local);
-  } catch(e) {}
-  // Then Supabase (shared across users)
-  try {
-    if (!_supabase) return;
-    var { data } = await _supabase.from('admin_secrets').select('value').eq('label', _ctGroupStateKey).limit(1).single();
-    if (data && data.value) {
-      var remote = JSON.parse(data.value);
-      // Merge: remote wins (newer/shared state)
-      ctExpandedGroups = Object.assign({}, ctExpandedGroups, remote);
-      localStorage.setItem('starken_groups_expanded', JSON.stringify(ctExpandedGroups));
-      ctRenderList();
-    }
+    var raw = localStorage.getItem(_ctCollapsedKey());
+    if (raw) ctExpandedGroups = JSON.parse(raw);
   } catch(e) {}
 }
 
-async function ctSaveGroupsState() {
-  // Save to localStorage immediately
-  try { localStorage.setItem('starken_groups_expanded', JSON.stringify(ctExpandedGroups)); } catch(e) {}
-  // Debounce Supabase save (avoid spamming)
-  if (_ctGroupStateSaving) return;
-  _ctGroupStateSaving = true;
-  setTimeout(async function() {
-    try {
-      if (!_supabase) return;
-      var val = JSON.stringify(ctExpandedGroups);
-      // Upsert into admin_secrets
-      await _supabase.from('admin_secrets').upsert({ label: _ctGroupStateKey, value: val }, { onConflict: 'label' });
-    } catch(e) {}
-    _ctGroupStateSaving = false;
-  }, 800);
+function ctSaveGroupsState() {
+  try { localStorage.setItem(_ctCollapsedKey(), JSON.stringify(ctExpandedGroups)); } catch(e) {}
 }
 
 function ctToggleGroup(groupId) {
@@ -13874,23 +13848,17 @@ async function ctMoveGroup(groupId, direction) {
   if (targetIdx < 0 || targetIdx >= ctGroups.length) return;
 
   // Swap in local array (optimistic UI)
-  const a = ctGroups[idx];
-  const b = ctGroups[targetIdx];
-  ctGroups[idx] = b;
-  ctGroups[targetIdx] = a;
+  const tmp = ctGroups[idx];
+  ctGroups[idx] = ctGroups[targetIdx];
+  ctGroups[targetIdx] = tmp;
   ctRenderList();
 
-  // Persist new positions to backend (swap position values)
-  const posA = a.position ?? idx;
-  const posB = b.position ?? targetIdx;
+  // Save ALL group positions sequentially (avoids conflicts from duplicate position values)
   try {
-    await Promise.all([
-      ctApi('upsert_group', { id: a.id, client_id: ctCurrentClient, name: a.name, position: posB, user: ctGetUser() }),
-      ctApi('upsert_group', { id: b.id, client_id: ctCurrentClient, name: b.name, position: posA, user: ctGetUser() }),
-    ]);
-    // Update local positions to reflect saved state
-    ctGroups[targetIdx].position = posB;
-    ctGroups[idx].position = posA;
+    await Promise.all(ctGroups.map((g, i) => {
+      g.position = i; // normalize locally too
+      return ctApi('upsert_group', { id: g.id, client_id: ctCurrentClient, name: g.name, position: i, user: ctGetUser() });
+    }));
   } catch(e) {
     console.warn('ctMoveGroup error:', e);
   }
