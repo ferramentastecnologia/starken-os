@@ -16968,10 +16968,35 @@ function ctOpenLightbox(url, isVideo) {
     var grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<div class="cal-loading">\u23F3 Carregando posts...</div>';
 
+    // Helper: Validate and fix ISO date strings
+    function _validateDate(dateStr) {
+      if (!dateStr) return null;
+      try {
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return null; // Invalid date
+        // Check if date looks reasonable (year 2020-2030)
+        var year = d.getFullYear();
+        if (year < 2020 || year > 2030) return null;
+        return d.toISOString(); // Return normalized ISO string
+      } catch(e) {
+        return null;
+      }
+    }
+
     // 1. Published/failed history (last 300 entries) via API
     var historyPromise = fetch(metaApiBase() + '/api/meta/publish?limit=300')
       .then(function(r) { return r.json(); })
-      .then(function(data) { return (data.history || []).filter(function(h) { return h.scheduled_for || h.created_at; }); })
+      .then(function(data) {
+        return (data.history || []).filter(function(h) {
+          // Validate dates and only keep posts with valid timestamps
+          var validDate = _validateDate(h.scheduled_for) || _validateDate(h.created_at);
+          if (!validDate) return false;
+          // Fix the date if needed
+          if (!_validateDate(h.scheduled_for)) h.scheduled_for = _validateDate(h.created_at);
+          if (!_validateDate(h.created_at)) h.created_at = _validateDate(h.scheduled_for);
+          return true;
+        });
+      })
       .catch(function() { return []; });
 
     // 2. ALL scheduled posts directly from Supabase (bypass limit)
@@ -16986,14 +17011,17 @@ function ctOpenLightbox(url, isVideo) {
     var queuedPromise = (_supabase
       ? _supabase.from('publish_queue').select('*').eq('status', 'QUEUED').gt('scheduled_for', now).order('scheduled_for', { ascending: true })
           .then(function(res) {
-            return (res.data || []).map(function(q) {
+            return (res.data || []).filter(function(q) {
+              // Only include if date is valid
+              return _validateDate(q.scheduled_for);
+            }).map(function(q) {
               return {
                 id: q.id, post_id: q.id, platform: q.platform || 'ig',
                 client_key: q.client_key, client_name: q.client_name,
                 status: 'QUEUED', caption: q.caption || '',
                 has_image: (q.image_urls || []).length > 0,
                 image_url: (q.image_urls || [])[0] || null,
-                scheduled_for: q.scheduled_for, created_at: q.created_at,
+                scheduled_for: _validateDate(q.scheduled_for), created_at: _validateDate(q.created_at),
                 source: 'publish_queue',
               };
             });
@@ -17032,6 +17060,9 @@ function ctOpenLightbox(url, isVideo) {
               if (pcEntries.length > 0) {
                 // Use actual scheduled times from publish_config
                 pcEntries.forEach(function(e) {
+                  var validDate = _validateDate(e.scheduled_for);
+                  if (!validDate) return; // Skip if date is invalid
+
                   var clientKey = t.client_id || '';
                   var clientName = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey].name : clientKey;
                   entries.push({
@@ -17044,7 +17075,7 @@ function ctOpenLightbox(url, isVideo) {
                     caption: t.copy_text || t.name || '',
                     has_image: false,
                     image_url: null,
-                    scheduled_for: e.scheduled_for,
+                    scheduled_for: validDate,
                     created_at: t.due_date ? t.due_date + 'T12:00:00' : null,
                     source: 'content_task',
                     task_id: t.id,
@@ -17053,6 +17084,9 @@ function ctOpenLightbox(url, isVideo) {
                 });
               } else if (t.due_date) {
                 // No publish_config entries — use due_date as fallback (noon local)
+                var validDate = _validateDate(t.due_date + 'T12:00:00');
+                if (!validDate) return; // Skip if date is invalid
+
                 var clientKey = t.client_id || '';
                 var clientName = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey].name : clientKey;
                 entries.push({
@@ -17065,8 +17099,8 @@ function ctOpenLightbox(url, isVideo) {
                   caption: t.copy_text || t.name || '',
                   has_image: false,
                   image_url: null,
-                  scheduled_for: t.due_date + 'T12:00:00',
-                  created_at: t.due_date + 'T12:00:00',
+                  scheduled_for: validDate,
+                  created_at: validDate,
                   source: 'content_task',
                   task_id: t.id,
                   task_name: t.name,
