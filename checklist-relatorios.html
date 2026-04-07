@@ -3633,6 +3633,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <span id="ctCronoStatus" style="display:none"></span>
             <span id="ctCronoSendBtn" style="display:none"></span>
             <div style="flex:1"></div>
+            <select id="ctCategoryFilter" onchange="ctRenderList()">
+              <option value="">Todos os tipos</option>
+              <option value="general">Conteúdos Gerais</option>
+              <option value="stories">Stories Recorrentes</option>
+            </select>
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
             </select>
@@ -13654,14 +13659,24 @@ function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
   const assigneeFilter = document.getElementById('ctAssigneeFilter').value;
+  const categoryFilter = document.getElementById('ctCategoryFilter').value;
 
   if (ctGroups.length === 0) {
     body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px">📭</div>Nenhum grupo criado. Clique em "+ Novo Grupo" para começar.</div>';
     return;
   }
 
+  // Filter groups by category
+  var filteredGroups = ctGroups.filter(function(group) {
+    if (!categoryFilter) return true; // Show all if no filter
+    var isRecurring = group.name && group.name.toUpperCase().includes('STORIES RECORRENTES');
+    if (categoryFilter === 'stories') return isRecurring;
+    if (categoryFilter === 'general') return !isRecurring;
+    return true;
+  });
+
   let html = '';
-  ctGroups.forEach(group => {
+  filteredGroups.forEach(group => {
     const expanded = ctExpandedGroups[group.id] !== false;
     const tasks = group.tasks || [];
     const taskCount = tasks.length;
