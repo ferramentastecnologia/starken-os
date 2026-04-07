@@ -20666,10 +20666,11 @@ function mtRenderPipeline(tasks) {
   const pipeline = document.getElementById('mtPipeline');
   if (!pipeline) return;
   const statusGroups = [
-    { key: 'alteracao-design', label: '✏️ Alteração', color: '#dc2626', bg: '#fee2e2', urgent: true },
-    { key: 'design', label: '🎨 Design', color: '#2563eb', bg: '#dbeafe', urgent: false },
-    { key: 'em-revisao', label: '👁️ Em Revisão', color: '#c2410c', bg: '#fff7ed', urgent: false },
-    { key: 'a-fazer', label: '📋 A Fazer', color: '#374151', bg: '#f3f4f6', urgent: false },
+    { key: 'alteracao-design', label: '✏️ Alteração',      color: '#dc2626', bg: '#fee2e2', urgent: true },
+    { key: 'design',           label: '🎨 Design',          color: '#2563eb', bg: '#dbeafe', urgent: false },
+    { key: 'em-revisao',       label: '👁️ Em Revisão',      color: '#c2410c', bg: '#fff7ed', urgent: false },
+    { key: 'aprovacao-design', label: '✔️ Aprov. Design',   color: '#dc2626', bg: '#fef2f2', urgent: false },
+    { key: 'a-fazer',          label: '📋 A Fazer',         color: '#374151', bg: '#f3f4f6', urgent: false },
   ];
   let html = '';
   statusGroups.forEach(sg => {
@@ -20714,7 +20715,7 @@ function mtRender() {
   }
 
   // Smart sort: alteracao-design first, then design, then by priority (urgente>alta>normal>baixa), then by due_date
-  const statusOrder = { 'alteracao-design': 0, 'design': 1, 'em-revisao': 2, 'a-fazer': 3, 'em-andamento': 4 };
+  const statusOrder = { 'alteracao-design': 0, 'design': 1, 'em-revisao': 2, 'aprovacao-design': 3, 'a-fazer': 4, 'em-andamento': 5 };
   const prioOrder = { urgente: 0, alta: 1, normal: 2, baixa: 3 };
   tasks = tasks.slice().sort((a, b) => {
     const sA = statusOrder[a.status] ?? 9;
