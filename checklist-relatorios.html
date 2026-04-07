@@ -13730,7 +13730,12 @@ function ctRenderList() {
     html += '<div class="ct-row group" onclick="ctToggleGroup(\'' + group.id + '\')">'
       + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span>📁 ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span></span></div>'
       + '<div></div><div></div><div></div><div></div>'
-      + '<div style="text-align:center;display:flex;gap:2px;justify-content:center"><button onclick="event.stopPropagation();ctShowDuplicateGroupModal(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Duplicar grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#dbeafe\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">📋</button><button onclick="ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">🗑️</button></div>'
+      + '<div style="text-align:center;display:flex;gap:2px;justify-content:center;align-items:center">'
+      + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'up\')" title="Mover grupo para cima" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▲</button>'
+      + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'down\')" title="Mover grupo para baixo" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▼</button>'
+      + '<button onclick="event.stopPropagation();ctShowDuplicateGroupModal(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Duplicar grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#dbeafe\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">📋</button>'
+      + '<button onclick="event.stopPropagation();ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">🗑️</button>'
+      + '</div>'
       + '</div>';
 
     if (expanded) {
@@ -13817,6 +13822,35 @@ function ctRenderList() {
 function ctToggleGroup(groupId) {
   ctExpandedGroups[groupId] = ctExpandedGroups[groupId] === false ? true : false;
   ctRenderList();
+}
+
+async function ctMoveGroup(groupId, direction) {
+  const idx = ctGroups.findIndex(g => g.id === groupId);
+  if (idx === -1) return;
+  const targetIdx = direction === 'up' ? idx - 1 : idx + 1;
+  if (targetIdx < 0 || targetIdx >= ctGroups.length) return;
+
+  // Swap in local array (optimistic UI)
+  const a = ctGroups[idx];
+  const b = ctGroups[targetIdx];
+  ctGroups[idx] = b;
+  ctGroups[targetIdx] = a;
+  ctRenderList();
+
+  // Persist new positions to backend (swap position values)
+  const posA = a.position ?? idx;
+  const posB = b.position ?? targetIdx;
+  try {
+    await Promise.all([
+      ctApi('upsert_group', { id: a.id, client_id: ctCurrentClient, name: a.name, position: posB, user: ctGetUser() }),
+      ctApi('upsert_group', { id: b.id, client_id: ctCurrentClient, name: b.name, position: posA, user: ctGetUser() }),
+    ]);
+    // Update local positions to reflect saved state
+    ctGroups[targetIdx].position = posB;
+    ctGroups[idx].position = posA;
+  } catch(e) {
+    console.warn('ctMoveGroup error:', e);
+  }
 }
 
 async function ctDeleteGroup(groupId, groupName) {
