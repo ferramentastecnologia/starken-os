@@ -4168,6 +4168,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <option value="">Todos os clientes</option>
               </select>
               <button class="pc-today-btn" onclick="calGoToday()">Hoje</button>
+              <button id="calSyncMetaBtn" onclick="calRefreshMetaPlanner && calRefreshMetaPlanner()" title="Sincronizar posts do Meta Planner" style="padding:6px 12px;border:1px solid #1877f2;border-radius:8px;background:transparent;color:#1877f2;cursor:pointer;font-size:0.75rem;font-weight:700;font-family:inherit;transition:all 0.15s;white-space:nowrap" onmouseenter="this.style.background='#1877f2';this.style.color='#fff'" onmouseleave="this.style.background='transparent';this.style.color='#1877f2'">🔄 Meta</button>
               <div class="pc-nav">
                 <button class="pc-nav-btn" onclick="calNavigate(-1)">&#8249;</button>
                 <span class="pc-nav-month" id="calNavMonth">—</span>
@@ -16882,6 +16883,7 @@ function ctOpenLightbox(url, isVideo) {
         var platform  = (p.platform || '').toLowerCase();
         var platLabel = platform.indexOf('instagram') !== -1 ? 'Instagram' : platform.indexOf('facebook') !== -1 ? 'Facebook' : (p.platform || '');
         var platIcon  = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
+        var metaSource = p.source === 'meta_planner' ? '<span style="font-size:9px;font-weight:800;background:#1877f2;color:white;padding:2px 6px;border-radius:4px;margin-left:4px">META PLANNER</span>' : '';
         var timeStr   = calFormatTimeShort(p.scheduled_for || p.created_at);
         var caption   = (p.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var imageUrl  = p.image_url || '';
@@ -16918,6 +16920,7 @@ function ctOpenLightbox(url, isVideo) {
           +     '<span>' + platIcon + ' ' + platLabel + '</span>'
           +     '<span>\u00B7</span>'
           +     '<span style="font-weight:500">' + timeStr + '</span>'
+          +     metaSource
           +   '</div>'
           +   (caption ? '<div style="font-size:0.82rem;color:var(--text,#1f2937);line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + caption + '</div>' : '')
           + '</div>'
@@ -16934,21 +16937,134 @@ function ctOpenLightbox(url, isVideo) {
     var grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<div class="cal-loading">\u23F3 Carregando posts...</div>';
 
-    fetch(metaApiBase() + '/api/meta/publish?limit=200')
+    // Fetch our history + Meta Planner scheduled posts in parallel
+    var historyPromise = fetch(metaApiBase() + '/api/meta/publish?limit=200')
       .then(function(r) { return r.json(); })
-      .then(function(data) {
-        _calAllPosts = (data.history || []).filter(function(h) {
-          return h.scheduled_for || h.created_at;
-        });
-        _calLoaded = true;
-        calPopulateClientFilter();
-        window.calFilterClient();
-      })
-      .catch(function(err) {
-        console.error('Calendar load error:', err);
-        if (grid) grid.innerHTML = '<div class="cal-loading" style="color:var(--danger)">\u26A0\uFE0F Erro ao carregar posts. Verifique a conexão.</div>';
-      });
+      .then(function(data) { return (data.history || []).filter(function(h) { return h.scheduled_for || h.created_at; }); })
+      .catch(function() { return []; });
+
+    var metaPlannerPromise = calFetchMetaPlannerPosts();
+
+    Promise.all([historyPromise, metaPlannerPromise]).then(function(results) {
+      var history = results[0];
+      var planner = results[1];
+
+      // Merge: deduplicate by post_id to avoid double-counting posts published via our system
+      var seen = {};
+      history.forEach(function(h) { if (h.post_id) seen[h.post_id] = true; });
+      var newFromPlanner = planner.filter(function(p) { return !seen[p.post_id]; });
+
+      _calAllPosts = history.concat(newFromPlanner);
+      _calLoaded = true;
+      calPopulateClientFilter();
+      window.calFilterClient();
+      if (newFromPlanner.length > 0) {
+        console.info('[Cal] Meta Planner: ' + newFromPlanner.length + ' posts importados');
+      }
+    }).catch(function(err) {
+      console.error('Calendar load error:', err);
+      if (grid) grid.innerHTML = '<div class="cal-loading" style="color:var(--danger)">\u26A0\uFE0F Erro ao carregar posts. Verifique a conexão.</div>';
+    });
   }
+
+  // Fetch scheduled posts from Meta Graph API for all configured clients
+  async function calFetchMetaPlannerPosts() {
+    var clients = typeof _metaClients !== 'undefined' ? _metaClients : {};
+    var allPosts = [];
+
+    var clientList = Object.keys(clients).map(function(k) { return Object.assign({ _key: k }, clients[k]); });
+    if (!clientList.length) return allPosts;
+
+    // Fetch in parallel (max 5 at a time to avoid rate limits)
+    var chunks = [];
+    for (var i = 0; i < clientList.length; i += 5) chunks.push(clientList.slice(i, i + 5));
+
+    for (var ci = 0; ci < chunks.length; ci++) {
+      var chunkResults = await Promise.allSettled(chunks[ci].map(function(client) {
+        return calFetchClientMetaPosts(client);
+      }));
+      chunkResults.forEach(function(r) {
+        if (r.status === 'fulfilled' && Array.isArray(r.value)) {
+          allPosts = allPosts.concat(r.value);
+        }
+      });
+    }
+    return allPosts;
+  }
+
+  // Fetch scheduled + recently published posts for a single client from Meta Graph API
+  async function calFetchClientMetaPosts(client) {
+    var pageId    = client.pageId    || client.page_id    || '';
+    var pageToken = client.pageToken || client.page_token || '';
+    if (!pageId || !pageToken) return [];
+
+    var clientName = client.name || client.pageName || client._key || '';
+    var clientKey  = client._key || '';
+    var posts = [];
+
+    try {
+      // 1. Scheduled posts from Meta Planner / Business Suite
+      var schedUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/scheduled_posts'
+        + '?fields=id,message,scheduled_publish_time,full_picture,attachments'
+        + '&limit=50&access_token=' + encodeURIComponent(pageToken);
+      var schedRes  = await fetch(schedUrl);
+      var schedData = await schedRes.json();
+      if (schedData.data) {
+        schedData.data.forEach(function(p) {
+          var pic = p.full_picture || (p.attachments && p.attachments.data && p.attachments.data[0] && p.attachments.data[0].media && p.attachments.data[0].media.image && p.attachments.data[0].media.image.src) || '';
+          posts.push({
+            post_id:      p.id,
+            platform:     'facebook',
+            client_key:   clientKey,
+            client_name:  clientName,
+            status:       'SCHEDULED',
+            scheduled_for: p.scheduled_publish_time ? new Date(parseInt(p.scheduled_publish_time) * 1000).toISOString() : '',
+            caption:      p.message || '',
+            image_url:    pic,
+            source:       'meta_planner',
+          });
+        });
+      }
+
+      // 2. Recently published FB posts (last 60 days) for calendar completeness
+      var since = Math.floor((Date.now() - 60 * 24 * 3600 * 1000) / 1000);
+      var pubUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
+        + '?fields=id,message,created_time,full_picture,attachments'
+        + '&since=' + since + '&limit=50&access_token=' + encodeURIComponent(pageToken);
+      var pubRes  = await fetch(pubUrl);
+      var pubData = await pubRes.json();
+      if (pubData.data) {
+        pubData.data.forEach(function(p) {
+          // Only include actual posts (not shares/links without media)
+          if (!p.message && !p.full_picture) return;
+          var pic = p.full_picture || (p.attachments && p.attachments.data && p.attachments.data[0] && p.attachments.data[0].media && p.attachments.data[0].media.image && p.attachments.data[0].media.image.src) || '';
+          posts.push({
+            post_id:     p.id,
+            platform:    'facebook',
+            client_key:  clientKey,
+            client_name: clientName,
+            status:      'PUBLISHED',
+            created_at:  p.created_time || '',
+            scheduled_for: p.created_time || '',
+            caption:     p.message || '',
+            image_url:   pic,
+            source:      'meta_planner',
+          });
+        });
+      }
+    } catch(e) {
+      console.warn('[Cal] Meta Planner fetch failed for ' + clientName + ':', e.message);
+    }
+
+    return posts;
+  }
+
+  // Allow manual refresh of Meta Planner posts
+  window.calRefreshMetaPlanner = function() {
+    _calLoaded = false;
+    _calAllPosts = [];
+    calLoadData();
+  };
 
   function calPopulateClientFilter() {
     var sel = document.getElementById('calClientFilter');
@@ -17056,11 +17172,12 @@ function ctOpenLightbox(url, isVideo) {
     var timeStr  = calFormatTimeShort(p.scheduled_for || p.created_at);
     var client   = (p.client_name || '').substring(0, 14);
     var isoDate  = calToIso(new Date((p.scheduled_for || p.created_at || '').replace(' ','T')));
+    var metaBadge = p.source === 'meta_planner' ? '<span style="font-size:7px;font-weight:800;background:#1877f2;color:white;padding:1px 3px;border-radius:2px;margin-left:2px">META</span>' : '';
 
-    return '<div class="pc-post ' + status + '" onclick="event.stopPropagation();calShowDayDetail(\'' + isoDate + '\')" title="' + (p.client_name || '') + '">'
+    return '<div class="pc-post ' + status + '" onclick="event.stopPropagation();calShowDayDetail(\'' + isoDate + '\')" title="' + (p.client_name || '') + (p.source === 'meta_planner' ? ' (Meta Planner)' : '') + '">'
       + '<span class="pc-post-time">' + timeStr + '</span>'
       + '<span class="pc-post-icon">' + icon + '</span>'
-      + '<span class="pc-post-client">' + client + '</span>'
+      + '<span class="pc-post-client">' + client + metaBadge + '</span>'
       + '</div>';
   }
 
