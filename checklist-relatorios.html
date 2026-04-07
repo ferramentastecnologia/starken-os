@@ -17191,47 +17191,76 @@ function ctOpenLightbox(url, isVideo) {
       });
     }
 
-    try {
-      // 1. Scheduled posts via Graph API (programmatic scheduling)
-      var schedUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/scheduled_posts'
-        + '?fields=id,message,scheduled_publish_time,full_picture,attachments'
-        + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var schedRes  = await fetch(schedUrl);
-      var schedData = await schedRes.json();
-      if (schedData.data) {
-        schedData.data.forEach(function(p) { _addMetaPost(p, 'SCHEDULED'); });
+    // Helper to safely fetch and parse JSON from Meta Graph API
+    async function _safeFetch(url, label) {
+      try {
+        var res = await fetch(url);
+        if (!res.ok) {
+          console.warn('[Cal] ' + label + ' for ' + clientName + ': HTTP ' + res.status);
+          return null;
+        }
+        return await res.json();
+      } catch(e) {
+        console.warn('[Cal] ' + label + ' for ' + clientName + ':', e.message);
+        return null;
       }
+    }
 
-      // 2. Unpublished/hidden feed — includes Business Suite scheduled posts
-      var hiddenUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
-        + '?include_hidden=true'
-        + '&fields=id,message,story,scheduled_publish_time,created_time,full_picture,attachments'
-        + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var hiddenRes  = await fetch(hiddenUrl);
-      var hiddenData = await hiddenRes.json();
-      if (hiddenData.data) {
-        hiddenData.data.forEach(function(p) {
+    var baseFields = 'id,message,story,scheduled_publish_time,created_time,full_picture,attachments';
+    var token = encodeURIComponent(pageToken);
+
+    // 1. Scheduled posts via Graph API (programmatic scheduling)
+    var schedData = await _safeFetch(
+      'https://graph.facebook.com/v25.0/' + pageId + '/scheduled_posts'
+      + '?fields=' + baseFields + '&limit=50&access_token=' + token,
+      'scheduled_posts'
+    );
+    if (schedData && schedData.data) {
+      schedData.data.forEach(function(p) { _addMetaPost(p, 'SCHEDULED'); });
+    }
+
+    // 2. Unpublished/hidden feed — includes Business Suite scheduled posts
+    var hiddenData = await _safeFetch(
+      'https://graph.facebook.com/v25.0/' + pageId + '/feed'
+      + '?include_hidden=true&fields=' + baseFields + '&limit=50&access_token=' + token,
+      'feed+include_hidden'
+    );
+    if (hiddenData && hiddenData.data) {
+      hiddenData.data.forEach(function(p) {
+        if (p.scheduled_publish_time) {
+          _addMetaPost(p, 'SCHEDULED');
+        }
+      });
+    }
+
+    // 2b. Fallback: if hidden feed failed, try /promotable_posts which may include scheduled
+    if (!hiddenData) {
+      var promoData = await _safeFetch(
+        'https://graph.facebook.com/v25.0/' + pageId + '/promotable_posts'
+        + '?fields=' + baseFields + '&is_published=false&limit=50&access_token=' + token,
+        'promotable_posts(fallback)'
+      );
+      if (promoData && promoData.data) {
+        promoData.data.forEach(function(p) {
           if (p.scheduled_publish_time) {
             _addMetaPost(p, 'SCHEDULED');
           }
         });
       }
+    }
 
-      // 3. Recently published FB posts (last 60 days) for calendar completeness
-      var since = Math.floor((Date.now() - 60 * 24 * 3600 * 1000) / 1000);
-      var pubUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
-        + '?fields=id,message,story,created_time,full_picture,attachments'
-        + '&since=' + since + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var pubRes  = await fetch(pubUrl);
-      var pubData = await pubRes.json();
-      if (pubData.data) {
-        pubData.data.forEach(function(p) {
-          if (!p.message && !p.full_picture && !p.story) return;
-          _addMetaPost(p, 'PUBLISHED');
-        });
-      }
-    } catch(e) {
-      console.warn('[Cal] Meta Planner fetch failed for ' + clientName + ':', e.message);
+    // 3. Recently published FB posts (last 60 days) for calendar completeness
+    var since = Math.floor((Date.now() - 60 * 24 * 3600 * 1000) / 1000);
+    var pubData = await _safeFetch(
+      'https://graph.facebook.com/v25.0/' + pageId + '/feed'
+      + '?fields=' + baseFields + '&since=' + since + '&limit=50&access_token=' + token,
+      'feed(published)'
+    );
+    if (pubData && pubData.data) {
+      pubData.data.forEach(function(p) {
+        if (!p.message && !p.full_picture && !p.story) return;
+        _addMetaPost(p, 'PUBLISHED');
+      });
     }
 
     console.debug('[Cal] calFetchClientMetaPosts: clientKey=' + clientKey + ' returned ' + posts.length + ' posts');
