@@ -13297,6 +13297,29 @@ const CT_USERS = [
   { name: 'Daniela', color: '#ec4899' },
 ];
 
+function ctRenderAssigneeCell(assigneeStr, taskId) {
+  var names = (assigneeStr || '').split(',').map(function(n){ return n.trim(); }).filter(Boolean);
+  if (names.length === 0) {
+    return '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + taskId + '\')" style="cursor:pointer;min-width:60px">'
+      + '<span style="color:var(--text-secondary);font-size:12px">—</span></div>';
+  }
+  var avatarHtml = '<div style="display:flex;align-items:center">';
+  var MAX_SHOW = 2;
+  var shown = names.slice(0, MAX_SHOW);
+  var extra = names.length - MAX_SHOW;
+  shown.forEach(function(name, i) {
+    var u = CT_USERS.find(function(u){ return u.name === name; });
+    var color = u ? u.color : '#6b7280';
+    var initials = name.substring(0,2).toUpperCase();
+    avatarHtml += '<span title="' + name + '" style="width:26px;height:26px;border-radius:50%;background:' + color + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid #fff;' + (i > 0 ? 'margin-left:-8px;' : '') + 'flex-shrink:0;z-index:' + (MAX_SHOW - i) + '">' + initials + '</span>';
+  });
+  if (extra > 0) {
+    avatarHtml += '<span style="width:26px;height:26px;border-radius:50%;background:#e5e7eb;color:#374151;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;border:2px solid #fff;margin-left:-8px;flex-shrink:0">+' + extra + '</span>';
+  }
+  avatarHtml += '</div>';
+  return '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + taskId + '\')" style="cursor:pointer" title="' + names.join(', ') + '">' + avatarHtml + '</div>';
+}
+
 let ctGroups = [];
 let ctCurrentClient = '';
 let ctCurrentTab = 'general'; // 'general' or 'stories'
@@ -13734,6 +13757,7 @@ function ctRenderList() {
       + '<div style="text-align:center;display:flex;gap:2px;justify-content:center;align-items:center">'
       + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'up\')" title="Mover grupo para cima" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▲</button>'
       + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'down\')" title="Mover grupo para baixo" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▼</button>'
+      + '<button onclick="event.stopPropagation();ctRenameGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Renomear grupo" style="background:none;border:none;cursor:pointer;font-size:0.95rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fef9c3\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">✏️</button>'
       + '<button onclick="event.stopPropagation();ctShowDuplicateGroupModal(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Duplicar grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#dbeafe\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">📋</button>'
       + '<button onclick="event.stopPropagation();ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'">🗑️</button>'
       + '</div>'
@@ -13743,7 +13767,10 @@ function ctRenderList() {
       // Recursive function to render tasks at any depth
       function renderTaskRow(task, depth, groupId) {
         if (statusFilter && task.status !== statusFilter) return '';
-        if (assigneeFilter && task.assignee !== assigneeFilter) return '';
+        if (assigneeFilter) {
+          var _ctAssignees = (task.assignee || '').split(',').map(function(a){ return a.trim(); });
+          if (_ctAssignees.indexOf(assigneeFilter) === -1) return '';
+        }
 
         const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
         const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
@@ -13772,9 +13799,7 @@ function ctRenderList() {
           + '</div>'
           + ctRenderFormatBadge(task.publish_config)
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
-          + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')">'
-          + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
-          + '</div>'
+          + ctRenderAssigneeCell(task.assignee, task.id)
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
           + ctRenderPublishColumn(task.publish_config)
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')" style="display:flex;align-items:center;justify-content:center">' + priorityBadgeHtml + '</div>'
@@ -13839,6 +13864,22 @@ function ctToggleGroup(groupId) {
   ctExpandedGroups[groupId] = ctExpandedGroups[groupId] === false ? true : false;
   ctSaveGroupsState();
   ctRenderList();
+}
+
+async function ctRenameGroup(groupId, currentName) {
+  var newName = prompt('Renomear grupo:', currentName);
+  if (!newName || !newName.trim() || newName.trim() === currentName) return;
+  newName = newName.trim();
+  const g = ctGroups.find(g => g.id === groupId);
+  if (!g) return;
+  g.name = newName; // optimistic
+  ctRenderList();
+  try {
+    await ctApi('upsert_group', { id: groupId, client_id: ctCurrentClient, name: newName, position: g.position ?? 0, user: ctGetUser() });
+  } catch(e) {
+    g.name = currentName; // rollback
+    ctRenderList();
+  }
 }
 
 async function ctMoveGroup(groupId, direction) {
@@ -14077,41 +14118,84 @@ function ctShowAssigneeDropdown(event, taskId) {
   dropdown.style.top = (rect.bottom + 4) + 'px';
   dropdown.style.left = rect.left + 'px';
   dropdown.style.position = 'fixed';
+  dropdown.style.minWidth = '180px';
+
+  // Resolve current assignees
+  var currentStr = '';
+  if (taskId === 'modal' && ctModalTask) {
+    currentStr = ctModalTask.assignee || '';
+  } else {
+    // Search in loaded groups
+    var _allTasks = [];
+    (ctGroups || []).forEach(function(g) {
+      function _collect(arr) { (arr || []).forEach(function(t) { _allTasks.push(t); _collect(t.subtasks); }); }
+      _collect(g.tasks);
+    });
+    var _found = _allTasks.find(function(t) { return t.id === taskId; });
+    if (_found) currentStr = _found.assignee || '';
+  }
+  var currentAssignees = currentStr.split(',').map(function(n){ return n.trim(); }).filter(Boolean);
+
+  // Header label
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:6px 12px 4px;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);margin-bottom:4px';
+  header.textContent = 'Responsáveis';
+  dropdown.appendChild(header);
 
   // Unassign option
   const unassign = document.createElement('div');
   unassign.className = 'ct-dropdown-item';
-  unassign.innerHTML = '<span style="color:var(--text-secondary)">— Não atribuído</span>';
-  unassign.onclick = async (e) => {
+  unassign.innerHTML = '<span style="color:var(--text-secondary)">✕ Remover todos</span>';
+  unassign.onclick = async function(e) {
     e.stopPropagation();
     ctCloseDropdowns();
     if (taskId === 'modal') {
       await ctSaveTaskField('assignee', null);
     } else {
-      ctApi('upsert_task', { id: taskId, assignee: null, user: ctGetUser() }).then(() => ctLoadGroups());
+      ctApi('upsert_task', { id: taskId, assignee: null, user: ctGetUser() }).then(function() { ctLoadGroups(); });
     }
   };
   dropdown.appendChild(unassign);
 
-  CT_USERS.forEach(u => {
-    const item = document.createElement('div');
+  CT_USERS.forEach(function(u) {
+    const item = document.createElement('label');
     item.className = 'ct-dropdown-item';
-    item.innerHTML = '<div class="ct-assignee-avatar" style="background:' + u.color + '">' + u.name.substring(0,2).toUpperCase() + '</div>' + u.name;
-    item.onclick = async (e) => {
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer';
+    var checked = currentAssignees.indexOf(u.name) !== -1;
+    item.innerHTML = '<input type="checkbox" ' + (checked ? 'checked' : '') + ' style="cursor:pointer;accent-color:' + u.color + '" onclick="event.stopPropagation()">'
+      + '<div class="ct-assignee-avatar" style="background:' + u.color + ';flex-shrink:0">' + u.name.substring(0,2).toUpperCase() + '</div>'
+      + '<span>' + u.name + '</span>';
+    var checkbox = item.querySelector('input');
+    checkbox.addEventListener('change', async function(e) {
       e.stopPropagation();
-      ctCloseDropdowns();
+      var newAssignees = [];
+      dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb, idx) {
+        if (cb.checked) newAssignees.push(CT_USERS[idx].name);
+      });
+      var newStr = newAssignees.join(',') || null;
       if (taskId === 'modal') {
-        await ctSaveTaskField('assignee', u.name);
+        if (ctModalTask) ctModalTask.assignee = newStr || '';
+        // Update modal assignee display
+        var assigneeEl = document.getElementById('ctModalAssignee');
+        if (assigneeEl) {
+          if (newAssignees.length > 0) {
+            var firstUser = CT_USERS.find(function(u2){ return u2.name === newAssignees[0]; });
+            assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:' + (firstUser ? firstUser.color : '#6b7280') + '">' + newAssignees[0].substring(0,2).toUpperCase() + '</div><span>' + newAssignees.join(', ') + '</span>';
+          } else {
+            assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
+          }
+        }
+        await ctSaveTaskField('assignee', newStr);
       } else {
-        ctApi('upsert_task', { id: taskId, assignee: u.name, user: ctGetUser() }).then(() => ctLoadGroups());
+        ctApi('upsert_task', { id: taskId, assignee: newStr, user: ctGetUser() }).then(function() { ctLoadGroups(); });
       }
-    };
+    });
     dropdown.appendChild(item);
   });
 
   document.body.appendChild(dropdown);
   ctActiveDropdown = dropdown;
-  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+  setTimeout(function() { document.addEventListener('click', ctCloseDropdowns); }, 10);
 }
 
 function ctShowPriorityDropdown(event, taskId) {
@@ -16470,21 +16554,87 @@ async function ctBulkChangeAssignee() {
   dropdown.style.bottom = '70px';
   dropdown.style.left = rect.left + 'px';
   dropdown.style.position = 'fixed';
-  CT_USERS.forEach(u => {
-    const item = document.createElement('div');
+  dropdown.style.minWidth = '220px';
+
+  // Header
+  var header = document.createElement('div');
+  header.style.cssText = 'padding:6px 12px 4px;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);margin-bottom:4px';
+  header.textContent = 'Alterar Responsáveis';
+  dropdown.appendChild(header);
+
+  // Mode selector
+  var modeWrap = document.createElement('div');
+  modeWrap.style.cssText = 'display:flex;gap:4px;padding:4px 8px 8px;border-bottom:1px solid var(--border);margin-bottom:4px';
+  var modeState = { value: 'replace' };
+  var btnReplace = document.createElement('button');
+  btnReplace.textContent = 'Substituir';
+  btnReplace.style.cssText = 'flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--accent,#3b82f6);background:var(--accent,#3b82f6);color:#fff;cursor:pointer;font-size:12px;font-weight:600';
+  var btnAdd = document.createElement('button');
+  btnAdd.textContent = 'Adicionar';
+  btnAdd.style.cssText = 'flex:1;padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:12px;font-weight:600';
+  btnReplace.onclick = function(e) { e.stopPropagation(); modeState.value = 'replace'; btnReplace.style.background='var(--accent,#3b82f6)'; btnReplace.style.color='#fff'; btnReplace.style.borderColor='var(--accent,#3b82f6)'; btnAdd.style.background='transparent'; btnAdd.style.color='var(--text-secondary)'; btnAdd.style.borderColor='var(--border)'; };
+  btnAdd.onclick = function(e) { e.stopPropagation(); modeState.value = 'add'; btnAdd.style.background='var(--accent,#3b82f6)'; btnAdd.style.color='#fff'; btnAdd.style.borderColor='var(--accent,#3b82f6)'; btnReplace.style.background='transparent'; btnReplace.style.color='var(--text-secondary)'; btnReplace.style.borderColor='var(--border)'; };
+  modeWrap.appendChild(btnReplace);
+  modeWrap.appendChild(btnAdd);
+  dropdown.appendChild(modeWrap);
+
+  // User checkboxes
+  CT_USERS.forEach(function(u) {
+    var item = document.createElement('label');
     item.className = 'ct-dropdown-item';
-    item.innerHTML = '<div class="ct-assignee-avatar" style="background:' + u.color + '">' + u.name.substring(0,2).toUpperCase() + '</div>' + u.name;
-    item.onclick = async () => {
-      ctCloseDropdowns();
-      await Promise.all(Array.from(ctSelectedIds).map(id => ctApi('upsert_task', { id, assignee: u.name, user: ctGetUser() })));
-      ctClearSelection();
-      ctLoadGroups();
-    };
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer';
+    item.innerHTML = '<input type="checkbox" style="cursor:pointer;accent-color:' + u.color + '" onclick="event.stopPropagation()">'
+      + '<div class="ct-assignee-avatar" style="background:' + u.color + ';flex-shrink:0">' + u.name.substring(0,2).toUpperCase() + '</div>'
+      + '<span>' + u.name + '</span>';
+    item.querySelector('input').addEventListener('click', function(e) { e.stopPropagation(); });
     dropdown.appendChild(item);
   });
+
+  // Apply button
+  var applyBtn = document.createElement('button');
+  applyBtn.textContent = 'Aplicar';
+  applyBtn.style.cssText = 'width:calc(100% - 16px);margin:8px 8px 4px;padding:6px;border-radius:8px;border:none;background:var(--accent,#3b82f6);color:#fff;cursor:pointer;font-size:13px;font-weight:700';
+  applyBtn.onclick = async function(e) {
+    e.stopPropagation();
+    var selectedNames = [];
+    dropdown.querySelectorAll('input[type=checkbox]').forEach(function(cb, idx) {
+      if (cb.checked) selectedNames.push(CT_USERS[idx].name);
+    });
+    if (selectedNames.length === 0 && modeState.value === 'replace') {
+      // Clear assignees
+      ctCloseDropdowns();
+      await Promise.all(Array.from(ctSelectedIds).map(function(id) { return ctApi('upsert_task', { id: id, assignee: null, user: ctGetUser() }); }));
+      ctClearSelection();
+      ctLoadGroups();
+      return;
+    }
+    if (selectedNames.length === 0) { ctCloseDropdowns(); return; }
+    ctCloseDropdowns();
+    var allTasks = [];
+    (ctGroups || []).forEach(function(g) {
+      function _collect(arr) { (arr || []).forEach(function(t) { allTasks.push(t); _collect(t.subtasks); }); }
+      _collect(g.tasks);
+    });
+    await Promise.all(Array.from(ctSelectedIds).map(function(id) {
+      var newStr;
+      if (modeState.value === 'add') {
+        var existing = allTasks.find(function(t) { return t.id === id; });
+        var existingNames = existing ? (existing.assignee || '').split(',').map(function(n){ return n.trim(); }).filter(Boolean) : [];
+        selectedNames.forEach(function(n) { if (existingNames.indexOf(n) === -1) existingNames.push(n); });
+        newStr = existingNames.join(',') || null;
+      } else {
+        newStr = selectedNames.join(',');
+      }
+      return ctApi('upsert_task', { id: id, assignee: newStr, user: ctGetUser() });
+    }));
+    ctClearSelection();
+    ctLoadGroups();
+  };
+  dropdown.appendChild(applyBtn);
+
   document.body.appendChild(dropdown);
   ctActiveDropdown = dropdown;
-  setTimeout(() => document.addEventListener('click', ctCloseDropdowns), 10);
+  setTimeout(function() { document.addEventListener('click', ctCloseDropdowns); }, 10);
 }
 
 async function ctBulkChangePriority() {
@@ -22009,7 +22159,10 @@ function tfRenderList() {
     if (expanded && g.tasks) {
       g.tasks.forEach(function(task) {
         if (statusFilter && task.status !== statusFilter) return;
-        if (assigneeFilter && task.assignee !== assigneeFilter) return;
+        if (assigneeFilter) {
+          var _tfAssignees = (task.assignee || '').split(',').map(function(a){ return a.trim(); });
+          if (_tfAssignees.indexOf(assigneeFilter) === -1) return;
+        }
 
         const st = tfGetStatus(task.status);
         const obj = tfGetObjective(task.campaign_objective);

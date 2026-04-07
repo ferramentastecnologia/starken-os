@@ -284,17 +284,24 @@ async function listTasks({ group_id, client_id }) {
   return ok(result);
 }
 
-async function listMyTasks({ assignee }) {
-  if (!assignee) return fail('assignee is required');
+async function listMyTasks({ user, name, assignee }) {
+  const targetName = user || name || assignee;
+  if (!targetName) return fail('user is required');
 
-  // Get all tasks assigned to this user across all clients
+  // Broad fetch using ilike — catches comma-separated entries containing the name
   const tasks = await supaSelect(
     'content_tasks',
-    `select=*,content_groups!inner(id,name,client_id)&assignee=eq.${encodeURIComponent(assignee)}&parent_id=is.null&order=due_date.asc.nullslast,created_at.desc`
+    `select=*,content_groups!inner(id,name,client_id)&assignee=ilike.%25${encodeURIComponent(targetName)}%25&parent_id=is.null&order=due_date.asc.nullslast,created_at.desc`
   );
 
+  // JS post-filter: exact match within comma-separated list (prevents "Dan" matching "Daniela")
+  const filtered = tasks.filter(task => {
+    const assignees = (task.assignee || '').split(',').map(a => a.trim()).filter(Boolean);
+    return assignees.includes(targetName);
+  });
+
   // Flatten with group/client info
-  const result = tasks.map(t => ({
+  const result = filtered.map(t => ({
     ...t,
     group_name: t.content_groups?.name || '',
     client_id: t.content_groups?.client_id || '',
