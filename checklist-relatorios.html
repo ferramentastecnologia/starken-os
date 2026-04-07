@@ -16995,7 +16995,7 @@ function ctOpenLightbox(url, isVideo) {
   // Fetch scheduled + recently published posts for a single client from Meta Graph API
   async function calFetchClientMetaPosts(client) {
     var pageId    = client.pageId    || client.page_id    || '';
-    var pageToken = client.pageToken || client.page_token || '';
+    var pageToken = client.pageAccessToken || client.pageToken || client.page_token || '';
     if (!pageId || !pageToken) return [];
 
     var clientName = client.name || client.pageName || client._key || '';
