@@ -13420,7 +13420,8 @@ async function ctLoadGroups() {
   }));
 
   ctGroups = groups;
-  ctRenderList();
+  ctRenderList(); // render immediately with current state
+  ctLoadGroupsState(); // async: merge with Supabase shared state, re-renders if changed
   cronogramaUpdateButton();
 }
 
@@ -13819,8 +13820,50 @@ function ctRenderList() {
 }
 
 // ─── TOGGLE EXPAND ───
+var _ctGroupStateKey = 'ct_groups_collapsed';
+var _ctGroupStateSaving = false;
+
+// Load from Supabase on startup — merged with localStorage fallback
+async function ctLoadGroupsState() {
+  // localStorage first (instant)
+  try {
+    var local = localStorage.getItem('starken_groups_expanded');
+    if (local) ctExpandedGroups = JSON.parse(local);
+  } catch(e) {}
+  // Then Supabase (shared across users)
+  try {
+    if (!_supabase) return;
+    var { data } = await _supabase.from('admin_secrets').select('value').eq('label', _ctGroupStateKey).limit(1).single();
+    if (data && data.value) {
+      var remote = JSON.parse(data.value);
+      // Merge: remote wins (newer/shared state)
+      ctExpandedGroups = Object.assign({}, ctExpandedGroups, remote);
+      localStorage.setItem('starken_groups_expanded', JSON.stringify(ctExpandedGroups));
+      ctRenderList();
+    }
+  } catch(e) {}
+}
+
+async function ctSaveGroupsState() {
+  // Save to localStorage immediately
+  try { localStorage.setItem('starken_groups_expanded', JSON.stringify(ctExpandedGroups)); } catch(e) {}
+  // Debounce Supabase save (avoid spamming)
+  if (_ctGroupStateSaving) return;
+  _ctGroupStateSaving = true;
+  setTimeout(async function() {
+    try {
+      if (!_supabase) return;
+      var val = JSON.stringify(ctExpandedGroups);
+      // Upsert into admin_secrets
+      await _supabase.from('admin_secrets').upsert({ label: _ctGroupStateKey, value: val }, { onConflict: 'label' });
+    } catch(e) {}
+    _ctGroupStateSaving = false;
+  }, 800);
+}
+
 function ctToggleGroup(groupId) {
   ctExpandedGroups[groupId] = ctExpandedGroups[groupId] === false ? true : false;
+  ctSaveGroupsState();
   ctRenderList();
 }
 
