@@ -17084,6 +17084,17 @@ function ctOpenLightbox(url, isVideo) {
       _calAllPosts = merged;
       console.debug('[Cal] _calAllPosts total entries:', merged.length);
       console.debug('[Cal] _calAllPosts SCHEDULED count:', merged.filter(function(p) { return p.status === 'SCHEDULED'; }).length);
+
+      // Debug: Group by date
+      var byDate = {};
+      merged.forEach(function(p) {
+        var d = p.scheduled_for || p.created_at || '';
+        if (d) {
+          var iso = d.split('T')[0];
+          byDate[iso] = (byDate[iso] || 0) + 1;
+        }
+      });
+      console.debug('[Cal] Posts por data:', byDate);
       _calLoaded = true;
       _calLoadedAt = Date.now();
       calPopulateClientFilter();
