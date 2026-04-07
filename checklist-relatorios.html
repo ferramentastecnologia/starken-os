@@ -17161,18 +17161,8 @@ function ctOpenLightbox(url, isVideo) {
           })
       : Promise.resolve([]));
 
-    // 5. Meta Planner (published FB posts from Graph API) — no timeout, let it finish
-    var metaPlannerStartTime = Date.now();
-    var metaPlannerPromise = calFetchMetaPlannerPosts()
-      .then(function(posts) {
-        var elapsed = Date.now() - metaPlannerStartTime;
-        console.log('[Cal] Meta Planner completed in ' + (elapsed / 1000).toFixed(1) + 's with ' + posts.length + ' posts');
-        return posts;
-      })
-      .catch(function(err) {
-        console.warn('[Cal] Meta Planner fetch failed:', err.message);
-        return [];
-      });
+    // 5. Meta Planner (DISABLED) — only use posts agendados pelo sistema
+    var metaPlannerPromise = Promise.resolve([]);
 
     Promise.all([historyPromise, scheduledPromise, queuedPromise, tasksPromise, metaPlannerPromise]).then(function(results) {
       var history = results[0];
@@ -17228,9 +17218,6 @@ function ctOpenLightbox(url, isVideo) {
       var schCount = scheduled.length + queued.length + tasks.length;
       if (schCount > 0) {
         console.info('[Cal] Agendados: ' + schCount + ' posts (' + scheduled.length + ' histórico + ' + queued.length + ' fila + ' + tasks.length + ' tasks)');
-      }
-      if (newFromPlanner.length > 0) {
-        console.info('[Cal] Meta Planner: ' + newFromPlanner.length + ' posts importados');
       }
     }).catch(function(err) {
       console.error('Calendar load error:', err);
