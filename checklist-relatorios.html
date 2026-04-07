@@ -16864,7 +16864,20 @@ function ctOpenLightbox(url, isVideo) {
       console.log('[Cal] Filter selected:', val);
       console.log('[Cal] Posts per client_key:', debugInfo);
       console.log('[Cal] Filtered posts for ' + val + ':', matchCount);
-      console.log('[Cal] Sample filtered posts:', _calFiltered.slice(0, 3));
+
+      // Show detailed structure of first 3 filtered posts
+      if (_calFiltered.length > 0) {
+        console.log('[Cal] First filtered post structure:');
+        var sample = _calFiltered[0];
+        console.log('  - post_id:', sample.post_id);
+        console.log('  - client_key:', sample.client_key);
+        console.log('  - client_name:', sample.client_name);
+        console.log('  - status:', sample.status);
+        console.log('  - scheduled_for:', sample.scheduled_for);
+        console.log('  - platform:', sample.platform);
+        console.log('  - source:', sample.source);
+        console.log('[Cal] Full first post:', sample);
+      }
     }
 
     calRender();
