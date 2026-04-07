@@ -22525,16 +22525,30 @@ async function openDesignerOverview() {
 async function _doFetchTasks() {
   try {
     if (!_supabase) return;
-    // Fetch tasks assigned to designers with group info
-    var { data: tasks, error } = await _supabase
-      .from('content_tasks')
-      .select('id, name, status, priority, due_date, assignee, group_id, client_id, parent_id')
-      .in('assignee', DESIGNER_NAMES)
-      .is('parent_id', null)
-      .order('due_date', { ascending: true, nullsFirst: false });
-
-    if (error || !tasks) { _doState.tasks = []; return; }
-    _doState.tasks = tasks;
+    // Fetch tasks assigned to designers OR any task in "aprovacao-design" status
+    var [resDesigner, resAprov] = await Promise.all([
+      _supabase
+        .from('content_tasks')
+        .select('id, name, status, priority, due_date, assignee, group_id, client_id, parent_id')
+        .in('assignee', DESIGNER_NAMES)
+        .is('parent_id', null)
+        .order('due_date', { ascending: true, nullsFirst: false }),
+      _supabase
+        .from('content_tasks')
+        .select('id, name, status, priority, due_date, assignee, group_id, client_id, parent_id')
+        .eq('status', 'aprovacao-design')
+        .is('parent_id', null)
+        .order('due_date', { ascending: true, nullsFirst: false })
+    ]);
+    var designerTasks = (resDesigner.data || []);
+    var aprovTasks    = (resAprov.data || []);
+    // Merge deduplicating by id
+    var seen = {};
+    var merged = [];
+    designerTasks.concat(aprovTasks).forEach(function(t) {
+      if (!seen[t.id]) { seen[t.id] = true; merged.push(t); }
+    });
+    _doState.tasks = merged;
   } catch(e) {
     _doState.tasks = [];
   }
@@ -22674,16 +22688,46 @@ function _doRenderTable() {
   };
   var _prioLabels = { urgente:'🚩 Urgente', alta:'🔴 Alta', normal:'🔵 Normal', baixa:'⚪ Baixa' };
 
-  // Group by designer
+  // Group by designer; non-designer assignees with aprovacao-design go to a separate bucket
   var groups = {};
   DESIGNER_NAMES.forEach(function(n) { groups[n] = []; });
+  var aprovExternal = []; // aprovacao-design tasks assigned to non-designers
   filtered.forEach(function(t) {
-    if (groups[t.assignee]) groups[t.assignee].push(t);
-    else { groups[t.assignee] = [t]; }
+    if (groups[t.assignee] !== undefined) {
+      groups[t.assignee].push(t);
+    } else if (t.status === 'aprovacao-design') {
+      aprovExternal.push(t);
+    } else {
+      // Other non-designer assignee tasks: put under closest designer group or skip
+    }
   });
 
   var html = '';
   var designersToShow = _doState.designerFilter ? [_doState.designerFilter] : DESIGNER_NAMES;
+
+  // Render "Aguardando Aprovação" section first if there are external aprov tasks
+  if (aprovExternal.length > 0 && !_doState.designerFilter) {
+    html += '<tr style="background:#fff7ed">'
+      + '<td colspan="6" style="padding:10px 16px;font-weight:700;font-size:14px;border-bottom:2px solid #fed7aa">'
+      + '<span style="display:inline-flex;align-items:center;gap:8px">'
+      + '<span style="width:28px;height:28px;border-radius:50%;background:#f97316;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px">✔</span>'
+      + '📤 Aguardando Aprovação'
+      + ' <span style="background:#fed7aa;color:#c2410c;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:600">' + aprovExternal.length + ' tarefa' + (aprovExternal.length !== 1 ? 's' : '') + '</span>'
+      + '</span>'
+      + '</td></tr>';
+    aprovExternal.forEach(function(t) {
+      var pc = _prioColors[t.priority] || _prioColors.normal;
+      var pl = _prioLabels[t.priority] || t.priority || '—';
+      html += '<tr style="border-bottom:1px solid #f3f4f6;transition:background 0.1s" onmouseover="this.style.background=\'#fffbf5\'" onmouseout="this.style.background=\'\'">'
+        + '<td style="padding:10px 16px;font-size:13px;color:#6b7280;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.client_id || '—') + '</td>'
+        + '<td style="padding:10px 16px;font-size:13px;font-weight:500;color:#111827">' + (t.name || '—') + '</td>'
+        + '<td style="padding:10px 16px"><span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:#fef2f2;color:#dc2626">✔️ Aprov. Design</span></td>'
+        + '<td style="padding:10px 16px"><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;border:1px solid ' + pc.border + ';background:' + pc.bg + ';color:' + pc.color + ';font-size:11px;font-weight:700">' + pl + '</span></td>'
+        + '<td style="padding:10px 16px;font-size:13px">' + _doFormatDate(t.due_date) + '</td>'
+        + '<td style="padding:10px 16px"><button onclick="ctOpenModal(\'' + t.id + '\')" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer">Abrir</button></td>'
+        + '</tr>';
+    });
+  }
 
   designersToShow.forEach(function(designerName) {
     var tasks = groups[designerName] || [];
