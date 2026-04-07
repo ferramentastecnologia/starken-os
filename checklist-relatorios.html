@@ -13637,7 +13637,10 @@ function ctRenderList() {
       // Recursive function to render tasks at any depth
       function renderTaskRow(task, depth, groupId) {
         if (statusFilter && task.status !== statusFilter) return '';
-        if (assigneeFilter && task.assignee !== assigneeFilter) return '';
+        if (assigneeFilter) {
+          const assignees = task.assignees || (task.assignee ? [task.assignee] : []);
+          if (!assignees.includes(assigneeFilter)) return '';
+        }
 
         const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
         const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
@@ -13645,11 +13648,21 @@ function ctRenderList() {
         const _pc = _prioColors[priority.key] || _prioColors.normal;
         const priorityBadgeHtml = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid ' + _pc.border + ';background:' + _pc.bg + ';color:' + _pc.color + ';white-space:nowrap;letter-spacing:0.3px">' + priority.icon + ' ' + priority.label.toUpperCase() + '</span>';
         const user = CT_USERS.find(u => u.name === task.assignee);
-        const hasSubtasks = task.subtasks && task.subtasks.length > 0;
-        const taskExpanded = ctExpandedTasks[task.id] !== false;
-        const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
-        const indent = 36 + (depth * 24);
-        const canAddSub = depth < 5;
+        const assignees = task.assignees || (task.assignee ? [task.assignee] : []);
+        const assigneeUsers = assignees.map(name => CT_USERS.find(u => u.name === name)).filter(Boolean);
+
+        let assigneeHtml = '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')" style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">';
+        if (assigneeUsers.length > 0) {
+          assigneeUsers.slice(0, 3).forEach(u => {
+            assigneeHtml += '<div class="ct-assignee-avatar" style="background:' + u.color + ';width:24px;height:24px;padding:0;font-size:0.65rem" title="' + u.name + '">' + u.name.substring(0,2).toUpperCase() + '</div>';
+          });
+          if (assigneeUsers.length > 3) {
+            assigneeHtml += '<div class="ct-assignee-avatar" style="background:var(--border,#e2e8f0);width:24px;height:24px;padding:0;font-size:0.65rem;color:var(--text-muted)">+' + (assigneeUsers.length - 3) + '</div>';
+          }
+        } else {
+          assigneeHtml += '<span style="color:var(--text-secondary)">—</span>';
+        }
+        assigneeHtml += '</div>';
 
         let rowHtml = '<div class="ct-row' + (depth > 0 ? ' subtask' : '') + '" data-task-id="' + task.id + '" data-group-id="' + groupId + '" data-depth="' + depth + '" data-parent-id="' + (task.parent_id || '') + '" data-task-name="' + (task.name||'').replace(/"/g,'&quot;') + '" style="padding-left:36px">'
           + '<div class="ct-name">'
@@ -13666,9 +13679,7 @@ function ctRenderList() {
           + '</div>'
           + ctRenderFormatBadge(task.publish_config)
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
-          + '<div class="ct-assignee" onclick="event.stopPropagation();ctShowAssigneeDropdown(event,\'' + task.id + '\')">'
-          + (user ? '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>' : '<span style="color:var(--text-secondary)">—</span>')
-          + '</div>'
+          + assigneeHtml
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
           + ctRenderPublishColumn(task.publish_config)
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')" style="display:flex;align-items:center;justify-content:center">' + priorityBadgeHtml + '</div>'
@@ -13932,33 +13943,57 @@ function ctShowAssigneeDropdown(event, taskId) {
   dropdown.style.top = (rect.bottom + 4) + 'px';
   dropdown.style.left = rect.left + 'px';
   dropdown.style.position = 'fixed';
+  dropdown.style.minWidth = '220px';
 
-  // Unassign option
+  // Get current assignees
+  var task = ctModalTask || ctGroups.flatMap(g => g.tasks || []).find(t => t.id === taskId);
+  var currentAssignees = task ? (task.assignees || (task.assignee ? [task.assignee] : [])) : [];
+
+  // Title
+  const title = document.createElement('div');
+  title.style.cssText = 'padding:8px 12px;font-size:0.75rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;border-bottom:1px solid var(--border)';
+  title.textContent = 'Selecionar Responsáveis';
+  dropdown.appendChild(title);
+
+  // Unassign all option
   const unassign = document.createElement('div');
   unassign.className = 'ct-dropdown-item';
-  unassign.innerHTML = '<span style="color:var(--text-secondary)">— Não atribuído</span>';
+  unassign.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px';
+  unassign.innerHTML = '<input type="checkbox" style="cursor:pointer;accent-color:var(--accent)" checked="' + (currentAssignees.length === 0 ? 'checked' : '') + '"><span style="color:var(--text-secondary)">— Não atribuído</span>';
   unassign.onclick = async (e) => {
     e.stopPropagation();
     ctCloseDropdowns();
     if (taskId === 'modal') {
-      await ctSaveTaskField('assignee', null);
+      await ctSaveTaskField('assignees', []);
     } else {
-      ctApi('upsert_task', { id: taskId, assignee: null, user: ctGetUser() }).then(() => ctLoadGroups());
+      ctApi('upsert_task', { id: taskId, assignees: [], user: ctGetUser() }).then(() => ctLoadGroups());
     }
   };
   dropdown.appendChild(unassign);
 
+  // User options with checkboxes
   CT_USERS.forEach(u => {
     const item = document.createElement('div');
     item.className = 'ct-dropdown-item';
-    item.innerHTML = '<div class="ct-assignee-avatar" style="background:' + u.color + '">' + u.name.substring(0,2).toUpperCase() + '</div>' + u.name;
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;transition:background 0.15s';
+    const isSelected = currentAssignees.includes(u.name);
+    item.innerHTML = '<input type="checkbox" style="cursor:pointer;accent-color:var(--accent)" ' + (isSelected ? 'checked' : '') + '><div class="ct-assignee-avatar" style="background:' + u.color + ';width:20px;height:20px;padding:0;font-size:0.6rem;flex-shrink:0">' + u.name.substring(0,2).toUpperCase() + '</div><span>' + u.name + '</span>';
+    item.onmouseover = () => item.style.background = 'var(--sidebar-bg-hover,#f3f4f6)';
+    item.onmouseout = () => item.style.background = '';
     item.onclick = async (e) => {
       e.stopPropagation();
+      // Toggle selection
+      var newAssignees;
+      if (currentAssignees.includes(u.name)) {
+        newAssignees = currentAssignees.filter(a => a !== u.name);
+      } else {
+        newAssignees = [...currentAssignees, u.name];
+      }
       ctCloseDropdowns();
       if (taskId === 'modal') {
-        await ctSaveTaskField('assignee', u.name);
+        await ctSaveTaskField('assignees', newAssignees);
       } else {
-        ctApi('upsert_task', { id: taskId, assignee: u.name, user: ctGetUser() }).then(() => ctLoadGroups());
+        ctApi('upsert_task', { id: taskId, assignees: newAssignees, user: ctGetUser() }).then(() => ctLoadGroups());
       }
     };
     dropdown.appendChild(item);
@@ -14043,14 +14078,24 @@ async function ctOpenModal(taskId) {
   statusBtn.style.background = status.bg;
   statusBtn.style.color = status.color;
 
-  // Assignee
-  const user = CT_USERS.find(u => u.name === task.assignee);
+  // Assignee (multi-select)
   const assigneeEl = document.getElementById('ctModalAssignee');
-  if (user) {
-    assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>';
+  const assignees = task.assignees || (task.assignee ? [task.assignee] : []);
+  const assigneeUsers = assignees.map(name => CT_USERS.find(u => u.name === name)).filter(Boolean);
+
+  let assigneeHtml = '<div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">';
+  if (assigneeUsers.length > 0) {
+    assigneeUsers.slice(0, 3).forEach(u => {
+      assigneeHtml += '<div class="ct-assignee-avatar" style="background:' + u.color + ';width:24px;height:24px;padding:0;font-size:0.65rem" title="' + u.name + '">' + u.name.substring(0,2).toUpperCase() + '</div>';
+    });
+    if (assigneeUsers.length > 3) {
+      assigneeHtml += '<div class="ct-assignee-avatar" style="background:var(--border,#e2e8f0);width:24px;height:24px;padding:0;font-size:0.65rem;color:var(--text-muted)">+' + (assigneeUsers.length - 3) + '</div>';
+    }
   } else {
-    assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
+    assigneeHtml += '<span style="color:var(--text-secondary)">—</span>';
   }
+  assigneeHtml += '</div>';
+  assigneeEl.innerHTML = assigneeHtml;
 
   // Priority
   const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
@@ -14204,6 +14249,25 @@ async function ctSaveTaskField(field, value) {
     } else {
       assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
     }
+  }
+  if (field === 'assignees') {
+    const assigneeEl = document.getElementById('ctModalAssignee');
+    const assignees = value || [];
+    const assigneeUsers = assignees.map(name => CT_USERS.find(u => u.name === name)).filter(Boolean);
+
+    let assigneeHtml = '<div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">';
+    if (assigneeUsers.length > 0) {
+      assigneeUsers.slice(0, 3).forEach(u => {
+        assigneeHtml += '<div class="ct-assignee-avatar" style="background:' + u.color + ';width:24px;height:24px;padding:0;font-size:0.65rem" title="' + u.name + '">' + u.name.substring(0,2).toUpperCase() + '</div>';
+      });
+      if (assigneeUsers.length > 3) {
+        assigneeHtml += '<div class="ct-assignee-avatar" style="background:var(--border,#e2e8f0);width:24px;height:24px;padding:0;font-size:0.65rem;color:var(--text-muted)">+' + (assigneeUsers.length - 3) + '</div>';
+      }
+    } else {
+      assigneeHtml += '<span style="color:var(--text-secondary)">—</span>';
+    }
+    assigneeHtml += '</div>';
+    assigneeEl.innerHTML = assigneeHtml;
   }
   if (field === 'priority') {
     const p = CT_PRIORITIES.find(pr => pr.key === value) || CT_PRIORITIES[2];
