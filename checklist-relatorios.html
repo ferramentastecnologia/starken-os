@@ -9055,6 +9055,9 @@ function activateSession(user) {
   if (user.role === 'designer') {
     applyDesignerRestrictions();
   }
+
+  // ─── DESIGNER OVERVIEW BTN ───
+  showDesignerOverviewBtn();
 }
 
 function applyDesignerRestrictions() {
@@ -22067,6 +22070,257 @@ async function tfLoadCampaigns() {
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// DESIGNER OVERVIEW — Painel master de tarefas dos designers
+// ═══════════════════════════════════════════════════════
+
+var _doState = {
+  statusFilter: '',
+  designerFilter: '',
+  tasks: [],
+  loading: false
+};
+
+var DESIGNER_NAMES = ['Henrique', 'Daniela'];
+
+function showDesignerOverviewBtn() {
+  if (gpState.user && gpState.user.role !== 'designer') {
+    var btn = document.getElementById('designerOverviewBtn');
+    if (btn) btn.style.display = 'block';
+  }
+}
+
+async function openDesignerOverview() {
+  var modal = document.getElementById('designerOverviewModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  _doState.loading = true;
+  _doRenderLoading();
+  await _doFetchTasks();
+  _doState.loading = false;
+  renderDesignerOverview();
+}
+
+async function _doFetchTasks() {
+  try {
+    if (!_supabase) return;
+    // Fetch tasks assigned to designers with group info
+    var { data: tasks, error } = await _supabase
+      .from('content_tasks')
+      .select('id, name, status, priority, due_date, assignee, group_id, client_id, parent_id')
+      .in('assignee', DESIGNER_NAMES)
+      .is('parent_id', null)
+      .order('due_date', { ascending: true, nullsFirst: false });
+
+    if (error || !tasks) { _doState.tasks = []; return; }
+    _doState.tasks = tasks;
+  } catch(e) {
+    _doState.tasks = [];
+  }
+}
+
+function _doRenderLoading() {
+  var body = document.getElementById('doTaskBody');
+  if (body) body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#6b7280">⏳ Carregando tarefas...</td></tr>';
+}
+
+function closeDesignerOverview() {
+  var modal = document.getElementById('designerOverviewModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function doSetStatusFilter(key) {
+  _doState.statusFilter = (_doState.statusFilter === key) ? '' : key;
+  renderDesignerOverview();
+}
+
+function doSetDesignerFilter(name) {
+  _doState.designerFilter = name;
+  renderDesignerOverview();
+}
+
+function renderDesignerOverview() {
+  // Render pipeline pills
+  _doRenderPills();
+  // Render designer filter
+  _doRenderDesignerSelect();
+  // Render task table
+  _doRenderTable();
+  // Update total count
+  var filtered = _doGetFiltered();
+  var countEl = document.getElementById('doTotalCount');
+  if (countEl) countEl.textContent = filtered.length + ' tarefa' + (filtered.length !== 1 ? 's' : '');
+}
+
+function _doGetFiltered() {
+  return _doState.tasks.filter(function(t) {
+    if (_doState.designerFilter && t.assignee !== _doState.designerFilter) return false;
+    if (_doState.statusFilter && t.status !== _doState.statusFilter) return false;
+    return true;
+  });
+}
+
+function _doGetClientName(clientId) {
+  if (!clientId) return '—';
+  var c = _metaClients && _metaClients[clientId];
+  if (c && c.name) return c.name;
+  return clientId;
+}
+
+function _doFormatDate(dateStr) {
+  if (!dateStr) return '—';
+  try {
+    var d = new Date(dateStr + 'T00:00:00');
+    var today = new Date(); today.setHours(0,0,0,0);
+    var diff = Math.round((d - today) / 86400000);
+    var label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    if (diff < 0) return '<span style="color:#dc2626;font-weight:600">' + label + ' (' + Math.abs(diff) + 'd atraso)</span>';
+    if (diff === 0) return '<span style="color:#d97706;font-weight:600">Hoje</span>';
+    if (diff === 1) return '<span style="color:#d97706">Amanhã</span>';
+    return label;
+  } catch(e) { return dateStr; }
+}
+
+var DO_PILLS = [
+  { key: '', label: 'Todos', icon: '' },
+  { key: 'alteracao-design', label: 'Alteração', icon: '✏️' },
+  { key: 'design', label: 'Design', icon: '🎨' },
+  { key: 'em-revisao', label: 'Em Revisão', icon: '👁️' },
+  { key: 'a-fazer', label: 'A Fazer', icon: '📋' },
+  { key: 'em-andamento', label: 'Em Andamento', icon: '🔄' },
+  { key: 'aprovacao-design', label: 'Aprov. Design', icon: '✔️' },
+  { key: 'publicado', label: 'Concluído', icon: '✅' },
+];
+
+function _doRenderPills() {
+  var container = document.getElementById('doPillsContainer');
+  if (!container) return;
+
+  var counts = {};
+  _doState.tasks.forEach(function(t) {
+    var key = t.status || '';
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  var totalCount = _doState.tasks.length;
+
+  var html = '';
+  DO_PILLS.forEach(function(p) {
+    var cnt = p.key === '' ? totalCount : (counts[p.key] || 0);
+    var isActive = _doState.statusFilter === p.key;
+    var activeStyle = isActive
+      ? 'background:#1e3a5f;color:#fff;border-color:#1e3a5f;'
+      : 'background:#f3f4f6;color:#374151;border-color:#e5e7eb;';
+    html += '<button onclick="doSetStatusFilter(\'' + p.key + '\')" style="'
+      + activeStyle
+      + 'border:1px solid;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all 0.15s">'
+      + (p.icon ? p.icon + ' ' : '') + p.label
+      + ' <span style="background:' + (isActive ? 'rgba(255,255,255,0.25)' : '#e5e7eb') + ';color:' + (isActive ? '#fff' : '#6b7280') + ';border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700">' + cnt + '</span>'
+      + '</button>';
+  });
+  container.innerHTML = html;
+}
+
+function _doRenderDesignerSelect() {
+  var sel = document.getElementById('doDesignerSelect');
+  if (!sel) return;
+  var prev = sel.value;
+  var html = '<option value="">Todos os designers</option>';
+  DESIGNER_NAMES.forEach(function(n) {
+    var u = CT_USERS.find(function(u) { return u.name === n; });
+    var color = u ? u.color : '#8b5cf6';
+    html += '<option value="' + n + '" ' + (prev === n ? 'selected' : '') + '>' + n + '</option>';
+  });
+  sel.innerHTML = html;
+  if (_doState.designerFilter) sel.value = _doState.designerFilter;
+}
+
+function _doRenderTable() {
+  var body = document.getElementById('doTaskBody');
+  if (!body) return;
+
+  var filtered = _doGetFiltered();
+
+  if (filtered.length === 0) {
+    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#6b7280"><div style="font-size:2rem;margin-bottom:8px">📭</div>Nenhuma tarefa encontrada</td></tr>';
+    return;
+  }
+
+  var _prioColors = {
+    urgente: { bg:'#fef2f2', color:'#dc2626', border:'#fecaca' },
+    alta:    { bg:'#fffbeb', color:'#b45309', border:'#fde68a' },
+    normal:  { bg:'#eff6ff', color:'#1d4ed8', border:'#bfdbfe' },
+    baixa:   { bg:'#f9fafb', color:'#6b7280', border:'#e5e7eb' },
+  };
+  var _prioLabels = { urgente:'🚩 Urgente', alta:'🔴 Alta', normal:'🔵 Normal', baixa:'⚪ Baixa' };
+
+  // Group by designer
+  var groups = {};
+  DESIGNER_NAMES.forEach(function(n) { groups[n] = []; });
+  filtered.forEach(function(t) {
+    if (groups[t.assignee]) groups[t.assignee].push(t);
+    else { groups[t.assignee] = [t]; }
+  });
+
+  var html = '';
+  var designersToShow = _doState.designerFilter ? [_doState.designerFilter] : DESIGNER_NAMES;
+
+  designersToShow.forEach(function(designerName) {
+    var tasks = groups[designerName] || [];
+    if (tasks.length === 0 && _doState.designerFilter) return;
+
+    var u = CT_USERS.find(function(u) { return u.name === designerName; });
+    var color = u ? u.color : '#8b5cf6';
+
+    // Section header
+    html += '<tr style="background:#f8fafc">'
+      + '<td colspan="6" style="padding:10px 16px;font-weight:700;font-size:14px;border-bottom:2px solid #e5e7eb">'
+      + '<span style="display:inline-flex;align-items:center;gap:8px">'
+      + '<span style="width:28px;height:28px;border-radius:50%;background:' + color + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">' + designerName.substring(0,2).toUpperCase() + '</span>'
+      + '👤 ' + designerName
+      + ' <span style="background:#e5e7eb;color:#374151;border-radius:10px;padding:2px 8px;font-size:12px;font-weight:600">' + tasks.length + ' tarefa' + (tasks.length !== 1 ? 's' : '') + '</span>'
+      + '</span>'
+      + '</td></tr>';
+
+    if (tasks.length === 0) {
+      html += '<tr><td colspan="6" style="padding:12px 16px;color:#9ca3af;font-size:13px;font-style:italic">Nenhuma tarefa</td></tr>';
+      return;
+    }
+
+    tasks.forEach(function(task) {
+      var statusObj = CT_STATUSES.find(function(s) { return s.key === task.status; }) || CT_STATUSES[0];
+      var prioKey = task.priority || 'normal';
+      var pc = _prioColors[prioKey] || _prioColors.normal;
+      var prioLabel = _prioLabels[prioKey] || 'Normal';
+      var clientName = _doGetClientName(task.client_id);
+
+      html += '<tr style="border-bottom:1px solid #f3f4f6;transition:background 0.1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'
+        // Cliente
+        + '<td style="padding:10px 16px;font-size:13px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + clientName + '">' + clientName + '</td>'
+        // Tarefa
+        + '<td style="padding:10px 16px;font-size:13px;font-weight:500;max-width:220px">'
+        + '<span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + (task.name || '—') + '</span>'
+        + '</td>'
+        // Status
+        + '<td style="padding:10px 12px">'
+        + '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:' + statusObj.bg + ';color:' + statusObj.color + ';white-space:nowrap">' + statusObj.label + '</span>'
+        + '</td>'
+        // Prioridade
+        + '<td style="padding:10px 12px">'
+        + '<span style="display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;background:' + pc.bg + ';color:' + pc.color + ';border:1px solid ' + pc.border + ';white-space:nowrap">' + prioLabel + '</span>'
+        + '</td>'
+        // Prazo
+        + '<td style="padding:10px 12px;font-size:13px;white-space:nowrap">' + _doFormatDate(task.due_date) + '</td>'
+        // Ação
+        + '<td style="padding:10px 12px">'
+        + '<button onclick="ctOpenModal(\'' + task.id + '\')" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer" onmouseover="this.style.background=\'#2a4dd7\'" onmouseout="this.style.background=\'#1e3a5f\'">Abrir</button>'
+        + '</td>'
+        + '</tr>';
+    });
+  });
+
+  body.innerHTML = html;
+}
+
 </script>
 
 <!-- ═══ NEW GROUP MODAL ═══ -->
@@ -22115,6 +22369,64 @@ async function tfLoadCampaigns() {
       <button class="ct-ngm-cancel" onclick="ctHideDuplicateGroupModal()">Cancelar</button>
       <button class="ct-ngm-create" onclick="ctDuplicateGroup()">Duplicar</button>
     </div>
+  </div>
+</div>
+
+<!-- ═══ DESIGNER OVERVIEW BTN ═══ -->
+<div id="designerOverviewBtn" style="display:none;position:fixed;bottom:24px;right:24px;z-index:9000">
+  <button onclick="openDesignerOverview()" style="background:#1e3a5f;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(30,58,95,0.35);display:flex;align-items:center;gap:8px;transition:background 0.15s" onmouseover="this.style.background='#2a4dd7'" onmouseout="this.style.background='#1e3a5f'">
+    🎨 Tasks Designers
+  </button>
+</div>
+
+<!-- ═══ DESIGNER OVERVIEW MODAL ═══ -->
+<div id="designerOverviewModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center" onclick="if(event.target===this)closeDesignerOverview()">
+  <div style="background:#fff;border-radius:16px;width:92%;max-width:1100px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+
+    <!-- Header -->
+    <div style="padding:20px 24px 16px;border-bottom:1px solid #e5e7eb;flex-shrink:0">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:24px">🎨</span>
+          <div>
+            <div style="font-size:18px;font-weight:800;color:#111827">Painel de Tarefas — Designers</div>
+            <div id="doTotalCount" style="font-size:13px;color:#6b7280;margin-top:2px">0 tarefas</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <!-- Designer filter -->
+          <select id="doDesignerSelect" onchange="_doState.designerFilter=this.value;renderDesignerOverview()" style="padding:7px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;background:#f9fafb;color:#374151;cursor:pointer;font-weight:500">
+            <option value="">Todos os designers</option>
+          </select>
+          <!-- Refresh -->
+          <button onclick="openDesignerOverview()" style="background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer" title="Recarregar" onmouseover="this.style.background='#e5e7eb'" onmouseout="this.style.background='#f3f4f6'">🔄 Atualizar</button>
+          <!-- Close -->
+          <button onclick="closeDesignerOverview()" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">✕ Fechar</button>
+        </div>
+      </div>
+      <!-- Pipeline pills -->
+      <div id="doPillsContainer" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px"></div>
+    </div>
+
+    <!-- Table -->
+    <div style="overflow-y:auto;flex:1">
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb;position:sticky;top:0;z-index:1">
+            <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;width:140px">Cliente</th>
+            <th style="padding:10px 16px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px">Tarefa</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;width:140px">Status</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;width:120px">Prioridade</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;width:110px">Prazo</th>
+            <th style="padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;width:80px">Ação</th>
+          </tr>
+        </thead>
+        <tbody id="doTaskBody">
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:#6b7280">Clique em "Tasks Designers" para carregar</td></tr>
+        </tbody>
+      </table>
+    </div>
+
   </div>
 </div>
 
