@@ -16857,13 +16857,19 @@ function ctOpenLightbox(url, isVideo) {
     if (val) {
       var matchCount = _calFiltered.length;
       var debugInfo = {};
+      var statusBreakdown = {};
       _calAllPosts.forEach(function(p) {
         var key = p.client_key || p.client_name || 'UNKNOWN';
         debugInfo[key] = (debugInfo[key] || 0) + 1;
       });
+      _calFiltered.forEach(function(p) {
+        var s = (p.status || 'UNKNOWN').toUpperCase();
+        statusBreakdown[s] = (statusBreakdown[s] || 0) + 1;
+      });
       console.log('[Cal] Filter selected:', val);
       console.log('[Cal] Posts per client_key:', debugInfo);
       console.log('[Cal] Filtered posts for ' + val + ':', matchCount);
+      console.log('[Cal] Status breakdown for ' + val + ':', statusBreakdown);
 
       // Show detailed structure of first 3 filtered posts
       if (_calFiltered.length > 0) {
