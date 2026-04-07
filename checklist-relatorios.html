@@ -22475,9 +22475,20 @@ var _doState = {
 var DESIGNER_NAMES = ['Henrique', 'Daniela'];
 
 function showDesignerOverviewBtn() {
-  if (gpState.user && gpState.user.role !== 'designer') {
-    var btn = document.getElementById('designerOverviewBtn');
-    if (btn) btn.style.display = 'block';
+  if (!gpState.user || gpState.user.role === 'designer') return;
+  var btn = document.getElementById('designerOverviewBtn');
+  if (btn) {
+    btn.style.display = 'block';
+  } else {
+    // DOM not ready yet (IIFE restore runs before end of HTML) — retry after parse
+    document.addEventListener('DOMContentLoaded', function() {
+      var b = document.getElementById('designerOverviewBtn');
+      if (b && gpState.user && gpState.user.role !== 'designer') b.style.display = 'block';
+    });
+    setTimeout(function() {
+      var b = document.getElementById('designerOverviewBtn');
+      if (b && gpState.user && gpState.user.role !== 'designer') b.style.display = 'block';
+    }, 500);
   }
 }
 
