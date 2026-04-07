@@ -16972,14 +16972,90 @@ function ctOpenLightbox(url, isVideo) {
           .catch(function() { return []; })
       : Promise.resolve([]));
 
-    // 4. Meta Planner (published FB posts from Graph API)
+    // 4. Content tasks with "agendado" status (from content management)
+    var tasksPromise = (_supabase
+      ? _supabase.from('content_tasks')
+          .select('id,name,status,due_date,copy_text,publish_config,client_id,group_id')
+          .in('status', ['agendado', 'agendar'])
+          .not('due_date', 'is', null)
+          .order('due_date', { ascending: true })
+          .then(function(res) {
+            var tasks = res.data || [];
+            var entries = [];
+            tasks.forEach(function(t) {
+              // If publish_config has entries with scheduled_for, use those (most accurate)
+              var pcEntries = [];
+              if (t.publish_config) {
+                var allEntries = (t.publish_config.entries || []);
+                // Also gather from format-specific keys
+                ['feed','story','carrossel','reels'].forEach(function(fmt) {
+                  if (t.publish_config[fmt] && t.publish_config[fmt].entries) {
+                    allEntries = allEntries.concat(t.publish_config[fmt].entries);
+                  }
+                });
+                pcEntries = allEntries.filter(function(e) {
+                  return e.status === 'scheduled' && e.scheduled_for;
+                });
+              }
+
+              if (pcEntries.length > 0) {
+                // Use actual scheduled times from publish_config
+                pcEntries.forEach(function(e) {
+                  var clientKey = t.client_id || '';
+                  var clientName = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey].name : clientKey;
+                  entries.push({
+                    id: 'task_' + t.id + '_' + e.platform,
+                    post_id: e.post_id || ('task_' + t.id + '_' + e.platform),
+                    platform: e.platform || 'instagram',
+                    client_key: clientKey,
+                    client_name: clientName,
+                    status: 'SCHEDULED',
+                    caption: t.copy_text || t.name || '',
+                    has_image: false,
+                    image_url: null,
+                    scheduled_for: e.scheduled_for,
+                    created_at: t.due_date ? t.due_date + 'T12:00:00' : null,
+                    source: 'content_task',
+                    task_id: t.id,
+                    task_name: t.name,
+                  });
+                });
+              } else if (t.due_date) {
+                // No publish_config entries — use due_date as fallback (noon local)
+                var clientKey = t.client_id || '';
+                var clientName = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey].name : clientKey;
+                entries.push({
+                  id: 'task_' + t.id,
+                  post_id: 'task_' + t.id,
+                  platform: 'instagram',
+                  client_key: clientKey,
+                  client_name: clientName,
+                  status: 'SCHEDULED',
+                  caption: t.copy_text || t.name || '',
+                  has_image: false,
+                  image_url: null,
+                  scheduled_for: t.due_date + 'T12:00:00',
+                  created_at: t.due_date + 'T12:00:00',
+                  source: 'content_task',
+                  task_id: t.id,
+                  task_name: t.name,
+                });
+              }
+            });
+            return entries;
+          })
+          .catch(function() { return []; })
+      : Promise.resolve([]));
+
+    // 5. Meta Planner (published FB posts from Graph API)
     var metaPlannerPromise = calFetchMetaPlannerPosts();
 
-    Promise.all([historyPromise, scheduledPromise, queuedPromise, metaPlannerPromise]).then(function(results) {
+    Promise.all([historyPromise, scheduledPromise, queuedPromise, tasksPromise, metaPlannerPromise]).then(function(results) {
       var history = results[0];
       var scheduled = results[1];
       var queued = results[2];
-      var planner = results[3];
+      var tasks = results[3];
+      var planner = results[4];
 
       // Merge all sources, deduplicate by post_id
       var seen = {};
@@ -16995,6 +17071,7 @@ function ctOpenLightbox(url, isVideo) {
       history.forEach(addEntry);
       scheduled.forEach(addEntry);   // ensures ALL scheduled posts appear
       queued.forEach(addEntry);      // ensures QUEUED IG posts appear
+      tasks.forEach(addEntry);       // content tasks with "agendado" status
       var newFromPlanner = planner.filter(function(p) { return !seen[p.post_id]; });
       newFromPlanner.forEach(addEntry);
 
@@ -17003,9 +17080,9 @@ function ctOpenLightbox(url, isVideo) {
       _calLoadedAt = Date.now();
       calPopulateClientFilter();
       window.calFilterClient();
-      var schCount = scheduled.length + queued.length;
+      var schCount = scheduled.length + queued.length + tasks.length;
       if (schCount > 0) {
-        console.info('[Cal] Agendados: ' + schCount + ' posts (' + scheduled.length + ' histórico + ' + queued.length + ' fila)');
+        console.info('[Cal] Agendados: ' + schCount + ' posts (' + scheduled.length + ' histórico + ' + queued.length + ' fila + ' + tasks.length + ' tasks)');
       }
       if (newFromPlanner.length > 0) {
         console.info('[Cal] Meta Planner: ' + newFromPlanner.length + ' posts importados');
@@ -17441,6 +17518,8 @@ function ctOpenLightbox(url, isVideo) {
           gHtml += '<div class="pw-label-archived">Falhou</div>';
         } else if (status === 'queued') {
           gHtml += '<div class="pw-label-archived" style="color:#3b82f6">Na fila</div>';
+        } else if (p.source === 'content_task') {
+          gHtml += '<div class="pw-label-archived" style="color:#8b5cf6">📋 ' + (p.task_name || 'Agendado').substring(0, 20) + '</div>';
         }
 
         gHtml += '</div></div>'; // end body + card
