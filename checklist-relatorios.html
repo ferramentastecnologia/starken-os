@@ -20853,10 +20853,27 @@ var CT_FORMATS = {
 };
 
 function ctRenderFormatBadge(publishConfig) {
-  var type = (publishConfig && publishConfig.content_type) || '';
-  var fmt = CT_FORMATS[type];
-  if (!fmt) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
-  return '<div><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + fmt.bg + ';color:' + fmt.color + ';white-space:nowrap;letter-spacing:0.01em">' + fmt.label + '</span></div>';
+  if (!publishConfig) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
+
+  // Check new multi-format system first
+  var formats = publishConfig.formats || [];
+  if (formats.length === 0) {
+    // Fallback to old content_type field for backward compatibility
+    var type = publishConfig.content_type || '';
+    if (!type) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
+    formats = [type];
+  }
+
+  // Render badges for all selected formats
+  var html = '<div style="display:flex;gap:2px;flex-wrap:wrap">';
+  formats.forEach(function(type) {
+    var fmt = CT_FORMATS[type];
+    if (fmt) {
+      html += '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + fmt.bg + ';color:' + fmt.color + ';white-space:nowrap;letter-spacing:0.01em">' + fmt.label + '</span>';
+    }
+  });
+  html += '</div>';
+  return html;
 }
 
 // ─── MULTI-FORMAT SYSTEM ───
