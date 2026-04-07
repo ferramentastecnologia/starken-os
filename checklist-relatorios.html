@@ -17132,11 +17132,11 @@ function ctOpenLightbox(url, isVideo) {
           })
       : Promise.resolve([]));
 
-    // 5. Meta Planner (published FB posts from Graph API) — with 10 second timeout
+    // 5. Meta Planner (published FB posts from Graph API) — with 30 second timeout
     var metaPlannerPromise = Promise.race([
       calFetchMetaPlannerPosts(),
       new Promise(function(_, reject) {
-        setTimeout(function() { reject(new Error('Meta Planner timeout')); }, 10000);
+        setTimeout(function() { reject(new Error('Meta Planner timeout')); }, 30000);
       })
     ]).catch(function(err) {
       console.warn('[Cal] Meta Planner fetch timed out or failed:', err.message);
