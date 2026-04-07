@@ -16851,6 +16851,21 @@ function ctOpenLightbox(url, isVideo) {
     _calFiltered = val
       ? _calAllPosts.filter(function(p) { return p.client_key === val || p.client_name === val; })
       : _calAllPosts.slice();
+
+    // DEBUG: Show filtering details
+    if (val) {
+      var matchCount = _calFiltered.length;
+      var debugInfo = {};
+      _calAllPosts.forEach(function(p) {
+        var key = p.client_key || p.client_name || 'UNKNOWN';
+        debugInfo[key] = (debugInfo[key] || 0) + 1;
+      });
+      console.debug('[Cal] Filter selected:', val);
+      console.debug('[Cal] Posts per client_key:', debugInfo);
+      console.debug('[Cal] Filtered posts for ' + val + ':', matchCount);
+      console.debug('[Cal] Sample filtered posts:', _calFiltered.slice(0, 3));
+    }
+
     calRender();
     if (_calSelected) calShowDayDetail(_calSelected);
   };
@@ -17146,6 +17161,7 @@ function ctOpenLightbox(url, isVideo) {
     var clientName = client.name || client.pageName || client._key || '';
     var clientKey  = client._key || '';
     var posts = [];
+    console.debug('[Cal] calFetchClientMetaPosts: clientKey=' + clientKey + ', clientName=' + clientName);
 
     var seenIds = {};
     function _addMetaPost(p, status, dateField) {
@@ -17218,6 +17234,12 @@ function ctOpenLightbox(url, isVideo) {
       console.warn('[Cal] Meta Planner fetch failed for ' + clientName + ':', e.message);
     }
 
+    console.debug('[Cal] calFetchClientMetaPosts: clientKey=' + clientKey + ' returned ' + posts.length + ' posts');
+    if (posts.length > 0) {
+      var statuses = {};
+      posts.forEach(function(p) { statuses[p.status] = (statuses[p.status] || 0) + 1; });
+      console.debug('[Cal]   - Breakdown: ', statuses);
+    }
     return posts;
   }
 
@@ -17255,6 +17277,8 @@ function ctOpenLightbox(url, isVideo) {
       }
     });
     clients.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+    console.debug('[Cal] Dropdown clients:', clients);
 
     var html = '<option value="">Todos os clientes</option>';
     clients.forEach(function(c) {
