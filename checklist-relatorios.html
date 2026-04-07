@@ -17132,16 +17132,18 @@ function ctOpenLightbox(url, isVideo) {
           })
       : Promise.resolve([]));
 
-    // 5. Meta Planner (published FB posts from Graph API) — with 30 second timeout
-    var metaPlannerPromise = Promise.race([
-      calFetchMetaPlannerPosts(),
-      new Promise(function(_, reject) {
-        setTimeout(function() { reject(new Error('Meta Planner timeout')); }, 30000);
+    // 5. Meta Planner (published FB posts from Graph API) — no timeout, let it finish
+    var metaPlannerStartTime = Date.now();
+    var metaPlannerPromise = calFetchMetaPlannerPosts()
+      .then(function(posts) {
+        var elapsed = Date.now() - metaPlannerStartTime;
+        console.log('[Cal] Meta Planner completed in ' + (elapsed / 1000).toFixed(1) + 's with ' + posts.length + ' posts');
+        return posts;
       })
-    ]).catch(function(err) {
-      console.warn('[Cal] Meta Planner fetch timed out or failed:', err.message);
-      return []; // Return empty array if timeout
-    });
+      .catch(function(err) {
+        console.warn('[Cal] Meta Planner fetch failed:', err.message);
+        return [];
+      });
 
     Promise.all([historyPromise, scheduledPromise, queuedPromise, tasksPromise, metaPlannerPromise]).then(function(results) {
       var history = results[0];
@@ -17215,9 +17217,9 @@ function ctOpenLightbox(url, isVideo) {
     var clientList = Object.keys(clients).map(function(k) { return Object.assign({ _key: k }, clients[k]); });
     if (!clientList.length) return allPosts;
 
-    // Fetch in parallel (max 10 at a time to speed up — Meta is usually OK with this)
+    // Fetch in parallel (max 15 at a time for faster completion)
     var chunks = [];
-    for (var i = 0; i < clientList.length; i += 10) chunks.push(clientList.slice(i, i + 10));
+    for (var i = 0; i < clientList.length; i += 15) chunks.push(clientList.slice(i, i + 15));
 
     for (var ci = 0; ci < chunks.length; ci++) {
       var chunkResults = await Promise.allSettled(chunks[ci].map(function(client) {
