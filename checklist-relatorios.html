@@ -3620,7 +3620,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button class="client-nav-btn" onclick="clientNavSwitch('calendar')" id="clientNavBtnCalendar">📅 Calendário</button>
             <button class="client-nav-btn" onclick="clientNavSwitch('info')" id="clientNavBtnInfo">ℹ️ Infos</button>
           </div>
-          <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px">📋 Gestão de Conteúdo</h2>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <h2 style="font-size:1.2rem;font-weight:700;margin:0">📋 Gestão de Conteúdo</h2>
+            <div style="display:flex;gap:4px;background:rgba(0,0,0,0.1);padding:4px;border-radius:6px">
+              <button id="ctTabGeneral" onclick="ctSwitchTab('general')" style="padding:6px 12px;border:none;background:var(--accent,#3b82f6);color:white;border-radius:4px;cursor:pointer;font-size:0.85rem;font-weight:500">✓ Conteúdos Gerais</button>
+              <button id="ctTabStories" onclick="ctSwitchTab('stories')" style="padding:6px 12px;border:none;background:transparent;color:var(--text,#1f2937);border-radius:4px;cursor:pointer;font-size:0.85rem;font-weight:500">📖 Stories Recorrentes</button>
+            </div>
+          </div>
 
           <!-- Toolbar -->
           <div class="ct-toolbar">
@@ -3633,11 +3639,6 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <span id="ctCronoStatus" style="display:none"></span>
             <span id="ctCronoSendBtn" style="display:none"></span>
             <div style="flex:1"></div>
-            <select id="ctCategoryFilter" onchange="ctRenderList()">
-              <option value="">Todos os tipos</option>
-              <option value="general">Conteúdos Gerais</option>
-              <option value="stories">Stories Recorrentes</option>
-            </select>
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
             </select>
@@ -13273,6 +13274,7 @@ const CT_USERS = [
 
 let ctGroups = [];
 let ctCurrentClient = '';
+let ctCurrentTab = 'general'; // 'general' or 'stories'
 let ctModalTask = null;
 let ctExpandedGroups = {};
 let ctExpandedTasks = {};
@@ -13340,6 +13342,25 @@ function ctLoadStatusFilter() {
 }
 
 // ─── LOAD GROUPS + TASKS ───
+function ctSwitchTab(tab) {
+  ctCurrentTab = tab;
+  // Update button styles
+  const generalBtn = document.getElementById('ctTabGeneral');
+  const storiesBtn = document.getElementById('ctTabStories');
+  if (tab === 'general') {
+    if (generalBtn) generalBtn.style.background = 'var(--accent,#3b82f6)';
+    if (generalBtn) generalBtn.style.color = 'white';
+    if (storiesBtn) storiesBtn.style.background = 'transparent';
+    if (storiesBtn) storiesBtn.style.color = 'var(--text,#1f2937)';
+  } else {
+    if (generalBtn) generalBtn.style.background = 'transparent';
+    if (generalBtn) generalBtn.style.color = 'var(--text,#1f2937)';
+    if (storiesBtn) storiesBtn.style.background = 'var(--accent,#3b82f6)';
+    if (storiesBtn) storiesBtn.style.color = 'white';
+  }
+  ctRenderList();
+}
+
 async function ctLoadGroups() {
   const clientId = document.getElementById('ctClientFilter').value;
   ctCurrentClient = clientId;
@@ -13659,19 +13680,17 @@ function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
   const assigneeFilter = document.getElementById('ctAssigneeFilter').value;
-  const categoryFilter = document.getElementById('ctCategoryFilter').value;
 
   if (ctGroups.length === 0) {
     body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px">📭</div>Nenhum grupo criado. Clique em "+ Novo Grupo" para começar.</div>';
     return;
   }
 
-  // Filter groups by category
+  // Filter groups by tab (general vs stories)
   var filteredGroups = ctGroups.filter(function(group) {
-    if (!categoryFilter) return true; // Show all if no filter
     var isRecurring = group.name && group.name.toUpperCase().includes('STORIES RECORRENTES');
-    if (categoryFilter === 'stories') return isRecurring;
-    if (categoryFilter === 'general') return !isRecurring;
+    if (ctCurrentTab === 'stories') return isRecurring;
+    if (ctCurrentTab === 'general') return !isRecurring;
     return true;
   });
 
