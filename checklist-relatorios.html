@@ -5385,8 +5385,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── DESIGNER OVERVIEW BTN: show for non-designers after DOM ready ───
   setTimeout(function() {
-    if (typeof showDesignerOverviewBtn === 'function') showDesignerOverviewBtn();
-  }, 600);
+    try {
+      var _sess = JSON.parse(localStorage.getItem('starkenSession') || 'null');
+      if (_sess && _sess.role !== 'designer') {
+        var _btn = document.getElementById('designerOverviewBtn');
+        if (_btn) _btn.style.display = 'block';
+      }
+    } catch(e) {}
+  }, 800);
 
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
