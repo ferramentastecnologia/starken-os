@@ -3677,6 +3677,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button onclick="ctBulkChangePriority()">🏳️ Prioridade</button>
             <button onclick="ctBulkSchedule()" style="background:rgba(59,130,246,0.8)">🚀 Agendar</button>
             <button onclick="ctBulkDuplicate()" style="background:rgba(139,92,246,0.8)">📋 Duplicar</button>
+            <div style="position:relative;display:inline-block" id="ctMoveGroupWrap">
+              <button onclick="ctBulkMoveToggle()" style="background:rgba(16,185,129,0.85)">📌 Mover</button>
+              <div id="ctMoveGroupDropdown" style="display:none;position:absolute;bottom:44px;left:0;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);min-width:200px;z-index:99999;overflow:hidden"></div>
+            </div>
             <button class="ct-ab-delete" onclick="ctBulkDelete()">🗑️ Excluir</button>
             <button onclick="ctClearSelection()" style="font-size:0.75rem;padding:6px 10px">✕</button>
           </div>
@@ -16242,6 +16246,64 @@ async function bsExecute() {
   alert('✅ ' + successCount + ' publicações processadas!' + (failCount > 0 ? '\n⚠️ ' + failCount + ' falhas.' : ''));
   ctClearSelection();
   ctLoadGroups();
+}
+
+function ctBulkMoveToggle() {
+  var dd = document.getElementById('ctMoveGroupDropdown');
+  if (!dd) return;
+  if (dd.style.display === 'block') { dd.style.display = 'none'; return; }
+  // Build group list (exclude groups the selected tasks already belong to)
+  // Flatten all tasks from ctGroups to find selected ones
+  var _allTasks = [];
+  ctGroups.forEach(function(g) { if (g.tasks) _allTasks = _allTasks.concat(g.tasks); });
+  var selectedTaskObjs = _allTasks.filter(function(t) { return ctSelectedIds.has(t.id); });
+  var currentGroupIds = new Set(selectedTaskObjs.map(function(t) { return t.group_id; }));
+  var html = '';
+  ctGroups.forEach(function(g) {
+    var isCurrent = currentGroupIds.size === 1 && currentGroupIds.has(g.id);
+    html += '<div onclick="ctBulkMoveToGroup(\'' + g.id + '\',\'' + (g.name||'').replace(/'/g,"\\'") + '\')" '
+      + 'style="padding:10px 16px;cursor:pointer;font-size:13px;font-weight:500;color:' + (isCurrent ? '#9ca3af' : '#111827') + ';'
+      + (isCurrent ? '' : 'transition:background 0.1s;') + 'display:flex;align-items:center;gap:8px;border-bottom:1px solid #f3f4f6" '
+      + (isCurrent ? '' : 'onmouseover="this.style.background=\'#f0fdf4\'" onmouseout="this.style.background=\'\'"')
+      + '>'
+      + '<span style="font-size:16px">📁</span>'
+      + (g.name || 'Sem nome')
+      + (isCurrent ? ' <span style="font-size:11px;color:#9ca3af">(atual)</span>' : '')
+      + '</div>';
+  });
+  if (!html) html = '<div style="padding:12px 16px;color:#9ca3af;font-size:13px">Nenhum outro grupo disponível</div>';
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+  // Close on outside click
+  setTimeout(function() {
+    document.addEventListener('click', function _close(e) {
+      var wrap = document.getElementById('ctMoveGroupWrap');
+      if (wrap && !wrap.contains(e.target)) { dd.style.display = 'none'; document.removeEventListener('click', _close); }
+    });
+  }, 50);
+}
+
+async function ctBulkMoveToGroup(groupId, groupName) {
+  var dd = document.getElementById('ctMoveGroupDropdown');
+  if (dd) dd.style.display = 'none';
+  var count = ctSelectedIds.size;
+  if (count === 0) return;
+  var label = 'Mover ' + count + ' tarefa' + (count !== 1 ? 's' : '') + ' para "' + groupName + '"?';
+  if (!confirm(label)) return;
+  var ids = Array.from(ctSelectedIds);
+  var btn = document.querySelector('#ctMoveGroupWrap button');
+  if (btn) { btn.disabled = true; btn.textContent = 'Movendo...'; }
+  try {
+    await Promise.all(ids.map(function(id) {
+      return ctApi('upsert_task', { id: id, group_id: groupId, user: ctGetUser() });
+    }));
+    ctClearSelection();
+    ctLoadGroups();
+  } catch(e) {
+    alert('Erro ao mover tarefas.');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📌 Mover'; }
+  }
 }
 
 async function ctBulkDuplicate() {
