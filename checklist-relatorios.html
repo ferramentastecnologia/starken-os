@@ -8974,7 +8974,7 @@ const GP_USERS = [
   { name:'Emilly',   role:'editor',   color:'#f59e0b' },
   { name:'Leonardo', role:'admin',    color:'#a855f7' },
   { name:'Dante',    role:'executor', color:'#f97316' },
-  { name:'Daniela',  role:'designer', color:'#ec4899' }
+  { name:'Daniela',  role:'designer', color:'#ec4899', disabled:true }
 ];
 
 const GP_STATUSES = [
@@ -9054,6 +9054,13 @@ async function doLogin() {
 
     if (!user) {
       document.getElementById('loginError').classList.add('show');
+      return;
+    }
+    // Check if user account is disabled
+    const gpUserCheck = GP_USERS.find(u => u.name === user.name);
+    if (gpUserCheck && gpUserCheck.disabled) {
+      const errEl = document.getElementById('loginError');
+      if (errEl) { errEl.textContent = 'Acesso temporariamente suspenso. Contate o administrador.'; errEl.classList.add('show'); }
       return;
     }
     activateSession(user);
