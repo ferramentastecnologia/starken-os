@@ -14753,8 +14753,16 @@ function ctRenderModalTree() {
   const el = document.getElementById('ctModalTree');
   if (!ctModalTask) { el.innerHTML = ''; return; }
 
+  // Filter groups to match the active tab (same logic as ctRenderList)
+  const visibleGroups = ctGroups.filter(function(g) {
+    var isRecurring = g.name && g.name.toUpperCase().includes('STORIES RECORRENTES');
+    if (ctCurrentTab === 'stories') return isRecurring;
+    if (ctCurrentTab === 'general') return !isRecurring;
+    return true;
+  });
+
   let html = '';
-  ctGroups.forEach(g => {
+  visibleGroups.forEach(g => {
     html += '<div style="font-weight:600;font-size:0.78rem;padding:4px 10px;color:var(--text-secondary);margin-top:8px">📁 ' + g.name + '</div>';
     (g.tasks || []).forEach(t => {
       const isActive = t.id === ctModalTask.id;
