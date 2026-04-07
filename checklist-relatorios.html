@@ -16861,10 +16861,10 @@ function ctOpenLightbox(url, isVideo) {
         var key = p.client_key || p.client_name || 'UNKNOWN';
         debugInfo[key] = (debugInfo[key] || 0) + 1;
       });
-      console.debug('[Cal] Filter selected:', val);
-      console.debug('[Cal] Posts per client_key:', debugInfo);
-      console.debug('[Cal] Filtered posts for ' + val + ':', matchCount);
-      console.debug('[Cal] Sample filtered posts:', _calFiltered.slice(0, 3));
+      console.log('[Cal] Filter selected:', val);
+      console.log('[Cal] Posts per client_key:', debugInfo);
+      console.log('[Cal] Filtered posts for ' + val + ':', matchCount);
+      console.log('[Cal] Sample filtered posts:', _calFiltered.slice(0, 3));
     }
 
     calRender();
