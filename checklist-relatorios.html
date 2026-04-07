@@ -16848,6 +16848,7 @@ function ctOpenLightbox(url, isVideo) {
 
   window.calFilterClient = function() {
     var val = document.getElementById('calClientFilter').value;
+    console.log('[Cal] calFilterClient called with value:', val); // ALWAYS log
     _calFiltered = val
       ? _calAllPosts.filter(function(p) { return p.client_key === val || p.client_name === val; })
       : _calAllPosts.slice();
