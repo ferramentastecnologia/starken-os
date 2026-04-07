@@ -16980,7 +16980,9 @@ function ctOpenLightbox(url, isVideo) {
           .not('due_date', 'is', null)
           .order('due_date', { ascending: true })
           .then(function(res) {
+            console.debug('[Cal] tasksPromise result:', res);
             var tasks = res.data || [];
+            console.debug('[Cal] tasks count:', tasks.length);
             var entries = [];
             tasks.forEach(function(t) {
               // If publish_config has entries with scheduled_for, use those (most accurate)
@@ -17042,9 +17044,13 @@ function ctOpenLightbox(url, isVideo) {
                 });
               }
             });
+            console.debug('[Cal] tasks entries created:', entries.length);
             return entries;
           })
-          .catch(function() { return []; })
+          .catch(function(err) {
+            console.error('[Cal] tasksPromise error:', err);
+            return [];
+          })
       : Promise.resolve([]));
 
     // 5. Meta Planner (published FB posts from Graph API)
@@ -17076,6 +17082,8 @@ function ctOpenLightbox(url, isVideo) {
       newFromPlanner.forEach(addEntry);
 
       _calAllPosts = merged;
+      console.debug('[Cal] _calAllPosts total entries:', merged.length);
+      console.debug('[Cal] _calAllPosts SCHEDULED count:', merged.filter(function(p) { return p.status === 'SCHEDULED'; }).length);
       _calLoaded = true;
       _calLoadedAt = Date.now();
       calPopulateClientFilter();
