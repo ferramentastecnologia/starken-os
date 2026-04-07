@@ -17002,54 +17002,72 @@ function ctOpenLightbox(url, isVideo) {
     var clientKey  = client._key || '';
     var posts = [];
 
+    var seenIds = {};
+    function _addMetaPost(p, status, dateField) {
+      if (seenIds[p.id]) return;
+      seenIds[p.id] = true;
+      var pic = p.full_picture
+        || (p.attachments && p.attachments.data && p.attachments.data[0]
+            && p.attachments.data[0].media && p.attachments.data[0].media.image
+            && p.attachments.data[0].media.image.src)
+        || '';
+      var scheduledFor = '';
+      if (p.scheduled_publish_time) {
+        scheduledFor = new Date(parseInt(p.scheduled_publish_time) * 1000).toISOString();
+      } else if (p.created_time) {
+        scheduledFor = p.created_time;
+      }
+      posts.push({
+        post_id:      p.id,
+        platform:     'facebook',
+        client_key:   clientKey,
+        client_name:  clientName,
+        status:       status,
+        scheduled_for: scheduledFor,
+        caption:      p.message || p.story || '',
+        image_url:    pic,
+        source:       'meta_planner',
+      });
+    }
+
     try {
-      // 1. Scheduled posts from Meta Planner / Business Suite
+      // 1. Scheduled posts via Graph API (programmatic scheduling)
       var schedUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/scheduled_posts'
         + '?fields=id,message,scheduled_publish_time,full_picture,attachments'
         + '&limit=50&access_token=' + encodeURIComponent(pageToken);
       var schedRes  = await fetch(schedUrl);
       var schedData = await schedRes.json();
       if (schedData.data) {
-        schedData.data.forEach(function(p) {
-          var pic = p.full_picture || (p.attachments && p.attachments.data && p.attachments.data[0] && p.attachments.data[0].media && p.attachments.data[0].media.image && p.attachments.data[0].media.image.src) || '';
-          posts.push({
-            post_id:      p.id,
-            platform:     'facebook',
-            client_key:   clientKey,
-            client_name:  clientName,
-            status:       'SCHEDULED',
-            scheduled_for: p.scheduled_publish_time ? new Date(parseInt(p.scheduled_publish_time) * 1000).toISOString() : '',
-            caption:      p.message || '',
-            image_url:    pic,
-            source:       'meta_planner',
-          });
+        schedData.data.forEach(function(p) { _addMetaPost(p, 'SCHEDULED'); });
+      }
+
+      // 2. Promotable posts (unpublished) — includes Business Suite scheduled posts
+      var promoUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/promotable_posts'
+        + '?is_published=false'
+        + '&fields=id,message,story,scheduled_publish_time,full_picture,attachments'
+        + '&limit=50&access_token=' + encodeURIComponent(pageToken);
+      var promoRes  = await fetch(promoUrl);
+      var promoData = await promoRes.json();
+      if (promoData.data) {
+        promoData.data.forEach(function(p) {
+          // Only include if has a scheduled time (skip drafts)
+          if (p.scheduled_publish_time) {
+            _addMetaPost(p, 'SCHEDULED');
+          }
         });
       }
 
-      // 2. Recently published FB posts (last 60 days) for calendar completeness
+      // 3. Recently published FB posts (last 60 days) for calendar completeness
       var since = Math.floor((Date.now() - 60 * 24 * 3600 * 1000) / 1000);
       var pubUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
-        + '?fields=id,message,created_time,full_picture,attachments'
+        + '?fields=id,message,story,created_time,full_picture,attachments'
         + '&since=' + since + '&limit=50&access_token=' + encodeURIComponent(pageToken);
       var pubRes  = await fetch(pubUrl);
       var pubData = await pubRes.json();
       if (pubData.data) {
         pubData.data.forEach(function(p) {
-          // Only include actual posts (not shares/links without media)
-          if (!p.message && !p.full_picture) return;
-          var pic = p.full_picture || (p.attachments && p.attachments.data && p.attachments.data[0] && p.attachments.data[0].media && p.attachments.data[0].media.image && p.attachments.data[0].media.image.src) || '';
-          posts.push({
-            post_id:     p.id,
-            platform:    'facebook',
-            client_key:  clientKey,
-            client_name: clientName,
-            status:      'PUBLISHED',
-            created_at:  p.created_time || '',
-            scheduled_for: p.created_time || '',
-            caption:     p.message || '',
-            image_url:   pic,
-            source:      'meta_planner',
-          });
+          if (!p.message && !p.full_picture && !p.story) return;
+          _addMetaPost(p, 'PUBLISHED');
         });
       }
     } catch(e) {
