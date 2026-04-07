@@ -3620,7 +3620,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button class="client-nav-btn" onclick="clientNavSwitch('calendar')" id="clientNavBtnCalendar">📅 Calendário</button>
             <button class="client-nav-btn" onclick="clientNavSwitch('info')" id="clientNavBtnInfo">ℹ️ Infos</button>
           </div>
-          <h2 style="font-size:1.2rem;font-weight:700;margin-bottom:16px">📋 Gestão de Conteúdo</h2>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <h2 style="font-size:1.2rem;font-weight:700;margin:0">📋 Gestão de Conteúdo</h2>
+            <div style="display:flex;gap:4px;background:rgba(0,0,0,0.1);padding:4px;border-radius:6px">
+              <button id="ctTabGeneral" onclick="ctSwitchTab('general')" style="padding:6px 12px;border:none;background:var(--accent,#3b82f6);color:white;border-radius:4px;cursor:pointer;font-size:0.85rem;font-weight:500">✓ Conteúdos Gerais</button>
+              <button id="ctTabStories" onclick="ctSwitchTab('stories')" style="padding:6px 12px;border:none;background:transparent;color:var(--text,#1f2937);border-radius:4px;cursor:pointer;font-size:0.85rem;font-weight:500">📖 Stories Recorrentes</button>
+            </div>
+          </div>
 
           <!-- Toolbar -->
           <div class="ct-toolbar">
@@ -5963,6 +5969,7 @@ function renderSidebarFolder(folderId) {
         '<span style="color:#3b82f6">&#11088;</span> Starken Performance' +
         '<span class="sidebar-folder-count" id="countStarken">25</span>' +
       '</button>' +
+      '<input type="text" id="searchStarken" placeholder="Buscar..." style="display:none;width:100%;padding:6px 12px;margin:6px 0;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:0.75rem" oninput="sidebarFilterClients(\'starken\')">' +
       '<div class="sidebar-folder-items" id="itemsStarken" style="display:none"></div>' +
     '</div>';
   }
@@ -5973,6 +5980,7 @@ function renderSidebarFolder(folderId) {
         '<span style="color:#f59e0b">&#128310;</span> Alpha Assessoria' +
         '<span class="sidebar-folder-count" id="countAlpha">10</span>' +
       '</button>' +
+      '<input type="text" id="searchAlpha" placeholder="Buscar..." style="display:none;width:100%;padding:6px 12px;margin:6px 0;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:0.75rem" oninput="sidebarFilterClients(\'alpha\')">' +
       '<div class="sidebar-folder-items" id="itemsAlpha" style="display:none"></div>' +
     '</div>';
   }
@@ -6542,34 +6550,73 @@ function populateSidebarClients() {
   const alphaItems = document.getElementById('itemsAlpha');
   if (!starkenItems || !alphaItems) return;
 
+  // Collect and sort clients alphabetically
+  var starkenClients = [];
+  var alphaClients = [];
+  Object.entries(clients).forEach(function([key, c]) {
+    var entry = { key: key, name: c.name || key, tenant: c.tenant };
+    if (c.tenant === 'alpha') alphaClients.push(entry);
+    else starkenClients.push(entry);
+  });
+  starkenClients.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  alphaClients.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
   let starkenHtml = '';
   let alphaHtml = '';
-  let starkenCount = 0;
-  let alphaCount = 0;
 
-  Object.entries(clients).forEach(function([key, c]) {
-    const btn = '<button class="sidebar-client-btn" data-client="' + key + '" onclick="sidebarSelectClient(\'' + key + '\')">' + (c.name || key) + '</button>';
-    if (c.tenant === 'alpha') { alphaHtml += btn; alphaCount++; }
-    else { starkenHtml += btn; starkenCount++; }
+  starkenClients.forEach(function(c) {
+    const btn = '<button class="sidebar-client-btn" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')">' + c.name + '</button>';
+    starkenHtml += btn;
+  });
+
+  alphaClients.forEach(function(c) {
+    const btn = '<button class="sidebar-client-btn" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')">' + c.name + '</button>';
+    alphaHtml += btn;
   });
 
   starkenItems.innerHTML = starkenHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
   alphaItems.innerHTML = alphaHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
-  document.getElementById('countStarken').textContent = starkenCount;
-  document.getElementById('countAlpha').textContent = alphaCount;
+  document.getElementById('countStarken').textContent = starkenClients.length;
+  document.getElementById('countAlpha').textContent = alphaClients.length;
 }
 
 function toggleSidebarFolder(folder) {
   const capitalized = folder.charAt(0).toUpperCase() + folder.slice(1);
   const items = document.getElementById('items' + capitalized);
+  const search = document.getElementById('search' + capitalized);
   const chevron = document.getElementById('chevron' + capitalized);
   if (!items) return;
   const isOpen = items.style.display !== 'none';
   items.style.display = isOpen ? 'none' : 'block';
+  if (search) search.style.display = isOpen ? 'none' : 'block';
   chevron.classList.toggle('open', !isOpen);
   const state = JSON.parse(localStorage.getItem('sidebarFolders') || '{}');
   state[folder] = !isOpen;
   localStorage.setItem('sidebarFolders', JSON.stringify(state));
+}
+
+function sidebarFilterClients(folder) {
+  const capitalized = folder.charAt(0).toUpperCase() + folder.slice(1);
+  const search = document.getElementById('search' + capitalized);
+  const items = document.getElementById('items' + capitalized);
+  if (!search || !items) return;
+
+  const query = search.value.toLowerCase();
+  const buttons = items.querySelectorAll('.sidebar-client-btn');
+  var visibleCount = 0;
+
+  buttons.forEach(function(btn) {
+    const clientName = btn.textContent.toLowerCase();
+    const matches = clientName.includes(query);
+    btn.style.display = matches ? 'flex' : 'none';
+    if (matches) visibleCount++;
+  });
+
+  // Show "nenhum cliente" message if no matches
+  if (visibleCount === 0) {
+    items.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente encontrado</div>';
+    buttons.forEach(function(btn) { items.appendChild(btn); });
+  }
 }
 
 function sidebarSelectClient(clientKey) {
@@ -13230,6 +13277,7 @@ const CT_USERS = [
 
 let ctGroups = [];
 let ctCurrentClient = '';
+let ctCurrentTab = 'general'; // 'general' or 'stories'
 let ctModalTask = null;
 let ctExpandedGroups = {};
 let ctExpandedTasks = {};
@@ -13297,6 +13345,25 @@ function ctLoadStatusFilter() {
 }
 
 // ─── LOAD GROUPS + TASKS ───
+function ctSwitchTab(tab) {
+  ctCurrentTab = tab;
+  // Update button styles
+  const generalBtn = document.getElementById('ctTabGeneral');
+  const storiesBtn = document.getElementById('ctTabStories');
+  if (tab === 'general') {
+    if (generalBtn) generalBtn.style.background = 'var(--accent,#3b82f6)';
+    if (generalBtn) generalBtn.style.color = 'white';
+    if (storiesBtn) storiesBtn.style.background = 'transparent';
+    if (storiesBtn) storiesBtn.style.color = 'var(--text,#1f2937)';
+  } else {
+    if (generalBtn) generalBtn.style.background = 'transparent';
+    if (generalBtn) generalBtn.style.color = 'var(--text,#1f2937)';
+    if (storiesBtn) storiesBtn.style.background = 'var(--accent,#3b82f6)';
+    if (storiesBtn) storiesBtn.style.color = 'white';
+  }
+  ctRenderList();
+}
+
 async function ctLoadGroups() {
   const clientId = document.getElementById('ctClientFilter').value;
   ctCurrentClient = clientId;
@@ -13622,8 +13689,16 @@ function ctRenderList() {
     return;
   }
 
+  // Filter groups by tab (general vs stories)
+  var filteredGroups = ctGroups.filter(function(group) {
+    var isRecurring = group.name && group.name.toUpperCase().includes('STORIES RECORRENTES');
+    if (ctCurrentTab === 'stories') return isRecurring;
+    if (ctCurrentTab === 'general') return !isRecurring;
+    return true;
+  });
+
   let html = '';
-  ctGroups.forEach(group => {
+  filteredGroups.forEach(group => {
     const expanded = ctExpandedGroups[group.id] !== false;
     const tasks = group.tasks || [];
     const taskCount = tasks.length;
@@ -16825,8 +16900,10 @@ function ctOpenLightbox(url, isVideo) {
   ];
 
   // ─── Public entry point ───────────────────────────────────────
+  var _calLoadedAt = 0; // timestamp of last load
   window.calInit = function() {
-    if (!_calLoaded) {
+    var stale = (Date.now() - _calLoadedAt) > 2 * 60 * 1000; // 2 min
+    if (!_calLoaded || stale) {
       calLoadData();
     } else {
       calRender();
@@ -16849,9 +16926,48 @@ function ctOpenLightbox(url, isVideo) {
 
   window.calFilterClient = function() {
     var val = document.getElementById('calClientFilter').value;
+    console.log('[Cal] calFilterClient called with value:', val); // ALWAYS log
     _calFiltered = val
       ? _calAllPosts.filter(function(p) { return p.client_key === val || p.client_name === val; })
       : _calAllPosts.slice();
+
+    // DEBUG: Show filtering details
+    if (val) {
+      var matchCount = _calFiltered.length;
+      var debugInfo = {};
+      var statusBreakdown = {};
+      _calAllPosts.forEach(function(p) {
+        var key = p.client_key || p.client_name || 'UNKNOWN';
+        debugInfo[key] = (debugInfo[key] || 0) + 1;
+      });
+      var sourceBreakdown = {};
+      _calFiltered.forEach(function(p) {
+        var s = (p.status || 'UNKNOWN').toUpperCase();
+        statusBreakdown[s] = (statusBreakdown[s] || 0) + 1;
+        var src = p.source || 'unknown';
+        sourceBreakdown[src] = (sourceBreakdown[src] || 0) + 1;
+      });
+      console.log('[Cal] Filter selected:', val);
+      console.log('[Cal] Posts per client_key:', debugInfo);
+      console.log('[Cal] Filtered posts for ' + val + ':', matchCount);
+      console.log('[Cal] Status breakdown for ' + val + ':', statusBreakdown);
+      console.log('[Cal] Source breakdown for ' + val + ':', sourceBreakdown);
+
+      // Show detailed structure of first 3 filtered posts
+      if (_calFiltered.length > 0) {
+        console.log('[Cal] First filtered post structure:');
+        var sample = _calFiltered[0];
+        console.log('  - post_id:', sample.post_id);
+        console.log('  - client_key:', sample.client_key);
+        console.log('  - client_name:', sample.client_name);
+        console.log('  - status:', sample.status);
+        console.log('  - scheduled_for:', sample.scheduled_for);
+        console.log('  - platform:', sample.platform);
+        console.log('  - source:', sample.source);
+        console.log('[Cal] Full first post:', sample);
+      }
+    }
+
     calRender();
     if (_calSelected) calShowDayDetail(_calSelected);
   };
@@ -16940,29 +17056,246 @@ function ctOpenLightbox(url, isVideo) {
     var grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<div class="cal-loading">\u23F3 Carregando posts...</div>';
 
-    // Fetch our history + Meta Planner scheduled posts in parallel
-    var historyPromise = fetch(metaApiBase() + '/api/meta/publish?limit=200')
+    // Helper: Validate and fix ISO date strings with strict format checking
+    function _validateDate(dateStr) {
+      if (!dateStr) return null;
+      try {
+        // Check format: YYYY-MM-DDTHH:MM:SS (strict)
+        var isoRegex = /^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2}):(\d{2})/;
+        var match = String(dateStr).match(isoRegex);
+        if (!match) {
+          // console.debug('[Cal] _validateDate: invalid format', dateStr);
+          return null;
+        }
+
+        var hours = parseInt(match[1], 10);
+        var mins = parseInt(match[2], 10);
+        var secs = parseInt(match[3], 10);
+
+        // Validate time ranges
+        if (hours < 0 || hours > 23) {
+          console.debug('[Cal] _validateDate: invalid hour', hours, 'in', dateStr);
+          return null;
+        }
+        if (mins < 0 || mins > 59) {
+          console.debug('[Cal] _validateDate: invalid minute', mins, 'in', dateStr);
+          return null;
+        }
+        if (secs < 0 || secs > 59) {
+          console.debug('[Cal] _validateDate: invalid second', secs, 'in', dateStr);
+          return null;
+        }
+
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) {
+          console.debug('[Cal] _validateDate: invalid date object', dateStr);
+          return null;
+        }
+
+        // Check year is reasonable
+        var year = d.getFullYear();
+        if (year < 2020 || year > 2030) {
+          console.debug('[Cal] _validateDate: year out of range', year, 'in', dateStr);
+          return null;
+        }
+
+        return d.toISOString();
+      } catch(e) {
+        console.debug('[Cal] _validateDate: exception', e.message, 'for', dateStr);
+        return null;
+      }
+    }
+
+    // 1. Published/failed history (last 300 entries) via API
+    var historyPromise = fetch(metaApiBase() + '/api/meta/publish?limit=300')
       .then(function(r) { return r.json(); })
-      .then(function(data) { return (data.history || []).filter(function(h) { return h.scheduled_for || h.created_at; }); })
+      .then(function(data) {
+        return (data.history || []).filter(function(h) {
+          // Validate dates and only keep posts with valid timestamps
+          var validDate = _validateDate(h.scheduled_for) || _validateDate(h.created_at);
+          if (!validDate) return false;
+          // Fix the date if needed
+          if (!_validateDate(h.scheduled_for)) h.scheduled_for = _validateDate(h.created_at);
+          if (!_validateDate(h.created_at)) h.created_at = _validateDate(h.scheduled_for);
+          return true;
+        });
+      })
       .catch(function() { return []; });
 
-    var metaPlannerPromise = calFetchMetaPlannerPosts();
+    // 2. ALL scheduled posts directly from Supabase (bypass limit)
+    var scheduledPromise = (_supabase
+      ? _supabase.from('publish_history').select('*').eq('status', 'SCHEDULED').order('scheduled_for', { ascending: true })
+          .then(function(res) { return res.data || []; })
+          .catch(function() { return []; })
+      : Promise.resolve([]));
 
-    Promise.all([historyPromise, metaPlannerPromise]).then(function(results) {
+    // 3. Queued IG posts from publish_queue (future scheduled, not yet published)
+    var now = new Date().toISOString();
+    var queuedPromise = (_supabase
+      ? _supabase.from('publish_queue').select('*').eq('status', 'QUEUED').gt('scheduled_for', now).order('scheduled_for', { ascending: true })
+          .then(function(res) {
+            return (res.data || []).filter(function(q) {
+              // Only include if date is valid
+              return _validateDate(q.scheduled_for);
+            }).map(function(q) {
+              return {
+                id: q.id, post_id: q.id, platform: q.platform || 'ig',
+                client_key: q.client_key, client_name: q.client_name,
+                status: 'QUEUED', caption: q.caption || '',
+                has_image: (q.image_urls || []).length > 0,
+                image_url: (q.image_urls || [])[0] || null,
+                scheduled_for: _validateDate(q.scheduled_for), created_at: _validateDate(q.created_at),
+                source: 'publish_queue',
+              };
+            });
+          })
+          .catch(function() { return []; })
+      : Promise.resolve([]));
+
+    // 4. Content tasks with "agendado" status (from content management)
+    var tasksPromise = (_supabase
+      ? _supabase.from('content_tasks')
+          .select('id,name,status,due_date,copy_text,publish_config,client_id,group_id')
+          .in('status', ['agendado', 'agendar'])
+          .not('due_date', 'is', null)
+          .order('due_date', { ascending: true })
+          .then(function(res) {
+            console.debug('[Cal] tasksPromise result:', res);
+            var tasks = res.data || [];
+            console.debug('[Cal] tasks count:', tasks.length);
+            var entries = [];
+            tasks.forEach(function(t) {
+              // If publish_config has entries with scheduled_for, use those (most accurate)
+              var pcEntries = [];
+              if (t.publish_config) {
+                var allEntries = (t.publish_config.entries || []);
+                // Also gather from format-specific keys
+                ['feed','story','carrossel','reels'].forEach(function(fmt) {
+                  if (t.publish_config[fmt] && t.publish_config[fmt].entries) {
+                    allEntries = allEntries.concat(t.publish_config[fmt].entries);
+                  }
+                });
+                pcEntries = allEntries.filter(function(e) {
+                  return e.status === 'scheduled' && e.scheduled_for;
+                });
+              }
+
+              if (pcEntries.length > 0) {
+                // Use actual scheduled times from publish_config
+                pcEntries.forEach(function(e) {
+                  var validDate = _validateDate(e.scheduled_for);
+                  if (!validDate) return; // Skip if date is invalid
+
+                  var clientKey = t.client_id || '';
+                  var clientName = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey].name : clientKey;
+                  entries.push({
+                    id: 'task_' + t.id + '_' + e.platform,
+                    post_id: e.post_id || ('task_' + t.id + '_' + e.platform),
+                    platform: e.platform || 'instagram',
+                    client_key: clientKey,
+                    client_name: clientName,
+                    status: 'SCHEDULED',
+                    caption: t.copy_text || t.name || '',
+                    has_image: false,
+                    image_url: null,
+                    scheduled_for: validDate,
+                    created_at: t.due_date ? t.due_date + 'T12:00:00' : null,
+                    source: 'content_task',
+                    task_id: t.id,
+                    task_name: t.name,
+                  });
+                });
+              } else if (t.due_date) {
+                // No publish_config entries — use due_date as fallback (noon local)
+                var validDate = _validateDate(t.due_date + 'T12:00:00');
+                if (!validDate) return; // Skip if date is invalid
+
+                var clientKey = t.client_id || '';
+                var clientName = (_metaClients && _metaClients[clientKey]) ? _metaClients[clientKey].name : clientKey;
+                entries.push({
+                  id: 'task_' + t.id,
+                  post_id: 'task_' + t.id,
+                  platform: 'instagram',
+                  client_key: clientKey,
+                  client_name: clientName,
+                  status: 'SCHEDULED',
+                  caption: t.copy_text || t.name || '',
+                  has_image: false,
+                  image_url: null,
+                  scheduled_for: validDate,
+                  created_at: validDate,
+                  source: 'content_task',
+                  task_id: t.id,
+                  task_name: t.name,
+                });
+              }
+            });
+            console.debug('[Cal] tasks entries created:', entries.length);
+            return entries;
+          })
+          .catch(function(err) {
+            console.error('[Cal] tasksPromise error:', err);
+            return [];
+          })
+      : Promise.resolve([]));
+
+    // 5. Meta Planner (DISABLED) — only use posts agendados pelo sistema
+    var metaPlannerPromise = Promise.resolve([]);
+
+    Promise.all([historyPromise, scheduledPromise, queuedPromise, tasksPromise, metaPlannerPromise]).then(function(results) {
       var history = results[0];
-      var planner = results[1];
+      var scheduled = results[1];
+      var queued = results[2];
+      var tasks = results[3];
+      var planner = results[4];
 
-      // Merge: deduplicate by post_id to avoid double-counting posts published via our system
+      // Debug: Log sources breakdown
+      console.log('[Cal] Data sources:');
+      console.log('  - history (API):', history.length, 'posts');
+      console.log('  - scheduled (Supabase):', scheduled.length, 'posts');
+      console.log('  - queued (publish_queue):', queued.length, 'posts');
+      console.log('  - tasks (content_tasks):', tasks.length, 'posts');
+      console.log('  - planner (Meta Graph API):', planner.length, 'posts');
+
+      // Merge all sources, deduplicate by post_id
       var seen = {};
-      history.forEach(function(h) { if (h.post_id) seen[h.post_id] = true; });
-      var newFromPlanner = planner.filter(function(p) { return !seen[p.post_id]; });
+      var merged = [];
 
-      _calAllPosts = history.concat(newFromPlanner);
+      function addEntry(e) {
+        var key = e.post_id || e.id || '';
+        if (key && seen[key]) return;
+        if (key) seen[key] = true;
+        merged.push(e);
+      }
+
+      history.forEach(addEntry);
+      scheduled.forEach(addEntry);   // ensures ALL scheduled posts appear
+      queued.forEach(addEntry);      // ensures QUEUED IG posts appear
+      tasks.forEach(addEntry);       // content tasks with "agendado" status
+      var newFromPlanner = planner.filter(function(p) { return !seen[p.post_id]; });
+      newFromPlanner.forEach(addEntry);
+
+      _calAllPosts = merged;
+      console.debug('[Cal] _calAllPosts total entries:', merged.length);
+      console.debug('[Cal] _calAllPosts SCHEDULED count:', merged.filter(function(p) { return p.status === 'SCHEDULED'; }).length);
+
+      // Debug: Group by date
+      var byDate = {};
+      merged.forEach(function(p) {
+        var d = p.scheduled_for || p.created_at || '';
+        if (d) {
+          var iso = d.split('T')[0];
+          byDate[iso] = (byDate[iso] || 0) + 1;
+        }
+      });
+      console.debug('[Cal] Posts por data:', byDate);
       _calLoaded = true;
+      _calLoadedAt = Date.now();
       calPopulateClientFilter();
       window.calFilterClient();
-      if (newFromPlanner.length > 0) {
-        console.info('[Cal] Meta Planner: ' + newFromPlanner.length + ' posts importados');
+      var schCount = scheduled.length + queued.length + tasks.length;
+      if (schCount > 0) {
+        console.info('[Cal] Agendados: ' + schCount + ' posts (' + scheduled.length + ' histórico + ' + queued.length + ' fila + ' + tasks.length + ' tasks)');
       }
     }).catch(function(err) {
       console.error('Calendar load error:', err);
@@ -16978,9 +17311,9 @@ function ctOpenLightbox(url, isVideo) {
     var clientList = Object.keys(clients).map(function(k) { return Object.assign({ _key: k }, clients[k]); });
     if (!clientList.length) return allPosts;
 
-    // Fetch in parallel (max 5 at a time to avoid rate limits)
+    // Fetch in parallel (max 15 at a time for faster completion)
     var chunks = [];
-    for (var i = 0; i < clientList.length; i += 5) chunks.push(clientList.slice(i, i + 5));
+    for (var i = 0; i < clientList.length; i += 15) chunks.push(clientList.slice(i, i + 15));
 
     for (var ci = 0; ci < chunks.length; ci++) {
       var chunkResults = await Promise.allSettled(chunks[ci].map(function(client) {
@@ -17004,6 +17337,7 @@ function ctOpenLightbox(url, isVideo) {
     var clientName = client.name || client.pageName || client._key || '';
     var clientKey  = client._key || '';
     var posts = [];
+    console.debug('[Cal] calFetchClientMetaPosts: clientKey=' + clientKey + ', clientName=' + clientName);
 
     var seenIds = {};
     function _addMetaPost(p, status, dateField) {
@@ -17033,55 +17367,91 @@ function ctOpenLightbox(url, isVideo) {
       });
     }
 
-    try {
-      // 1. Scheduled posts via Graph API (programmatic scheduling)
-      var schedUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/scheduled_posts'
-        + '?fields=id,message,scheduled_publish_time,full_picture,attachments'
-        + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var schedRes  = await fetch(schedUrl);
-      var schedData = await schedRes.json();
-      if (schedData.data) {
-        schedData.data.forEach(function(p) { _addMetaPost(p, 'SCHEDULED'); });
+    // Helper to safely fetch and parse JSON from Meta Graph API
+    async function _safeFetch(url, label) {
+      try {
+        var res = await fetch(url);
+        if (!res.ok) {
+          console.warn('[Cal] ' + label + ' for ' + clientName + ': HTTP ' + res.status);
+          return null;
+        }
+        return await res.json();
+      } catch(e) {
+        console.warn('[Cal] ' + label + ' for ' + clientName + ':', e.message);
+        return null;
       }
+    }
 
-      // 2. Unpublished/hidden feed — includes Business Suite scheduled posts
-      var hiddenUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
-        + '?include_hidden=true'
-        + '&fields=id,message,story,scheduled_publish_time,created_time,full_picture,attachments'
-        + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var hiddenRes  = await fetch(hiddenUrl);
-      var hiddenData = await hiddenRes.json();
-      if (hiddenData.data) {
-        hiddenData.data.forEach(function(p) {
+    var baseFields = 'id,message,story,scheduled_publish_time,created_time,full_picture,attachments';
+    var token = encodeURIComponent(pageToken);
+
+    // 1. Scheduled posts via Graph API (programmatic scheduling)
+    var schedData = await _safeFetch(
+      'https://graph.facebook.com/v25.0/' + pageId + '/scheduled_posts'
+      + '?fields=' + baseFields + '&limit=50&access_token=' + token,
+      'scheduled_posts'
+    );
+    if (schedData && schedData.data) {
+      schedData.data.forEach(function(p) { _addMetaPost(p, 'SCHEDULED'); });
+    }
+
+    // 2. Unpublished/hidden feed — includes Business Suite scheduled posts
+    var hiddenData = await _safeFetch(
+      'https://graph.facebook.com/v25.0/' + pageId + '/feed'
+      + '?include_hidden=true&fields=' + baseFields + '&limit=50&access_token=' + token,
+      'feed+include_hidden'
+    );
+    if (hiddenData && hiddenData.data) {
+      hiddenData.data.forEach(function(p) {
+        if (p.scheduled_publish_time) {
+          _addMetaPost(p, 'SCHEDULED');
+        }
+      });
+    }
+
+    // 2b. Fallback: if hidden feed failed, try /promotable_posts which may include scheduled
+    if (!hiddenData) {
+      var promoData = await _safeFetch(
+        'https://graph.facebook.com/v25.0/' + pageId + '/promotable_posts'
+        + '?fields=' + baseFields + '&is_published=false&limit=50&access_token=' + token,
+        'promotable_posts(fallback)'
+      );
+      if (promoData && promoData.data) {
+        promoData.data.forEach(function(p) {
           if (p.scheduled_publish_time) {
             _addMetaPost(p, 'SCHEDULED');
           }
         });
       }
-
-      // 3. Recently published FB posts (last 60 days) for calendar completeness
-      var since = Math.floor((Date.now() - 60 * 24 * 3600 * 1000) / 1000);
-      var pubUrl = 'https://graph.facebook.com/v25.0/' + pageId + '/feed'
-        + '?fields=id,message,story,created_time,full_picture,attachments'
-        + '&since=' + since + '&limit=50&access_token=' + encodeURIComponent(pageToken);
-      var pubRes  = await fetch(pubUrl);
-      var pubData = await pubRes.json();
-      if (pubData.data) {
-        pubData.data.forEach(function(p) {
-          if (!p.message && !p.full_picture && !p.story) return;
-          _addMetaPost(p, 'PUBLISHED');
-        });
-      }
-    } catch(e) {
-      console.warn('[Cal] Meta Planner fetch failed for ' + clientName + ':', e.message);
     }
 
+    // 3. Recently published FB posts (last 60 days) for calendar completeness
+    var since = Math.floor((Date.now() - 60 * 24 * 3600 * 1000) / 1000);
+    var pubData = await _safeFetch(
+      'https://graph.facebook.com/v25.0/' + pageId + '/feed'
+      + '?fields=' + baseFields + '&since=' + since + '&limit=50&access_token=' + token,
+      'feed(published)'
+    );
+    if (pubData && pubData.data) {
+      pubData.data.forEach(function(p) {
+        if (!p.message && !p.full_picture && !p.story) return;
+        _addMetaPost(p, 'PUBLISHED');
+      });
+    }
+
+    console.debug('[Cal] calFetchClientMetaPosts: clientKey=' + clientKey + ' returned ' + posts.length + ' posts');
+    if (posts.length > 0) {
+      var statuses = {};
+      posts.forEach(function(p) { statuses[p.status] = (statuses[p.status] || 0) + 1; });
+      console.debug('[Cal]   - Breakdown: ', statuses);
+    }
     return posts;
   }
 
   // Allow manual refresh of Meta Planner posts
   window.calRefreshMetaPlanner = function() {
     _calLoaded = false;
+    _calLoadedAt = 0;
     _calAllPosts = [];
     calLoadData();
   };
@@ -17112,6 +17482,8 @@ function ctOpenLightbox(url, isVideo) {
       }
     });
     clients.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+    console.debug('[Cal] Dropdown clients:', clients);
 
     var html = '<option value="">Todos os clientes</option>';
     clients.forEach(function(c) {
@@ -17394,6 +17766,8 @@ function ctOpenLightbox(url, isVideo) {
           gHtml += '<div class="pw-label-archived">Falhou</div>';
         } else if (status === 'queued') {
           gHtml += '<div class="pw-label-archived" style="color:#3b82f6">Na fila</div>';
+        } else if (p.source === 'content_task') {
+          gHtml += '<div class="pw-label-archived" style="color:#8b5cf6">📋 ' + (p.task_name || 'Agendado').substring(0, 20) + '</div>';
         }
 
         gHtml += '</div></div>'; // end body + card
@@ -20482,10 +20856,27 @@ var CT_FORMATS = {
 };
 
 function ctRenderFormatBadge(publishConfig) {
-  var type = (publishConfig && publishConfig.content_type) || '';
-  var fmt = CT_FORMATS[type];
-  if (!fmt) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
-  return '<div><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + fmt.bg + ';color:' + fmt.color + ';white-space:nowrap;letter-spacing:0.01em">' + fmt.label + '</span></div>';
+  if (!publishConfig) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
+
+  // Check new multi-format system first
+  var formats = publishConfig.formats || [];
+  if (formats.length === 0) {
+    // Fallback to old content_type field for backward compatibility
+    var type = publishConfig.content_type || '';
+    if (!type) return '<div style="font-size:0.72rem;color:var(--text-muted,#94a3b8)">—</div>';
+    formats = [type];
+  }
+
+  // Render badges for all selected formats
+  var html = '<div style="display:flex;gap:2px;flex-wrap:wrap">';
+  formats.forEach(function(type) {
+    var fmt = CT_FORMATS[type];
+    if (fmt) {
+      html += '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + fmt.bg + ';color:' + fmt.color + ';white-space:nowrap;letter-spacing:0.01em">' + fmt.label + '</span>';
+    }
+  });
+  html += '</div>';
+  return html;
 }
 
 // ─── MULTI-FORMAT SYSTEM ───
