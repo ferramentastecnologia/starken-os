@@ -16975,26 +16975,45 @@ function ctOpenLightbox(url, isVideo) {
         // Check format: YYYY-MM-DDTHH:MM:SS (strict)
         var isoRegex = /^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2}):(\d{2})/;
         var match = String(dateStr).match(isoRegex);
-        if (!match) return null;
+        if (!match) {
+          // console.debug('[Cal] _validateDate: invalid format', dateStr);
+          return null;
+        }
 
         var hours = parseInt(match[1], 10);
         var mins = parseInt(match[2], 10);
         var secs = parseInt(match[3], 10);
 
         // Validate time ranges
-        if (hours < 0 || hours > 23) return null;
-        if (mins < 0 || mins > 59) return null;
-        if (secs < 0 || secs > 59) return null;
+        if (hours < 0 || hours > 23) {
+          console.debug('[Cal] _validateDate: invalid hour', hours, 'in', dateStr);
+          return null;
+        }
+        if (mins < 0 || mins > 59) {
+          console.debug('[Cal] _validateDate: invalid minute', mins, 'in', dateStr);
+          return null;
+        }
+        if (secs < 0 || secs > 59) {
+          console.debug('[Cal] _validateDate: invalid second', secs, 'in', dateStr);
+          return null;
+        }
 
         var d = new Date(dateStr);
-        if (isNaN(d.getTime())) return null;
+        if (isNaN(d.getTime())) {
+          console.debug('[Cal] _validateDate: invalid date object', dateStr);
+          return null;
+        }
 
         // Check year is reasonable
         var year = d.getFullYear();
-        if (year < 2020 || year > 2030) return null;
+        if (year < 2020 || year > 2030) {
+          console.debug('[Cal] _validateDate: year out of range', year, 'in', dateStr);
+          return null;
+        }
 
         return d.toISOString();
       } catch(e) {
+        console.debug('[Cal] _validateDate: exception', e.message, 'for', dateStr);
         return null;
       }
     }
