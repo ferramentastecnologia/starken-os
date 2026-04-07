@@ -16968,16 +16968,32 @@ function ctOpenLightbox(url, isVideo) {
     var grid = document.getElementById('calGrid');
     if (grid) grid.innerHTML = '<div class="cal-loading">\u23F3 Carregando posts...</div>';
 
-    // Helper: Validate and fix ISO date strings
+    // Helper: Validate and fix ISO date strings with strict format checking
     function _validateDate(dateStr) {
       if (!dateStr) return null;
       try {
+        // Check format: YYYY-MM-DDTHH:MM:SS (strict)
+        var isoRegex = /^\d{4}-\d{2}-\d{2}T(\d{2}):(\d{2}):(\d{2})/;
+        var match = String(dateStr).match(isoRegex);
+        if (!match) return null;
+
+        var hours = parseInt(match[1], 10);
+        var mins = parseInt(match[2], 10);
+        var secs = parseInt(match[3], 10);
+
+        // Validate time ranges
+        if (hours < 0 || hours > 23) return null;
+        if (mins < 0 || mins > 59) return null;
+        if (secs < 0 || secs > 59) return null;
+
         var d = new Date(dateStr);
-        if (isNaN(d.getTime())) return null; // Invalid date
-        // Check if date looks reasonable (year 2020-2030)
+        if (isNaN(d.getTime())) return null;
+
+        // Check year is reasonable
         var year = d.getFullYear();
         if (year < 2020 || year > 2030) return null;
-        return d.toISOString(); // Return normalized ISO string
+
+        return d.toISOString();
       } catch(e) {
         return null;
       }
