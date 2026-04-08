@@ -16841,16 +16841,23 @@ async function ctDrop(e) {
     ctExpandedTasks[targetId] = true;
   } else {
     // Reorder: move dragged to same level as target (before or after)
-    // Get target's position and parent
     const newParent = targetParent;
     const siblings = Array.from(document.querySelectorAll('.ct-row[data-parent-id="' + (newParent || '') + '"][data-group-id="' + targetGroupId + '"]'));
     const targetIdx = siblings.findIndex(r => r.dataset.taskId === targetId);
-    const newPos = pct < 0.35 ? targetIdx : targetIdx + 1;
+    const insertAt = pct < 0.35 ? targetIdx : targetIdx + 1;
 
-    // Update parent and position
-    const updates = { id: ctDraggedId, parent_id: newParent || null, position: newPos, user: ctGetUser() };
-    if (targetGroupId !== ctDraggedGroup) updates.group_id = targetGroupId;
-    await ctApi('upsert_task', updates);
+    // Move dragged to new group/parent first if needed
+    if (targetGroupId !== ctDraggedGroup || (newParent || null) !== ctDraggedParent) {
+      await ctApi('upsert_task', { id: ctDraggedId, parent_id: newParent || null, group_id: targetGroupId, user: ctGetUser() });
+    }
+
+    // Build new order: insert dragged at insertAt among siblings (excluding itself)
+    const siblingIds = siblings.map(r => r.dataset.taskId).filter(id => id !== ctDraggedId);
+    siblingIds.splice(insertAt > 0 ? Math.min(insertAt, siblingIds.length) : 0, 0, ctDraggedId);
+
+    // Save ALL positions so order persists after F5
+    const items = siblingIds.map((id, i) => ({ id, position: i }));
+    await ctApi('reorder', { items, user: ctGetUser() });
   }
 
   ctLoadGroups();
@@ -16907,12 +16914,13 @@ async function ctMoveTask(taskId, direction) {
     row.style.background = 'var(--brand-light, #eef1ff)';
     setTimeout(function() { row.style.background = ''; }, 400);
 
-    // Save new order to backend
+    // Save new order to backend — normalize ALL sibling positions
     var taskIds = Array.from(document.querySelectorAll('.ct-row[data-group-id="' + groupId + '"]'))
       .filter(function(r) { return (r.dataset.parentId || '') === (parentId || '') && parseInt(r.dataset.depth || '0') === depth; })
       .map(function(r) { return r.dataset.taskId; });
 
-    await ctApi('reorder_tasks', { task_ids: taskIds, group_id: groupId });
+    var items = taskIds.map(function(id, i) { return { id: id, position: i }; });
+    await ctApi('reorder', { items: items, user: ctGetUser() });
   } catch(e) {
     console.warn('Move task error:', e);
     // Rerender to fix any visual issues
