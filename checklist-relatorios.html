@@ -1438,27 +1438,29 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 }
 
 /* ═══ GESTÃO DE CONTEÚDO ═══ */
-.ct-toolbar { display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap; }
-.ct-toolbar select { padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--bg-secondary); }
+.ct-toolbar { display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap; }
+.ct-toolbar select { padding:8px 14px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:0.85rem;background:var(--bg-secondary);transition:border-color 0.12s;outline:none; }
+.ct-toolbar select:focus { border-color:var(--brand,#3b82f6);box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
 .ct-add-btn { padding:7px 16px;border-radius:var(--radius-md);border:none;background:var(--brand);color:#fff;cursor:pointer;font-family:inherit;font-weight:600;font-size:var(--text-sm);transition:all var(--transition-fast); }
 .ct-add-btn:hover { background:var(--brand-dark); }
 
 /* List */
-.ct-list { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
-.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(200px,auto) 110px;gap:0;background:var(--surface-container-low);padding:0 16px;height:36px;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant);align-items:center; }
-.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(200px,auto) 110px;gap:0;padding:0 16px;min-height:42px;height:auto;border-bottom:var(--ghost-border);font-size:var(--text-base);align-items:start;padding-top:8px;padding-bottom:8px;transition:background var(--transition-fast);cursor:pointer; }
-.ct-row .ct-name,.ct-row .ct-assignee { padding-top:3px; }
-.ct-row:hover { background:#f8fafc; }
-.ct-row.group { background:var(--surface-container-low);font-weight:700;font-size:var(--text-md);height:38px;border-bottom:1px solid var(--outline-variant); }
-.ct-row.subtask { padding-left:56px;font-size:var(--text-sm);color:var(--text-secondary); }
-.ct-row .ct-name { display:flex;align-items:center;gap:8px;min-width:0; }
-.ct-row .ct-name span { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500; }
+.ct-list { border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04); }
+.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 150px 120px 84px 84px minmax(200px,auto) 116px;gap:0;background:var(--surface-container-low);padding:0 20px;height:38px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:1px;border-bottom:1px solid var(--outline-variant);align-items:center; }
+.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 150px 120px 84px 84px minmax(200px,auto) 116px;gap:0;padding:0 20px;min-height:52px;height:auto;border-bottom:1px solid rgba(0,0,0,0.05);font-size:var(--text-base);align-items:center;padding-top:10px;padding-bottom:10px;transition:background 0.12s ease;cursor:pointer;position:relative; }
+.ct-row .ct-name,.ct-row .ct-assignee { padding-top:0; }
+.ct-row:hover { background:rgba(59,130,246,0.03); }
+.ct-row:hover::before { content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand,#3b82f6);border-radius:0 2px 2px 0;opacity:0.6; }
+.ct-row.group { background:var(--surface-container-low);font-weight:700;font-size:var(--text-md);height:40px;border-bottom:1px solid var(--outline-variant); }
+.ct-row.subtask { padding-left:60px;font-size:var(--text-sm);color:var(--text-secondary); }
+.ct-row .ct-name { display:flex;align-items:center;gap:10px;min-width:0; }
+.ct-row .ct-name span { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;font-size:0.875rem;color:var(--text-primary); }
 .ct-chevron { cursor:pointer;transition:transform 0.2s;font-size:0.7rem;flex-shrink:0;width:20px;text-align:center; }
 .ct-chevron.open { transform:rotate(90deg); }
 
 /* Status badges */
-.ct-status { padding:2px 8px;border-radius:4px;font-size:var(--text-xs);font-weight:600;cursor:pointer;border:none;font-family:inherit;text-align:center;white-space:nowrap;transition:opacity var(--transition-fast);letter-spacing:0.01em; }
-.ct-status:hover { opacity:0.8; }
+.ct-status { padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:none;font-family:inherit;text-align:center;white-space:nowrap;transition:all 0.12s ease;letter-spacing:0.02em;box-shadow:0 1px 2px rgba(0,0,0,0.06); }
+.ct-status:hover { opacity:0.85;transform:scale(0.97); }
 .ct-status[data-status="a-fazer"] { background:#f1f5f9;color:#475569; }
 .ct-status[data-status="em-andamento"] { background:#dbeafe;color:#1d4ed8; }
 .ct-status[data-status="criacao-conteudo"] { background:#ede9fe;color:#6d28d9; }
@@ -1686,7 +1688,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   .ct-modal { grid-template-columns:1fr;max-width:100%;border-radius:0;height:100vh;max-height:100vh; }
   .ct-modal-overlay { padding:0; }
   .ct-modal-sidebar,.ct-modal-activity { display:none; }
-  .ct-header-row,.ct-row { grid-template-columns:1fr 80px 120px 100px 0px 0px; }
+  .ct-header-row,.ct-row { grid-template-columns:1fr 80px 130px 110px 0px 0px; }
   .ct-row .ct-col-date,.ct-row .ct-col-comments,.ct-row .ct-col-priority { display:none; }
 }
 
@@ -2820,8 +2822,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .tf-header-row { grid-template-columns: 2fr 1fr 1fr 1fr 0.8fr 1.5fr 0.6fr !important; }
 .tf-task-row { display:grid;grid-template-columns: 2fr 1fr 1fr 1fr 0.8fr 1.5fr 0.6fr !important;gap:0;padding:0 16px;min-height:42px;border-bottom:var(--ghost-border,1px solid rgba(196,197,215,0.15));font-size:var(--text-base,0.85rem);align-items:center;transition:background var(--transition-fast,0.1s); }
 .tf-task-row:hover { background:var(--hover,#f8fafc); }
-.ct-group-row { display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:38px;background:var(--surface-container-low,#f2f4f7);border-bottom:1px solid var(--outline-variant,#e5e7eb);cursor:pointer;font-weight:700;font-size:0.85rem; }
-.ct-group-row:hover { background:var(--hover,#eceef1); }
+.ct-group-row { display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;background:linear-gradient(90deg,rgba(248,250,252,1) 0%,rgba(245,247,250,1) 100%);border-bottom:1px solid var(--outline-variant,#e5e7eb);cursor:pointer;font-weight:700;font-size:0.85rem;letter-spacing:0.01em; }
+.ct-group-row:hover { background:linear-gradient(90deg,rgba(239,246,255,1) 0%,rgba(245,247,250,1) 100%); }
 .ct-task-name { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500; }
 .ct-status-btn { padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:600;cursor:pointer;border:none;font-family:inherit; }
 .tf-obj-badge { display:inline-block;padding:2px 8px;border-radius:6px;font-size:0.7rem;font-weight:600; }
@@ -3646,6 +3648,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="">Selecione o cliente...</option>
             </select>
             <button class="ct-add-btn" onclick="ctShowNewGroupModal()" id="ctAddGroupBtn" style="display:none">+ Novo Grupo</button>
+            <button class="ct-add-btn" onclick="ctShowMonthWizard()" id="ctMonthWizardBtn" style="display:none;background:#6366f1;color:#fff;border-color:#6366f1">📅 Criar Semanas do Mês</button>
             <!-- Cronograma PDF removido da toolbar do client -->
             <span id="ctCronoBtn" style="display:none"></span>
             <span id="ctCronoStatus" style="display:none"></span>
@@ -13552,12 +13555,15 @@ async function ctLoadGroups() {
   if (clientId) { try { localStorage.setItem('starken_last_client', clientId); } catch(e) {} }
   const addBtn = document.getElementById('ctAddGroupBtn');
 
+  const wizBtn = document.getElementById('ctMonthWizardBtn');
   if (!clientId) {
     addBtn.style.display = 'none';
+    if (wizBtn) wizBtn.style.display = 'none';
     document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px">📋</div>Selecione um cliente para ver as tarefas</div>';
     return;
   }
   addBtn.style.display = '';
+  if (wizBtn) wizBtn.style.display = '';
 
   // Show loading only on first load (not on refreshes)
   if (ctGroups.length === 0) {
@@ -14118,6 +14124,132 @@ async function ctDeleteGroup(groupId, groupName) {
 function ctToggleTask(taskId) {
   ctExpandedTasks[taskId] = ctExpandedTasks[taskId] === false ? true : false;
   ctRenderList();
+}
+
+// ─── MONTH WIZARD ───
+var _mwWeeks = 4;
+var _mwTpl = 'sem';
+
+var MW_TEMPLATES = {
+  'sem':      [],
+  '2feed':    ['FEED 1 — CRIATIVO', 'FEED 2 — CRIATIVO'],
+  '3feed':    ['FEED 1 — CRIATIVO', 'FEED 2 — CRIATIVO', 'FEED 3 — CRIATIVO'],
+  'feed-reels':['FEED 1 — CRIATIVO', 'REELS — VÍDEO'],
+  'mensal-8': ['FEED 1 — CRIATIVO','FEED 2 — VÍDEO','REELS 1 — AÇÃO','FEED 3 — CARROSSEL','FEED 4 — CRIATIVO','FEED 5 — VÍDEO','REELS 2 — AÇÃO','FEED 6 — CARROSSEL'],
+};
+
+var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+function ctShowMonthWizard() {
+  var modal = document.getElementById('ctMonthWizardModal');
+  modal.style.display = 'flex';
+  // Set current month/year
+  var now = new Date();
+  var mSel = document.getElementById('mwMonth');
+  var ySel = document.getElementById('mwYear');
+  mSel.value = now.getMonth();
+  // Populate years
+  ySel.innerHTML = '';
+  for (var y = now.getFullYear() - 1; y <= now.getFullYear() + 2; y++) {
+    var opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    if (y === now.getFullYear()) opt.selected = true;
+    ySel.appendChild(opt);
+  }
+  mSel.onchange = mwUpdatePreview;
+  ySel.onchange = mwUpdatePreview;
+  _mwWeeks = 4; _mwTpl = 'sem';
+  // Reset UI
+  document.querySelectorAll('.mw-week-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
+  });
+  var w4 = document.querySelector('.mw-week-btn[data-weeks="4"]');
+  if (w4) { w4.style.border = '2px solid #6366f1'; w4.style.background = '#eff6ff'; w4.style.color = '#4f46e5'; }
+  document.querySelectorAll('.mw-tpl-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#f9fafb'; b.style.color = '#374151';
+  });
+  var sem = document.querySelector('.mw-tpl-btn[data-tpl="sem"]');
+  if (sem) { sem.style.border = '2px solid #6366f1'; sem.style.background = '#eff6ff'; sem.style.color = '#4f46e5'; }
+  document.getElementById('mwCustomTasks').style.display = 'none';
+  mwUpdatePreview();
+}
+
+function ctHideMonthWizard() {
+  document.getElementById('ctMonthWizardModal').style.display = 'none';
+}
+
+function mwSelectWeeks(n, btn) {
+  _mwWeeks = n;
+  document.querySelectorAll('.mw-week-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
+  });
+  btn.style.border = '2px solid #6366f1'; btn.style.background = '#eff6ff'; btn.style.color = '#4f46e5';
+  mwUpdatePreview();
+}
+
+function mwSelectTpl(tpl, btn) {
+  _mwTpl = tpl;
+  document.querySelectorAll('.mw-tpl-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#f9fafb'; b.style.color = '#374151';
+  });
+  btn.style.border = '2px solid #6366f1'; btn.style.background = '#eff6ff'; btn.style.color = '#4f46e5';
+  document.getElementById('mwCustomTasks').style.display = tpl === 'custom' ? 'block' : 'none';
+  if (tpl === 'custom') document.getElementById('mwCustomTasks').oninput = mwUpdatePreview;
+  mwUpdatePreview();
+}
+
+function mwGetTasks() {
+  if (_mwTpl === 'custom') {
+    return document.getElementById('mwCustomTasks').value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  }
+  return MW_TEMPLATES[_mwTpl] || [];
+}
+
+function mwUpdatePreview() {
+  var month = parseInt(document.getElementById('mwMonth').value);
+  var year  = parseInt(document.getElementById('mwYear').value);
+  var mName = MONTHS_PT[month];
+  var tasks = mwGetTasks();
+  var list = document.getElementById('mwPreviewList');
+  list.innerHTML = '';
+  for (var i = 1; i <= _mwWeeks; i++) {
+    var grpName = mName + ' - Semana ' + i;
+    var div = document.createElement('div');
+    div.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px';
+    var taskCount = tasks.length > 0 ? ('<span style="font-size:11px;color:#6b7280;margin-left:6px">+ ' + tasks.length + ' tarefa' + (tasks.length > 1 ? 's' : '') + '</span>') : '';
+    div.innerHTML = '<div style="font-weight:700;font-size:13px;color:#111827">📁 ' + grpName + taskCount + '</div>'
+      + (tasks.length > 0 ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + tasks.slice(0,4).map(function(t){ return '<span style="font-size:11px;background:#f3f4f6;padding:2px 8px;border-radius:12px;color:#374151">' + t + '</span>'; }).join('') + (tasks.length > 4 ? '<span style="font-size:11px;color:#9ca3af">+' + (tasks.length - 4) + ' mais</span>' : '') + '</div>' : '');
+    list.appendChild(div);
+  }
+}
+
+async function ctRunMonthWizard() {
+  var month = parseInt(document.getElementById('mwMonth').value);
+  var year  = parseInt(document.getElementById('mwYear').value);
+  var mName = MONTHS_PT[month];
+  var tasks = mwGetTasks();
+  var btn   = document.getElementById('mwCreateBtn');
+  btn.textContent = '⏳ Criando...'; btn.disabled = true;
+
+  try {
+    for (var i = 1; i <= _mwWeeks; i++) {
+      var grpName = mName + ' - Semana ' + i;
+      // Create group
+      var grpRes = await ctApi('upsert_group', { client_id: ctCurrentClient, name: grpName, position: 9000 + i, user: ctGetUser() });
+      var grpId = grpRes && grpRes.id ? grpRes.id : (grpRes && grpRes[0] && grpRes[0].id);
+      if (!grpId) { console.warn('No group id returned for', grpName, grpRes); continue; }
+      // Create tasks sequentially
+      for (var j = 0; j < tasks.length; j++) {
+        await ctApi('upsert_task', { group_id: grpId, client_id: ctCurrentClient, name: tasks[j], position: j, user: ctGetUser() });
+      }
+    }
+    ctHideMonthWizard();
+    await ctLoadGroups();
+  } catch(e) {
+    alert('Erro ao criar grupos: ' + e.message);
+  } finally {
+    btn.textContent = '🚀 Criar Grupos'; btn.disabled = false;
+  }
 }
 
 // ─── ADD GROUP (with Modal) ───
@@ -23346,6 +23478,76 @@ function _doRenderTable() {
     <div class="ct-ngm-actions">
       <button class="ct-ngm-cancel" onclick="ctHideNewGroupModal()">Cancelar</button>
       <button class="ct-ngm-create" onclick="ctCreateNewGroup()">Criar Grupo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MONTH WIZARD MODAL ═══ -->
+<div id="ctMonthWizardModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)ctHideMonthWizard()">
+  <div style="background:#fff;border-radius:16px;width:92%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;font-family:inherit">
+
+    <!-- Header -->
+    <div style="padding:20px 24px 16px;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg,#6366f1 0%,#4f46e5 100%);color:#fff">
+      <div style="font-size:18px;font-weight:800;margin-bottom:4px">📅 Criar Semanas do Mês</div>
+      <div style="font-size:13px;opacity:0.85">Gera automaticamente os grupos de semana com tarefas</div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:18px">
+
+      <!-- Mês + Ano -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Mês</label>
+          <select id="mwMonth" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;background:#fff">
+            <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+            <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+            <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+            <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+          </select>
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Ano</label>
+          <select id="mwYear" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;background:#fff">
+          </select>
+        </div>
+      </div>
+
+      <!-- Número de semanas -->
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Semanas a Criar</label>
+        <div style="display:flex;gap:8px">
+          <button class="mw-week-btn active" data-weeks="4" onclick="mwSelectWeeks(4,this)" style="flex:1;padding:8px;border:2px solid #6366f1;border-radius:8px;background:#eff6ff;color:#4f46e5;font-weight:700;font-size:13px;cursor:pointer">4 Semanas</button>
+          <button class="mw-week-btn" data-weeks="5" onclick="mwSelectWeeks(5,this)" style="flex:1;padding:8px;border:2px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:13px;cursor:pointer">5 Semanas</button>
+        </div>
+      </div>
+
+      <!-- Template de tarefas -->
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Template de Tarefas por Semana</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <button class="mw-tpl-btn active" data-tpl="sem" onclick="mwSelectTpl('sem',this)" style="padding:7px 14px;border:2px solid #6366f1;border-radius:20px;background:#eff6ff;color:#4f46e5;font-weight:700;font-size:12px;cursor:pointer">Sem tarefas</button>
+          <button class="mw-tpl-btn" data-tpl="2feed" onclick="mwSelectTpl('2feed',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">📱 2 Feeds</button>
+          <button class="mw-tpl-btn" data-tpl="3feed" onclick="mwSelectTpl('3feed',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">📱 3 Feeds</button>
+          <button class="mw-tpl-btn" data-tpl="feed-reels" onclick="mwSelectTpl('feed-reels',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">🎬 Feed + Reels</button>
+          <button class="mw-tpl-btn" data-tpl="mensal-8" onclick="mwSelectTpl('mensal-8',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">📅 8 posts/mês</button>
+          <button class="mw-tpl-btn" data-tpl="custom" onclick="mwSelectTpl('custom',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">✏️ Personalizado</button>
+        </div>
+        <textarea id="mwCustomTasks" placeholder="Uma tarefa por linha ex:&#10;FEED 1 - CRIATIVO&#10;FEED 2 - VÍDEO&#10;REELS - AÇÃO" style="width:100%;min-height:90px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;display:none;box-sizing:border-box"></textarea>
+      </div>
+
+      <!-- Preview -->
+      <div id="mwPreview" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">📋 Preview dos grupos</div>
+        <div id="mwPreviewList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb">
+      <button onclick="ctHideMonthWizard()" style="padding:10px 20px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit">Cancelar</button>
+      <button id="mwCreateBtn" onclick="ctRunMonthWizard()" style="padding:10px 24px;border:none;border-radius:8px;background:#6366f1;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(99,102,241,0.3)">🚀 Criar Grupos</button>
     </div>
   </div>
 </div>
