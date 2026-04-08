@@ -2861,7 +2861,6 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <option value="Emilly">Emilly</option>
         <option value="Leonardo">Leonardo</option>
         <option value="Dante">Dante</option>
-        <option value="Daniela">Daniela</option>
       </select>
     </div>
     <div>
@@ -13299,10 +13298,11 @@ const CT_PRIORITIES = [
 ];
 
 const CT_USERS = [
-  { name: 'Juan', color: '#3b82f6' },
+  { name: 'Juan',     color: '#3b82f6' },
   { name: 'Henrique', color: '#8b5cf6' },
-  { name: 'Emily', color: '#f59e0b' },
-  { name: 'Daniela', color: '#ec4899' },
+  { name: 'Emily',    color: '#f59e0b' },
+  { name: 'Leonardo', color: '#10b981' },
+  { name: 'Dante',    color: '#f97316' },
 ];
 
 function ctRenderAssigneeCell(assigneeStr, taskId) {
@@ -22885,7 +22885,7 @@ var _doState = {
   loading: false
 };
 
-var DESIGNER_NAMES = ['Henrique', 'Daniela'];
+var DESIGNER_NAMES = ['Henrique'];
 
 function showDesignerOverviewBtn() {
   if (!gpState.user || gpState.user.role === 'designer') return;
