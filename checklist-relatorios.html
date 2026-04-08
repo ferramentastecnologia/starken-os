@@ -1432,8 +1432,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 
 /* List */
 .ct-list { border:1px solid var(--border);border-radius:10px;overflow:hidden; }
-.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(200px,auto) 110px;gap:0;background:var(--surface-container-low);padding:0 16px;height:36px;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant);align-items:center; }
-.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(200px,auto) 110px;gap:0;padding:0 16px;min-height:42px;height:auto;border-bottom:var(--ghost-border);font-size:var(--text-base);align-items:start;padding-top:8px;padding-bottom:8px;transition:background var(--transition-fast);cursor:pointer; }
+.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(200px,auto) 110px;gap:0;background:var(--surface-container-low);padding:0 16px;height:36px;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant);align-items:center; }
+.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(200px,auto) 110px;gap:0;padding:0 16px;min-height:42px;height:auto;border-bottom:var(--ghost-border);font-size:var(--text-base);align-items:start;padding-top:8px;padding-bottom:8px;transition:background var(--transition-fast);cursor:pointer; }
 .ct-row .ct-name,.ct-row .ct-assignee { padding-top:3px; }
 .ct-row:hover { background:#f8fafc; }
 .ct-row.group { background:var(--surface-container-low);font-weight:700;font-size:var(--text-md);height:38px;border-bottom:1px solid var(--outline-variant); }
@@ -1673,7 +1673,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
   .ct-modal { grid-template-columns:1fr;max-width:100%;border-radius:0;height:100vh;max-height:100vh; }
   .ct-modal-overlay { padding:0; }
   .ct-modal-sidebar,.ct-modal-activity { display:none; }
-  .ct-header-row,.ct-row { grid-template-columns:1fr 80px 120px 100px; }
+  .ct-header-row,.ct-row { grid-template-columns:1fr 80px 120px 100px 0px 0px; }
   .ct-row .ct-col-date,.ct-row .ct-col-comments,.ct-row .ct-col-priority { display:none; }
 }
 
@@ -2792,13 +2792,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .mt-client-count { font-size:11px;font-weight:700;color:var(--text-tertiary);background:var(--surface-container,#eceef1);padding:2px 8px;border-radius:4px; }
 .mt-list { border:1px solid rgba(196,197,215,0.15);border-radius:10px;overflow:hidden;margin-bottom:4px; }
 .mt-header-row { display:grid;gap:0;background:var(--surface-container-low,#f2f4f7);padding:0 16px;height:36px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--on-surface-variant,#444654);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant,#c4c5d7);align-items:center; }
-.mt-header-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 100px; }
-.mt-header-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 100px; }
+.mt-header-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(160px,auto) 100px; }
+.mt-header-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 80px 80px minmax(160px,auto) 100px; }
 .mt-row { display:grid;gap:0;padding:0 16px;height:42px;border-bottom:1px solid rgba(196,197,215,0.15);font-size:13px;align-items:center;transition:background 0.08s;cursor:pointer; }
 .mt-row:hover { background:#f8fafc; }
 .mt-row:last-child { border-bottom:none; }
-.mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 90px minmax(160px,auto) 100px; }
-.mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 90px minmax(160px,auto) 100px; }
+.mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(160px,auto) 100px; }
+.mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 80px 80px minmax(160px,auto) 100px; }
 .mt-empty { text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:14px; }
 
 /* ═══════════════════════════════════════════════════════════════ */
@@ -3657,7 +3657,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div>Formato</div>
               <div>Status</div>
               <div>Responsável</div>
-              <div>Data</div>
+              <div>📐 Entrega</div>
+              <div>📅 Post</div>
               <div>📱 Publicação</div>
               <div>Prioridade</div>
             </div>
@@ -3774,11 +3775,17 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 </div>
               </div>
               <div class="ct-modal-meta-item" style="position:relative">
-                <label>Data</label>
+                <label>📐 Entrega Design</label>
                 <button id="ctModalDueDateBtn" onclick="ctShowDatePicker(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;min-width:120px">
                   📅 <span id="ctModalDueDateLabel">Sem data</span>
                 </button>
                 <input type="hidden" id="ctModalDueDate">
+              </div>
+              <div class="ct-modal-meta-item">
+                <label>📅 Data Post</label>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <input type="date" id="ctModalPostDate" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text-primary);background:var(--surface);cursor:pointer" oninput="ctModalPostDateChange(this.value)">
+                </div>
               </div>
               <div class="ct-modal-meta-item">
                 <label>Prioridade</label>
@@ -5460,9 +5467,10 @@ document.addEventListener('DOMContentLoaded', function() {
       // Atualiza badge
       updateAlertBadge(alerts.length);
 
-      // Se o cron publicou algo, atualiza a lista
-      if (cronData.processed > 0 && typeof metaPublishLoadHistory === 'function') {
-        metaPublishLoadHistory();
+      // Se o cron publicou algo, atualiza a lista e status das tasks
+      if (cronData.processed > 0) {
+        if (typeof metaPublishLoadHistory === 'function') metaPublishLoadHistory();
+        ctRefreshAgendadoStatuses();
       }
     } catch (e) { /* silently fail */ } finally {
       _queueProcessing = false; // release lock
@@ -13725,6 +13733,68 @@ function ctRenderMiniCalendar() {
 }
 
 // ─── RENDER LIST ───
+// ─── REAL-TIME STATUS REFRESH ───
+// Checks if any tasks currently showing 'agendado' have been updated to 'publicado' in DB
+var _ctStatusRefreshTimer = null;
+async function ctRefreshAgendadoStatuses() {
+  if (!_supabase) return;
+  // Collect all 'agendado' task IDs visible in ctGroups
+  var agendadoIds = [];
+  ctGroups.forEach(function(g) {
+    (g.tasks || []).forEach(function(t) {
+      if (t.status === 'agendado') agendadoIds.push(t.id);
+    });
+  });
+  if (agendadoIds.length === 0) return;
+
+  try {
+    var { data } = await _supabase
+      .from('content_tasks')
+      .select('id,status')
+      .in('id', agendadoIds);
+    if (!data || !data.length) return;
+
+    var changed = false;
+    data.forEach(function(row) {
+      if (row.status === 'agendado') return; // unchanged
+      // Update in ctGroups
+      ctGroups.forEach(function(g) {
+        (g.tasks || []).forEach(function(t) {
+          if (t.id === row.id) { t.status = row.status; changed = true; }
+          (t.subtasks || []).forEach(function(s) {
+            if (s.id === row.id) { s.status = row.status; changed = true; }
+          });
+        });
+      });
+      // Update in mtTasks (Minhas Tasks)
+      if (typeof mtTasks !== 'undefined' && Array.isArray(mtTasks)) {
+        mtTasks.forEach(function(t) {
+          if (t.id === row.id) { t.status = row.status; changed = true; }
+        });
+      }
+    });
+
+    if (changed) {
+      ctRenderList();
+      if (typeof mtRender === 'function') mtRender();
+      // Flash toast to inform user
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:99999;background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:10px;padding:12px 18px;font-family:inherit;font-size:13px;font-weight:600;color:#047857;box-shadow:0 4px 16px rgba(0,0,0,0.12);animation:alertSlideIn 0.3s ease';
+      toast.textContent = '✅ Status de publicação atualizado!';
+      document.body.appendChild(toast);
+      setTimeout(function() { toast.remove(); }, 4000);
+    }
+  } catch(e) {}
+}
+
+// Poll every 45s for any 'agendado' tasks that may have been published
+(function _startStatusRefreshPolling() {
+  if (typeof _ctStatusRefreshTimer !== 'undefined' && _ctStatusRefreshTimer) return;
+  _ctStatusRefreshTimer = setInterval(function() {
+    if (ctGroups.length > 0) ctRefreshAgendadoStatuses();
+  }, 45000);
+})();
+
 function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
@@ -13781,6 +13851,8 @@ function ctRenderList() {
         const hasSubtasks = task.subtasks && task.subtasks.length > 0;
         const taskExpanded = ctExpandedTasks[task.id] !== false;
         const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+        const _postDate = (task.publish_config && task.publish_config.post_date) ? task.publish_config.post_date : null;
+        const postStr = _postDate ? new Date(_postDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
         const indent = 36 + (depth * 24);
         const canAddSub = depth < 5;
 
@@ -13800,7 +13872,8 @@ function ctRenderList() {
           + ctRenderFormatBadge(task.publish_config)
           + '<div><button class="ct-status" data-status="' + status.key + '" onclick="event.stopPropagation();ctShowStatusDropdown(event,\'' + task.id + '\')">' + status.label + '</button></div>'
           + ctRenderAssigneeCell(task.assignee, task.id)
-          + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\')">' + dueStr + '</div>'
+          + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\',\'due\')">' + dueStr + '</div>'
+          + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (_postDate||'') + '\',\'post\')">' + postStr + '</div>'
           + ctRenderPublishColumn(task.publish_config)
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')" style="display:flex;align-items:center;justify-content:center">' + priorityBadgeHtml + '</div>'
           + '</div>';
@@ -14263,6 +14336,9 @@ async function ctOpenModal(taskId) {
   } else {
     document.getElementById('ctModalDueDateLabel').textContent = 'Sem data';
   }
+  const _modalPostDate = (task.publish_config && task.publish_config.post_date) || '';
+  const _modalPostDateEl = document.getElementById('ctModalPostDate');
+  if (_modalPostDateEl) _modalPostDateEl.value = _modalPostDate;
 
   // Status
   const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
@@ -14418,6 +14494,15 @@ document.addEventListener('input', function(e) {
     ctAutoResizeTextarea(e.target);
   }
 });
+
+async function ctModalPostDateChange(value) {
+  if (!ctModalTask) return;
+  const config = ctModalTask.publish_config || {};
+  config.post_date = value || null;
+  ctModalTask.publish_config = config;
+  await ctSaveTaskField('publish_config', config);
+  ctRenderList();
+}
 
 async function ctSaveTaskField(field, value) {
   if (!ctModalTask) return;
@@ -16858,12 +16943,28 @@ async function ctAddSubtaskList(parentId, groupId) {
   ctLoadGroups();
 }
 
+// ─── SAVE POST DATE (publish_config.post_date) ───
+async function ctSavePostDate(taskId, dateStr) {
+  let task = null;
+  for (const g of ctGroups) {
+    task = (g.tasks || []).find(t => t.id === taskId);
+    if (task) break;
+  }
+  if (!task) return;
+  const config = task.publish_config || {};
+  config.post_date = dateStr || null;
+  task.publish_config = config;
+  await ctApi('upsert_task', { id: taskId, publish_config: config, user: ctGetUser() });
+  ctRenderList();
+}
+
 // ─── DATE PICKER PARA LISTA (não-modal) ───
-function ctShowDatePickerList(event, taskId, currentDate) {
+function ctShowDatePickerList(event, taskId, currentDate, dateField) {
   event.stopPropagation();
   // Reuse the same picker mechanism but save to API directly
   ctCloseDropdowns();
   if (ctDatePickerEl) { ctDatePickerEl.remove(); ctDatePickerEl = null; }
+  const isPostField = dateField === 'post';
 
   const rect = event.currentTarget.getBoundingClientRect();
   const picker = document.createElement('div');
@@ -16898,12 +16999,23 @@ function ctShowDatePickerList(event, taskId, currentDate) {
 
   async function selectDate(d) {
     const str = getDateStr(d);
-    await ctApi('upsert_task', { id: taskId, due_date: str, user: ctGetUser() });
-    // Also update modal if open
-    if (ctModalTask && ctModalTask.id === taskId) {
-      ctModalTask.due_date = str;
-      document.getElementById('ctModalDueDate').value = str;
-      document.getElementById('ctModalDueDateLabel').textContent = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    if (isPostField) {
+      await ctSavePostDate(taskId, str);
+      if (ctModalTask && ctModalTask.id === taskId) {
+        const config = ctModalTask.publish_config || {};
+        config.post_date = str;
+        ctModalTask.publish_config = config;
+        const postDateEl = document.getElementById('ctModalPostDate');
+        if (postDateEl) postDateEl.value = str;
+      }
+    } else {
+      await ctApi('upsert_task', { id: taskId, due_date: str, user: ctGetUser() });
+      // Also update modal if open
+      if (ctModalTask && ctModalTask.id === taskId) {
+        ctModalTask.due_date = str;
+        document.getElementById('ctModalDueDate').value = str;
+        document.getElementById('ctModalDueDateLabel').textContent = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+      }
     }
     closePicker();
     ctLoadGroups();
@@ -16937,8 +17049,19 @@ function ctShowDatePickerList(event, taskId, currentDate) {
     });
     calDiv.querySelector('.dp-clear-btn').onclick = async function(e) {
       e.stopPropagation();
-      await ctApi('upsert_task', { id: taskId, due_date: null, user: ctGetUser() });
-      if (ctModalTask && ctModalTask.id === taskId) { ctModalTask.due_date = null; document.getElementById('ctModalDueDate').value = ''; document.getElementById('ctModalDueDateLabel').textContent = 'Sem data'; }
+      if (isPostField) {
+        await ctSavePostDate(taskId, null);
+        if (ctModalTask && ctModalTask.id === taskId) {
+          const config = ctModalTask.publish_config || {};
+          config.post_date = null;
+          ctModalTask.publish_config = config;
+          const postDateEl = document.getElementById('ctModalPostDate');
+          if (postDateEl) postDateEl.value = '';
+        }
+      } else {
+        await ctApi('upsert_task', { id: taskId, due_date: null, user: ctGetUser() });
+        if (ctModalTask && ctModalTask.id === taskId) { ctModalTask.due_date = null; document.getElementById('ctModalDueDate').value = ''; document.getElementById('ctModalDueDateLabel').textContent = 'Sem data'; }
+      }
       closePicker(); ctLoadGroups();
     };
     calDiv.querySelectorAll('.ct-datepicker-cal-header button').forEach((btn, i) => {
@@ -21040,7 +21163,7 @@ function mtRenderByClient(el, tasks) {
     html += '</div>';
     html += '<div class="mt-list">';
     html += '<div class="mt-header-row by-client">';
-    html += '<span>NOME</span><span>FORMATO</span><span>STATUS</span><span>RESPONSÁVEL</span><span>DATA</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
+    html += '<span>NOME</span><span>FORMATO</span><span>STATUS</span><span>RESPONSÁVEL</span><span>📐 ENTREGA</span><span>📅 POST</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
     html += '</div>';
     clientTasks.forEach(t => {
       html += mtRenderRow(t, 'by-client');
@@ -21054,7 +21177,7 @@ function mtRenderByClient(el, tasks) {
 function mtRenderList(el, tasks) {
   let html = '<div class="mt-list">';
   html += '<div class="mt-header-row by-list">';
-  html += '<span>CLIENTE</span><span>NOME</span><span>FORMATO</span><span>STATUS</span><span>DATA</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
+  html += '<span>CLIENTE</span><span>NOME</span><span>FORMATO</span><span>STATUS</span><span>📐 ENTREGA</span><span>📅 POST</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
   html += '</div>';
   tasks.forEach(t => {
     html += mtRenderRow(t, 'by-list');
@@ -21070,7 +21193,9 @@ function mtRenderRow(task, mode) {
   const statusLabel = statusDef.label;
 
   const user = CT_USERS.find(u => u.name === task.assignee);
-  const dueStr = task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+  const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+  const _mtPostDate = (task.publish_config && task.publish_config.post_date) ? task.publish_config.post_date : null;
+  const mtPostStr = _mtPostDate ? new Date(_mtPostDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
 
   const clients = _metaClients || {};
   const client = clients[task.client_id] || null;
@@ -21123,6 +21248,7 @@ function mtRenderRow(task, mode) {
   }
 
   html += '<div style="font-size:12px;color:var(--text-secondary)">' + dueStr + '</div>';
+  html += '<div style="font-size:12px;color:var(--text-secondary)">' + mtPostStr + '</div>';
   html += '<div>—</div>';
   html += '<div style="text-align:center">' + priorityBadge + '</div>';
   html += '</div>';
