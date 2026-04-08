@@ -451,6 +451,19 @@ body {
 .sidebar-client-btn.active { background: var(--sidebar-bg-active); color: var(--sidebar-text-bright); font-weight: 500; }
 .sidebar-client-btn::before { content: '·'; font-size: 1rem; line-height: 1; flex-shrink: 0; opacity: 0.5; }
 
+/* EM PROCESSO section */
+.sidebar-folder-processo .sidebar-folder-header { color: #92400e; background: rgba(251,191,36,0.08); }
+.sidebar-folder-processo .sidebar-folder-header:hover { background: rgba(251,191,36,0.18); color: #78350f; }
+.sidebar-folder-processo .sidebar-folder-count { background: rgba(251,191,36,0.15); color: #92400e; }
+.sidebar-client-btn-processo { opacity: 0.85; }
+.sidebar-client-btn-processo::before { content: none; }
+.sidebar-processo-badge {
+  margin-left: auto; font-size: 0.6rem; padding: 1px 5px; border-radius: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;
+}
+.sidebar-processo-badge-onboarding { background: rgba(251,191,36,0.2); color: #b45309; }
+.sidebar-processo-badge-standby { background: rgba(156,163,175,0.2); color: #6b7280; }
+
 .nav-category {
   font-size: 11px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase;
   color: rgba(255,255,255,0.4); padding: 0 24px; margin-bottom: 12px;
@@ -5905,6 +5918,7 @@ let SIDEBAR_MENU = [
     { type: 'item', id: 'calendario', label: 'Calendário de Postagens', icon: '📅', tab: 'calendario' },
     { type: 'folder', id: 'folder-starken' },
     { type: 'folder', id: 'folder-alpha' },
+    { type: 'folder', id: 'folder-processo' },
   ]},
   { type: 'category', id: 'cat-cronogramas', label: 'Cronogramas', items: [
     { type: 'item', id: 'sched-weekly', label: 'Semanal', icon: '📅', tab: 'sched-weekly' },
@@ -6004,6 +6018,16 @@ function renderSidebarFolder(folderId) {
       '</button>' +
       '<input type="text" id="searchAlpha" placeholder="Buscar..." style="display:none;width:100%;padding:6px 12px;margin:6px 0;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:0.75rem" oninput="sidebarFilterClients(\'alpha\')">' +
       '<div class="sidebar-folder-items" id="itemsAlpha" style="display:none"></div>' +
+    '</div>';
+  }
+  if (folderId === 'folder-processo') {
+    return '<div class="sidebar-folder sidebar-folder-processo" id="sidebarProcesso" style="display:none">' +
+      '<button class="sidebar-folder-header sidebar-folder-header-processo" onclick="toggleSidebarFolder(\'processo\')">' +
+        '<span class="sidebar-folder-chevron" id="chevronProcesso">&#9658;</span>' +
+        '&#9200; Em Processo' +
+        '<span class="sidebar-folder-count" id="countProcesso">0</span>' +
+      '</button>' +
+      '<div class="sidebar-folder-items" id="itemsProcesso" style="display:none"></div>' +
     '</div>';
   }
   return '';
@@ -6572,34 +6596,67 @@ function populateSidebarClients() {
   const alphaItems = document.getElementById('itemsAlpha');
   if (!starkenItems || !alphaItems) return;
 
-  // Collect and sort clients alphabetically
+  var clientStatuses = ctGetClientStatuses();
+  var isAdmin = gpState.user && gpState.user.role === 'admin';
+  var contextMenuAttr = isAdmin ? ' oncontextmenu="ctShowClientStatusMenu(event,\'__KEY__\')"' : '';
+
+  // Bucket clients: ativo go to their tenant section; onboarding/standby go to processo
   var starkenClients = [];
   var alphaClients = [];
+  var processoClients = [];
+
   Object.entries(clients).forEach(function([key, c]) {
     var entry = { key: key, name: c.name || key, tenant: c.tenant };
-    if (c.tenant === 'alpha') alphaClients.push(entry);
-    else starkenClients.push(entry);
+    var st = clientStatuses[key] || 'ativo';
+    if (st === 'onboarding' || st === 'standby') {
+      entry.status = st;
+      processoClients.push(entry);
+    } else if (c.tenant === 'alpha') {
+      alphaClients.push(entry);
+    } else {
+      starkenClients.push(entry);
+    }
   });
+
   starkenClients.sort(function(a, b) { return a.name.localeCompare(b.name); });
   alphaClients.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  processoClients.sort(function(a, b) { return a.name.localeCompare(b.name); });
 
-  let starkenHtml = '';
-  let alphaHtml = '';
+  function buildClientBtn(c) {
+    var cmAttr = contextMenuAttr.replace('__KEY__', c.key);
+    return '<button class="sidebar-client-btn" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')"' + cmAttr + '>' + c.name + '</button>';
+  }
 
-  starkenClients.forEach(function(c) {
-    const btn = '<button class="sidebar-client-btn" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')">' + c.name + '</button>';
-    starkenHtml += btn;
-  });
+  function buildProcessoBtn(c) {
+    var cmAttr = contextMenuAttr.replace('__KEY__', c.key);
+    var badge = c.status === 'onboarding'
+      ? '<span class="sidebar-processo-badge sidebar-processo-badge-onboarding">&#9201; onboarding</span>'
+      : '<span class="sidebar-processo-badge sidebar-processo-badge-standby">&#9208; standby</span>';
+    return '<button class="sidebar-client-btn sidebar-client-btn-processo" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')"' + cmAttr + '>' + c.name + badge + '</button>';
+  }
 
-  alphaClients.forEach(function(c) {
-    const btn = '<button class="sidebar-client-btn" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')">' + c.name + '</button>';
-    alphaHtml += btn;
-  });
+  let starkenHtml = starkenClients.map(buildClientBtn).join('');
+  let alphaHtml = alphaClients.map(buildClientBtn).join('');
+  let processoHtml = processoClients.map(buildProcessoBtn).join('');
 
   starkenItems.innerHTML = starkenHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
   alphaItems.innerHTML = alphaHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
   document.getElementById('countStarken').textContent = starkenClients.length;
   document.getElementById('countAlpha').textContent = alphaClients.length;
+
+  // EM PROCESSO section
+  var processoContainer = document.getElementById('sidebarProcesso');
+  var processoItemsEl = document.getElementById('itemsProcesso');
+  var processoCount = document.getElementById('countProcesso');
+  if (processoContainer) {
+    processoContainer.style.display = processoClients.length > 0 ? 'block' : 'none';
+  }
+  if (processoItemsEl) {
+    processoItemsEl.innerHTML = processoHtml || '<div style="color:rgba(255,255,255,0.25);font-size:0.7rem;padding:5px 20px">Nenhum cliente</div>';
+  }
+  if (processoCount) {
+    processoCount.textContent = processoClients.length;
+  }
 }
 
 function toggleSidebarFolder(folder) {
@@ -6612,9 +6669,14 @@ function toggleSidebarFolder(folder) {
   items.style.display = isOpen ? 'none' : 'block';
   if (search) search.style.display = isOpen ? 'none' : 'block';
   chevron.classList.toggle('open', !isOpen);
-  const state = JSON.parse(localStorage.getItem('sidebarFolders') || '{}');
-  state[folder] = !isOpen;
-  localStorage.setItem('sidebarFolders', JSON.stringify(state));
+  // Use a dedicated key for the processo section
+  if (folder === 'processo') {
+    localStorage.setItem('sidebar_processo_open', !isOpen ? 'true' : 'false');
+  } else {
+    const state = JSON.parse(localStorage.getItem('sidebarFolders') || '{}');
+    state[folder] = !isOpen;
+    localStorage.setItem('sidebarFolders', JSON.stringify(state));
+  }
 }
 
 function sidebarFilterClients(folder) {
@@ -6681,6 +6743,58 @@ function restoreSidebarFolders() {
       if (chevron) chevron.classList.add('open');
     }
   });
+  // Restore EM PROCESSO open state
+  var processoItems = document.getElementById('itemsProcesso');
+  var processoChevron = document.getElementById('chevronProcesso');
+  if (processoItems && processoChevron) {
+    var processoOpen = localStorage.getItem('sidebar_processo_open') === 'true';
+    processoItems.style.display = processoOpen ? 'block' : 'none';
+    processoChevron.classList.toggle('open', processoOpen);
+  }
+}
+
+// ── Client status context menu (admin only) ──
+function ctShowClientStatusMenu(event, clientKey) {
+  if (!gpState.user || gpState.user.role !== 'admin') return;
+  event.preventDefault();
+  event.stopPropagation();
+
+  var existing = document.getElementById('clientStatusMenu');
+  if (existing) existing.remove();
+
+  var statuses = ctGetClientStatuses();
+  var current = statuses[clientKey] || 'ativo';
+
+  var menu = document.createElement('div');
+  menu.id = 'clientStatusMenu';
+  menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);padding:6px;min-width:160px;font-family:inherit';
+  menu.style.left = event.clientX + 'px';
+  menu.style.top = event.clientY + 'px';
+
+  var options = [
+    { key: 'ativo',      icon: '✅', label: 'Cliente Ativo' },
+    { key: 'onboarding', icon: '⏳', label: 'Em Onboarding' },
+    { key: 'standby',    icon: '⏸️', label: 'Em Standby' }
+  ];
+
+  options.forEach(function(opt) {
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:8px 12px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;' + (current === opt.key ? 'background:#eff6ff;font-weight:700;' : '');
+    item.innerHTML = opt.icon + ' ' + opt.label;
+    item.onclick = function() {
+      ctSetClientStatus(clientKey, opt.key);
+      menu.remove();
+      populateSidebarClients();
+    };
+    item.onmouseover = function() { item.style.background = current === opt.key ? '#dbeafe' : '#f9fafb'; };
+    item.onmouseout = function() { item.style.background = current === opt.key ? '#eff6ff' : ''; };
+    menu.appendChild(item);
+  });
+
+  document.body.appendChild(menu);
+  setTimeout(function() {
+    document.addEventListener('click', function rm() { menu.remove(); document.removeEventListener('click', rm); });
+  }, 0);
 }
 
 // ============ STATUS ============
@@ -9196,6 +9310,17 @@ function applyDesignerRestrictions() {
 // ── Definições essenciais para preload (devem existir ANTES de restoreSession) ──
 var META_CLIENTS_LS_KEY = 'metaClientsBackup';
 var _metaClients = {};
+
+// ── Client onboarding/standby status helpers ──
+function ctGetClientStatuses() {
+  try { return JSON.parse(localStorage.getItem('starken_client_statuses') || '{}'); } catch(e) { return {}; }
+}
+function ctSetClientStatus(clientKey, status) {
+  var statuses = ctGetClientStatuses();
+  if (status === 'ativo') { delete statuses[clientKey]; } else { statuses[clientKey] = status; }
+  try { localStorage.setItem('starken_client_statuses', JSON.stringify(statuses)); } catch(e) {}
+}
+
 function metaApiBase() {
   var loc = window.location;
   if (loc.hostname === 'localhost' || loc.hostname === '127.0.0.1') return '';
@@ -13369,7 +13494,10 @@ function ctLoadClientDropdown() {
   }
   let html = '<option value="">Selecione o cliente...</option>';
   const starken = [], alpha = [];
+  const _dropdownStatuses = ctGetClientStatuses();
   Object.entries(clients || {}).forEach(([key, c]) => {
+    var _st = _dropdownStatuses[key] || 'ativo';
+    if (_st === 'onboarding' || _st === 'standby') return; // skip non-active clients
     if (c.tenant === 'alpha') alpha.push({ key, name: c.name || key });
     else starken.push({ key, name: c.name || key });
   });
@@ -17877,9 +18005,12 @@ function ctOpenLightbox(url, isVideo) {
     // Collect clients from posts AND from _metaClients (so all clients appear)
     var seen = {};
     var clients = [];
-    // First: all clients from _metaClients
+    var _calDropStatuses = typeof ctGetClientStatuses === 'function' ? ctGetClientStatuses() : {};
+    // First: all active clients from _metaClients (skip onboarding/standby)
     if (typeof _metaClients !== 'undefined') {
       Object.keys(_metaClients).forEach(function(key) {
+        var _calSt = _calDropStatuses[key] || 'ativo';
+        if (_calSt === 'onboarding' || _calSt === 'standby') return;
         if (!seen[key]) {
           seen[key] = true;
           clients.push({ key: key, name: _metaClients[key].name || key });
