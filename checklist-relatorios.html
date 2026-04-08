@@ -14131,11 +14131,13 @@ var _mwWeeks = 4;
 var _mwTpl = 'sem';
 
 var MW_TEMPLATES = {
-  'sem':      [],
-  '2feed':    ['FEED 1 — CRIATIVO', 'FEED 2 — CRIATIVO'],
-  '3feed':    ['FEED 1 — CRIATIVO', 'FEED 2 — CRIATIVO', 'FEED 3 — CRIATIVO'],
-  'feed-reels':['FEED 1 — CRIATIVO', 'REELS — VÍDEO'],
-  'mensal-8': ['FEED 1 — CRIATIVO','FEED 2 — VÍDEO','REELS 1 — AÇÃO','FEED 3 — CARROSSEL','FEED 4 — CRIATIVO','FEED 5 — VÍDEO','REELS 2 — AÇÃO','FEED 6 — CARROSSEL'],
+  'sem':        [],
+  '1criativo':  ['CRIATIVO'],
+  '2criativo':  ['CRIATIVO 1', 'CRIATIVO 2'],
+  '2feed':      ['FEED 1 — CRIATIVO', 'FEED 2 — CRIATIVO'],
+  '3feed':      ['FEED 1 — CRIATIVO', 'FEED 2 — CRIATIVO', 'FEED 3 — CRIATIVO'],
+  'feed-reels': ['FEED 1 — CRIATIVO', 'REELS — VÍDEO'],
+  'mensal-8':   ['FEED 1 — CRIATIVO','FEED 2 — VÍDEO','REELS 1 — AÇÃO','FEED 3 — CARROSSEL','FEED 4 — CRIATIVO','FEED 5 — VÍDEO','REELS 2 — AÇÃO','FEED 6 — CARROSSEL'],
 };
 
 var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -23527,6 +23529,8 @@ function _doRenderTable() {
         <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Template de Tarefas por Semana</label>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
           <button class="mw-tpl-btn active" data-tpl="sem" onclick="mwSelectTpl('sem',this)" style="padding:7px 14px;border:2px solid #6366f1;border-radius:20px;background:#eff6ff;color:#4f46e5;font-weight:700;font-size:12px;cursor:pointer">Sem tarefas</button>
+          <button class="mw-tpl-btn" data-tpl="1criativo" onclick="mwSelectTpl('1criativo',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">🎨 1 Criativo</button>
+          <button class="mw-tpl-btn" data-tpl="2criativo" onclick="mwSelectTpl('2criativo',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">🎨 2 Criativos</button>
           <button class="mw-tpl-btn" data-tpl="2feed" onclick="mwSelectTpl('2feed',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">📱 2 Feeds</button>
           <button class="mw-tpl-btn" data-tpl="3feed" onclick="mwSelectTpl('3feed',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">📱 3 Feeds</button>
           <button class="mw-tpl-btn" data-tpl="feed-reels" onclick="mwSelectTpl('feed-reels',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">🎬 Feed + Reels</button>
