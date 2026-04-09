@@ -13932,6 +13932,18 @@ async function ctRefreshAgendadoStatuses() {
   }, 45000);
 })();
 
+// Poll every 30s to sync task/status changes from other users
+(function _startContentSyncPolling() {
+  if (typeof _ctSyncTimer !== 'undefined' && _ctSyncTimer) return;
+  _ctSyncTimer = setInterval(function() {
+    // Only sync when content tab is active, a client is selected, and no modal is open
+    var modalOpen = document.querySelector('.ct-task-modal.active, #ctMonthWizardModal[style*="flex"], #ctMaterialsPickerModal[style*="flex"]');
+    if (ctCurrentClient && !modalOpen && typeof gpState !== 'undefined' && (gpState.view === 'content' || document.getElementById('ctListBody'))) {
+      ctLoadGroups();
+    }
+  }, 30000);
+})();
+
 function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
@@ -14059,15 +14071,27 @@ function _ctCollapsedKey() {
   return 'starken_grp_collapsed_' + (ctCurrentClient || 'global');
 }
 
+function _ctTasksKey() {
+  return 'starken_tasks_expanded_' + (ctCurrentClient || 'global');
+}
+
 function ctLoadGroupsState() {
   try {
     var raw = localStorage.getItem(_ctCollapsedKey());
     if (raw) ctExpandedGroups = JSON.parse(raw);
   } catch(e) {}
+  try {
+    var rawT = localStorage.getItem(_ctTasksKey());
+    if (rawT) ctExpandedTasks = JSON.parse(rawT);
+  } catch(e) {}
 }
 
 function ctSaveGroupsState() {
   try { localStorage.setItem(_ctCollapsedKey(), JSON.stringify(ctExpandedGroups)); } catch(e) {}
+}
+
+function ctSaveTasksState() {
+  try { localStorage.setItem(_ctTasksKey(), JSON.stringify(ctExpandedTasks)); } catch(e) {}
 }
 
 function ctToggleGroup(groupId) {
@@ -14126,6 +14150,7 @@ async function ctDeleteGroup(groupId, groupName) {
 
 function ctToggleTask(taskId) {
   ctExpandedTasks[taskId] = ctExpandedTasks[taskId] === false ? true : false;
+  ctSaveTasksState();
   ctRenderList();
 }
 
