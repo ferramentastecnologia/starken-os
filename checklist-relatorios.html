@@ -17693,6 +17693,19 @@ function ctOpenLightbox(url, isVideo) {
     if (!_calLoaded || stale) {
       calLoadData();
     } else {
+      // Cached path: manually apply hub filter if coming from client hub
+      if (window._calHubClientSlug) {
+        calPopulateClientFilter();
+        var _hsel = document.getElementById('calClientFilter');
+        if (_hsel) {
+          var _hname = (_metaClients && _metaClients[window._calHubClientSlug])
+            ? _metaClients[window._calHubClientSlug].name : window._calHubClientSlug;
+          _hsel.innerHTML = '<option value="' + window._calHubClientSlug + '">' + _hname + '</option>'
+            + '<option value="">Todos os clientes</option>';
+          _hsel.value = window._calHubClientSlug;
+        }
+        window.calFilterClient();
+      }
       calRender();
     }
   };
@@ -18079,6 +18092,18 @@ function ctOpenLightbox(url, isVideo) {
       _calLoaded = true;
       _calLoadedAt = Date.now();
       calPopulateClientFilter();
+      // If opened from client hub: override dropdown to show only that client + Todos
+      if (window._calHubClientSlug) {
+        var _hubSel = document.getElementById('calClientFilter');
+        if (_hubSel) {
+          var _hubName = (_metaClients && _metaClients[window._calHubClientSlug])
+            ? _metaClients[window._calHubClientSlug].name
+            : window._calHubClientSlug;
+          _hubSel.innerHTML = '<option value="' + window._calHubClientSlug + '">' + _hubName + '</option>'
+            + '<option value="">Todos os clientes</option>';
+          _hubSel.value = window._calHubClientSlug;
+        }
+      }
       window.calFilterClient();
       var schCount = scheduled.length + queued.length + tasks.length;
       if (schCount > 0) {
