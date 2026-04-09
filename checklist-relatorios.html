@@ -6587,7 +6587,11 @@ function switchTab(tabName) {
   else if (tabName === 'meta-publish') metaPublishInit();
   else if (tabName === 'content') ctInit();
   else if (tabName === 'traffic') tfInit();
-  else if (tabName === 'calendario') calInit();
+  else if (tabName === 'calendario') {
+    if (!window._calHubModeSet) window._calHubClientSlug = null; // main menu: show all clients
+    window._calHubModeSet = false;
+    calInit();
+  }
   else if (tabName === 'system-logs') sysLogsInit();
   else if (tabName === 'client-hub') { /* hubOpen() handles init */ }
   else renderAll();
@@ -18243,6 +18247,17 @@ function ctOpenLightbox(url, isVideo) {
     var sel = document.getElementById('calClientFilter');
     if (!sel) return;
 
+    // If opened from client hub: only show current client + Todos
+    if (window._calHubClientSlug) {
+      var hubName = (_metaClients && _metaClients[window._calHubClientSlug])
+        ? _metaClients[window._calHubClientSlug].name
+        : window._calHubClientSlug;
+      sel.innerHTML = '<option value="' + window._calHubClientSlug + '">' + hubName + '</option>'
+        + '<option value="">Todos os clientes</option>';
+      sel.value = window._calHubClientSlug;
+      return;
+    }
+
     // Collect clients from posts AND from _metaClients (so all clients appear)
     var seen = {};
     var clients = [];
@@ -19349,22 +19364,11 @@ function clientNavSwitch(view) {
       clientNavShowBar('content');
     }, 120);
   } else if (view === 'calendar') {
+    // Set hub flag BEFORE switchTab so calPopulateClientFilter reads it
+    window._calHubClientSlug = _hubCurrentSlug || null;
+    window._calHubModeSet = true;
     switchTab('calendario');
-    // Auto-filter calendar to selected client (retry until select is populated)
-    var _calRetries = 0;
-    var _calAutoFilter = function() {
-      var calFilter = document.getElementById('calClientFilter');
-      if (calFilter && _hubCurrentSlug) {
-        // Simplify dropdown: only current client + "Todos"
-        var clientName = (_metaClients && _metaClients[_hubCurrentSlug]) ? _metaClients[_hubCurrentSlug].name : _hubCurrentSlug;
-        calFilter.innerHTML = '<option value="' + _hubCurrentSlug + '">' + clientName + '</option>'
-          + '<option value="">Todos os clientes</option>';
-        calFilter.value = _hubCurrentSlug;
-        if (typeof calFilterClient === 'function') calFilterClient();
-      }
-      clientNavShowBar('calendar');
-    };
-    setTimeout(_calAutoFilter, 200);
+    setTimeout(function() { clientNavShowBar('calendar'); }, 150);
     document.querySelectorAll('#clientNavBtnCalendarCal').forEach(function(b) { b.classList.add('active'); });
   } else if (view === 'info') {
     document.querySelectorAll('#clientNavBtnInfo').forEach(function(b) { b.classList.add('active'); });
