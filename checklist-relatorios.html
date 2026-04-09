@@ -2570,6 +2570,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .ch-mat-empty {
@@ -2595,9 +2596,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
 .ch-mat-thumb {
   width: 100%;
-  aspect-ratio: 4/3;
-  object-fit: cover;
-  background: var(--bg);
+  height: auto;
+  max-height: 280px;
+  min-height: 80px;
+  object-fit: contain;
+  background: #1a1a1a;
   display: block;
 }
 .ch-mat-thumb-placeholder {
@@ -22077,7 +22080,7 @@ function ctRenderPickerMaterials() {
     var isVideo = (m.mime_type && m.mime_type.startsWith('video/')) || videoExts.test(m.file_name || '');
     var isSelected = _ctPickerSelected.has(String(m.id));
     var thumbHtml = isImage && m.file_url
-      ? '<img src="' + m.file_url.replace(/"/g,'&quot;') + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block" loading="lazy">'
+      ? '<img src="' + m.file_url.replace(/"/g,'&quot;') + '" style="width:100%;height:auto;max-height:240px;min-height:60px;object-fit:contain;background:#1a1a1a;display:block" loading="lazy">'
       : '<div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:#f3f4f6">' + (isVideo ? '🎬' : (m.mime_type||'').includes('pdf') ? '📄' : '📎') + '</div>';
     var name = (m.file_name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     var safeId = String(m.id);
@@ -23846,7 +23849,7 @@ function _doRenderTable() {
     </div>
 
     <!-- Grid -->
-    <div id="ctPickerGrid" style="flex:1;overflow-y:auto;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;align-content:start"></div>
+    <div id="ctPickerGrid" style="flex:1;overflow-y:auto;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;align-content:start;align-items:start"></div>
 
     <!-- Footer -->
     <div style="padding:14px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb;flex-shrink:0">
