@@ -698,13 +698,13 @@ module.exports = async function handler(req, res) {
         let storyId;
         if (video_url) {
           await verifyMediaUrl(video_url);
-          const vr = await graphPost(`/${tenant.pageId}/video_stories`, {
+          const vr = await graphPostForm(`/${tenant.pageId}/video_stories`, {
             file_url: video_url,
             access_token: tenant.pageAccessToken,
-          }, { videoMode: true });
+          });
           storyId = vr.id;
         } else if (image_url) {
-          const pr = await graphPost(`/${tenant.pageId}/photo_stories`, {
+          const pr = await graphPostForm(`/${tenant.pageId}/photo_stories`, {
             url: image_url,
             access_token: tenant.pageAccessToken,
           });
@@ -712,6 +712,7 @@ module.exports = async function handler(req, res) {
         } else {
           return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'Story requer uma imagem ou vídeo.' });
         }
+        console.log('[publish/fb] story published, id:', storyId, 'page:', tenant.pageId);
         result = {
           post_id: storyId,
           status: 'PUBLISHED',

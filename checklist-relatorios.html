@@ -22525,7 +22525,8 @@ async function ctPublishFormat() {
           body.image_url = imageUrls[0];
         }
 
-        if (isSchedule) {
+        if (isSchedule && fmt !== 'story') {
+          // FB stories don't support native scheduling via API
           body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
         }
 
@@ -22535,7 +22536,7 @@ async function ctPublishFormat() {
           body: JSON.stringify(body)
         });
         var fbData = await fbRes.json();
-        results.push({ plat: 'Facebook', ok: !fbData.error, postId: fbData.id || fbData.post_id || null });
+        results.push({ plat: 'Facebook', ok: !fbData.error, postId: fbData.id || fbData.post_id || null, error: fbData.error ? (fbData.message || 'Erro desconhecido') : null });
       }
     } catch(err) {
       results.push({ plat: plat === 'fb' ? 'Facebook' : 'Instagram', ok: false, error: err.message });
