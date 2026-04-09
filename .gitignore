@@ -31,3 +31,6 @@ node_modules/
 *.docx
 setup_infra.js
 *.backup-*
+
+# DeskRPG local reference (cloned for development/analysis)
+deskrpg/
