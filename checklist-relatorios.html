@@ -22068,6 +22068,8 @@ function ctOpenMaterialsPicker() {
 function ctCloseMaterialsPicker() {
   var modal = document.getElementById('ctMaterialsPickerModal');
   if (modal) modal.style.display = 'none';
+  var preview = document.getElementById('ctPickerPreviewOverlay');
+  if (preview) preview.remove();
   _ctPickerSelected = new Set();
   _ctPickerMaterials = [];
 }
@@ -22109,7 +22111,13 @@ function ctRenderPickerMaterials() {
       : '<div style="width:100%;aspect-ratio:4/5;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:#f3f4f6">' + (isVideo ? '🎬' : (m.mime_type||'').includes('pdf') ? '📄' : '📎') + '</div>';
     var name = (m.file_name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     var safeId = String(m.id);
+    var safeUrl = (m.file_url || '').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+    var canPreview = (isImage || isVideo) && m.file_url;
+    var previewBtn = canPreview
+      ? '<button onclick="event.stopPropagation();ctPickerPreview(\'' + safeUrl + '\',\'' + name.replace(/'/g,"\\'") + '\',\'' + safeId + '\',' + (isVideo ? 'true' : 'false') + ')" title="Ver em tamanho real" style="position:absolute;top:4px;left:4px;width:26px;height:26px;background:rgba(0,0,0,0.55);border:none;border-radius:6px;color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;backdrop-filter:blur(2px)">👁</button>'
+      : '';
     return '<div onclick="ctPickerToggleSelect(\'' + safeId + '\')" id="ctPickerCard_' + safeId + '" style="border:2px solid ' + (isSelected ? '#6366f1' : '#e5e7eb') + ';border-radius:10px;overflow:hidden;cursor:pointer;background:' + (isSelected ? '#eff6ff' : '#fff') + ';transition:all 0.15s;position:relative">'
+      + previewBtn
       + (isSelected ? '<div style="position:absolute;top:4px;right:4px;width:22px;height:22px;background:#6366f1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;z-index:1;font-weight:700">✓</div>' : '')
       + thumbHtml
       + '<div style="padding:6px 8px;background:#fff"><div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#111827" title="' + name + '">' + name + '</div>'
@@ -22117,6 +22125,47 @@ function ctRenderPickerMaterials() {
       + '</div>';
   }).join('');
   ctUpdatePickerBtn();
+}
+
+function ctPickerPreview(url, name, id, isVideo) {
+  var existing = document.getElementById('ctPickerPreviewOverlay');
+  if (existing) existing.remove();
+
+  var isSelected = _ctPickerSelected.has(id);
+  var overlay = document.createElement('div');
+  overlay.id = 'ctPickerPreviewOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:20px';
+  overlay.onclick = function(e) { if (e.target === overlay) overlay.remove(); };
+
+  var mediaHtml = isVideo
+    ? '<video src="' + url + '" controls style="max-width:90vw;max-height:72vh;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)"></video>'
+    : '<img src="' + url + '" style="max-width:90vw;max-height:72vh;object-fit:contain;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5)">';
+
+  var selLabel = isSelected ? '✓ Selecionado' : '+ Selecionar este arquivo';
+  var selStyle = isSelected
+    ? 'padding:10px 24px;border:2px solid #10b981;border-radius:8px;background:#10b981;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit'
+    : 'padding:10px 24px;border:2px solid #6366f1;border-radius:8px;background:#6366f1;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit';
+
+  overlay.innerHTML =
+    '<button onclick="document.getElementById(\'ctPickerPreviewOverlay\').remove()" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">✕</button>'
+    + mediaHtml
+    + '<div style="display:flex;align-items:center;gap:12px">'
+    + '<span style="color:rgba(255,255,255,0.75);font-size:13px;max-width:300px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + name + '</span>'
+    + '<button id="ctPickerPreviewSelectBtn" onclick="ctPickerPreviewToggleSelect(\'' + id + '\')" style="' + selStyle + '">' + selLabel + '</button>'
+    + '</div>';
+
+  document.body.appendChild(overlay);
+}
+
+function ctPickerPreviewToggleSelect(id) {
+  ctPickerToggleSelect(id);
+  var btn = document.getElementById('ctPickerPreviewSelectBtn');
+  if (btn) {
+    var isSelected = _ctPickerSelected.has(id);
+    btn.textContent = isSelected ? '✓ Selecionado' : '+ Selecionar este arquivo';
+    btn.style.background = isSelected ? '#10b981' : '#6366f1';
+    btn.style.borderColor = isSelected ? '#10b981' : '#6366f1';
+  }
 }
 
 function ctPickerToggleSelect(id) {
