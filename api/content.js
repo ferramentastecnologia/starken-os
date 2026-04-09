@@ -883,6 +883,126 @@ async function voCeoDashboard(params) {
 }
 
 // =============================================================================
+// DeskRPG Integration - Phase 5C
+// =============================================================================
+
+async function voSyncDeskrpgNpc(params) {
+  try {
+    const { npc_id } = params;
+    if (!npc_id) return fail('npc_id required');
+
+    // Fetch DeskRPG bridge module
+    const bridge = require('./deskrpg-bridge');
+
+    // Get the virtual_npc record to find the deskrpg_npc_id
+    const npcs = await supaSelect('virtual_npcs', `id=eq.${npc_id}&select=*`);
+    if (!npcs || npcs.length === 0) return fail('NPC not found', 404);
+
+    const npc = npcs[0];
+    if (!npc.deskrpg_npc_id) {
+      return fail('NPC not linked to DeskRPG agent', 400);
+    }
+
+    // Call DeskRPG to get current status
+    const deskrpgStatus = await bridge.deskrpgGetNpcStatus(npc.deskrpg_npc_id);
+
+    if (!deskrpgStatus.success) {
+      return fail(`DeskRPG sync failed: ${deskrpgStatus.error}`, 500);
+    }
+
+    // Update virtual_npcs with latest status
+    const update = {
+      deskrpg_last_synced_at: new Date().toISOString(),
+      status: deskrpgStatus.npc.hasAgent ? 'online' : 'idle',
+    };
+
+    await supaUpdate('virtual_npcs', npc_id, update);
+
+    // Log activity
+    await logActivity(null, 'system', 'vo_sync_deskrpg_npc', {
+      npc_id,
+      deskrpg_npc_id: npc.deskrpg_npc_id,
+      deskrpg_status: deskrpgStatus.npc,
+    });
+
+    return ok({
+      npc_id,
+      synced: true,
+      deskrpg_npc: deskrpgStatus.npc,
+      message: 'NPC status synchronized with DeskRPG',
+    });
+  } catch (err) {
+    return fail(err.message, 500);
+  }
+}
+
+async function voFetchDeskrpgTask(params) {
+  try {
+    const { task_id } = params;
+    if (!task_id) return fail('task_id required');
+
+    // Fetch the virtual_npc_task record
+    const tasks = await supaSelect('virtual_npc_tasks', `id=eq.${task_id}&select=*`);
+    if (!tasks || tasks.length === 0) return fail('Task not found', 404);
+
+    const task = tasks[0];
+    if (!task.deskrpg_task_id) {
+      return fail('Task not linked to DeskRPG', 400);
+    }
+
+    // Fetch DeskRPG bridge module
+    const bridge = require('./deskrpg-bridge');
+
+    // Call DeskRPG to get task result
+    const deskrpgTask = await bridge.deskrpgGetTaskResult(task.deskrpg_task_id);
+
+    if (!deskrpgTask.success) {
+      return fail(`DeskRPG fetch failed: ${deskrpgTask.error}`, 500);
+    }
+
+    // If task is completed in DeskRPG and not yet in Starken, update it
+    if (
+      deskrpgTask.task &&
+      deskrpgTask.task.status === 'completed' &&
+      task.status !== 'completed'
+    ) {
+      const update = {
+        status: 'completed',
+        result_data: deskrpgTask.task.result || null,
+        result_summary: deskrpgTask.task.resultSummary || null,
+        completed_at: new Date().toISOString(),
+        deskrpg_status: 'completed',
+      };
+
+      await supaUpdate('virtual_npc_tasks', task_id, update);
+
+      // Update NPC's last_task_completed_at
+      if (task.npc_id) {
+        await supaUpdate('virtual_npcs', task.npc_id, {
+          last_task_completed_at: new Date().toISOString(),
+        });
+      }
+
+      // Log activity
+      await logActivity(null, 'system', 'vo_fetch_deskrpg_task', {
+        task_id,
+        deskrpg_task_id: task.deskrpg_task_id,
+        result_summary: deskrpgTask.task.resultSummary,
+      });
+    }
+
+    return ok({
+      task_id,
+      deskrpg_task: deskrpgTask.task,
+      synced: deskrpgTask.task.status === 'completed',
+      message: 'Task result fetched from DeskRPG',
+    });
+  } catch (err) {
+    return fail(err.message, 500);
+  }
+}
+
+// =============================================================================
 // Action Router
 // =============================================================================
 
@@ -921,6 +1041,9 @@ const ACTIONS = {
   vo_create_task: voCreateTask,
   vo_get_reports: voGetReports,
   vo_ceo_dashboard: voCeoDashboard,
+  // DeskRPG Integration
+  vo_sync_deskrpg_npc: voSyncDeskrpgNpc,
+  vo_fetch_deskrpg_task: voFetchDeskrpgTask,
 };
 
 // =============================================================================

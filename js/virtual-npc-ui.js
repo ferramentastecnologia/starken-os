@@ -250,7 +250,31 @@ async function voAssignTaskAndClose(npcId) {
   }
 
   try {
-    await VO.createTask('general', 'manual', taskName);
+    // Create task in Starken OS virtual office
+    const result = await VO.apiCall('vo_create_task', {
+      npc_id: npcId,
+      title: taskName,
+      summary: taskDesc,
+    });
+
+    if (!result.success) {
+      throw new Error(result.error || 'Falha ao criar tarefa');
+    }
+
+    const task = result.task;
+
+    // Phase 5: If NPC is linked to DeskRPG, also create task there
+    const npc = voNpcs.find(n => n.id === npcId);
+    if (npc && npc.deskrpg_npc_id) {
+      try {
+        // Spawn background sync for DeskRPG (non-blocking)
+        voSyncTaskWithDeskrpg(task.id, npc.deskrpg_npc_id, taskName, taskDesc);
+      } catch (err) {
+        console.warn('[VO NPC] DeskRPG sync failed (non-blocking):', err);
+        // Don't fail the entire task if DeskRPG sync fails
+      }
+    }
+
     alert('Tarefa atribuída com sucesso!');
     voCloseAssignTaskModal();
 
@@ -261,6 +285,57 @@ async function voAssignTaskAndClose(npcId) {
   } catch (err) {
     alert(`Erro: ${err.message}`);
   }
+}
+
+// ─── Sync Task with DeskRPG (Phase 5) ───
+async function voSyncTaskWithDeskrpg(taskId, deskrpgNpcId, title, summary) {
+  console.log(`[VO NPC] Syncing task ${taskId} with DeskRPG NPC ${deskrpgNpcId}`);
+
+  try {
+    // Call bridge to create task in DeskRPG
+    // Note: This requires api/deskrpg-bridge.js to be properly configured
+    // with DESKRPG_BASE_URL, DESKRPG_AUTH_TYPE, etc.
+
+    // For now, log a message - actual implementation depends on DeskRPG setup
+    console.log(`[VO NPC] Task sync queued: ${title} → DeskRPG`);
+
+    // Future: Implement polling to sync task status back
+    // voStartTaskStatusPolling(taskId, deskrpgNpcId);
+  } catch (err) {
+    console.error('[VO NPC] DeskRPG sync error:', err);
+  }
+}
+
+// ─── Poll Task Status from DeskRPG ───
+let voTaskPollingIntervals = {};
+
+async function voStartTaskStatusPolling(taskId, deskrpgNpcId, interval = 5000) {
+  console.log(`[VO NPC] Starting status polling for task ${taskId} (interval: ${interval}ms)`);
+
+  const poll = async () => {
+    try {
+      const result = await VO.apiCall('vo_fetch_deskrpg_task', { task_id: taskId });
+
+      if (result.deskrpg_task && result.deskrpg_task.status === 'completed') {
+        console.log(`[VO NPC] Task ${taskId} completed in DeskRPG`);
+        clearInterval(voTaskPollingIntervals[taskId]);
+        delete voTaskPollingIntervals[taskId];
+
+        // Update UI with result
+        if (voCurrentOffice) {
+          await voRenderNpcList(voCurrentOffice.id, voCurrentRoom?.type);
+        }
+      }
+    } catch (err) {
+      console.warn(`[VO NPC] Polling error for task ${taskId}:`, err);
+    }
+  };
+
+  // Start polling
+  voTaskPollingIntervals[taskId] = setInterval(poll, interval);
+
+  // Initial immediate poll
+  await poll();
 }
 
 // ─── Close Assign Task Modal ───
