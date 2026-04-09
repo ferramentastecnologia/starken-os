@@ -22474,40 +22474,44 @@ async function ctPublishFormat() {
   for (var i = 0; i < _ctFmtPlatforms.length; i++) {
     var plat = _ctFmtPlatforms[i];
     try {
-      if (plat === 'ig') {
-        // Instagram via queue
+      // IG and FB stories always go via queue (no native story scheduling in FB API)
+      var useQueue = plat === 'ig' || fmt === 'story';
+      if (useQueue) {
         var scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 5000).toISOString();
         var clientName = (_metaClients && _metaClients[ctCurrentClient]) ? _metaClients[ctCurrentClient].name : ctCurrentClient;
         var queueBody = {
           action: 'queue',
           client_key: ctCurrentClient,
           client_name: clientName,
-          platform: 'ig',
+          platform: plat,
           caption: fmt === 'story' ? '' : copy,
           scheduled_for: scheduledFor,
           task_id: ctModalTask.id,
           post_type: fmt,
-          media_type: (fmt === 'reels' || videos.length > 0) ? 'REELS' : null,
+          media_type: fmt === 'story' ? 'STORIES' : (fmt === 'reels' || videos.length > 0) ? 'REELS' : null,
           user_name: gpState.user ? gpState.user.name : 'Sistema',
         };
         if (fmt === 'carrossel') {
           queueBody.image_urls = imageUrls;
-        } else if (fmt === 'reels' || videos.length > 0) {
+        } else if (fmt === 'reels' || (plat === 'ig' && videos.length > 0)) {
           queueBody.image_urls = videoUrls;
+        } else if (fmt === 'story') {
+          queueBody.image_urls = videos.length > 0 ? [videoUrls[0]] : [imageUrls[0]];
         } else {
           queueBody.image_urls = imageUrls;
         }
 
-        var igRes = await fetch(ctApiBase() + '/api/meta/publish', {
+        var qRes = await fetch(ctApiBase() + '/api/meta/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(queueBody)
         });
-        var igData = await igRes.json();
-        results.push({ plat: 'Instagram', ok: !igData.error, postId: igData.queue_id || null });
+        var qData = await qRes.json();
+        var qPlat = plat === 'fb' ? 'Facebook' : 'Instagram';
+        results.push({ plat: qPlat, ok: !qData.error, postId: qData.queue_id || null, error: qData.error ? (qData.message || 'Erro') : null });
 
       } else {
-        // Facebook direct
+        // Facebook direct (non-story formats)
         var body = {
           client: ctCurrentClient,
           destination: 'fb',
@@ -22521,16 +22525,12 @@ async function ctPublishFormat() {
         } else if (fmt === 'carrossel' || images.length > 1) {
           body.type = 'carousel';
           body.image_urls = imageUrls;
-        } else if (fmt === 'story') {
-          body.type = 'story';
-          body.image_url = images.length > 0 ? imageUrls[0] : videoUrls[0];
         } else {
           body.type = 'feed';
           body.image_url = imageUrls[0];
         }
 
-        if (isSchedule && fmt !== 'story') {
-          // FB stories don't support native scheduling via API
+        if (isSchedule) {
           body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
         }
 

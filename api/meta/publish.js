@@ -159,10 +159,24 @@ async function processPublishQueue() {
         }
       } else if (item.platform === 'fb') {
         const isFbStory = item.post_type === 'story' || item.media_type === 'STORIES';
-        // FB Story: use photo_stories endpoint
+        // FB Story: try photo_stories, fall back to regular photo
         if (isFbStory && imageUrls.length >= 1) {
-          const pr = await graphPost(`/${client.pageId}/photo_stories`, { url: imageUrls[0], access_token: igToken });
-          publishedId = pr.id;
+          const storyUrl = `https://graph.facebook.com/v25.0/${client.pageId}/photo_stories?access_token=${encodeURIComponent(igToken)}`;
+          const sp = new URLSearchParams();
+          sp.append('url', imageUrls[0]);
+          const storyRes = await fetch(storyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: sp.toString(),
+          });
+          const storyData = await storyRes.json();
+          if (!storyRes.ok || storyData.error) {
+            console.warn('[queue/fb] photo_stories fallback to /photos:', storyData.error && storyData.error.message);
+            const fallback = await graphPost(`/${client.pageId}/photos`, { url: imageUrls[0], caption: item.caption || '', access_token: igToken });
+            publishedId = fallback.id || fallback.post_id;
+          } else {
+            publishedId = storyData.id;
+          }
         } else if (imageUrls.length > 1) {
           const photoIds = [];
           for (const imgUrl of imageUrls) {
