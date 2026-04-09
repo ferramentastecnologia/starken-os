@@ -30,3 +30,4 @@ node_modules/
 # Docs sensíveis
 *.docx
 setup_infra.js
+*.backup-*
