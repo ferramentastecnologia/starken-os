@@ -3816,7 +3816,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
             <!-- References (attachments with category=reference) -->
             <div class="ct-modal-section">
-              <div class="ct-modal-section-title">🖼️ Referências Visuais <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px" onclick="ctUploadAttachment('reference')">+ Adicionar</button></div>
+              <div class="ct-modal-section-title">🖼️ Referências Visuais <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px" onclick="ctShowUploadChoice('reference','',event)">+ Adicionar</button></div>
               <div class="ct-attachment-grid" id="ctModalReferences"></div>
               <input type="file" id="ctFileInputRef" accept="image/*" multiple style="display:none" onchange="ctHandleFileUpload(this.files,'reference')">
             </div>
@@ -3915,7 +3915,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <!-- Creative upload for active format -->
                 <div class="ct-modal-section" style="margin-bottom:12px">
                   <div class="ct-modal-section-title">🎨 Criativo <span id="ctFormatCreativeLabel" style="font-weight:400;color:var(--text-secondary)"></span>
-                    <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctUploadFormatAttachment()">+ Upload Criativo</button>
+                    <button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctShowUploadChoice('creative',_ctActiveFormatTab||'feed',event)">+ Upload Criativo</button>
                   </div>
                   <div class="ct-attachment-grid" id="ctFormatCreatives"></div>
                   <input type="file" id="ctFileInputFormatCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">
@@ -21759,7 +21759,7 @@ function ctRenderFormatTabs() {
   if (!document.getElementById('ctFormatCreatives')) {
     contentEl.innerHTML = '<div class="ct-modal-section" style="margin-bottom:12px">'
       + '<div class="ct-modal-section-title">🎨 Criativo <span id="ctFormatCreativeLabel" style="font-weight:400;color:var(--text-secondary)"></span>'
-      + '<button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctUploadFormatAttachment()">+ Upload Criativo</button></div>'
+      + '<button class="ct-add-btn" style="font-size:0.7rem;padding:3px 10px;margin-left:8px;background:#10b981" onclick="ctShowUploadChoice(\'creative\',_ctActiveFormatTab||\'feed\',event)">+ Upload Criativo</button></div>'
       + '<div class="ct-attachment-grid" id="ctFormatCreatives"></div>'
       + '<input type="file" id="ctFileInputFormatCreative" accept="image/*,video/*" multiple style="display:none" onchange="ctHandleFormatFileUpload(this.files)">'
       + '<div id="ctFormatCreativeEmpty" style="color:var(--text-secondary);font-size:0.82rem;padding:12px;display:none">Nenhum criativo para este formato</div>'
@@ -21967,8 +21967,162 @@ function ctSaveFormatCopy(value) {
 function ctUploadFormatAttachment() {
   // DEFINITIVE: lock format type to the active tab BEFORE opening file picker
   window._ctUploadFormatType = _ctActiveFormatTab || 'feed';
-  console.log('[Upload] Format type pre-locked to:', window._ctUploadFormatType);
   document.getElementById('ctFileInputFormatCreative').click();
+}
+
+// ─── UPLOAD CHOICE + MATERIALS PICKER ───
+var _ctPickerCategory = 'reference';
+var _ctPickerFormatType = null;
+var _ctPickerMaterials = [];
+var _ctPickerSelected = new Set();
+var _ctPickerFilter = 'all';
+
+function ctShowUploadChoice(category, formatType, event) {
+  var existing = document.getElementById('ctUploadChoiceMenu');
+  if (existing) { existing.remove(); return; }
+  _ctPickerCategory = category;
+  _ctPickerFormatType = formatType || null;
+  var btn = event.currentTarget;
+  var rect = btn.getBoundingClientRect();
+  var menu = document.createElement('div');
+  menu.id = 'ctUploadChoiceMenu';
+  menu.style.cssText = 'position:fixed;z-index:99999;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.18);padding:6px;min-width:230px;font-family:inherit';
+  menu.style.top = (rect.bottom + 6) + 'px';
+  menu.style.left = rect.left + 'px';
+  menu.innerHTML =
+    '<div onclick="ctChooseLocalUpload()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer" onmouseover="this.style.background=\'#f3f4f6\'" onmouseout="this.style.background=\'\'">'
+    + '<span style="font-size:18px">💻</span><div><div style="font-size:13px;font-weight:600;color:#111827">Do computador</div><div style="font-size:11px;color:#6b7280">Upload de arquivo local</div></div></div>'
+    + '<div onclick="ctOpenMaterialsPicker()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;cursor:pointer" onmouseover="this.style.background=\'#f3f4f6\'" onmouseout="this.style.background=\'\'">'
+    + '<span style="font-size:18px">🖼️</span><div><div style="font-size:13px;font-weight:600;color:#111827">Materiais do cliente</div><div style="font-size:11px;color:#6b7280">Selecionar da biblioteca</div></div></div>';
+  document.body.appendChild(menu);
+  setTimeout(function() {
+    document.addEventListener('click', function closeMenu(e) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', closeMenu); }
+    });
+  }, 10);
+}
+
+function ctChooseLocalUpload() {
+  var menu = document.getElementById('ctUploadChoiceMenu');
+  if (menu) menu.remove();
+  if (_ctPickerCategory === 'creative' || _ctPickerCategory === 'final') {
+    window._ctUploadFormatType = _ctPickerFormatType || _ctActiveFormatTab || 'feed';
+    document.getElementById('ctFileInputFormatCreative').click();
+  } else {
+    document.getElementById('ctFileInputRef').click();
+  }
+}
+
+function ctOpenMaterialsPicker() {
+  var menu = document.getElementById('ctUploadChoiceMenu');
+  if (menu) menu.remove();
+  _ctPickerSelected = new Set();
+  _ctPickerFilter = 'all';
+  var modal = document.getElementById('ctMaterialsPickerModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    ctLoadPickerMaterials('all');
+  }
+}
+
+function ctCloseMaterialsPicker() {
+  var modal = document.getElementById('ctMaterialsPickerModal');
+  if (modal) modal.style.display = 'none';
+  _ctPickerSelected = new Set();
+  _ctPickerMaterials = [];
+}
+
+async function ctLoadPickerMaterials(catFilter) {
+  _ctPickerFilter = catFilter || 'all';
+  document.querySelectorAll('.ct-picker-filter').forEach(function(b) {
+    b.style.background = b.dataset.cat === _ctPickerFilter ? '#6366f1' : 'transparent';
+    b.style.color = b.dataset.cat === _ctPickerFilter ? '#fff' : '#374151';
+    b.style.borderColor = b.dataset.cat === _ctPickerFilter ? '#6366f1' : '#e5e7eb';
+  });
+  var grid = document.getElementById('ctPickerGrid');
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#6b7280">⏳ Carregando...</div>';
+  try {
+    var data = await hubApi({ action: 'hub_materials_list', client_slug: ctCurrentClient, category: _ctPickerFilter });
+    _ctPickerMaterials = Array.isArray(data) ? data : [];
+    ctRenderPickerMaterials();
+  } catch(e) {
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#ef4444">Erro ao carregar materiais</div>';
+  }
+}
+
+function ctRenderPickerMaterials() {
+  var grid = document.getElementById('ctPickerGrid');
+  if (!grid) return;
+  if (_ctPickerMaterials.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:#6b7280;background:#f9fafb;border-radius:10px;border:2px dashed #e5e7eb"><div style="font-size:2rem;margin-bottom:8px">📁</div><div>Nenhum material encontrado</div></div>';
+    return;
+  }
+  var imageExts = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i;
+  var videoExts = /\.(mp4|mov|avi|webm)$/i;
+  var catLabels = { logo:'Logo', product_photo:'Foto', template:'Template', reference:'Ref.', document:'Doc', other:'Outro' };
+  grid.innerHTML = _ctPickerMaterials.map(function(m) {
+    var isImage = (m.mime_type && m.mime_type.startsWith('image/')) || imageExts.test(m.file_name || '');
+    var isVideo = (m.mime_type && m.mime_type.startsWith('video/')) || videoExts.test(m.file_name || '');
+    var isSelected = _ctPickerSelected.has(String(m.id));
+    var thumbHtml = isImage && m.file_url
+      ? '<img src="' + m.file_url.replace(/"/g,'&quot;') + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block" loading="lazy">'
+      : '<div style="width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:#f3f4f6">' + (isVideo ? '🎬' : (m.mime_type||'').includes('pdf') ? '📄' : '📎') + '</div>';
+    var name = (m.file_name || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var safeId = String(m.id);
+    return '<div onclick="ctPickerToggleSelect(\'' + safeId + '\')" id="ctPickerCard_' + safeId + '" style="border:2px solid ' + (isSelected ? '#6366f1' : '#e5e7eb') + ';border-radius:10px;overflow:hidden;cursor:pointer;background:' + (isSelected ? '#eff6ff' : '#fff') + ';transition:all 0.15s;position:relative">'
+      + (isSelected ? '<div style="position:absolute;top:4px;right:4px;width:22px;height:22px;background:#6366f1;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;z-index:1;font-weight:700">✓</div>' : '')
+      + thumbHtml
+      + '<div style="padding:6px 8px;background:#fff"><div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#111827" title="' + name + '">' + name + '</div>'
+      + '<span style="font-size:10px;background:#6366f1;color:#fff;padding:1px 6px;border-radius:4px;font-weight:600">' + (catLabels[m.category] || m.category || 'Outro') + '</span></div>'
+      + '</div>';
+  }).join('');
+  ctUpdatePickerBtn();
+}
+
+function ctPickerToggleSelect(id) {
+  if (_ctPickerSelected.has(id)) { _ctPickerSelected.delete(id); } else { _ctPickerSelected.add(id); }
+  ctRenderPickerMaterials();
+}
+
+function ctUpdatePickerBtn() {
+  var btn = document.getElementById('ctPickerConfirmBtn');
+  var n = _ctPickerSelected.size;
+  if (btn) {
+    btn.textContent = n > 0 ? '✅ Usar ' + n + ' selecionado' + (n > 1 ? 's' : '') : 'Selecione um arquivo';
+    btn.disabled = n === 0;
+    btn.style.opacity = n === 0 ? '0.5' : '1';
+    btn.style.cursor = n === 0 ? 'not-allowed' : 'pointer';
+  }
+}
+
+async function ctConfirmPickerMaterials() {
+  if (_ctPickerSelected.size === 0) return;
+  var btn = document.getElementById('ctPickerConfirmBtn');
+  if (btn) { btn.textContent = '⏳ Adicionando...'; btn.disabled = true; }
+  try {
+    var selected = _ctPickerMaterials.filter(function(m) { return _ctPickerSelected.has(String(m.id)); });
+    for (var i = 0; i < selected.length; i++) {
+      var m = selected[i];
+      await ctApi('add_attachment', {
+        task_id: ctModalTask.id,
+        file_name: m.file_name,
+        file_url: m.file_url,
+        file_type: m.mime_type || '',
+        file_size: m.file_size || 0,
+        category: _ctPickerCategory || 'reference',
+        format_type: (_ctPickerCategory === 'creative' || _ctPickerCategory === 'final') ? (_ctPickerFormatType || _ctActiveFormatTab || 'feed') : 'feed',
+        user: ctGetUser(),
+      });
+    }
+    var taskData = await ctApi('get_task', { id: ctModalTask.id });
+    ctModalTask.attachments = taskData.attachments || [];
+    ctRenderModalAttachments(ctModalTask.attachments);
+    if (_ctSelectedFormats && _ctSelectedFormats.length > 0 && typeof ctRenderFormatContent === 'function') ctRenderFormatContent();
+    ctCloseMaterialsPicker();
+  } catch(e) {
+    alert('Erro ao adicionar: ' + e.message);
+    if (btn) { btn.textContent = '✅ Usar selecionados'; btn.disabled = false; }
+  }
 }
 
 async function ctHandleFormatFileUpload(files) {
@@ -23655,6 +23809,37 @@ function _doRenderTable() {
     <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb">
       <button onclick="ctHideMonthWizard()" style="padding:10px 20px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit">Cancelar</button>
       <button id="mwCreateBtn" onclick="ctRunMonthWizard()" style="padding:10px 24px;border:none;border-radius:8px;background:#6366f1;color:#fff;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(99,102,241,0.3)">🚀 Criar Grupos</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MATERIALS PICKER MODAL ═══ -->
+<div id="ctMaterialsPickerModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center" onclick="if(event.target===this)ctCloseMaterialsPicker()">
+  <div style="background:#fff;border-radius:16px;width:94%;max-width:700px;max-height:88vh;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;font-family:inherit;display:flex;flex-direction:column">
+
+    <!-- Header -->
+    <div style="padding:18px 24px 14px;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg,#6366f1 0%,#4f46e5 100%);color:#fff;flex-shrink:0">
+      <div style="font-size:17px;font-weight:800;margin-bottom:3px">🖼️ Materiais do Cliente</div>
+      <div style="font-size:12px;opacity:0.85">Selecione um ou mais arquivos para adicionar à tarefa</div>
+    </div>
+
+    <!-- Filters -->
+    <div style="padding:12px 20px;border-bottom:1px solid #e5e7eb;background:#f9fafb;flex-shrink:0;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="ct-picker-filter" data-cat="all" onclick="ctLoadPickerMaterials('all')" style="padding:5px 12px;border:1.5px solid #6366f1;border-radius:6px;background:#6366f1;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Todos</button>
+      <button class="ct-picker-filter" data-cat="logo" onclick="ctLoadPickerMaterials('logo')" style="padding:5px 12px;border:1.5px solid #e5e7eb;border-radius:6px;background:transparent;color:#374151;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Logo</button>
+      <button class="ct-picker-filter" data-cat="product_photo" onclick="ctLoadPickerMaterials('product_photo')" style="padding:5px 12px;border:1.5px solid #e5e7eb;border-radius:6px;background:transparent;color:#374151;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Fotos</button>
+      <button class="ct-picker-filter" data-cat="template" onclick="ctLoadPickerMaterials('template')" style="padding:5px 12px;border:1.5px solid #e5e7eb;border-radius:6px;background:transparent;color:#374151;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Templates</button>
+      <button class="ct-picker-filter" data-cat="reference" onclick="ctLoadPickerMaterials('reference')" style="padding:5px 12px;border:1.5px solid #e5e7eb;border-radius:6px;background:transparent;color:#374151;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Referências</button>
+      <button class="ct-picker-filter" data-cat="other" onclick="ctLoadPickerMaterials('other')" style="padding:5px 12px;border:1.5px solid #e5e7eb;border-radius:6px;background:transparent;color:#374151;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">Outros</button>
+    </div>
+
+    <!-- Grid -->
+    <div id="ctPickerGrid" style="flex:1;overflow-y:auto;padding:16px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px;align-content:start"></div>
+
+    <!-- Footer -->
+    <div style="padding:14px 20px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb;flex-shrink:0">
+      <button onclick="ctCloseMaterialsPicker()" style="padding:9px 18px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+      <button id="ctPickerConfirmBtn" onclick="ctConfirmPickerMaterials()" disabled style="padding:9px 22px;border:none;border-radius:8px;background:#6366f1;color:#fff;font-weight:700;font-size:13px;cursor:not-allowed;font-family:inherit;opacity:0.5">Selecione um arquivo</button>
     </div>
   </div>
 </div>
