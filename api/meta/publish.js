@@ -695,24 +695,37 @@ module.exports = async function handler(req, res) {
       }
       // ─── STORY (FB) ───
       else if (type === 'story' || media_type === 'STORIES') {
+        if (!tenant.pageAccessToken) {
+          return res.status(400).json({ error: true, code: 'MISSING_PAGE_TOKEN', message: 'Page Access Token não encontrado para publicar Story no Facebook.' });
+        }
         let storyId;
         if (video_url) {
           await verifyMediaUrl(video_url);
-          const vr = await graphPostForm(`/${tenant.pageId}/video_stories`, {
+          // graphPost correctly overrides global token with page token via spread
+          const vr = await graphPost(`/${tenant.pageId}/video_stories`, {
             file_url: video_url,
             access_token: tenant.pageAccessToken,
-          });
+          }, { videoMode: true });
           storyId = vr.id;
         } else if (image_url) {
-          const pr = await graphPostForm(`/${tenant.pageId}/photo_stories`, {
-            url: image_url,
-            access_token: tenant.pageAccessToken,
+          // Pass token as query param (some endpoints require it, not in body)
+          const storyUrl = `https://graph.facebook.com/v25.0/${tenant.pageId}/photo_stories?access_token=${encodeURIComponent(tenant.pageAccessToken)}`;
+          const storyRes = await fetch(storyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: image_url }),
           });
-          storyId = pr.id;
+          const storyData = await storyRes.json();
+          console.log('[publish/fb] photo_stories response:', JSON.stringify(storyData));
+          if (!storyRes.ok || storyData.error) {
+            const e = storyData.error || {};
+            throw { error: true, message: e.message || 'Erro ao publicar story no Facebook', meta_code: e.code, status: storyRes.status };
+          }
+          storyId = storyData.id;
         } else {
           return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'Story requer uma imagem ou vídeo.' });
         }
-        console.log('[publish/fb] story published, id:', storyId, 'page:', tenant.pageId);
+        console.log('[publish/fb] story id:', storyId, 'page:', tenant.pageId);
         result = {
           post_id: storyId,
           status: 'PUBLISHED',
