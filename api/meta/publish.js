@@ -693,6 +693,33 @@ module.exports = async function handler(req, res) {
           ...(scheduled_publish_time && { scheduled_for: new Date(scheduled_publish_time * 1000).toISOString() }),
         };
       }
+      // ─── STORY (FB) ───
+      else if (type === 'story' || media_type === 'STORIES') {
+        let storyId;
+        if (video_url) {
+          await verifyMediaUrl(video_url);
+          const vr = await graphPost(`/${tenant.pageId}/video_stories`, {
+            file_url: video_url,
+            access_token: tenant.pageAccessToken,
+          }, { videoMode: true });
+          storyId = vr.id;
+        } else if (image_url) {
+          const pr = await graphPost(`/${tenant.pageId}/photo_stories`, {
+            url: image_url,
+            access_token: tenant.pageAccessToken,
+          });
+          storyId = pr.id;
+        } else {
+          return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'Story requer uma imagem ou vídeo.' });
+        }
+        result = {
+          post_id: storyId,
+          status: 'PUBLISHED',
+          has_image: true,
+          client: tenant.name || tenant.key,
+          page: tenant.pageName || tenant.pageId,
+        };
+      }
       // ─── VIDEO / REELS (FB) ───
       else if (video_url) {
         // Verify video URL is accessible before sending to Meta

@@ -16413,12 +16413,6 @@ async function ctPublishFromModal() {
   var contentType = activeFormat;
   var formatConfig = (ctModalTask.publish_config && ctModalTask.publish_config[activeFormat]) || {};
 
-  // Story: block publishing (Meta API doesn't support Stories scheduling)
-  if (contentType === 'story') {
-    alert('📱 Stories: publique manualmente pelo app do Instagram/Facebook.\n\nA Meta API não suporta publicação de Stories automatizada.');
-    return;
-  }
-
   // Use format-specific copy if available, fall back to main copy_text
   const copy = formatConfig.copy_text || ctModalTask.copy_text || '';
   if (!copy) { alert('Preencha a Copy do Post antes de publicar'); return; }
@@ -16466,7 +16460,7 @@ async function ctPublishFromModal() {
 
   for (const plat of platforms) {
     const platLabel = plat === 'fb' ? 'Facebook' : 'Instagram';
-    statusDiv.innerHTML = '⏳ Publicando ' + (contentType === 'reels' ? 'Reels' : contentType === 'carrossel' ? 'Carrossel' : 'Feed') + ' em ' + platLabel + '...';
+    statusDiv.innerHTML = '⏳ Publicando ' + (contentType === 'reels' ? 'Reels' : contentType === 'carrossel' ? 'Carrossel' : contentType === 'story' ? 'Story' : 'Feed') + ' em ' + platLabel + '...';
 
     // ─── IG → sempre via fila (evita timeout Vercel 10s com vídeos) ───
     if (plat === 'ig') {
@@ -16485,7 +16479,12 @@ async function ctPublishFromModal() {
         // Reels → send video URL + media_type
         if (contentType === 'reels') {
           queueBody.image_urls = [videoUrls[0]];
+          queueBody.post_type = 'reels';
           queueBody.media_type = 'REELS';
+        } else if (contentType === 'story') {
+          queueBody.image_urls = videoUrls.length > 0 ? [videoUrls[0]] : [imageUrls[0]];
+          queueBody.post_type = 'story';
+          queueBody.media_type = 'STORIES';
         } else {
           queueBody.image_urls = contentType === 'carrossel' ? imageUrls : (imageUrls.length > 0 ? imageUrls : videoUrls);
         }
@@ -16520,6 +16519,15 @@ async function ctPublishFromModal() {
       // Carrossel → always carousel
       body.type = 'carousel';
       body.image_urls = imageUrls;
+    } else if (contentType === 'story') {
+      // Story → photo_stories or video_stories endpoint
+      body.type = 'story';
+      body.media_type = 'STORIES';
+      if (videoUrls.length > 0) {
+        body.video_url = videoUrls[0];
+      } else {
+        body.image_url = imageUrls[0];
+      }
     } else {
       // Feed → auto-detect single vs carousel
       if (imageUrls.length > 1) {
@@ -16536,7 +16544,8 @@ async function ctPublishFromModal() {
       }
     }
 
-    if (plat === 'fb' && isSchedule) {
+    if (plat === 'fb' && isSchedule && contentType !== 'story') {
+      // FB native scheduling (stories don't support scheduled_publish_time)
       body.scheduled_publish_time = Math.floor(new Date(datetime).getTime() / 1000);
     }
 
