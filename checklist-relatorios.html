@@ -13061,7 +13061,7 @@ async function metaPublishSubmit() {
         destination: 'ig',
         client: clientKey,
         image_url: imageUrl,
-        media_type: type === 'reels' ? 'REELS' : 'IMAGE',
+        media_type: type === 'reels' ? 'REELS' : type === 'story' ? 'STORIES' : 'IMAGE',
         caption: caption,
       };
 
@@ -13108,6 +13108,7 @@ async function metaPublishSubmit() {
           caption: caption,
           image_urls: resolvedImageUrls.length > 0 ? resolvedImageUrls : (resolvedImageUrl ? [resolvedImageUrl] : []),
           post_type: type,
+          media_type: type === 'story' ? 'STORIES' : type === 'reels' ? 'REELS' : 'IMAGE',
           scheduled_for: new Date(datetime).toISOString(),
           user_name: gpState.user ? gpState.user.name : 'Sistema',
         };

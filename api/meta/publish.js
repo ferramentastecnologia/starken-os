@@ -99,6 +99,7 @@ async function processPublishQueue() {
         }
 
         // Helper: wait for container (extended timeout for videos: 60 polls × 3s = 180s)
+        const isStoryItem = item.post_type === 'story' || item.media_type === 'STORIES';
         const isVideoItem = item.media_type === 'REELS' || item.media_type === 'VIDEO' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrls[0] || '');
         const maxPolls = isVideoItem ? 60 : 15;
         const pollDelay = isVideoItem ? 3000 : 2000;
@@ -148,15 +149,21 @@ async function processPublishQueue() {
             const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken }, { videoMode: true });
             publishedId = pr.id;
           } else {
-            const mr = await graphPost(`/${client.igUserId}/media`, { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken });
+            const igContainerBody = { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken };
+            if (isStoryItem) igContainerBody.media_type = 'STORIES';
+            const mr = await graphPost(`/${client.igUserId}/media`, igContainerBody);
             await waitIG(mr.id);
             const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
             publishedId = pr.id;
           }
         }
       } else if (item.platform === 'fb') {
-        // FB scheduled (should have been published by FB itself, but handle direct publish too)
-        if (imageUrls.length > 1) {
+        const isFbStory = item.post_type === 'story' || item.media_type === 'STORIES';
+        // FB Story: use photo_stories endpoint
+        if (isFbStory && imageUrls.length >= 1) {
+          const pr = await graphPost(`/${client.pageId}/photo_stories`, { url: imageUrls[0], access_token: igToken });
+          publishedId = pr.id;
+        } else if (imageUrls.length > 1) {
           const photoIds = [];
           for (const imgUrl of imageUrls) {
             const pr = await graphPost(`/${client.pageId}/photos`, { url: imgUrl, published: false, access_token: igToken });
@@ -451,7 +458,9 @@ module.exports = async function handler(req, res) {
       const queued = await saveToQueue({
         client_key, client_name: client_name || client_key, platform,
         caption: caption || '', image_urls: image_urls || [],
-        post_type: post_type || 'feed', media_type: media_type || null, scheduled_for,
+        post_type: post_type || 'feed',
+        media_type: media_type || (post_type === 'story' ? 'STORIES' : post_type === 'reels' ? 'REELS' : null),
+        scheduled_for,
         user_name: user_name || 'Sistema', status: 'QUEUED',
       });
 
