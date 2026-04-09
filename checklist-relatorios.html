@@ -14904,6 +14904,8 @@ async function ctSaveTaskField(field, value) {
     var hasFormatsActive = _ctSelectedFormats && _ctSelectedFormats.length > 0;
     document.getElementById('ctModalPublish').style.display = (showPublishSection && !hasFormatsActive) ? 'block' : 'none';
     document.getElementById('ctPubSubmitBtn').style.display = showPublishForm ? '' : 'none';
+    // Re-render format content so publish section visibility updates immediately
+    if (hasFormatsActive && typeof ctRenderFormatContent === 'function') ctRenderFormatContent();
   }
 
   // Refresh the background list so columns update in real-time
@@ -14931,6 +14933,8 @@ async function ctChangeModalStatus(newStatus) {
   const showPublish = ['aprovado', 'agendar'].includes(newStatus);
   var hasFormatsActive = _ctSelectedFormats && _ctSelectedFormats.length > 0;
   document.getElementById('ctModalPublish').style.display = (showPublish && !hasFormatsActive) ? 'block' : 'none';
+  // Re-render format content so publish section visibility updates immediately
+  if (hasFormatsActive && typeof ctRenderFormatContent === 'function') ctRenderFormatContent();
 
   // Update the task in ctGroups so the list reflects the change
   for (var g = 0; g < ctGroups.length; g++) {
