@@ -14129,6 +14129,8 @@ function ctToggleTask(taskId) {
 // ─── MONTH WIZARD ───
 var _mwWeeks = 4;
 var _mwTpl = 'sem';
+var _mwMode = 'general';
+var _mwStoriesPerDay = 1;
 
 var MW_TEMPLATES = {
   'sem':        [],
@@ -14141,6 +14143,7 @@ var MW_TEMPLATES = {
 };
 
 var MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var MW_DAYS_PT = ['Segunda-Feira','Terça-Feira','Quarta-Feira','Quinta-Feira','Sexta-Feira','Sábado','Domingo'];
 
 function ctShowMonthWizard() {
   var modal = document.getElementById('ctMonthWizardModal');
@@ -14160,8 +14163,16 @@ function ctShowMonthWizard() {
   }
   mSel.onchange = mwUpdatePreview;
   ySel.onchange = mwUpdatePreview;
-  _mwWeeks = 4; _mwTpl = 'sem';
-  // Reset UI
+  _mwWeeks = 4; _mwTpl = 'sem'; _mwMode = 'general'; _mwStoriesPerDay = 1;
+  // Reset mode buttons
+  document.querySelectorAll('.mw-mode-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
+  });
+  var genBtn = document.querySelector('.mw-mode-btn[data-mode="general"]');
+  if (genBtn) { genBtn.style.border = '2px solid #6366f1'; genBtn.style.background = '#eff6ff'; genBtn.style.color = '#4f46e5'; }
+  document.getElementById('mwTplSection').style.display = 'block';
+  document.getElementById('mwStoriesSection').style.display = 'none';
+  // Reset week buttons
   document.querySelectorAll('.mw-week-btn').forEach(function(b) {
     b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
   });
@@ -14173,7 +14184,43 @@ function ctShowMonthWizard() {
   var sem = document.querySelector('.mw-tpl-btn[data-tpl="sem"]');
   if (sem) { sem.style.border = '2px solid #6366f1'; sem.style.background = '#eff6ff'; sem.style.color = '#4f46e5'; }
   document.getElementById('mwCustomTasks').style.display = 'none';
+  // Reset stories per day buttons
+  document.querySelectorAll('.mw-spd-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
+  });
+  var spd1 = document.querySelector('.mw-spd-btn[data-spd="1"]');
+  if (spd1) { spd1.style.border = '2px solid #6366f1'; spd1.style.background = '#eff6ff'; spd1.style.color = '#4f46e5'; }
+  document.getElementById('mwStoriesCustomCount').style.display = 'none';
   mwUpdatePreview();
+}
+
+function mwSelectMode(mode, btn) {
+  _mwMode = mode;
+  document.querySelectorAll('.mw-mode-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
+  });
+  btn.style.border = '2px solid #6366f1'; btn.style.background = '#eff6ff'; btn.style.color = '#4f46e5';
+  document.getElementById('mwTplSection').style.display = mode === 'general' ? 'block' : 'none';
+  document.getElementById('mwStoriesSection').style.display = mode === 'stories' ? 'block' : 'none';
+  mwUpdatePreview();
+}
+
+function mwSelectStoriesPerDay(n, btn) {
+  _mwStoriesPerDay = n;
+  document.querySelectorAll('.mw-spd-btn').forEach(function(b) {
+    b.style.border = '2px solid #e5e7eb'; b.style.background = '#fff'; b.style.color = '#374151';
+  });
+  btn.style.border = '2px solid #6366f1'; btn.style.background = '#eff6ff'; btn.style.color = '#4f46e5';
+  var customInput = document.getElementById('mwStoriesCustomCount');
+  customInput.style.display = n === 'custom' ? 'block' : 'none';
+  mwUpdatePreview();
+}
+
+function mwGetStoriesCount() {
+  if (_mwStoriesPerDay === 'custom') {
+    return parseInt(document.getElementById('mwStoriesCustomCount').value) || 1;
+  }
+  return _mwStoriesPerDay;
 }
 
 function ctHideMonthWizard() {
@@ -14209,19 +14256,34 @@ function mwGetTasks() {
 
 function mwUpdatePreview() {
   var month = parseInt(document.getElementById('mwMonth').value);
-  var year  = parseInt(document.getElementById('mwYear').value);
   var mName = MONTHS_PT[month];
-  var tasks = mwGetTasks();
   var list = document.getElementById('mwPreviewList');
   list.innerHTML = '';
-  for (var i = 1; i <= _mwWeeks; i++) {
-    var grpName = mName + ' - Semana ' + i;
-    var div = document.createElement('div');
-    div.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px';
-    var taskCount = tasks.length > 0 ? ('<span style="font-size:11px;color:#6b7280;margin-left:6px">+ ' + tasks.length + ' tarefa' + (tasks.length > 1 ? 's' : '') + '</span>') : '';
-    div.innerHTML = '<div style="font-weight:700;font-size:13px;color:#111827">📁 ' + grpName + taskCount + '</div>'
-      + (tasks.length > 0 ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + tasks.slice(0,4).map(function(t){ return '<span style="font-size:11px;background:#f3f4f6;padding:2px 8px;border-radius:12px;color:#374151">' + t + '</span>'; }).join('') + (tasks.length > 4 ? '<span style="font-size:11px;color:#9ca3af">+' + (tasks.length - 4) + ' mais</span>' : '') + '</div>' : '');
-    list.appendChild(div);
+
+  if (_mwMode === 'stories') {
+    var storiesCount = mwGetStoriesCount();
+    for (var i = 1; i <= _mwWeeks; i++) {
+      var grpName = 'STORIES RECORRENTES / ' + mName + ' - Semana ' + i;
+      var div = document.createElement('div');
+      div.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px';
+      div.innerHTML = '<div style="font-weight:700;font-size:13px;color:#111827">📁 ' + grpName + '</div>'
+        + '<div style="margin-top:6px;font-size:11px;color:#6b7280">7 dias (Seg→Dom) × ' + storiesCount + ' storie' + (storiesCount > 1 ? 's' : '') + '/dia = ' + (7 * storiesCount) + ' tarefas</div>'
+        + '<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">'
+        + MW_DAYS_PT.slice(0, 3).map(function(d) { return '<span style="font-size:11px;background:#f3f4f6;padding:2px 8px;border-radius:12px;color:#374151">' + d + '</span>'; }).join('')
+        + '<span style="font-size:11px;color:#9ca3af">+4 mais</span></div>';
+      list.appendChild(div);
+    }
+  } else {
+    var tasks = mwGetTasks();
+    for (var i = 1; i <= _mwWeeks; i++) {
+      var grpName = mName + ' - Semana ' + i;
+      var div = document.createElement('div');
+      div.style.cssText = 'background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px';
+      var taskCount = tasks.length > 0 ? ('<span style="font-size:11px;color:#6b7280;margin-left:6px">+ ' + tasks.length + ' tarefa' + (tasks.length > 1 ? 's' : '') + '</span>') : '';
+      div.innerHTML = '<div style="font-weight:700;font-size:13px;color:#111827">📁 ' + grpName + taskCount + '</div>'
+        + (tasks.length > 0 ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">' + tasks.slice(0,4).map(function(t){ return '<span style="font-size:11px;background:#f3f4f6;padding:2px 8px;border-radius:12px;color:#374151">' + t + '</span>'; }).join('') + (tasks.length > 4 ? '<span style="font-size:11px;color:#9ca3af">+' + (tasks.length - 4) + ' mais</span>' : '') + '</div>' : '');
+      list.appendChild(div);
+    }
   }
 }
 
@@ -14229,24 +14291,41 @@ async function ctRunMonthWizard() {
   var month = parseInt(document.getElementById('mwMonth').value);
   var year  = parseInt(document.getElementById('mwYear').value);
   var mName = MONTHS_PT[month];
-  var tasks = mwGetTasks();
   var btn   = document.getElementById('mwCreateBtn');
   btn.textContent = '⏳ Criando...'; btn.disabled = true;
 
   try {
-    for (var i = 1; i <= _mwWeeks; i++) {
-      var grpName = mName + ' - Semana ' + i;
-      // Create group
-      var grpRes = await ctApi('upsert_group', { client_id: ctCurrentClient, name: grpName, position: 9000 + i, user: ctGetUser() });
-      var grpId = grpRes && grpRes.id ? grpRes.id : (grpRes && grpRes[0] && grpRes[0].id);
-      if (!grpId) { console.warn('No group id returned for', grpName, grpRes); continue; }
-      // Create tasks sequentially
-      for (var j = 0; j < tasks.length; j++) {
-        await ctApi('upsert_task', { group_id: grpId, client_id: ctCurrentClient, name: tasks[j], position: j, user: ctGetUser() });
+    if (_mwMode === 'stories') {
+      var storiesCount = mwGetStoriesCount();
+      for (var i = 1; i <= _mwWeeks; i++) {
+        var grpName = 'STORIES RECORRENTES / ' + mName + ' - Semana ' + i;
+        var grpRes = await ctApi('upsert_group', { client_id: ctCurrentClient, name: grpName, position: 9000 + i, user: ctGetUser() });
+        var grpId = grpRes && grpRes.id ? grpRes.id : (grpRes && grpRes[0] && grpRes[0].id);
+        if (!grpId) { console.warn('No group id returned for', grpName, grpRes); continue; }
+        for (var d = 0; d < MW_DAYS_PT.length; d++) {
+          var dayRes = await ctApi('upsert_task', { group_id: grpId, client_id: ctCurrentClient, name: MW_DAYS_PT[d], position: d, user: ctGetUser() });
+          var dayId = dayRes && dayRes.id ? dayRes.id : (dayRes && dayRes[0] && dayRes[0].id);
+          if (!dayId) { console.warn('No day task id returned for', MW_DAYS_PT[d], dayRes); continue; }
+          for (var s = 1; s <= storiesCount; s++) {
+            await ctApi('upsert_task', { group_id: grpId, parent_id: dayId, client_id: ctCurrentClient, name: 'STORIES ' + s, position: s - 1, user: ctGetUser() });
+          }
+        }
+      }
+    } else {
+      var tasks = mwGetTasks();
+      for (var i = 1; i <= _mwWeeks; i++) {
+        var grpName = mName + ' - Semana ' + i;
+        var grpRes = await ctApi('upsert_group', { client_id: ctCurrentClient, name: grpName, position: 9000 + i, user: ctGetUser() });
+        var grpId = grpRes && grpRes.id ? grpRes.id : (grpRes && grpRes[0] && grpRes[0].id);
+        if (!grpId) { console.warn('No group id returned for', grpName, grpRes); continue; }
+        for (var j = 0; j < tasks.length; j++) {
+          await ctApi('upsert_task', { group_id: grpId, client_id: ctCurrentClient, name: tasks[j], position: j, user: ctGetUser() });
+        }
       }
     }
     ctHideMonthWizard();
     await ctLoadGroups();
+    if (_mwMode === 'stories') ctSwitchTab('stories');
   } catch(e) {
     alert('Erro ao criar grupos: ' + e.message);
   } finally {
@@ -23495,7 +23574,16 @@ function _doRenderTable() {
     </div>
 
     <!-- Body -->
-    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:18px">
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:18px;max-height:75vh;overflow-y:auto">
+
+      <!-- Tipo de criação -->
+      <div>
+        <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Tipo de Criação</label>
+        <div style="display:flex;gap:8px">
+          <button class="mw-mode-btn" data-mode="general" onclick="mwSelectMode('general',this)" style="flex:1;padding:8px 12px;border:2px solid #6366f1;border-radius:8px;background:#eff6ff;color:#4f46e5;font-weight:700;font-size:13px;cursor:pointer">📋 Conteúdos Gerais</button>
+          <button class="mw-mode-btn" data-mode="stories" onclick="mwSelectMode('stories',this)" style="flex:1;padding:8px 12px;border:2px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:13px;cursor:pointer">📖 Stories Recorrentes</button>
+        </div>
+      </div>
 
       <!-- Mês + Ano -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -23524,8 +23612,8 @@ function _doRenderTable() {
         </div>
       </div>
 
-      <!-- Template de tarefas -->
-      <div>
+      <!-- Template de tarefas (Conteúdos Gerais) -->
+      <div id="mwTplSection">
         <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Template de Tarefas por Semana</label>
         <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
           <button class="mw-tpl-btn active" data-tpl="sem" onclick="mwSelectTpl('sem',this)" style="padding:7px 14px;border:2px solid #6366f1;border-radius:20px;background:#eff6ff;color:#4f46e5;font-weight:700;font-size:12px;cursor:pointer">Sem tarefas</button>
@@ -23538,6 +23626,21 @@ function _doRenderTable() {
           <button class="mw-tpl-btn" data-tpl="custom" onclick="mwSelectTpl('custom',this)" style="padding:7px 14px;border:2px solid #e5e7eb;border-radius:20px;background:#f9fafb;color:#374151;font-weight:600;font-size:12px;cursor:pointer">✏️ Personalizado</button>
         </div>
         <textarea id="mwCustomTasks" placeholder="Uma tarefa por linha ex:&#10;FEED 1 - CRIATIVO&#10;FEED 2 - VÍDEO&#10;REELS - AÇÃO" style="width:100%;min-height:90px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;display:none;box-sizing:border-box"></textarea>
+      </div>
+
+      <!-- Stories por dia (Stories Recorrentes) -->
+      <div id="mwStoriesSection" style="display:none">
+        <label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Stories por Dia (Seg → Dom)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="mw-spd-btn" data-spd="1" onclick="mwSelectStoriesPerDay(1,this)" style="padding:8px 16px;border:2px solid #6366f1;border-radius:8px;background:#eff6ff;color:#4f46e5;font-weight:700;font-size:13px;cursor:pointer">1 Story</button>
+          <button class="mw-spd-btn" data-spd="2" onclick="mwSelectStoriesPerDay(2,this)" style="padding:8px 16px;border:2px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:13px;cursor:pointer">2 Stories</button>
+          <button class="mw-spd-btn" data-spd="3" onclick="mwSelectStoriesPerDay(3,this)" style="padding:8px 16px;border:2px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:13px;cursor:pointer">3 Stories</button>
+          <button class="mw-spd-btn" data-spd="custom" onclick="mwSelectStoriesPerDay('custom',this)" style="padding:8px 16px;border:2px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;font-weight:600;font-size:13px;cursor:pointer">✏️ Personalizado</button>
+        </div>
+        <input id="mwStoriesCustomCount" type="number" min="1" max="20" value="1" placeholder="Qtd de stories por dia" oninput="mwUpdatePreview()" style="display:none;margin-top:10px;width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;color:#111827;background:#fff;box-sizing:border-box">
+        <div style="margin-top:10px;padding:10px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e">
+          📋 Estrutura criada: <strong>Semana N → Segunda-Feira → STORIES 1, STORIES 2...</strong>
+        </div>
       </div>
 
       <!-- Preview -->
