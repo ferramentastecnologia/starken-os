@@ -698,17 +698,16 @@ module.exports = async function handler(req, res) {
         if (!tenant.pageAccessToken) {
           return res.status(400).json({ error: true, code: 'MISSING_PAGE_TOKEN', message: 'Page Access Token não encontrado para publicar Story no Facebook.' });
         }
-        let storyId;
+        let storyId, storyNote;
         if (video_url) {
           await verifyMediaUrl(video_url);
-          // graphPost correctly overrides global token with page token via spread
           const vr = await graphPost(`/${tenant.pageId}/video_stories`, {
             file_url: video_url,
             access_token: tenant.pageAccessToken,
           }, { videoMode: true });
           storyId = vr.id;
         } else if (image_url) {
-          // Use form-encoded with token in query string
+          // Try photo_stories; if the page doesn't support it, fall back to regular photo
           const storyUrl = `https://graph.facebook.com/v25.0/${tenant.pageId}/photo_stories?access_token=${encodeURIComponent(tenant.pageAccessToken)}`;
           const formParams = new URLSearchParams();
           formParams.append('url', image_url);
@@ -720,10 +719,17 @@ module.exports = async function handler(req, res) {
           const storyData = await storyRes.json();
           console.log('[publish/fb] photo_stories response:', JSON.stringify(storyData));
           if (!storyRes.ok || storyData.error) {
-            const e = storyData.error || {};
-            throw { error: true, message: e.message || 'Erro ao publicar story no Facebook', meta_code: e.code, status: storyRes.status };
+            console.warn('[publish/fb] photo_stories unavailable, falling back to /photos:', storyData.error && storyData.error.message);
+            const fallback = await graphPost(`/${tenant.pageId}/photos`, {
+              url: image_url,
+              caption: caption || '',
+              access_token: tenant.pageAccessToken,
+            });
+            storyId = fallback.id || fallback.post_id;
+            storyNote = 'Publicado como foto (Stories API indisponível para esta página)';
+          } else {
+            storyId = storyData.id;
           }
-          storyId = storyData.id;
         } else {
           return res.status(400).json({ error: true, code: 'MISSING_PARAM', message: 'Story requer uma imagem ou vídeo.' });
         }
@@ -734,6 +740,7 @@ module.exports = async function handler(req, res) {
           has_image: true,
           client: tenant.name || tenant.key,
           page: tenant.pageName || tenant.pageId,
+          ...(storyNote && { note: storyNote }),
         };
       }
       // ─── VIDEO / REELS (FB) ───
