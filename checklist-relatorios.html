@@ -19368,7 +19368,17 @@ function clientNavSwitch(view) {
     window._calHubClientSlug = _hubCurrentSlug || null;
     window._calHubModeSet = true;
     switchTab('calendario');
-    setTimeout(function() { clientNavShowBar('calendar'); }, 150);
+    // Force-apply hub filter after calInit (covers both cold-load and cached paths)
+    function _applyHubCalFilter() {
+      if (!window._calHubClientSlug) return;
+      if (typeof calPopulateClientFilter === 'function') calPopulateClientFilter();
+      if (typeof calFilterClient === 'function') calFilterClient();
+      if (typeof calRenderWeek === 'function' && typeof _calView !== 'undefined' && _calView === 'week') calRenderWeek();
+      clientNavShowBar('calendar');
+    }
+    setTimeout(_applyHubCalFilter, 400);
+    // Second attempt in case data was still loading
+    setTimeout(_applyHubCalFilter, 1200);
     document.querySelectorAll('#clientNavBtnCalendarCal').forEach(function(b) { b.classList.add('active'); });
   } else if (view === 'info') {
     document.querySelectorAll('#clientNavBtnInfo').forEach(function(b) { b.classList.add('active'); });
