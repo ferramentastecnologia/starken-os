@@ -16593,6 +16593,8 @@ async function ctPublishFromModal() {
     });
     await ctSaveTaskField('publish_config', existingConfig);
     ctRenderPublishHistory(existingConfig);
+    // Refresh calendar so the new scheduled/published post appears immediately
+    if (typeof calRefreshMetaPlanner === 'function') calRefreshMetaPlanner();
   } else {
     statusDiv.innerHTML = '❌ Erro: ' + results.map(r => r.plat + ': ' + r.msg).join(' | ');
     statusDiv.style.color = '#dc2626';
@@ -17943,10 +17945,9 @@ function ctOpenLightbox(url, isVideo) {
           .catch(function() { return []; })
       : Promise.resolve([]));
 
-    // 3. Queued IG posts from publish_queue (future scheduled, not yet published)
-    var now = new Date().toISOString();
+    // 3. Queued posts from publish_queue (all QUEUED — including overdue not yet processed by pg_cron)
     var queuedPromise = (_supabase
-      ? _supabase.from('publish_queue').select('*').eq('status', 'QUEUED').gt('scheduled_for', now).order('scheduled_for', { ascending: true })
+      ? _supabase.from('publish_queue').select('*').eq('status', 'QUEUED').order('scheduled_for', { ascending: true })
           .then(function(res) {
             return (res.data || []).filter(function(q) {
               // Only include if date is valid
@@ -22588,6 +22589,8 @@ async function ctPublishFormat() {
   ctRenderFormatPublishHistory();
   // Also refresh legacy history
   if (typeof ctRenderPublishHistory === 'function') ctRenderPublishHistory(config);
+  // Refresh calendar so the new scheduled/published post appears immediately
+  if (typeof calRefreshMetaPlanner === 'function') calRefreshMetaPlanner();
 }
 
 // Keep legacy ctSetFormat as a no-op for backward compatibility
