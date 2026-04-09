@@ -18247,17 +18247,6 @@ function ctOpenLightbox(url, isVideo) {
     var sel = document.getElementById('calClientFilter');
     if (!sel) return;
 
-    // If opened from client hub: only show current client + Todos
-    if (window._calHubClientSlug) {
-      var hubName = (_metaClients && _metaClients[window._calHubClientSlug])
-        ? _metaClients[window._calHubClientSlug].name
-        : window._calHubClientSlug;
-      sel.innerHTML = '<option value="' + window._calHubClientSlug + '">' + hubName + '</option>'
-        + '<option value="">Todos os clientes</option>';
-      sel.value = window._calHubClientSlug;
-      return;
-    }
-
     // Collect clients from posts AND from _metaClients (so all clients appear)
     var seen = {};
     var clients = [];
@@ -19364,21 +19353,26 @@ function clientNavSwitch(view) {
       clientNavShowBar('content');
     }, 120);
   } else if (view === 'calendar') {
-    // Set hub flag BEFORE switchTab so calPopulateClientFilter reads it
     window._calHubClientSlug = _hubCurrentSlug || null;
     window._calHubModeSet = true;
     switchTab('calendario');
-    // Force-apply hub filter after calInit (covers both cold-load and cached paths)
+    // Directly patch the DOM dropdown + apply filter (calPopulateClientFilter is local scope)
     function _applyHubCalFilter() {
       if (!window._calHubClientSlug) return;
-      if (typeof calPopulateClientFilter === 'function') calPopulateClientFilter();
-      if (typeof calFilterClient === 'function') calFilterClient();
-      if (typeof calRenderWeek === 'function' && typeof _calView !== 'undefined' && _calView === 'week') calRenderWeek();
+      var sel = document.getElementById('calClientFilter');
+      if (!sel) { setTimeout(_applyHubCalFilter, 300); return; } // DOM not ready yet
+      var hubName = (typeof _metaClients !== 'undefined' && _metaClients[window._calHubClientSlug])
+        ? _metaClients[window._calHubClientSlug].name
+        : window._calHubClientSlug;
+      sel.innerHTML = '<option value="' + window._calHubClientSlug + '">' + hubName + '</option>'
+        + '<option value="">Todos os clientes</option>';
+      sel.value = window._calHubClientSlug;
+      if (typeof window.calFilterClient === 'function') window.calFilterClient();
       clientNavShowBar('calendar');
     }
-    setTimeout(_applyHubCalFilter, 400);
-    // Second attempt in case data was still loading
-    setTimeout(_applyHubCalFilter, 1200);
+    setTimeout(_applyHubCalFilter, 300);
+    // Second attempt after async data load completes
+    setTimeout(_applyHubCalFilter, 1500);
     document.querySelectorAll('#clientNavBtnCalendarCal').forEach(function(b) { b.classList.add('active'); });
   } else if (view === 'info') {
     document.querySelectorAll('#clientNavBtnInfo').forEach(function(b) { b.classList.add('active'); });
