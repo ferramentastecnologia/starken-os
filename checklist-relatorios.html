@@ -2842,6 +2842,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+<!-- Virtual Office Modules -->
+<script src="js/virtual-office-ui.js" defer></script>
+<script src="js/virtual-npc-ui.js" defer></script>
+<script src="js/virtual-dashboard-ui.js" defer></script>
 </head>
 <body>
 
@@ -4837,6 +4841,39 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div><!-- end #tab-client-info -->
 
+      <!-- ═══ ESCRITÓRIO VIRTUAL ═══ -->
+      <div id="tab-escritorio-virtual" class="tab-content" style="display:none">
+        <!-- VO Header -->
+        <div id="vo-office-header" style="margin-bottom:24px"></div>
+
+        <!-- VO Rooms Grid -->
+        <div id="vo-rooms-container" style="margin-bottom:24px"></div>
+
+        <!-- VO NPCs -->
+        <div style="margin-bottom:24px">
+          <h3 style="margin:0 0 16px;font-size:1.1rem;color:var(--text-primary)">👥 Agentes Disponíveis</h3>
+          <div id="vo-npcs-container"></div>
+        </div>
+
+        <!-- VO Modals (hidden) -->
+        <div id="vo-npc-detail-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)voCloseNpcDetail()"></div>
+        <div id="vo-assign-task-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)voCloseAssignTaskModal()"></div>
+
+        <!-- Initialize on tab open -->
+        <script>
+          // Auto-initialize Virtual Office quando aba é aberta
+          (function() {
+            const originalSwitchTab = window.switchTab;
+            window.switchTab = function(tabName) {
+              originalSwitchTab.call(window, tabName);
+              if (tabName === 'escritorio-virtual' && typeof VO !== 'undefined' && VO.init) {
+                VO.init();
+              }
+            };
+          })();
+        </script>
+      </div><!-- end #tab-escritorio-virtual -->
+
       <!-- ═══ MINHAS TASKS ═══ -->
       <div id="tab-minhas-tasks" class="tab-content">
         <!-- Header -->
@@ -5872,6 +5909,7 @@ function getCurrentMonthKey() {
 // ============ SIDEBAR MENU DATA & RENDER ============
 let SIDEBAR_MENU = [
   { type: 'item', id: 'dashboard', label: 'Dashboard', icon: '&#9632;', tab: 'dashboard' },
+  { type: 'item', id: 'escritorio-virtual', label: 'Escritório Virtual', icon: '🏢', tab: 'escritorio-virtual' },
   { type: 'item', id: 'minhas-tasks', label: 'Minhas Tasks', icon: '🎯', tab: 'minhas-tasks' },
   { type: 'category', id: 'cat-conteudo', label: 'Conteúdo', items: [
     { type: 'item', id: 'calendario', label: 'Calendário de Postagens', icon: '📅', tab: 'calendario' },
@@ -6474,6 +6512,7 @@ function sysLogCard(label, count, color, bg, border) {
 const TAB_TITLES = {
   gestao:        'Gestão de Projetos',
   dashboard:     'Dashboard',
+  'escritorio-virtual': 'Escritório Virtual',
   weekly:        'Relatórios — Semanal',
   monthly:       'Relatórios — Mensal',
   'sched-weekly':      'Cronogramas — Semanal',
