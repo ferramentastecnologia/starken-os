@@ -22472,9 +22472,20 @@ async function ctPublishFormat() {
 
   var results = [];
 
+  // For stories: FB Stories API requires "Professional Mode" on the page (unavailable for most).
+  // Solution: publish IG story with fb_page_id → Meta cross-posts to FB as story automatically.
+  // So when both IG + FB are selected for a story, skip the separate FB queue item.
+  var hasBothForStory = fmt === 'story' && _ctFmtPlatforms.includes('ig') && _ctFmtPlatforms.includes('fb');
+
   for (var i = 0; i < _ctFmtPlatforms.length; i++) {
     var plat = _ctFmtPlatforms[i];
     try {
+      // For stories with both IG+FB: skip FB queue item (cross-posted via IG container)
+      if (hasBothForStory && plat === 'fb') {
+        results.push({ plat: 'Facebook', ok: true, postId: null, crossPost: true });
+        continue;
+      }
+
       // IG and FB stories always go via queue (no native story scheduling in FB API)
       var useQueue = plat === 'ig' || fmt === 'story';
       if (useQueue) {
@@ -22498,6 +22509,8 @@ async function ctPublishFormat() {
           queueBody.image_urls = videoUrls;
         } else if (fmt === 'story') {
           queueBody.image_urls = videos.length > 0 ? [videoUrls[0]] : [imageUrls[0]];
+          // Cross-post to FB page via IG container (avoids photo_stories API restriction)
+          if (hasBothForStory && plat === 'ig') queueBody.cross_post_to_fb = true;
         } else {
           queueBody.image_urls = imageUrls;
         }
@@ -22578,7 +22591,10 @@ async function ctPublishFormat() {
 
   // Show results
   var allOk = results.every(function(r) { return r.ok; });
-  var msgs = results.map(function(r) { return (r.ok ? '✅' : '❌') + ' ' + r.plat + (r.ok ? (isSchedule ? ' agendado' : ' publicado') : ': ' + (r.error || 'erro')); });
+  var msgs = results.map(function(r) {
+    if (r.ok && r.crossPost) return '✅ Facebook (via cross-post IG) ' + (isSchedule ? 'agendado' : 'publicado');
+    return (r.ok ? '✅' : '❌') + ' ' + r.plat + (r.ok ? (isSchedule ? ' agendado' : ' publicado') : ': ' + (r.error || 'erro'));
+  });
   statusEl.style.background = allOk ? '#d1fae5' : '#fef2f2';
   statusEl.style.color = allOk ? '#059669' : '#dc2626';
   statusEl.innerHTML = msgs.join('<br>');

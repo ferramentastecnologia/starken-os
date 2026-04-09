@@ -151,6 +151,10 @@ async function processPublishQueue() {
           } else {
             const igContainerBody = { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken };
             if (isStoryItem) igContainerBody.media_type = 'STORIES';
+            // Cross-post IG story to FB page (avoids photo_stories API restriction on non-Professional pages)
+            if (item.cross_post_to_fb && client.pageId) {
+              igContainerBody.fb_page_id = client.pageId;
+            }
             const mr = await graphPost(`/${client.igUserId}/media`, igContainerBody);
             await waitIG(mr.id);
             const pr = await graphPost(`/${client.igUserId}/media_publish`, { creation_id: mr.id, access_token: igToken });
