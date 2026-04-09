@@ -708,12 +708,14 @@ module.exports = async function handler(req, res) {
           }, { videoMode: true });
           storyId = vr.id;
         } else if (image_url) {
-          // Pass token as query param (some endpoints require it, not in body)
+          // Use form-encoded with token in query string
           const storyUrl = `https://graph.facebook.com/v25.0/${tenant.pageId}/photo_stories?access_token=${encodeURIComponent(tenant.pageAccessToken)}`;
+          const formParams = new URLSearchParams();
+          formParams.append('url', image_url);
           const storyRes = await fetch(storyUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: image_url }),
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formParams.toString(),
           });
           const storyData = await storyRes.json();
           console.log('[publish/fb] photo_stories response:', JSON.stringify(storyData));
