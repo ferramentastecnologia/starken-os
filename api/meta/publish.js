@@ -99,7 +99,8 @@ async function processPublishQueue() {
         }
 
         // Helper: wait for container (extended timeout for videos: 60 polls × 3s = 180s)
-        const isStoryItem = item.post_type === 'story' || item.media_type === 'STORIES';
+        const isCrossPost = item.media_type === 'STORIES_CROSSPOST'; // IG story + cross-post to FB page
+        const isStoryItem = item.post_type === 'story' || item.media_type === 'STORIES' || isCrossPost;
         const isVideoItem = item.media_type === 'REELS' || item.media_type === 'VIDEO' || /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrls[0] || '');
         const maxPolls = isVideoItem ? 60 : 15;
         const pollDelay = isVideoItem ? 3000 : 2000;
@@ -151,8 +152,8 @@ async function processPublishQueue() {
           } else {
             const igContainerBody = { image_url: imageUrls[0], caption: item.caption || '', access_token: igToken };
             if (isStoryItem) igContainerBody.media_type = 'STORIES';
-            // Cross-post IG story to FB page (avoids photo_stories API restriction on non-Professional pages)
-            if (item.cross_post_to_fb && client.pageId) {
+            // Cross-post IG story to FB page via fb_page_id (avoids photo_stories API restriction on non-Professional pages)
+            if (isCrossPost && client.pageId) {
               igContainerBody.fb_page_id = client.pageId;
             }
             const mr = await graphPost(`/${client.igUserId}/media`, igContainerBody);

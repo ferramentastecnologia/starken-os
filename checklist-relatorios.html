@@ -22509,8 +22509,8 @@ async function ctPublishFormat() {
           queueBody.image_urls = videoUrls;
         } else if (fmt === 'story') {
           queueBody.image_urls = videos.length > 0 ? [videoUrls[0]] : [imageUrls[0]];
-          // Cross-post to FB page via IG container (avoids photo_stories API restriction)
-          if (hasBothForStory && plat === 'ig') queueBody.cross_post_to_fb = true;
+          // Cross-post to FB page via IG container — encode in media_type to avoid needing a new DB column
+          if (hasBothForStory && plat === 'ig') queueBody.media_type = 'STORIES_CROSSPOST';
         } else {
           queueBody.image_urls = imageUrls;
         }
