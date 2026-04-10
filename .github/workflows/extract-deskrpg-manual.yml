@@ -1,0 +1,37 @@
+name: 🔧 Extrair DeskRPG (Manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v3
+        
+      - name: Extrair DeskRPG.zip
+        run: |
+          if [ -f "DeskRPG.zip" ]; then
+            echo "📦 Extraindo DeskRPG.zip..."
+            unzip -q DeskRPG.zip
+            rm DeskRPG.zip
+            echo "✅ Arquivo extraído com sucesso!"
+          else
+            echo "❌ DeskRPG.zip não encontrado"
+            exit 1
+          fi
+          
+      - name: Configurar Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+      - name: Commit e push das mudanças
+        run: |
+          git add -A
+          git commit -m "Extract DeskRPG.zip - automated extraction"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
