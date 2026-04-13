@@ -21573,10 +21573,13 @@ function cronogramaShowModal() {
 // Selecionar semana: ESCONDE chips de outras semanas, mostra e marca só os desta
 function cronogramaSelectWeek(mondayKey, btn) {
   document.querySelectorAll('.crono-chip').forEach(function(label) {
-    if (label.dataset.week === mondayKey) {
+    var chipWeek = label.dataset.week || '';
+    if (chipWeek === mondayKey || chipWeek === '') {
       label.style.display = 'flex';
       var cb = label.querySelector('.crono-task-check');
-      if (cb) cb.checked = true;
+      // Only auto-check chips that belong to the selected week; leave undated chips unchecked
+      if (cb && chipWeek === mondayKey) cb.checked = true;
+      if (cb && chipWeek === '') cb.checked = false;
     } else {
       label.style.display = 'none';
       var cb = label.querySelector('.crono-task-check');
