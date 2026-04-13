@@ -21461,8 +21461,11 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
     // Fetch tasks for this client
     var tasksRes = await ctApi('list_tasks', { client_id: clientSlug });
     var allTasks = cronoFlattenTasks(tasksRes.data || tasksRes || []);
-    allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
-
+    allTasks.sort(function(a, b) {
+      var da = (a.publish_config && a.publish_config.post_date) ? a.publish_config.post_date : (a.due_date || 'zzzz');
+      var db = (b.publish_config && b.publish_config.post_date) ? b.publish_config.post_date : (b.due_date || 'zzzz');
+      return da.localeCompare(db);
+    });
     // Fetch attachments in PARALLEL + hub data simultaneously
     var clientName = '', clientLogo = '', tenant = '';
     if (typeof _metaClients !== 'undefined' && _metaClients[clientSlug]) {
@@ -21507,8 +21510,11 @@ async function cronogramaGenerate() {
     // Fetch ALL tasks for client (with and without date)
     var tasksRes = await ctApi('list_tasks', { client_id: clientId });
     var allTasks = cronoFlattenTasks(tasksRes.data || tasksRes || []);
-    allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
-
+    allTasks.sort(function(a, b) {
+      var da = (a.publish_config && a.publish_config.post_date) ? a.publish_config.post_date : (a.due_date || 'zzzz');
+      var db = (b.publish_config && b.publish_config.post_date) ? b.publish_config.post_date : (b.due_date || 'zzzz');
+      return da.localeCompare(db);
+    });
     // Fetch attachments in PARALLEL + hub data simultaneously
     var clientName = '', clientLogo = '', tenant = '';
     if (typeof _metaClients !== 'undefined' && _metaClients[clientId]) {
