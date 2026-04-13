@@ -610,6 +610,19 @@ body {
   background: #1e293b;
   color: white;
 }
+.col-search-input {
+  font-size: 0.72rem;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.2);
+  color: white;
+  outline: none;
+  width: 150px;
+}
+.col-search-input::placeholder { color: rgba(255,255,255,0.65); }
+.col-search-input:focus { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.6); }
 
 .column-body { padding: 12px; }
 
@@ -5816,6 +5829,21 @@ function setSegFilter(tabType, company, val) {
   else renderMonthlyChecklist();
 }
 
+// ============ PER-COLUMN SEARCH FILTERS ============
+const searchFilters = {};
+function setChecklistSearch(tabType, company, val) {
+  if (!searchFilters[tabType]) searchFilters[tabType] = {};
+  searchFilters[tabType][company] = val.toLowerCase().trim();
+  if (tabType === 'weekly') renderWeeklyChecklist();
+  else if (tabType === 'monthly') renderMonthlyChecklist();
+  else if (tabType === 'sched-weekly') renderSchedWeekly();
+  // Restore focus on the search input after re-render
+  setTimeout(function() {
+    var inp = document.querySelector('#schedWeeklyColumns .col-search-input[data-company="' + company + '"], #weeklyColumns .col-search-input[data-company="' + company + '"], #monthlyColumns .col-search-input[data-company="' + company + '"]');
+    if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+  }, 0);
+}
+
 // ============ DRAG & DROP REORDER ============
 let _dragClientId = null;
 
@@ -7040,8 +7068,11 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       return c.segment === curSeg;
     }
 
+    const curSearch = (searchFilters[type] && searchFilters[type][co.key]) || '';
     const allActive = data.clients.filter(c => c.active && c.company === co.key);
-    const clients = allActive.filter(c => matchSegment(c));
+    // Sort alphabetically
+    allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
+    const clients = allActive.filter(c => matchSegment(c) && (!curSearch || (c.name || '').toLowerCase().includes(curSearch)));
     const sentCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status === 2)).length;
     const genCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status >= 1)).length;
 
@@ -7051,10 +7082,13 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
     }
     segSelectHtml += '</select>';
 
+    var searchInputHtml = '<input type="text" class="col-search-input" data-company="' + co.key + '" placeholder="🔍 Buscar cliente..." value="' + curSearch.replace(/"/g,'&quot;') + '" oninput="setChecklistSearch(\'' + type + '\',\'' + co.key + '\',this.value)" style="padding:4px 8px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;background:rgba(255,255,255,0.15);color:inherit;font-size:0.75rem;outline:none;width:150px;font-family:inherit;::placeholder-color:rgba(255,255,255,0.6)">';
+
     html += '<div class="company-column">';
-    html += '<div class="column-header ' + co.css + '">';
+    html += '<div class="column-header ' + co.css + '" style="flex-wrap:wrap;gap:6px">';
     html += '<span>' + co.label + '</span>';
     html += segSelectHtml;
+    html += searchInputHtml;
     html += '<span class="count">' + sentCount + '/' + clients.length + ' enviados &middot; ' + genCount + ' gerados</span>';
     html += '</div>';
     html += '<div class="column-body">';
