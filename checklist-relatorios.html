@@ -18405,6 +18405,16 @@ function ctOpenLightbox(url, isVideo) {
           thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--hover,#f3f4f6);display:flex;align-items:center;justify-content:center;font-size:1.5rem">\uD83D\uDDBC\uFE0F</div>';
         }
 
+        // Cancel button for scheduled/queued posts
+        var cancelBtn = '';
+        if (status === 'scheduled' || status === 'queued') {
+          var postIdx = dayPosts.indexOf(p);
+          var cancelLabel = status === 'scheduled' ? 'Cancelar agendamento' : 'Cancelar da fila';
+          cancelBtn = '<div style="margin-top:8px">'
+            + '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIdx + ')" style="padding:5px 12px;border-radius:6px;border:1px solid #ef4444;background:transparent;color:#dc2626;cursor:pointer;font-size:0.75rem;font-family:inherit;font-weight:600;transition:all 0.15s" onmouseenter="this.style.background=\'#fef2f2\'" onmouseleave="this.style.background=\'transparent\'">'
+            + '\u274C ' + cancelLabel + '</button></div>';
+        }
+
         return '<div style="display:flex;gap:14px;padding:14px 16px;border-left:4px solid ' + borderColor + ';background:var(--card,#fff);border-radius:0 12px 12px 0;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:box-shadow 0.2s" onmouseover="this.style.boxShadow=\'0 3px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.boxShadow=\'0 1px 4px rgba(0,0,0,0.06)\'">'
           + thumb
           + '<div style="flex:1;min-width:0">'
@@ -18420,6 +18430,7 @@ function ctOpenLightbox(url, isVideo) {
           +     metaSource
           +   '</div>'
           +   (caption ? '<div style="font-size:0.82rem;color:var(--text,#1f2937);line-height:1.4;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + caption + '</div>' : '')
+          +   cancelBtn
           + '</div>'
           + '</div>';
       }).join('');
@@ -18427,6 +18438,62 @@ function ctOpenLightbox(url, isVideo) {
 
     panel.style.display = 'block';
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  // ─── Cancel scheduled/queued post from calendar ───
+  window.calCancelPost = async function(isoDate, postIdx) {
+    var dayPosts = calPostsForDay(isoDate);
+    var p = dayPosts[postIdx];
+    if (!p) return alert('Post não encontrado');
+
+    var status = (p.status || '').toUpperCase();
+    var action = status === 'QUEUED' ? 'cancelar este post da fila' : 'cancelar este agendamento';
+    if (!confirm('Tem certeza que deseja ' + action + '?\n\nCliente: ' + (p.client_name || '') + '\nPlataforma: ' + (p.platform || ''))) return;
+
+    try {
+      if (status === 'QUEUED' && p.source === 'publish_queue') {
+        // Cancel from publish_queue in Supabase
+        if (!_supabase) throw new Error('Supabase não conectado');
+        var { error } = await _supabase.from('publish_queue').update({ status: 'CANCELLED' }).eq('id', p.id);
+        if (error) throw error;
+        // Also remove from local cache
+        _calAllPosts = _calAllPosts.filter(function(x) { return x.id !== p.id; });
+      } else if (status === 'SCHEDULED') {
+        // Cancel via API (same as metaPublishDeletePost)
+        var res = await fetch(metaApiBase() + '/api/meta/publish', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            post_id: p.post_id || p.id,
+            history_id: p.id,
+            client: p.client_key || '',
+            user: gpState.user ? gpState.user.name : 'Sistema',
+          }),
+        });
+        var data = await res.json();
+        if (data.error) throw new Error(data.message || 'Erro ao cancelar');
+        // Update local cache
+        var found = _calAllPosts.find(function(x) { return x.id === p.id; });
+        if (found) found.status = 'DELETED';
+      } else {
+        return alert('Este post não pode ser cancelado');
+      }
+
+      // Refresh view
+      _calFiltered = _calAllPosts.filter(function(x) { return x.status !== 'DELETED' && x.status !== 'CANCELLED'; });
+      var clientFilter = document.getElementById('calClientFilter');
+      if (clientFilter && clientFilter.value) {
+        var val = clientFilter.value;
+        _calFiltered = _calAllPosts.filter(function(x) {
+          return (x.status !== 'DELETED' && x.status !== 'CANCELLED') && (x.client_key === val || x.client_name === val);
+        });
+      }
+      calRender();
+      calShowDayDetail(isoDate);
+      showToast('✅ Agendamento cancelado com sucesso');
+    } catch(e) {
+      alert('Erro ao cancelar: ' + e.message);
+    }
   };
 
   // ─── Data loading ─────────────────────────────────────────────
