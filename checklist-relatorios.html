@@ -21376,6 +21376,18 @@ function ctCronoSendWhatsApp() {
   }
 }
 
+// Flatten nested subtasks into a flat array for cronograma
+function cronoFlattenTasks(tasks) {
+  var flat = [];
+  (tasks || []).forEach(function(t) {
+    flat.push(t);
+    if (t.subtasks && t.subtasks.length) {
+      cronoFlattenTasks(t.subtasks).forEach(function(st) { flat.push(st); });
+    }
+  });
+  return flat;
+}
+
 // Bridge: open cronograma modal from weekly schedule page
 var _cronoLoading = false;
 async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
@@ -21389,7 +21401,7 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
   try {
     // Fetch tasks for this client
     var tasksRes = await ctApi('list_tasks', { client_id: clientSlug });
-    var allTasks = tasksRes.data || tasksRes || [];
+    var allTasks = cronoFlattenTasks(tasksRes.data || tasksRes || []);
     allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
 
     // Fetch attachments in PARALLEL + hub data simultaneously
@@ -21435,7 +21447,7 @@ async function cronogramaGenerate() {
   try {
     // Fetch ALL tasks for client (with and without date)
     var tasksRes = await ctApi('list_tasks', { client_id: clientId });
-    var allTasks = tasksRes.data || tasksRes || [];
+    var allTasks = cronoFlattenTasks(tasksRes.data || tasksRes || []);
     allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
 
     // Fetch attachments in PARALLEL + hub data simultaneously
@@ -21573,13 +21585,10 @@ function cronogramaShowModal() {
 // Selecionar semana: ESCONDE chips de outras semanas, mostra e marca só os desta
 function cronogramaSelectWeek(mondayKey, btn) {
   document.querySelectorAll('.crono-chip').forEach(function(label) {
-    var chipWeek = label.dataset.week || '';
-    if (chipWeek === mondayKey || chipWeek === '') {
+    if (label.dataset.week === mondayKey) {
       label.style.display = 'flex';
       var cb = label.querySelector('.crono-task-check');
-      // Only auto-check chips that belong to the selected week; leave undated chips unchecked
-      if (cb && chipWeek === mondayKey) cb.checked = true;
-      if (cb && chipWeek === '') cb.checked = false;
+      if (cb) cb.checked = true;
     } else {
       label.style.display = 'none';
       var cb = label.querySelector('.crono-task-check');
