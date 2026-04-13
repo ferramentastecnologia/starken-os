@@ -21505,8 +21505,10 @@ function cronogramaShowModal() {
   }
   var weekMap = {}; // mondayKey → [indices]
   s.tasks.forEach(function(t, idx) {
-    if (!t.due_date) return;
-    var key = getMondayKey(t.due_date);
+    // Use post_date (data de postagem) primary, fallback to due_date
+    var dateForWeek = (t.publish_config && t.publish_config.post_date) ? t.publish_config.post_date : t.due_date;
+    if (!dateForWeek) return;
+    var key = getMondayKey(dateForWeek);
     if (!weekMap[key]) weekMap[key] = [];
     weekMap[key].push(idx);
   });
@@ -21529,13 +21531,15 @@ function cronogramaShowModal() {
   // Task chips — with data-week attribute for filtering
   var taskRows = '';
   s.tasks.forEach(function(t, idx) {
-    var hasDate = !!t.due_date;
+    // Use post_date (data de postagem) primary, fallback to due_date
+    var chipDate = (t.publish_config && t.publish_config.post_date) ? t.publish_config.post_date : t.due_date;
+    var hasDate = !!chipDate;
     var isPublished = t.status === 'publicado';
     var isScheduled = t.status === 'agendado';
     var hasImg = (t._attachments || []).some(function(a) { return a.file_type && a.file_type.startsWith('image/'); });
     var hasCopy = !!(t.copy_text || t.description || t.briefing);
-    var shortDate = hasDate ? t.due_date.slice(8,10) + '/' + t.due_date.slice(5,7) : '?';
-    var weekKey = hasDate ? getMondayKey(t.due_date) : '';
+    var shortDate = hasDate ? chipDate.slice(8,10) + '/' + chipDate.slice(5,7) : '?';
+    var weekKey = hasDate ? getMondayKey(chipDate) : '';
     var defaultChecked = hasDate && !isPublished && !isScheduled;
     var borderColor = isPublished ? '#d1fae5' : isScheduled ? '#dbeafe' : 'var(--border,#e2e8f0)';
     var bgColor = isPublished ? '#f0fdf4' : isScheduled ? '#eff6ff' : 'var(--card,#fff)';
