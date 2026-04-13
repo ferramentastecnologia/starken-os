@@ -22012,15 +22012,25 @@ async function cronogramaBuildPdf(opts) {
       if (i > 0) pdf.addPage([297, 210], 'landscape');
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
 
-      // Extract video URL via regex (avoids creating DOM element)
+      // Extract video URL and add clickable link annotations
       var vidMatch = pages[i].match(/data-video-url="([^"]+)"/);
-      var vidLink = vidMatch ? { getAttribute: function() { return vidMatch[1]; } } : null;
-      if (vidLink) {
-        var vidUrl = vidLink.getAttribute('data-video-url');
-        if (vidUrl) {
-          // Link direto ao vídeo (Chrome faz autoplay com som em URLs de mídia)
-          pdf.link(15, 30, 130, 170, { url: vidUrl });
+      if (vidMatch && vidMatch[1]) {
+        var vidUrl = vidMatch[1];
+        // Check if this is a story page (centered layout) or regular page (left column layout)
+        var isStoryPage = pages[i].indexOf('justify-content:center;height:600px') > -1;
+        if (isStoryPage) {
+          // Story layout: phone centered on page
+          pdf.link(80, 25, 140, 180, { url: vidUrl });
+        } else {
+          // Regular layout: phone on left column (padding 36px, column 380px)
+          // Phone area: roughly x=11mm to x=130mm, y=20mm to y=190mm
+          pdf.link(10, 18, 130, 175, { url: vidUrl });
         }
+        // Add small visible URL text at bottom-left so user can copy if link doesn't work
+        pdf.setFontSize(7);
+        pdf.setTextColor(100, 100, 100);
+        pdf.textWithLink('Link do vídeo: clique aqui para assistir', 10, 207, { url: vidUrl });
+        pdf.setTextColor(0, 0, 0);
       }
     }
 
