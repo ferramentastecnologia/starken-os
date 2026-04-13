@@ -22641,13 +22641,67 @@ function ctRenderTwoColumnContent() {
             return '<span style="font-size:0.7rem">' + icon + statusLabel + '</span>';
           }).join(' ');
 
-        pubEl.innerHTML = '<div style="margin-top:8px;display:flex;gap:6px">'
-          + '<button onclick="_ctActiveFormatTab=\'' + fmt + '\';ctFmtSelectPlatform(\'fb\');ctFmtSelectPlatform(\'ig\');ctPublishFormat()" style="flex:1;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit">🚀 Publicar</button>'
+        pubEl.innerHTML = '<div style="margin-top:10px;background:var(--card,#fff);border-radius:10px;border:1px solid var(--border);padding:10px">'
+          + '<div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Plataforma</div>'
+          + '<div style="display:flex;gap:6px;margin-bottom:8px">'
+          + '<button id="ctColPubFb_' + fmt + '" onclick="ctColTogglePlat(\'' + fmt + '\',\'fb\')" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--card,#fff);cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all 0.15s">📄 Facebook</button>'
+          + '<button id="ctColPubIg_' + fmt + '" onclick="ctColTogglePlat(\'' + fmt + '\',\'ig\')" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--card,#fff);cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all 0.15s">📷 Instagram</button>'
           + '</div>'
-          + '<div style="margin-top:6px">' + histHtml + '</div>';
+          + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">'
+          + '<select id="ctColPubMode_' + fmt + '" onchange="document.getElementById(\'ctColPubDate_' + fmt + '\').style.display=this.value===\'schedule\'?\'block\':\'none\'" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;background:var(--card);color:var(--text)">'
+          + '<option value="now">⚡ Agora</option><option value="schedule">📅 Agendar</option></select>'
+          + '<input type="datetime-local" id="ctColPubDate_' + fmt + '" style="display:none;flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;background:var(--card);color:var(--text)">'
+          + '</div>'
+          + '<button onclick="ctColPublish(\'' + fmt + '\')" style="width:100%;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit">🚀 Publicar</button>'
+          + '<div style="margin-top:6px">' + histHtml + '</div>'
+          + '</div>';
       }
     }
   });
+}
+
+// Per-column platform toggle state
+var _ctColPlats = {};
+function ctColTogglePlat(fmt, plat) {
+  if (!_ctColPlats[fmt]) _ctColPlats[fmt] = [];
+  var idx = _ctColPlats[fmt].indexOf(plat);
+  var btnId = plat === 'fb' ? 'ctColPubFb_' + fmt : 'ctColPubIg_' + fmt;
+  var btn = document.getElementById(btnId);
+  if (idx >= 0) {
+    _ctColPlats[fmt].splice(idx, 1);
+    if (btn) { btn.style.background = 'var(--card,#fff)'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text)'; btn.style.fontWeight = '400'; }
+  } else {
+    _ctColPlats[fmt].push(plat);
+    if (btn) { btn.style.background = '#dbeafe'; btn.style.borderColor = '#3b82f6'; btn.style.color = '#1d4ed8'; btn.style.fontWeight = '700'; }
+  }
+}
+
+function ctColPublish(fmt) {
+  var plats = _ctColPlats[fmt] || [];
+  if (plats.length === 0) return alert('Selecione pelo menos uma plataforma (Facebook ou Instagram)');
+  // Set the active format and platforms, then delegate to ctPublishFormat
+  _ctActiveFormatTab = fmt;
+  _ctFmtPlatforms = plats.slice();
+  // Set mode and datetime from column controls
+  var modeEl = document.getElementById('ctColPubMode_' + fmt);
+  var dateEl = document.getElementById('ctColPubDate_' + fmt);
+  var fmtModeEl = document.getElementById('ctFmtPubMode');
+  var fmtDateEl = document.getElementById('ctFmtPubDatetime');
+  if (fmtModeEl && modeEl) fmtModeEl.value = modeEl.value;
+  if (fmtDateEl && dateEl) fmtDateEl.value = dateEl.value;
+  // If publish section controls don't exist, create temporary hidden ones
+  if (!fmtModeEl) {
+    var tmp = document.createElement('select'); tmp.id = 'ctFmtPubMode'; tmp.value = modeEl ? modeEl.value : 'now'; tmp.style.display = 'none'; document.body.appendChild(tmp);
+  }
+  if (!fmtDateEl) {
+    var tmp2 = document.createElement('input'); tmp2.id = 'ctFmtPubDatetime'; tmp2.value = dateEl ? dateEl.value : ''; tmp2.style.display = 'none'; document.body.appendChild(tmp2);
+  }
+  ctPublishFormat();
+  // Clean up temporary elements
+  var tmpMode = document.getElementById('ctFmtPubMode');
+  var tmpDate = document.getElementById('ctFmtPubDatetime');
+  if (tmpMode && tmpMode.parentNode === document.body) tmpMode.remove();
+  if (tmpDate && tmpDate.parentNode === document.body) tmpDate.remove();
 }
 
 function ctSaveFormatCopyCol(fmt, value) {
@@ -23123,7 +23177,16 @@ async function ctPublishFormat() {
   if (!ctModalTask || !_ctActiveFormatTab) return;
 
   var fmt = _ctActiveFormatTab;
-  if (_ctFmtPlatforms.length === 0) return alert('Selecione pelo menos uma plataforma (Facebook ou Instagram)');
+  // Auto-select both platforms if platform buttons aren't in the DOM or publish section is hidden
+  if (_ctFmtPlatforms.length === 0) {
+    var _pubSec = document.getElementById('ctFormatPublishSection');
+    var _fbBtnExists = document.getElementById('ctFmtPubFb');
+    if (!_fbBtnExists || !_pubSec || _pubSec.style.display === 'none') {
+      _ctFmtPlatforms = ['fb', 'ig'];
+    } else {
+      return alert('Selecione pelo menos uma plataforma (Facebook ou Instagram)');
+    }
+  }
 
   // Get format-specific data
   var config = ctModalTask.publish_config || {};
