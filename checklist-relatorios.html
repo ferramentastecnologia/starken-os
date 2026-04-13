@@ -21692,7 +21692,8 @@ function cronogramaSelectNaoPub() {
     var idx = parseInt(label.dataset.idx);
     var task = _cronoState.tasks[idx];
     var cb = label.querySelector('.crono-task-check');
-    if (cb) cb.checked = task && task.status !== 'publicado' && task.status !== 'agendado' && !!task.due_date;
+    var hasChipDate = task && !!((task.publish_config && task.publish_config.post_date) || task.due_date);
+    if (cb) cb.checked = task && task.status !== 'publicado' && task.status !== 'agendado' && hasChipDate;
   });
   cronogramaPreview();
 }
@@ -23223,7 +23224,7 @@ function cronogramaBuildPages(clientName, clientLogo, tenant, tasks) {
 
     formatsToRender.forEach(function(postType) {
     var typeLabel = postType === 'reels' ? 'FEED REELS' : postType === 'carrossel' ? 'CARROSSEL DE FOTOS' : postType === 'story' ? 'STORIES' : 'FEED CRIATIVO';
-    var dateLabel = cronogramaFormatDate(task.due_date);
+    var dateLabel = cronogramaFormatDate((task.publish_config && task.publish_config.post_date) ? task.publish_config.post_date : task.due_date);
 
     // Filter attachments by format_type when multi-format
     var fmtAttachments = selectedFormats.length > 1
