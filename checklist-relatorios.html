@@ -21548,17 +21548,25 @@ function cronogramaShowModal() {
   });
   var weekKeys = Object.keys(weekMap).sort();
 
-  // Week filter buttons
+  // Week filter buttons — numbered per month (using Sunday's month)
   var weekBtns = '';
-  weekKeys.forEach(function(mondayStr, wi) {
+  var MONTH_ABBR = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  var monthWeekCount = {}; // 'YYYY-MM' → counter
+  weekKeys.forEach(function(mondayStr) {
     var mon = new Date(mondayStr + 'T00:00:00');
     var sun = new Date(mondayStr + 'T00:00:00');
     sun.setDate(sun.getDate() + 6);
+    // Use the Sunday's month to assign "Sem N de Mês"
+    var sunYM = sun.getFullYear() + '-' + String(sun.getMonth()).padStart(2,'0');
+    if (!monthWeekCount[sunYM]) monthWeekCount[sunYM] = 0;
+    monthWeekCount[sunYM]++;
+    var semN = monthWeekCount[sunYM];
+    var monthLabel = MONTH_ABBR[sun.getMonth()];
     var fmt = function(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); };
     var label = fmt(mon) + '–' + fmt(sun);
     weekBtns += '<button class="crono-week-btn" data-monday="' + mondayStr + '" onclick="cronogramaSelectWeek(\'' + mondayStr + '\',this)" '
       + 'style="padding:5px 12px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);color:var(--text,#1a1a2e);font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all 0.12s">'
-      + 'Sem ' + (wi+1) + ' <span style="font-weight:400;color:var(--text-secondary)">' + label + '</span>'
+      + monthLabel + ' Sem ' + semN + ' <span style="font-weight:400;color:var(--text-secondary)">' + label + '</span>'
       + '</button>';
   });
 
