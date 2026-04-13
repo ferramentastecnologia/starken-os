@@ -4338,12 +4338,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div id="pwPreviewMedia" style="background:#000;display:none"></div>
               <!-- Body -->
               <div style="padding:20px">
-                <!-- Status bar -->
-                <div id="pwPreviewStatus" style="display:flex;align-items:center;gap:8px;margin-bottom:16px"></div>
+                <!-- Status bar + cancel button -->
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                  <div id="pwPreviewStatus" style="display:flex;align-items:center;gap:8px"></div>
+                  <div id="pwPreviewActions" style="display:none"></div>
+                </div>
                 <!-- Caption -->
                 <div id="pwPreviewCaption" style="font-size:0.9rem;line-height:1.6;color:var(--text,#1f2937);white-space:pre-wrap;word-break:break-word"></div>
-                <!-- Cancel button (shown for scheduled/queued) -->
-                <div id="pwPreviewActions" style="margin-top:16px;display:none"></div>
               </div>
             </div>
           </div>
@@ -19322,10 +19323,11 @@ function ctOpenLightbox(url, isVideo) {
     // Cancel button for scheduled/queued posts
     var actionsEl = document.getElementById('pwPreviewActions');
     if (actionsEl) {
-      if (status === 'scheduled' || status === 'queued') {
-        var cancelLabel = status === 'scheduled' ? 'Cancelar agendamento' : 'Cancelar da fila';
+      var isCancel = (status === 'scheduled' || status === 'queued');
+      if (isCancel) {
+        var cancelLabel = status === 'scheduled' ? 'Cancelar' : 'Cancelar da fila';
         actionsEl.style.display = '';
-        actionsEl.innerHTML = '<button onclick="calCancelPost(\'' + isoDate + '\',' + postIndex + ');pwClosePreview()" style="padding:10px 20px;border-radius:10px;border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:0.85rem;font-family:inherit;font-weight:700;transition:all 0.15s;display:flex;align-items:center;gap:6px" onmouseenter="this.style.background=\'#fee2e2\'" onmouseleave="this.style.background=\'#fef2f2\'">'
+        actionsEl.innerHTML = '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIndex + ');pwClosePreview()" style="padding:6px 14px;border-radius:8px;border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:700;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px" onmouseenter="this.style.background=\'#fee2e2\'" onmouseleave="this.style.background=\'#fef2f2\'">'
           + '\u274C ' + cancelLabel + '</button>';
       } else {
         actionsEl.style.display = 'none';
