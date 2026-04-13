@@ -21579,19 +21579,29 @@ function cronogramaShowModal() {
   });
   var weekKeys = Object.keys(weekMap).sort();
 
-  // Week filter buttons — numbered per month (using Sunday's month)
+  // Week filter buttons — numbered by actual calendar position within the month
   var weekBtns = '';
   var MONTH_ABBR = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  var monthWeekCount = {}; // 'YYYY-MM' → counter
+  // Compute the real week-number-in-month for a Monday key
+  function getWeekNumInMonth(mondayStr) {
+    var mon = new Date(mondayStr + 'T00:00:00');
+    var sun = new Date(mondayStr + 'T00:00:00');
+    sun.setDate(sun.getDate() + 6);
+    // Reference month = Sunday's month (the week "belongs" to the month its Sunday falls in)
+    var refYear = sun.getFullYear();
+    var refMonth = sun.getMonth();
+    // Find the Monday that starts the first ISO week overlapping this month
+    var firstDay = new Date(refYear, refMonth, 1);
+    var firstDow = firstDay.getDay() || 7; // 1=Mon ... 7=Sun
+    var firstMonday = new Date(refYear, refMonth, 1 - (firstDow - 1));
+    var diffDays = Math.round((mon - firstMonday) / 86400000);
+    return Math.floor(diffDays / 7) + 1;
+  }
   weekKeys.forEach(function(mondayStr) {
     var mon = new Date(mondayStr + 'T00:00:00');
     var sun = new Date(mondayStr + 'T00:00:00');
     sun.setDate(sun.getDate() + 6);
-    // Use the Sunday's month to assign "Sem N de Mês"
-    var sunYM = sun.getFullYear() + '-' + String(sun.getMonth()).padStart(2,'0');
-    if (!monthWeekCount[sunYM]) monthWeekCount[sunYM] = 0;
-    monthWeekCount[sunYM]++;
-    var semN = monthWeekCount[sunYM];
+    var semN = getWeekNumInMonth(mondayStr);
     var monthLabel = MONTH_ABBR[sun.getMonth()];
     var fmt = function(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); };
     var label = fmt(mon) + '–' + fmt(sun);
