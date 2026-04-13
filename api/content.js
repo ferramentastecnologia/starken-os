@@ -703,6 +703,54 @@ async function adminUpdateUser({ user_name, user_role }) {
 }
 
 // =============================================================================
+// Batch: Create Recurring Week (group + 7 day tasks + N story subtasks in one call)
+// =============================================================================
+
+async function createRecurringWeek({ client_id, group_name, position, stories_per_day, user }) {
+  if (!client_id || !group_name) return fail('client_id and group_name are required');
+  if (!user) return fail('user is required');
+  const now = new Date().toISOString();
+  const count = Math.max(1, Math.min(20, parseInt(stories_per_day) || 1));
+
+  const DAYS = ['Segunda-Feira','Terça-Feira','Quarta-Feira','Quinta-Feira','Sexta-Feira','Sábado','Domingo'];
+
+  // 1. Create group
+  const grpData = await supaInsert('content_groups', {
+    client_id, name: group_name,
+    position: position ?? 9000,
+    created_by: user, created_at: now, updated_at: now, archived: false,
+  });
+  const grpId = (Array.isArray(grpData) ? grpData[0] : grpData).id;
+  if (!grpId) throw new Error('Failed to create group');
+
+  // 2. Create all 7 day tasks in parallel
+  const dayPromises = DAYS.map((dayName, di) =>
+    supaInsert('content_tasks', {
+      group_id: grpId, parent_id: null, client_id,
+      name: dayName, status: 'backlog', priority: 'normal',
+      position: di, created_by: user, created_at: now, updated_at: now,
+    })
+  );
+  const dayResults = await Promise.all(dayPromises);
+  const dayIds = dayResults.map(r => (Array.isArray(r) ? r[0] : r).id);
+
+  // 3. Create all story subtasks in parallel (all days at once)
+  const storyPromises = [];
+  dayIds.forEach((dayId, di) => {
+    for (let s = 0; s < count; s++) {
+      storyPromises.push(supaInsert('content_tasks', {
+        group_id: grpId, parent_id: dayId, client_id,
+        name: 'STORIES ' + (s + 1), status: 'backlog', priority: 'normal',
+        position: s, created_by: user, created_at: now, updated_at: now,
+      }));
+    }
+  });
+  await Promise.all(storyPromises);
+
+  return ok({ success: true, group_id: grpId, group_name });
+}
+
+// =============================================================================
 // Action Router
 // =============================================================================
 
@@ -735,6 +783,8 @@ const ACTIONS = {
   // Admin
   admin_create_user: adminCreateUser,
   admin_update_user: adminUpdateUser,
+  // Batch
+  create_recurring_week: createRecurringWeek,
 };
 
 // =============================================================================

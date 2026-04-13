@@ -14708,20 +14708,21 @@ async function ctRunMonthWizard() {
   try {
     if (_mwMode === 'stories') {
       var storiesCount = mwGetStoriesCount();
+      // Use batch endpoint: creates group + 7 days + N stories in parallel on the server
+      // This reduces 215 sequential API calls to 5 parallel batch calls
+      var weekPromises = [];
       for (var i = 1; i <= _mwWeeks; i++) {
         var grpName = 'STORIES RECORRENTES / ' + mName + ' - Semana ' + i;
-        var grpRes = await ctApi('upsert_group', { client_id: ctCurrentClient, name: grpName, position: 9000 + i, user: ctGetUser() });
-        var grpId = grpRes && grpRes.id ? grpRes.id : (grpRes && grpRes[0] && grpRes[0].id);
-        if (!grpId) { console.warn('No group id returned for', grpName, grpRes); continue; }
-        for (var d = 0; d < MW_DAYS_PT.length; d++) {
-          var dayRes = await ctApi('upsert_task', { group_id: grpId, client_id: ctCurrentClient, name: MW_DAYS_PT[d], position: d, user: ctGetUser() });
-          var dayId = dayRes && dayRes.id ? dayRes.id : (dayRes && dayRes[0] && dayRes[0].id);
-          if (!dayId) { console.warn('No day task id returned for', MW_DAYS_PT[d], dayRes); continue; }
-          for (var s = 1; s <= storiesCount; s++) {
-            await ctApi('upsert_task', { group_id: grpId, parent_id: dayId, client_id: ctCurrentClient, name: 'STORIES ' + s, position: s - 1, user: ctGetUser() });
-          }
-        }
+        weekPromises.push(ctApi('create_recurring_week', {
+          client_id: ctCurrentClient,
+          group_name: grpName,
+          position: 9000 + i,
+          stories_per_day: storiesCount,
+          user: ctGetUser(),
+        }));
+        btn.textContent = '⏳ Criando ' + i + '/' + _mwWeeks + '...';
       }
+      await Promise.all(weekPromises);
     } else {
       var tasks = mwGetTasks();
       for (var i = 1; i <= _mwWeeks; i++) {
