@@ -7052,6 +7052,35 @@ function updateNotes(clientId, type, period, notes) {
   saveData(data);
 }
 
+// ============ MARK CRONOGRAMA SENT MANUALLY ============
+function markCronoSentNow(clientId, type, periodKey) {
+  var sentDate = new Date().toISOString();
+  var r = data.reports.find(function(x) { return x.clientId === clientId && x.type === type && x.period === periodKey; });
+  if (!r) {
+    r = { id: gid(), clientId: clientId, type: type, period: periodKey, status: 2, sent: true, sentDate: sentDate, notes: '', createdAt: new Date().toISOString() };
+    data.reports.push(r);
+  } else {
+    r.status = 2;
+    r.sent = true;
+    r.sentDate = sentDate;
+  }
+  saveData(data);
+  showToast('✅ Marcado como enviado');
+  if (type === 'sched-weekly' && _supabase) {
+    var csId = clientId + '_' + periodKey;
+    _supabase.from('cronograma_status').upsert({
+      id: csId, client_id: clientId, period_key: periodKey,
+      status: 2, sent: true, sent_date: sentDate, updated_at: new Date().toISOString()
+    }, { onConflict: 'id' }).then(function(res) {
+      if (res.error) console.warn('cronograma_status sent sync error:', res.error);
+      else {
+        _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, { status: 2, sent: true, sent_date: sentDate });
+      }
+    });
+  }
+  renderAll();
+}
+
 // ============ INITIALS ============
 function getInitials(name) { return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase(); }
 
@@ -7135,8 +7164,17 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       }
       return true;
     });
-    const sentCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status === 2)).length;
-    const genCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status >= 1)).length;
+    // Helper to get effective status (checks cronograma_status for sched-weekly)
+    function _getEffectiveStatus(c) {
+      if (type === 'sched-weekly' && typeof getCronogramaStatus === 'function') {
+        var cs = getCronogramaStatus(c.id, periodKey);
+        if (cs) return cs.status || 0;
+      }
+      var rpt = data.reports.find(function(r) { return r.clientId === c.id && r.type === type && r.period === periodKey; });
+      return rpt ? (rpt.status || 0) : 0;
+    }
+    const sentCount = clients.filter(function(c) { return _getEffectiveStatus(c) === 2; }).length;
+    const genCount = clients.filter(function(c) { return _getEffectiveStatus(c) >= 1; }).length;
 
     let segSelectHtml = '<select class="col-seg-filter" onchange="setSegFilter(\'' + type + '\',\'' + co.key + '\',this.value)">';
     for (const [val, lbl] of segOpts) {
@@ -7166,12 +7204,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       var _gerados = [];
       for (var _ci = 0; _ci < clients.length; _ci++) {
         var _cc = clients[_ci];
-        var _rpt = data.reports.find(function(r) { return r.clientId === _cc.id && r.type === type && r.period === periodKey; });
-        var _csD = (typeof getCronogramaStatus === 'function') ? getCronogramaStatus(_cc.id, periodKey) : null;
-        var _st = 0;
-        if (_csD) _st = _csD.status || 0;
-        else if (_rpt) _st = _rpt.status || 0;
-        if (_st >= 1) _gerados.push(_cc);
+        if (_getEffectiveStatus(_cc) >= 1) _gerados.push(_cc);
         else _pendentes.push(_cc);
       }
       _renderGroups = [
@@ -7294,6 +7327,11 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
         html += '<button class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:4px 8px;font-weight:600" onclick="zappfySendReport(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar relatório no grupo WhatsApp via Zappfy">📱 Enviar</button>';
       } else if (c.phone) {
         html += '<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar WhatsApp">&#9993; Zap</button>';
+      }
+
+      // Manual "Enviado" button for cronograma (when not yet sent)
+      if (type === 'sched-weekly' && status < 2) {
+        html += '<button class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac;padding:4px 8px;font-weight:600;font-size:0.75rem" onclick="event.stopPropagation();markCronoSentNow(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Marcar como enviado manualmente (horário atual)">✅ Enviado</button>';
       }
 
       html += '</div>';
