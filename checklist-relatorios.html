@@ -7072,7 +7072,17 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
     const allActive = data.clients.filter(c => c.active && c.company === co.key);
     // Sort alphabetically
     allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
-    const clients = allActive.filter(c => matchSegment(c) && (!curSearch || (c.name || '').toLowerCase().includes(curSearch)));
+    const clients = allActive.filter(function(c) {
+      if (!matchSegment(c)) return false;
+      if (curSearch && !(c.name || '').toLowerCase().includes(curSearch)) return false;
+      // For sched-weekly: only show clients that have content groups
+      if (type === 'sched-weekly' && _ctClientsWithContent && _ctClientsWithContent.size > 0) {
+        var coTenant = co.key === 'Alpha' ? 'alpha' : 'starken';
+        var metaKey = findMetaClientKey(c.name, coTenant);
+        if (!metaKey || !_ctClientsWithContent.has(metaKey)) return false;
+      }
+      return true;
+    });
     const sentCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status === 2)).length;
     const genCount = clients.filter(c => data.reports.some(r => r.clientId === c.id && r.type === type && r.period === periodKey && r.status >= 1)).length;
 
@@ -7246,7 +7256,19 @@ function renderWeeklyChecklist() {
 
 // ============ CRONOGRAMA SEMANAL ============
 var _schedWeeklyFirstRender = true;
-function renderSchedWeekly() {
+// Cache of content_groups client slugs — null=not loaded, Set=loaded
+var _ctClientsWithContent = null;
+async function ensureCtClientsWithContent() {
+  if (_ctClientsWithContent !== null) return;
+  try {
+    if (!_supabase) { _ctClientsWithContent = new Set(); return; }
+    var res = await _supabase.from('content_groups').select('client_id');
+    _ctClientsWithContent = new Set((res.data || []).map(function(r) { return r.client_id; }).filter(Boolean));
+  } catch(e) {
+    _ctClientsWithContent = new Set();
+  }
+}
+async function renderSchedWeekly() {
   const monthKey = document.getElementById('schedWeekMonth').value;
   const mInfo = MONTHS_2026.find(m => m.key === monthKey);
   if (!mInfo) return;
@@ -7292,6 +7314,7 @@ function renderSchedWeekly() {
   }
 
   const periodKey = monthKey + '-S' + (wk ? wk.week : 1);
+  await ensureCtClientsWithContent();
   renderTwoColumnChecklist('schedWeeklyColumns', 'sched-weekly', periodKey);
 }
 
@@ -14820,6 +14843,8 @@ async function ctCreateNewGroup() {
     // Create group
     const groupRes = await ctApi('upsert_group', { client_id: ctCurrentClient, name, user: ctGetUser() });
     const groupId = groupRes?.id || groupRes?.[0]?.id;
+    // Invalidate content clients cache so new client appears in sched-weekly
+    if (typeof _ctClientsWithContent !== 'undefined' && _ctClientsWithContent) _ctClientsWithContent.add(ctCurrentClient);
 
     if (!groupId) {
       alert('Erro ao criar grupo');
