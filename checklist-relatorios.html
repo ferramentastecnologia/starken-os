@@ -21475,7 +21475,6 @@ async function cronogramaGenerate() {
 
 function cronogramaShowModal() {
   var s = _cronoState;
-  // Remove existing modal
   var old = document.getElementById('cronoModal');
   if (old) old.remove();
 
@@ -21485,83 +21484,82 @@ function cronogramaShowModal() {
   modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
 
   // ─── Build week groups from due_date ───
-  var weekMap = {}; // 'YYYY-MM-DD' (monday) → [task indices]
-  s.tasks.forEach(function(t, idx) {
-    if (!t.due_date) return;
-    var d = new Date(t.due_date + 'T00:00:00');
-    var day = d.getDay() || 7; // Mon=1..Sun=7
+  function getMondayKey(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    var day = d.getDay() || 7;
     var monday = new Date(d);
     monday.setDate(d.getDate() - (day - 1));
-    var key = monday.toISOString().split('T')[0];
+    return monday.toISOString().split('T')[0];
+  }
+  var weekMap = {}; // mondayKey → [indices]
+  s.tasks.forEach(function(t, idx) {
+    if (!t.due_date) return;
+    var key = getMondayKey(t.due_date);
     if (!weekMap[key]) weekMap[key] = [];
     weekMap[key].push(idx);
   });
   var weekKeys = Object.keys(weekMap).sort();
 
-  // Week filter buttons HTML
+  // Week filter buttons
   var weekBtns = '';
   weekKeys.forEach(function(mondayStr, wi) {
+    var mon = new Date(mondayStr + 'T00:00:00');
     var sun = new Date(mondayStr + 'T00:00:00');
     sun.setDate(sun.getDate() + 6);
     var fmt = function(d) { return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'); };
-    var mon = new Date(mondayStr + 'T00:00:00');
     var label = fmt(mon) + '–' + fmt(sun);
-    var indices = JSON.stringify(weekMap[mondayStr]);
-    weekBtns += '<button class="crono-week-btn" data-week="' + mondayStr + '" onclick="cronogramaSelectWeek(' + indices + ',this)" '
-      + 'style="padding:5px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);color:var(--text,#1a1a2e);font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all 0.12s">'
+    weekBtns += '<button class="crono-week-btn" data-monday="' + mondayStr + '" onclick="cronogramaSelectWeek(\'' + mondayStr + '\',this)" '
+      + 'style="padding:5px 12px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);color:var(--text,#1a1a2e);font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:all 0.12s">'
       + 'Sem ' + (wi+1) + ' <span style="font-weight:400;color:var(--text-secondary)">' + label + '</span>'
       + '</button>';
   });
 
+  // Task chips — with data-week attribute for filtering
   var taskRows = '';
   s.tasks.forEach(function(t, idx) {
     var hasDate = !!t.due_date;
     var isPublished = t.status === 'publicado';
+    var isScheduled = t.status === 'agendado';
     var hasImg = (t._attachments || []).some(function(a) { return a.file_type && a.file_type.startsWith('image/'); });
     var hasCopy = !!(t.copy_text || t.description || t.briefing);
     var shortDate = hasDate ? t.due_date.slice(8,10) + '/' + t.due_date.slice(5,7) : '?';
+    var weekKey = hasDate ? getMondayKey(t.due_date) : '';
+    var defaultChecked = hasDate && !isPublished && !isScheduled;
+    var borderColor = isPublished ? '#d1fae5' : isScheduled ? '#dbeafe' : 'var(--border,#e2e8f0)';
+    var bgColor = isPublished ? '#f0fdf4' : isScheduled ? '#eff6ff' : 'var(--card,#fff)';
+    var badge = isPublished ? '<span style="font-size:9px;background:#d1fae5;color:#065f46;padding:1px 5px;border-radius:4px;font-weight:700">✓ postado</span>'
+               : isScheduled ? '<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 5px;border-radius:4px;font-weight:700">📅 ag.</span>' : '';
 
-    // Default: checked if has date AND not already published
-    var defaultChecked = hasDate && !isPublished;
-
-    taskRows += '<label style="display:flex;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid ' + (isPublished ? '#d1fae5' : 'var(--border,#e2e8f0)') + ';border-radius:8px;cursor:pointer;white-space:nowrap;font-size:0.75rem;background:' + (isPublished ? '#f0fdf4' : 'var(--card,#fff)') + '" onchange="cronogramaPreviewDebounced()">'
+    taskRows += '<label class="crono-chip" data-week="' + weekKey + '" data-idx="' + idx + '" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border:1.5px solid ' + borderColor + ';border-radius:8px;cursor:pointer;white-space:nowrap;font-size:0.75rem;background:' + bgColor + '" onchange="cronogramaPreviewDebounced()">'
       + '<input type="checkbox" class="crono-task-check" data-idx="' + idx + '" ' + (defaultChecked ? 'checked' : '') + ' style="accent-color:#8B7355;cursor:pointer">'
       + '<span style="font-weight:600;color:var(--text,#1a1a2e)">' + (t.name || 'Post') + '</span>'
       + '<span style="color:var(--text-secondary,#64748b)">' + shortDate + '</span>'
-      + (isPublished ? '<span style="font-size:9px;background:#d1fae5;color:#065f46;padding:1px 5px;border-radius:4px;font-weight:700">✓ postado</span>' : '')
+      + badge
       + '<span style="' + (hasImg ? 'color:#22c55e' : 'color:#ef4444') + '">📷</span>'
       + '<span style="' + (hasCopy ? 'color:#22c55e' : 'color:#ef4444') + '">📝</span>'
       + '</label>';
   });
 
   modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:1100px;max-width:96vw;height:92vh;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 25px 50px rgba(0,0,0,0.25)">'
-    // Header compact
     + '<div style="background:linear-gradient(135deg,#8B7355,#a89070);padding:14px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex:0 0 auto">'
     + '<div><div style="font-size:1.1rem;font-weight:800">📄 Cronograma PDF</div>'
     + '<div style="font-size:0.75rem;opacity:0.8;margin-top:2px">' + s.clientName + '</div></div>'
     + '<button onclick="document.getElementById(\'cronoModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:1.1rem;cursor:pointer">✕</button>'
     + '</div>'
-
-    // Week filter bar
-    + '<div style="padding:8px 20px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--bg,#f1f5f9);flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow-x:auto">'
+    // Filtro de semana
+    + '<div style="padding:8px 20px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--bg,#f1f5f9);flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0">'
     + '<span style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">Semana:</span>'
     + weekBtns
     + '<div style="width:1px;height:20px;background:var(--border,#ddd);flex-shrink:0"></div>'
+    + '<button onclick="cronogramaShowAllChips()" style="padding:5px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);color:var(--text-secondary);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">☰ Todos</button>'
     + '<button onclick="cronogramaSelectNaoPub()" style="padding:5px 10px;border:1.5px solid #fcd34d;border-radius:8px;background:#fffbeb;color:#92400e;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit">⏳ Só pendentes</button>'
-    + '<button onclick="document.querySelectorAll(\'.crono-task-check\').forEach(function(c){c.checked=true});cronogramaPreview()" style="padding:5px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);color:var(--text-secondary);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">☑ Todos</button>'
-    + '<button onclick="document.querySelectorAll(\'.crono-task-check\').forEach(function(c){c.checked=false});cronogramaPreview()" style="padding:5px 10px;border:1.5px solid var(--border,#e2e8f0);border-radius:8px;background:var(--card,#fff);color:var(--text-secondary);font-size:0.72rem;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit">☐ Nenhum</button>'
     + '</div>'
-
-    // Task selection bar (compact horizontal)
-    + '<div style="padding:8px 20px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--bg-secondary,#f8fafc);flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow-x:auto">'
-    + '<span style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">Posts:</span>'
+    // Chips de tarefas
+    + '<div id="cronoChipsBar" style="padding:8px 20px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--bg-secondary,#f8fafc);flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0">'
+    + '<span id="cronoChipsLabel" style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px">Posts:</span>'
     + taskRows
     + '</div>'
-
-    // Preview area (takes all remaining space)
     + '<div id="cronoPreviewArea" style="flex:1;overflow-y:auto;padding:16px 20px;background:#eae5dd"></div>'
-
-    // Actions
     + '<div style="padding:12px 20px;border-top:1px solid var(--border,#e5e7eb);display:flex;gap:10px;flex:0 0 auto">'
     + '<button id="cronoGenBtn" onclick="cronogramaGenerate()" style="flex:1;padding:14px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">📄 Gerar PDF</button>'
     + '<button id="cronoDlBtn" onclick="cronogramaDownload()" style="flex:1;padding:14px;border:none;border-radius:10px;background:#8B7355;color:#fff;font-size:0.92rem;font-weight:700;cursor:pointer;font-family:inherit">⬇️ Baixar PDF</button>'
@@ -21569,44 +21567,49 @@ function cronogramaShowModal() {
     + '</div>';
 
   document.body.appendChild(modal);
-  // Auto-preview on open (only selected tasks)
   setTimeout(cronogramaPreview, 100);
 }
 
-// Select only tasks from a specific week (by task index array), deselect all others
-function cronogramaSelectWeek(indices, btn) {
-  // Deselect all
-  document.querySelectorAll('.crono-task-check').forEach(function(c) { c.checked = false; });
-  // Select week tasks
-  indices.forEach(function(idx) {
-    var cb = document.querySelector('.crono-task-check[data-idx="' + idx + '"]');
-    if (cb) cb.checked = true;
+// Selecionar semana: ESCONDE chips de outras semanas, mostra e marca só os desta
+function cronogramaSelectWeek(mondayKey, btn) {
+  document.querySelectorAll('.crono-chip').forEach(function(label) {
+    if (label.dataset.week === mondayKey) {
+      label.style.display = 'flex';
+      var cb = label.querySelector('.crono-task-check');
+      if (cb) cb.checked = true;
+    } else {
+      label.style.display = 'none';
+      var cb = label.querySelector('.crono-task-check');
+      if (cb) cb.checked = false;
+    }
   });
-  // Visual feedback on button
+  // Highlight week button
   document.querySelectorAll('.crono-week-btn').forEach(function(b) {
     b.style.background = 'var(--card,#fff)';
     b.style.borderColor = 'var(--border,#e2e8f0)';
     b.style.color = 'var(--text,#1a1a2e)';
   });
-  if (btn) {
-    btn.style.background = '#8B7355';
-    btn.style.borderColor = '#8B7355';
-    btn.style.color = '#fff';
-  }
+  if (btn) { btn.style.background = '#8B7355'; btn.style.borderColor = '#8B7355'; btn.style.color = '#fff'; }
   cronogramaPreview();
 }
 
-// Select only tasks that are NOT published (pending approval)
-function cronogramaSelectNaoPub() {
-  document.querySelectorAll('.crono-task-check').forEach(function(c) {
-    var idx = parseInt(c.dataset.idx);
-    var task = _cronoState.tasks[idx];
-    c.checked = task && task.status !== 'publicado' && task.status !== 'agendado' && !!task.due_date;
-  });
+// Mostrar todos os chips novamente
+function cronogramaShowAllChips() {
+  document.querySelectorAll('.crono-chip').forEach(function(label) { label.style.display = 'flex'; });
   document.querySelectorAll('.crono-week-btn').forEach(function(b) {
-    b.style.background = 'var(--card,#fff)';
-    b.style.borderColor = 'var(--border,#e2e8f0)';
-    b.style.color = 'var(--text,#1a1a2e)';
+    b.style.background = 'var(--card,#fff)'; b.style.borderColor = 'var(--border,#e2e8f0)'; b.style.color = 'var(--text,#1a1a2e)';
+  });
+  cronogramaPreview();
+}
+
+// Só pendentes: entre os chips visíveis, desmarca publicados/agendados
+function cronogramaSelectNaoPub() {
+  document.querySelectorAll('.crono-chip').forEach(function(label) {
+    if (label.style.display === 'none') return;
+    var idx = parseInt(label.dataset.idx);
+    var task = _cronoState.tasks[idx];
+    var cb = label.querySelector('.crono-task-check');
+    if (cb) cb.checked = task && task.status !== 'publicado' && task.status !== 'agendado' && !!task.due_date;
   });
   cronogramaPreview();
 }
