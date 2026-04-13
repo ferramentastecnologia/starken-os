@@ -7419,9 +7419,9 @@ async function ensureCtClientsWithContent() {
 var _ctClientsWithWeekTasks = {}; // { periodKey: Set }
 async function ensureClientsWithWeekTasks(periodKey) {
   if (_ctClientsWithWeekTasks[periodKey]) return;
+  console.log('ensureClientsWithWeekTasks: loading for', periodKey);
   try {
     if (!_supabase) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
-    // Parse periodKey to get week dates (e.g. "2026-04-S2")
     var parts = periodKey.split('-S');
     if (parts.length !== 2) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
     var monthKey = parts[0];
@@ -7435,50 +7435,32 @@ async function ensureClientsWithWeekTasks(periodKey) {
 
     var startDate = wk.periodStartISO;
     var endDate = wk.periodEndISO;
+    console.log('Week range:', startDate, '→', endDate);
 
-    // Query tasks with due_date in the week range (AND, not OR)
+    // Query 1: tasks with due_date in range
     var res = await _supabase.from('content_tasks')
-      .select('client_id,group_id,publish_config,due_date')
-      .not('status', 'in', '("cancelado","arquivado")')
+      .select('group_id,due_date,publish_config')
       .gte('due_date', startDate)
       .lte('due_date', endDate);
     var tasks = res.data || [];
+    console.log('Tasks with due_date in range:', tasks.length);
 
-    // Collect client IDs from tasks directly and via group mapping
+    // Query 2: ALL groups → client mapping
+    var gRes = await _supabase.from('content_groups').select('id,client_id');
+    var groupToClient = {};
+    (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
+
+    // Collect client IDs
     var clientIds = new Set();
-    var groupIds = [];
     tasks.forEach(function(t) {
-      if (t.client_id) clientIds.add(t.client_id);
-      if (t.group_id) groupIds.push(t.group_id);
-    });
-
-    // Map group_id → client_id for tasks without direct client_id
-    if (groupIds.length > 0) {
-      var uniqueGroups = [...new Set(groupIds)];
-      var gRes = await _supabase.from('content_groups').select('id,client_id').in('id', uniqueGroups);
-      var groupMap = {};
-      (gRes.data || []).forEach(function(g) { groupMap[g.id] = g.client_id; });
-      tasks.forEach(function(t) {
-        if (!t.client_id && t.group_id && groupMap[t.group_id]) {
-          clientIds.add(groupMap[t.group_id]);
-        }
-      });
-    }
-
-    // Also check tasks with post_date in publish_config (might differ from due_date)
-    // Query broader range and filter by post_date
-    var res2 = await _supabase.from('content_tasks')
-      .select('client_id,group_id,publish_config')
-      .not('status', 'in', '("cancelado","arquivado")')
-      .not('publish_config', 'is', null);
-    (res2.data || []).forEach(function(t) {
-      var postDate = t.publish_config && t.publish_config.post_date;
-      if (postDate && postDate >= startDate && postDate <= endDate) {
-        if (t.client_id) clientIds.add(t.client_id);
+      var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date || '';
+      if (postDate >= startDate && postDate <= endDate) {
+        var cid = groupToClient[t.group_id];
+        if (cid) clientIds.add(cid);
       }
     });
 
-    console.log('Week tasks for', periodKey, ':', startDate, '→', endDate, '| clients:', [...clientIds]);
+    console.log('Week tasks for', periodKey, '→ clients:', [...clientIds]);
     _ctClientsWithWeekTasks[periodKey] = clientIds;
   } catch(e) {
     console.warn('ensureClientsWithWeekTasks error:', e);
