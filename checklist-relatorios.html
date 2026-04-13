@@ -678,6 +678,15 @@ body {
   font-size: 0.75rem;
   font-weight: 600;
 }
+.crono-group-no-demand {
+  background: #f1f5f9;
+  color: #475569;
+  border-left-color: #94a3b8;
+}
+[data-theme="dark"] .crono-group-no-demand {
+  background: rgba(148,163,184,0.12);
+  color: #94a3b8;
+}
 .crono-section-empty {
   padding: 16px;
   text-align: center;
@@ -7197,19 +7206,32 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       html += '<div class="column-empty">Nenhum cliente ' + co.label + ' ativo</div>';
     }
 
-    // For sched-weekly, separate clients into Pendentes and Gerados groups
+    // For sched-weekly, separate clients into Pendentes, Gerados, and Sem Demanda groups
     var _renderGroups;
     if (type === 'sched-weekly' && clients.length > 0) {
       var _pendentes = [];
       var _gerados = [];
+      var _semDemanda = [];
+      var _weekTaskClients = _ctClientsWithWeekTasks[periodKey] || new Set();
       for (var _ci = 0; _ci < clients.length; _ci++) {
         var _cc = clients[_ci];
-        if (_getEffectiveStatus(_cc) >= 1) _gerados.push(_cc);
-        else _pendentes.push(_cc);
+        if (_getEffectiveStatus(_cc) >= 1) {
+          _gerados.push(_cc);
+        } else {
+          // Check if this client has tasks for this week
+          var _coTenant = co.key === 'Alpha' ? 'alpha' : 'starken';
+          var _metaK = findMetaClientKey(_cc.name, _coTenant);
+          if (_metaK && _weekTaskClients.has(_metaK)) {
+            _pendentes.push(_cc);
+          } else {
+            _semDemanda.push(_cc);
+          }
+        }
       }
       _renderGroups = [
         { label: '⏳ Pendentes', count: _pendentes.length, clients: _pendentes, cls: 'crono-group-pending' },
-        { label: '✅ Gerados', count: _gerados.length, clients: _gerados, cls: 'crono-group-generated' }
+        { label: '✅ Gerados', count: _gerados.length, clients: _gerados, cls: 'crono-group-generated' },
+        { label: '📭 Sem Demanda', count: _semDemanda.length, clients: _semDemanda, cls: 'crono-group-no-demand' }
       ];
     } else {
       _renderGroups = [{ label: null, clients: clients, count: clients.length, cls: '' }];
@@ -7392,6 +7414,69 @@ async function ensureCtClientsWithContent() {
     _ctClientsWithContent = new Set();
   }
 }
+
+// Cache of clients with actual tasks for a given week period
+var _ctClientsWithWeekTasks = {}; // { periodKey: Set }
+async function ensureClientsWithWeekTasks(periodKey) {
+  if (_ctClientsWithWeekTasks[periodKey]) return;
+  try {
+    if (!_supabase) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
+    // Parse periodKey to get week dates (e.g. "2026-04-S2")
+    var parts = periodKey.split('-S');
+    if (parts.length !== 2) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
+    var monthKey = parts[0];
+    var weekNum = parseInt(parts[1]);
+    var mParts = monthKey.split('-');
+    var year = parseInt(mParts[0]);
+    var month = parseInt(mParts[1]) - 1;
+    var weeks = getMonthWeeks(year, month);
+    var wk = weeks.find(function(w) { return w.week === weekNum; });
+    if (!wk) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
+
+    // Query tasks with post_date or due_date in the week range
+    var startDate = wk.periodStartISO;
+    var endDate = wk.periodEndISO;
+    var res = await _supabase.from('content_tasks')
+      .select('client_id,group_id,publish_config,due_date')
+      .not('status', 'in', '("cancelado","arquivado")')
+      .or('due_date.gte.' + startDate + ',due_date.lte.' + endDate);
+    var tasks = res.data || [];
+
+    // Also check tasks with post_date in publish_config
+    var clientIds = new Set();
+    tasks.forEach(function(t) {
+      // Check if task's post_date falls in the week range
+      var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date || '';
+      if (postDate >= startDate && postDate <= endDate) {
+        // Get client_id from the task's group
+        var cid = t.client_id;
+        if (cid) clientIds.add(cid);
+      }
+    });
+
+    // Also try matching by group → client mapping
+    if (tasks.length > 0) {
+      var groupIds = [...new Set(tasks.map(function(t) { return t.group_id; }).filter(Boolean))];
+      if (groupIds.length > 0) {
+        var gRes = await _supabase.from('content_groups').select('id,client_id').in('id', groupIds);
+        var groupMap = {};
+        (gRes.data || []).forEach(function(g) { groupMap[g.id] = g.client_id; });
+        tasks.forEach(function(t) {
+          var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date || '';
+          if (postDate >= startDate && postDate <= endDate) {
+            var cid = t.client_id || groupMap[t.group_id];
+            if (cid) clientIds.add(cid);
+          }
+        });
+      }
+    }
+
+    _ctClientsWithWeekTasks[periodKey] = clientIds;
+  } catch(e) {
+    console.warn('ensureClientsWithWeekTasks error:', e);
+    _ctClientsWithWeekTasks[periodKey] = new Set();
+  }
+}
 async function renderSchedWeekly() {
   const monthKey = document.getElementById('schedWeekMonth').value;
   const mInfo = MONTHS_2026.find(m => m.key === monthKey);
@@ -7439,6 +7524,7 @@ async function renderSchedWeekly() {
 
   const periodKey = monthKey + '-S' + (wk ? wk.week : 1);
   await ensureCtClientsWithContent();
+  await ensureClientsWithWeekTasks(periodKey);
   renderTwoColumnChecklist('schedWeeklyColumns', 'sched-weekly', periodKey);
 }
 
