@@ -4339,10 +4339,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <!-- Body -->
               <div style="padding:20px">
                 <!-- Status bar + cancel button -->
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-                  <div id="pwPreviewStatus" style="display:flex;align-items:center;gap:8px"></div>
-                  <div id="pwPreviewActions" style="display:none"></div>
-                </div>
+                <div id="pwPreviewStatus" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap"></div>
                 <!-- Caption -->
                 <div id="pwPreviewCaption" style="font-size:0.9rem;line-height:1.6;color:var(--text,#1f2937);white-space:pre-wrap;word-break:break-word"></div>
               </div>
@@ -19313,27 +19310,20 @@ function ctOpenLightbox(url, isVideo) {
     }
 
     // Status bar
-    document.getElementById('pwPreviewStatus').innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;background:' + statusColor + '15;color:' + statusColor + ';border:1px solid ' + statusColor + '30">' + statusIcon + ' ' + statusLabel + '</span>'
+    var statusHtml = '<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:0.8rem;font-weight:600;background:' + statusColor + '15;color:' + statusColor + ';border:1px solid ' + statusColor + '30">' + statusIcon + ' ' + statusLabel + '</span>'
       + '<span style="font-size:0.78rem;color:var(--text-secondary,#6b7280)">' + platIcon + ' ' + platLabel + '</span>';
+
+    // Add cancel button for scheduled/queued posts
+    if (status === 'scheduled' || status === 'queued') {
+      var cancelLabel = status === 'scheduled' ? 'Cancelar' : 'Cancelar da fila';
+      statusHtml += '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIndex + ');pwClosePreview()" style="margin-left:auto;padding:6px 14px;border-radius:8px;border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:700;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px" onmouseenter="this.style.background=\'#fee2e2\'" onmouseleave="this.style.background=\'#fef2f2\'">\u274C ' + cancelLabel + '</button>';
+    }
+
+    document.getElementById('pwPreviewStatus').innerHTML = statusHtml;
 
     // Caption
     var captionEl = document.getElementById('pwPreviewCaption');
     captionEl.textContent = p.caption || '';
-
-    // Cancel button for scheduled/queued posts
-    var actionsEl = document.getElementById('pwPreviewActions');
-    if (actionsEl) {
-      var isCancel = (status === 'scheduled' || status === 'queued');
-      if (isCancel) {
-        var cancelLabel = status === 'scheduled' ? 'Cancelar' : 'Cancelar da fila';
-        actionsEl.style.display = '';
-        actionsEl.innerHTML = '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIndex + ');pwClosePreview()" style="padding:6px 14px;border-radius:8px;border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:700;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px" onmouseenter="this.style.background=\'#fee2e2\'" onmouseleave="this.style.background=\'#fef2f2\'">'
-          + '\u274C ' + cancelLabel + '</button>';
-      } else {
-        actionsEl.style.display = 'none';
-        actionsEl.innerHTML = '';
-      }
-    }
 
     overlay.style.display = 'flex';
     overlay.onclick = function(e) { if (e.target === overlay) pwClosePreview(); };
