@@ -21447,7 +21447,10 @@ async function cronogramaGenerate() {
   try {
     // Fetch ALL tasks for client (with and without date)
     var tasksRes = await ctApi('list_tasks', { client_id: clientId });
-    var allTasks = cronoFlattenTasks(tasksRes.data || tasksRes || []);
+    var rawTasks = tasksRes.data || tasksRes || [];
+    console.log('[CRONO DEBUG] raw tasks count:', rawTasks.length, 'raw:', JSON.stringify(rawTasks.map(function(t){ return {id:t.id,name:t.name,due_date:t.due_date,status:t.status,parent_id:t.parent_id,subtasks:(t.subtasks||[]).length}; })));
+    var allTasks = cronoFlattenTasks(rawTasks);
+    console.log('[CRONO DEBUG] flat tasks count:', allTasks.length, 'flat:', JSON.stringify(allTasks.map(function(t){ return {id:t.id,name:t.name,due_date:t.due_date,status:t.status,parent_id:t.parent_id}; })));
     allTasks.sort(function(a, b) { return (a.due_date || 'zzzz').localeCompare(b.due_date || 'zzzz'); });
 
     // Fetch attachments in PARALLEL + hub data simultaneously
@@ -21504,13 +21507,16 @@ function cronogramaShowModal() {
     return monday.toISOString().split('T')[0];
   }
   var weekMap = {}; // mondayKey → [indices]
+  console.log('[CRONO MODAL] total tasks for chips:', s.tasks.length);
   s.tasks.forEach(function(t, idx) {
+    console.log('[CRONO MODAL] task[' + idx + ']:', t.name, 'due_date:', t.due_date, 'status:', t.status, 'parent_id:', t.parent_id);
     if (!t.due_date) return;
     var key = getMondayKey(t.due_date);
     if (!weekMap[key]) weekMap[key] = [];
     weekMap[key].push(idx);
   });
   var weekKeys = Object.keys(weekMap).sort();
+  console.log('[CRONO MODAL] weekMap:', JSON.stringify(weekMap), 'weekKeys:', weekKeys);
 
   // Week filter buttons
   var weekBtns = '';
