@@ -1684,6 +1684,45 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-row:hover .ct-add-sub-btn { opacity:0.6 !important; }
 .ct-add-sub-btn:hover { opacity:1 !important;color:var(--accent,#3b82f6) !important; }
 
+/* ═══ STORIES RECORRENTES — Thumbnail Grid View ═══ */
+.rs-week-block { margin-bottom:28px; }
+.rs-week-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 2px; }
+.rs-week-title { font-size:1rem;font-weight:700;color:var(--text); }
+.rs-week-actions { display:flex;gap:8px;align-items:center; }
+.rs-btn-sched { background:var(--brand,#3b82f6);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.15s; }
+.rs-btn-sched:hover { background:#2563eb; }
+.rs-btn-delete-grp { background:none;border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:0.85rem;transition:all 0.12s; }
+.rs-btn-delete-grp:hover { background:#fee2e2;border-color:#fca5a5;color:#dc2626; }
+.rs-days-scroll { display:flex;gap:10px;overflow-x:auto;padding-bottom:8px;scroll-snap-type:x mandatory; }
+.rs-days-scroll::-webkit-scrollbar { height:5px; }
+.rs-days-scroll::-webkit-scrollbar-track { background:transparent; }
+.rs-days-scroll::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
+.rs-day-col { flex:0 0 160px;min-width:160px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;scroll-snap-align:start; }
+.rs-day-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+.rs-day-name { font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary); }
+.rs-day-count { font-size:0.68rem;background:var(--bg-elevated,#f8fafc);color:var(--text-muted);border-radius:10px;padding:1px 6px;font-weight:600; }
+.rs-stories-grid { display:flex;flex-direction:column;gap:6px;min-height:40px; }
+.rs-story-card { background:var(--bg-elevated,#f8fafc);border:1px solid var(--border);border-radius:8px;overflow:hidden;position:relative;transition:box-shadow 0.15s; }
+.rs-story-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+.rs-thumb { width:100%;aspect-ratio:9/16;object-fit:cover;display:block;cursor:zoom-in; }
+.rs-thumb-empty { width:100%;aspect-ratio:9/16;display:flex;align-items:center;justify-content:center;font-size:2rem;color:var(--text-muted);background:var(--bg,#f1f5f9); }
+.rs-story-footer { display:flex;align-items:center;gap:4px;padding:5px 6px;background:var(--card);flex-wrap:nowrap; }
+.rs-time-input { flex:1;min-width:0;padding:3px 4px;border:1px solid var(--border);border-radius:5px;font-size:0.7rem;background:var(--bg);color:var(--text);font-family:inherit;outline:none;cursor:pointer; }
+.rs-time-input:focus { border-color:var(--brand,#3b82f6); }
+.rs-plats { display:flex;gap:2px;flex-shrink:0; }
+.rs-plat { font-size:0.55rem;font-weight:800;padding:2px 4px;border-radius:3px;letter-spacing:0.3px; }
+.rs-plat.ig { background:#e7d5f5;color:#7c3aed; }
+.rs-plat.fb { background:#dbeafe;color:#1e40af; }
+.rs-del-btn { background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:2px 4px;border-radius:4px;flex-shrink:0;transition:all 0.12s; }
+.rs-del-btn:hover { background:#fee2e2;color:#dc2626; }
+.rs-add-btn { width:100%;margin-top:6px;padding:8px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:1.1rem;font-weight:700;transition:all 0.15s;font-family:inherit; }
+.rs-add-btn:hover { border-color:var(--brand,#3b82f6);color:var(--brand,#3b82f6);background:rgba(59,130,246,0.05); }
+.rs-plat-btn { flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text-secondary);cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.15s;font-family:inherit; }
+.rs-plat-btn.active { background:var(--brand,#3b82f6);color:#fff;border-color:var(--brand,#3b82f6); }
+[data-theme="dark"] .rs-story-card { background:var(--bg-elevated,#1e293b); }
+[data-theme="dark"] .rs-thumb-empty { background:var(--bg,#0f172a); }
+[data-theme="dark"] .rs-day-col { background:var(--card,#1e293b); }
+
 @media (max-width:900px) {
   .ct-modal { grid-template-columns:1fr;max-width:100%;border-radius:0;height:100vh;max-height:100vh; }
   .ct-modal-overlay { padding:0; }
@@ -13967,6 +14006,12 @@ function ctRenderList() {
     return true;
   });
 
+  // ─── STORIES RECORRENTES: render specialized thumbnail view ───
+  if (ctCurrentTab === 'stories') {
+    ctRenderStoriesView(filteredGroups);
+    return;
+  }
+
   let html = '';
   filteredGroups.forEach(group => {
     const expanded = ctExpandedGroups[group.id] !== false;
@@ -14103,6 +14148,339 @@ function ctToggleGroup(groupId) {
   ctExpandedGroups[groupId] = ctExpandedGroups[groupId] === false ? true : false;
   ctSaveGroupsState();
   ctRenderList();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STORIES RECORRENTES — Visualização Especializada (thumbnail grid)
+// ═══════════════════════════════════════════════════════════════
+
+var RS_DAYS = ['Segunda-Feira','Terça-Feira','Quarta-Feira','Quinta-Feira','Sexta-Feira','Sábado','Domingo'];
+var RS_DAYS_SHORT = ['SEG','TER','QUA','QUI','SEX','SAB','DOM'];
+
+function ctRenderStoriesView(groups) {
+  var body = document.getElementById('ctListBody');
+  if (!groups || groups.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary)">'
+      + '<div style="font-size:3rem;margin-bottom:12px">📅</div>'
+      + '<div style="font-size:1rem;font-weight:600;margin-bottom:8px">Nenhuma semana de stories recorrentes criada</div>'
+      + '<div style="font-size:0.85rem;margin-bottom:20px;opacity:0.7">Use o botão "📅 Criar Semanas do Mês" e selecione o modo Stories Recorrentes</div>'
+      + '</div>';
+    return;
+  }
+
+  // Sort groups by position
+  groups = groups.slice().sort(function(a,b){ return (a.position||0)-(b.position||0); });
+
+  var html = '';
+  groups.forEach(function(group) {
+    var tasks = group.tasks || [];
+    // Find day parent tasks (depth 0 tasks with day names)
+    var dayTasks = tasks.filter(function(t) { return !t.parent_id && RS_DAYS.some(function(d){ return t.name && t.name.toUpperCase().includes(d.toUpperCase().substring(0,3)); }); });
+    // Sort day tasks by day-of-week order
+    dayTasks = dayTasks.slice().sort(function(a,b){
+      var ai = RS_DAYS.findIndex(function(d){ return a.name && a.name.toUpperCase().includes(d.toUpperCase().substring(0,3)); });
+      var bi = RS_DAYS.findIndex(function(d){ return b.name && b.name.toUpperCase().includes(d.toUpperCase().substring(0,3)); });
+      return ai - bi;
+    });
+
+    var safeGId = group.id;
+    var weekLabel = group.name.replace(/STORIES RECORRENTES\s*\/\s*/i,'').trim() || group.name;
+
+    html += '<div class="rs-week-block" data-group-id="' + safeGId + '">';
+    html += '<div class="rs-week-header">'
+      + '<div class="rs-week-title">📅 ' + weekLabel + '</div>'
+      + '<div class="rs-week-actions">'
+      + '<button class="rs-btn-sched" onclick="ctRsOpenScheduleModal(\'' + safeGId + '\')">🚀 Agendar Semana</button>'
+      + '<button class="rs-btn-delete-grp" onclick="ctDeleteGroup(\'' + safeGId + '\',\'' + group.name.replace(/'/g,"\\'") + '\')" title="Excluir semana">🗑️</button>'
+      + '</div>'
+      + '</div>';
+
+    html += '<div class="rs-days-scroll">';
+
+    // If no day tasks found, show all 7 empty day columns
+    var cols = dayTasks.length > 0 ? dayTasks : RS_DAYS.map(function(d,i){ return {id:null,name:d,_dayIdx:i,group_id:safeGId}; });
+
+    cols.forEach(function(dayTask) {
+      var dayLabel = dayTask.name || '';
+      var dayShort = RS_DAYS_SHORT[RS_DAYS.findIndex(function(d){ return dayLabel.toUpperCase().includes(d.toUpperCase().substring(0,3)); })] || dayLabel.substring(0,3).toUpperCase();
+
+      // Story subtasks for this day
+      var stories = dayTask.id ? tasks.filter(function(t){ return t.parent_id === dayTask.id; }) : [];
+      stories.sort(function(a,b){ return (a.position||0)-(b.position||0); });
+
+      html += '<div class="rs-day-col">';
+      html += '<div class="rs-day-header"><span class="rs-day-name">' + dayShort + '</span><span class="rs-day-count">' + stories.length + '</span></div>';
+      html += '<div class="rs-stories-grid" id="rsGrid_' + (dayTask.id||dayShort+'_'+safeGId) + '">';
+
+      stories.forEach(function(story) {
+        var pc = story.publish_config || {};
+        var thumbUrl = pc.thumbnail_url || '';
+        var schedTime = pc.scheduled_time || '';
+        var platforms = pc.platforms || ['ig','fb'];
+        var igBadge = platforms.includes('ig') ? '<span class="rs-plat ig">IG</span>' : '';
+        var fbBadge = platforms.includes('fb') ? '<span class="rs-plat fb">FB</span>' : '';
+
+        html += '<div class="rs-story-card" data-task-id="' + story.id + '">';
+        if (thumbUrl) {
+          html += '<img class="rs-thumb" src="' + thumbUrl + '" loading="lazy" onclick="ctRsPreview(\'' + thumbUrl.replace(/'/g,"\\'") + '\')" title="Ver em tamanho real">';
+        } else {
+          html += '<div class="rs-thumb-empty">📷</div>';
+        }
+        html += '<div class="rs-story-footer">'
+          + '<input type="time" class="rs-time-input" value="' + schedTime + '" onchange="ctRsUpdateTime(\'' + story.id + '\',this.value)" title="Horário de publicação">'
+          + '<div class="rs-plats">' + igBadge + fbBadge + '</div>'
+          + '<button class="rs-del-btn" onclick="ctRsDeleteStory(\'' + story.id + '\')" title="Remover story">✕</button>'
+          + '</div>';
+        html += '</div>';
+      });
+
+      // Add button
+      if (dayTask.id) {
+        html += '<button class="rs-add-btn" onclick="ctRsPickFile(\'' + dayTask.id + '\',\'' + safeGId + '\')" title="Adicionar story">＋</button>';
+      }
+      html += '</div>'; // rs-stories-grid
+      html += '</div>'; // rs-day-col
+    });
+
+    html += '</div>'; // rs-days-scroll
+    html += '</div>'; // rs-week-block
+  });
+
+  body.innerHTML = html;
+}
+
+// Upload story image to a day
+function ctRsPickFile(dayTaskId, groupId) {
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*,video/*';
+  inp.onchange = async function() {
+    var file = inp.files[0];
+    if (!file) return;
+    await ctRsUploadStory(file, dayTaskId, groupId);
+  };
+  inp.click();
+}
+
+async function ctRsUploadStory(file, dayTaskId, groupId) {
+  // Show uploading feedback on the grid
+  var grid = document.getElementById('rsGrid_' + dayTaskId);
+  var loadDiv = document.createElement('div');
+  loadDiv.className = 'rs-story-card';
+  loadDiv.innerHTML = '<div class="rs-thumb-empty" style="font-size:1.5rem">⏳</div><div style="font-size:9px;text-align:center;padding:2px;color:var(--text-secondary)">enviando...</div>';
+  if (grid) grid.insertBefore(loadDiv, grid.lastElementChild);
+
+  try {
+    var ext = file.name.split('.').pop().toLowerCase();
+    var isVideo = /mp4|mov|avi|webm|mkv/.test(ext);
+    var ts = Date.now();
+    var storagePath = ctCurrentClient + '/recurring/' + dayTaskId + '_' + ts + '.' + ext;
+    var { data, error } = await _supabase.storage.from('client-hub-materials').upload(storagePath, file, { upsert: true });
+    if (error) throw error;
+    var publicUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + storagePath;
+
+    // Count existing stories for this day to set default time offset
+    var existingCount = document.querySelectorAll('#rsGrid_' + dayTaskId + ' .rs-story-card').length;
+    var defaultHour = 9 + Math.floor(existingCount * 1.5);
+    if (defaultHour > 22) defaultHour = 9;
+    var defaultTime = String(defaultHour).padStart(2,'0') + ':00';
+
+    var platforms = ['ig','fb'];
+    var res = await ctApi('upsert_task', {
+      group_id: groupId,
+      parent_id: dayTaskId,
+      client_id: ctCurrentClient,
+      name: 'Story ' + (existingCount + 1),
+      status: 'agendar',
+      position: existingCount,
+      user: ctGetUser(),
+      publish_config: {
+        thumbnail_url: publicUrl,
+        scheduled_time: defaultTime,
+        platforms: platforms,
+        is_recurring: true,
+        media_type: isVideo ? 'video' : 'image',
+      },
+    });
+
+    // Also save to content_attachments for compatibility
+    if (res && res.id) {
+      await ctApi('add_attachment', { task_id: res.id, category: 'recurring_story', file_url: publicUrl, file_name: file.name, file_type: file.type, user: ctGetUser() });
+    }
+
+    // Remove loading placeholder and reload
+    if (loadDiv.parentNode) loadDiv.parentNode.removeChild(loadDiv);
+    await ctLoadGroups();
+
+  } catch(e) {
+    if (loadDiv.parentNode) loadDiv.parentNode.removeChild(loadDiv);
+    alert('Erro ao enviar: ' + e.message);
+  }
+}
+
+async function ctRsDeleteStory(taskId) {
+  if (!confirm('Remover este story?')) return;
+  await ctApi('delete_task', { id: taskId, user: ctGetUser() });
+  await ctLoadGroups();
+}
+
+async function ctRsUpdateTime(taskId, time) {
+  // Find the task and update publish_config.scheduled_time
+  var task = null;
+  for (var g of ctGroups) {
+    task = (g.tasks||[]).find(function(t){ return t.id === taskId; });
+    if (task) break;
+  }
+  var pc = (task && task.publish_config) ? Object.assign({}, task.publish_config) : {};
+  pc.scheduled_time = time;
+  await ctApi('upsert_task', { id: taskId, publish_config: pc, user: ctGetUser() });
+  // Update in-memory silently (no full reload needed)
+  if (task) task.publish_config = pc;
+}
+
+function ctRsPreview(url) {
+  var ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  ov.onclick = function(){ ov.remove(); };
+  var img = document.createElement('img');
+  img.src = url;
+  img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.5)';
+  ov.appendChild(img);
+  document.body.appendChild(ov);
+}
+
+// ─── Schedule Modal ───
+var _rsSchedGroupId = null;
+
+function ctRsOpenScheduleModal(groupId) {
+  _rsSchedGroupId = groupId;
+  // Default to next Monday
+  var today = new Date();
+  var daysToMonday = (8 - today.getDay()) % 7 || 7;
+  var nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + daysToMonday);
+  var iso = nextMonday.toISOString().split('T')[0];
+
+  var existing = document.getElementById('rsSchedModal');
+  if (existing) existing.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'rsSchedModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = '<div style="background:var(--card,#fff);border-radius:16px;width:420px;max-width:95vw;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:inherit">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    + '<h3 style="margin:0;font-size:1rem;font-weight:700;color:var(--text)">🚀 Agendar Semana</h3>'
+    + '<button onclick="document.getElementById(\'rsSchedModal\').remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--text-secondary)">✕</button>'
+    + '</div>'
+    + '<label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px">Segunda-feira da semana</label>'
+    + '<input type="date" id="rsSchedWeekStart" value="' + iso + '" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.9rem;color:var(--text);background:var(--card);box-sizing:border-box;margin-bottom:16px;font-family:inherit">'
+    + '<label style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:8px">Plataformas</label>'
+    + '<div style="display:flex;gap:8px;margin-bottom:20px">'
+    + '<button id="rsSchedIg" onclick="ctRsTogglePlat(\'ig\')" class="rs-plat-btn active" data-plat="ig">📷 Instagram</button>'
+    + '<button id="rsSchedFb" onclick="ctRsTogglePlat(\'fb\')" class="rs-plat-btn active" data-plat="fb">📘 Facebook</button>'
+    + '</div>'
+    + '<div id="rsSchedStatus" style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:12px;min-height:18px"></div>'
+    + '<button onclick="ctRsRunSchedule()" style="width:100%;padding:12px;background:var(--brand,#3b82f6);color:#fff;border:none;border-radius:10px;font-size:0.95rem;font-weight:700;cursor:pointer">🚀 Agendar todos os stories</button>'
+    + '</div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', function(e){ if(e.target===modal) modal.remove(); });
+}
+
+function ctRsTogglePlat(plat) {
+  var btn = document.getElementById('rsSchedIg') && plat === 'ig' ? document.getElementById('rsSchedIg') : document.getElementById('rsSchedFb');
+  btn.classList.toggle('active');
+}
+
+async function ctRsRunSchedule() {
+  var weekStart = document.getElementById('rsSchedWeekStart').value;
+  if (!weekStart) return alert('Selecione a data da segunda-feira');
+  var igBtn = document.getElementById('rsSchedIg');
+  var fbBtn = document.getElementById('rsSchedFb');
+  var platforms = [];
+  if (igBtn && igBtn.classList.contains('active')) platforms.push('ig');
+  if (fbBtn && fbBtn.classList.contains('active')) platforms.push('fb');
+  if (!platforms.length) return alert('Selecione ao menos uma plataforma');
+
+  var statusEl = document.getElementById('rsSchedStatus');
+  statusEl.textContent = '⏳ Agendando...';
+
+  var group = ctGroups.find(function(g){ return g.id === _rsSchedGroupId; });
+  if (!group) return;
+
+  var tasks = group.tasks || [];
+  var dayTasks = tasks.filter(function(t){ return !t.parent_id && RS_DAYS.some(function(d){ return t.name && t.name.toUpperCase().includes(d.toUpperCase().substring(0,3)); }); });
+
+  var baseDate = new Date(weekStart + 'T00:00:00');
+  var queued = 0;
+  var errors = 0;
+
+  for (var di = 0; di < dayTasks.length; di++) {
+    var dayTask = dayTasks[di];
+    var dayIdx = RS_DAYS.findIndex(function(d){ return dayTask.name && dayTask.name.toUpperCase().includes(d.toUpperCase().substring(0,3)); });
+    if (dayIdx < 0) dayIdx = di;
+
+    var dayDate = new Date(baseDate);
+    dayDate.setDate(baseDate.getDate() + dayIdx);
+
+    var stories = tasks.filter(function(t){ return t.parent_id === dayTask.id; });
+    stories.sort(function(a,b){ return (a.position||0)-(b.position||0); });
+
+    for (var si = 0; si < stories.length; si++) {
+      var story = stories[si];
+      var pc = story.publish_config || {};
+      var thumbUrl = pc.thumbnail_url;
+      if (!thumbUrl) continue;
+
+      var schedTime = pc.scheduled_time || ('09:' + String(si*30%60).padStart(2,'0'));
+      var timeParts = schedTime.split(':');
+      var scheduledDate = new Date(dayDate);
+      scheduledDate.setHours(parseInt(timeParts[0]||9), parseInt(timeParts[1]||0), 0, 0);
+      var scheduledFor = scheduledDate.toISOString();
+
+      var clientName = (_metaClients && _metaClients[ctCurrentClient]) ? _metaClients[ctCurrentClient].name : ctCurrentClient;
+
+      // Queue for each platform
+      var platToQueue = (pc.platforms || platforms).filter(function(p){ return platforms.includes(p); });
+      var hasBothForStory = platToQueue.includes('ig') && platToQueue.includes('fb');
+
+      for (var pi = 0; pi < platToQueue.length; pi++) {
+        var plat = platToQueue[pi];
+        // FB story via cross-post when both selected
+        if (hasBothForStory && plat === 'fb') continue;
+
+        try {
+          var qBody = {
+            action: 'queue',
+            client_key: ctCurrentClient,
+            client_name: clientName,
+            platform: plat,
+            caption: '',
+            scheduled_for: scheduledFor,
+            task_id: story.id,
+            post_type: 'story',
+            media_type: hasBothForStory && plat === 'ig' ? 'STORIES_CROSSPOST' : 'STORIES',
+            user_name: ctGetUser(),
+            image_urls: [thumbUrl],
+          };
+          await fetch(ctApiBase() + '/api/meta/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(qBody),
+          });
+          queued++;
+        } catch(e) { errors++; }
+      }
+
+      // Update task status to 'agendado'
+      await ctApi('upsert_task', { id: story.id, status: 'agendado', user: ctGetUser() });
+    }
+  }
+
+  statusEl.style.color = errors > 0 ? '#b45309' : '#059669';
+  statusEl.textContent = '✅ ' + queued + ' stories agendados' + (errors > 0 ? ' (' + errors + ' erros)' : '');
+
+  await ctLoadGroups();
+  setTimeout(function(){ var m = document.getElementById('rsSchedModal'); if(m) m.remove(); }, 2000);
 }
 
 async function ctRenameGroup(groupId, currentName) {
