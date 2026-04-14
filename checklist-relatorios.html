@@ -7603,6 +7603,16 @@ function renderDashboard() {
   var mk = getCurrentMonthKey();
   var wk = _dashGetCurrentWeekKey();
 
+  // DEBUG: log what we're looking for vs what cache has
+  console.log('Dashboard week key:', wk);
+  console.log('Cache keys (first 10):', Object.keys(_cronogramaStatusCache).slice(0, 10));
+  if (active.length > 0) {
+    var sample = active[0];
+    console.log('Sample client:', sample.name, 'id:', sample.id);
+    console.log('Looking for key:', sample.id + '_' + wk);
+    console.log('getCronogramaStatus result:', getCronogramaStatus(sample.id, wk));
+  }
+
   // Count using Supabase cache for sched-weekly
   var wGen = 0, wSent = 0, wPending = 0;
   active.forEach(function(c) {
