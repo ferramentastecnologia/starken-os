@@ -7636,8 +7636,8 @@ function renderDashboard() {
     '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Pendentes Semana</div><div class="stat-value">' + wPending + '</div></div>' +
     '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Enviados Semana</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
 
-  renderProgress('weeklyProgress', wk, active);
-  renderProgress('monthlyProgress', mk, active);
+  renderContentProgress('weeklyProgress', wk, active, 'weekly');
+  renderContentProgress('monthlyProgress', mk, active, 'monthly');
   renderDashWeekCronoList(wk, active);
   renderDashWeekPosts(wk);
 
@@ -7668,6 +7668,127 @@ function renderProgress(containerId, periodKey, active) {
     h += '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-weight:600;font-size:0.82rem">' + co.label + '</span><span style="font-size:0.75rem;color:var(--text-muted)">' + sent + '/' + cls.length + ' env &middot; ' + gen + ' ger</span></div><div class="progress-bar"><div class="progress-fill ' + co.css + '" style="width:' + pct + '%"></div></div></div>';
   }
   document.getElementById(containerId).innerHTML = h || '<p style="color:var(--text-muted);font-size:0.85rem">Sem clientes.</p>';
+}
+
+// Progress from content_tasks (Supabase) — replaces old renderProgress for dashboard
+var _contentProgressCache = {};
+async function renderContentProgress(containerId, periodKey, active, mode) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+
+  // Loading state
+  if (!_contentProgressCache[periodKey]) {
+    el.innerHTML = '<div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.8rem">⏳ Carregando...</div>';
+  }
+
+  // Use cache
+  if (_contentProgressCache[periodKey]) {
+    _renderContentProgressUI(el, _contentProgressCache[periodKey], active);
+    return;
+  }
+
+  if (!_supabase) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Supabase não disponível</p>'; return; }
+
+  try {
+    // Determine date range
+    var startDate, endDate;
+    if (mode === 'weekly') {
+      var parts = periodKey.split('-S');
+      if (parts.length === 2) {
+        var monthKey = parts[0];
+        var weekNum = parseInt(parts[1]);
+        var mParts = monthKey.split('-');
+        var year = parseInt(mParts[0]);
+        var month = parseInt(mParts[1]) - 1;
+        var weeks = getMonthWeeks(year, month);
+        var wk = weeks.find(function(w) { return w.week === weekNum; });
+        if (wk) { startDate = wk.periodStartISO; endDate = wk.periodEndISO; }
+      }
+    } else {
+      // Monthly: first and last day of month
+      startDate = periodKey + '-01';
+      var mParts2 = periodKey.split('-');
+      var lastDay = new Date(parseInt(mParts2[0]), parseInt(mParts2[1]), 0).getDate();
+      endDate = periodKey + '-' + String(lastDay).padStart(2, '0');
+    }
+
+    if (!startDate || !endDate) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Período inválido</p>';
+      return;
+    }
+
+    // Query content_tasks within date range
+    var res = await _supabase.from('content_tasks')
+      .select('group_id,status,due_date,publish_config')
+      .gte('due_date', startDate)
+      .lte('due_date', endDate);
+    var tasks = res.data || [];
+
+    // Get group → client mapping
+    var gRes = await _supabase.from('content_groups').select('id,client_id');
+    var groupToClient = {};
+    (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
+
+    // Aggregate per client: total, published, scheduled
+    var clientStats = {};
+    tasks.forEach(function(t) {
+      var clientKey = groupToClient[t.group_id];
+      if (!clientKey) return;
+      if (!clientStats[clientKey]) clientStats[clientKey] = { total: 0, published: 0, scheduled: 0 };
+      // Skip cancelled/archived
+      if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado') return;
+      clientStats[clientKey].total++;
+      if (t.status === 'publicado') clientStats[clientKey].published++;
+      else if (t.status === 'agendado') clientStats[clientKey].scheduled++;
+    });
+
+    _contentProgressCache[periodKey] = clientStats;
+    _renderContentProgressUI(el, clientStats, active);
+
+  } catch(e) {
+    console.warn('renderContentProgress error:', e);
+    el.innerHTML = '<p style="color:#ef4444;font-size:0.85rem">Erro: ' + e.message + '</p>';
+  }
+}
+
+function _renderContentProgressUI(el, clientStats, active) {
+  var cos = [
+    { key: 'Starken', label: 'Starken', css: 'starken' },
+    { key: 'Alpha', label: 'Alpha Assessoria', css: 'alpha' }
+  ];
+  var h = '';
+
+  cos.forEach(function(co) {
+    var cls = active.filter(function(c) { return c.company === co.key; });
+    if (!cls.length) return;
+
+    var totalTasks = 0, pubTasks = 0, schedTasks = 0;
+    cls.forEach(function(c) {
+      // Find matching client key in _metaClients
+      var metaKey = (typeof findMetaClientKey === 'function') ? findMetaClientKey(c.name, co.key === 'Alpha' ? 'alpha' : 'starken') : null;
+      if (metaKey && clientStats[metaKey]) {
+        totalTasks += clientStats[metaKey].total;
+        pubTasks += clientStats[metaKey].published;
+        schedTasks += clientStats[metaKey].scheduled;
+      }
+    });
+
+    var doneTasks = pubTasks + schedTasks;
+    var pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+    h += '<div style="margin-bottom:14px">';
+    h += '<div style="display:flex;justify-content:space-between;margin-bottom:5px">';
+    h += '<span style="font-weight:600;font-size:0.82rem">' + co.label + '</span>';
+    h += '<span style="font-size:0.75rem;color:var(--text-muted)">';
+    h += '<span style="color:#166534;font-weight:600">' + pubTasks + '</span> pub · ';
+    h += '<span style="color:#1e40af;font-weight:600">' + schedTasks + '</span> agend · ';
+    h += totalTasks + ' total';
+    h += '</span></div>';
+    h += '<div class="progress-bar"><div class="progress-fill ' + co.css + '" style="width:' + pct + '%"></div></div>';
+    h += '</div>';
+  });
+
+  el.innerHTML = h || '<p style="color:var(--text-muted);font-size:0.85rem">Nenhuma task no período.</p>';
 }
 
 // Mini-lista de cronogramas da semana
