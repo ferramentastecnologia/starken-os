@@ -7659,7 +7659,9 @@ function renderDashWeekCronoList(weekKey, active) {
   var pendentes = [], gerados = [], enviados = [];
   active.forEach(function(c) {
     var st = _dashGetStatus(c.id, 'sched-weekly', weekKey);
-    var item = { name: c.name, company: c.company, status: st.status, sent_date: st.sent_date };
+    var coTenant = c.company === 'Alpha' ? 'alpha' : 'starken';
+    var metaKey = (typeof findMetaClientKey === 'function') ? findMetaClientKey(c.name, coTenant) : null;
+    var item = { name: c.name, company: c.company, id: c.id, metaKey: metaKey, status: st.status, sent_date: st.sent_date };
     if (st.status === 2) enviados.push(item);
     else if (st.status >= 1) gerados.push(item);
     else pendentes.push(item);
@@ -7673,47 +7675,66 @@ function renderDashWeekCronoList(weekKey, active) {
   h += '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Enviados: ' + enviados.length + '</span>';
   h += '</div>';
 
-  // Show pendentes first (max 8), then gerados (max 5)
   pendentes.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
   gerados.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
   enviados.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
 
+  // Scrollable list container
+  h += '<div style="max-height:400px;overflow-y:auto">';
+
+  function renderClientRow(item, statusLabel, statusColor) {
+    var css = item.company === 'Starken' ? 'starken' : 'alpha';
+    var onclick = 'switchTab(\'sched-weekly\')';
+    if (item.metaKey && statusLabel === 'Pendente') {
+      onclick = 'cronogramaFromSchedule(\'' + item.metaKey + '\',\'' + item.id + '\',\'sched-weekly\',\'' + weekKey + '\')';
+    }
+    return '<div onclick="' + onclick + '" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">'
+      + '<div class="client-avatar ' + css + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(item.name) + '</div>'
+      + '<span style="font-size:0.8rem;flex:1">' + esc(item.name) + '</span>'
+      + '<span style="font-size:0.68rem;color:' + statusColor + ';font-weight:600">' + statusLabel + '</span>'
+      + '</div>';
+  }
+
   if (pendentes.length > 0) {
     h += '<div style="font-size:0.72rem;font-weight:700;color:#92400e;margin-bottom:4px">Pendentes</div>';
-    var showP = pendentes.slice(0, 8);
-    for (var i = 0; i < showP.length; i++) {
-      var p = showP[i];
-      var css = p.company === 'Starken' ? 'starken' : 'alpha';
-      h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-light)">';
-      h += '<div class="client-avatar ' + css + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(p.name) + '</div>';
-      h += '<span style="font-size:0.8rem;flex:1">' + esc(p.name) + '</span>';
-      h += '<span style="font-size:0.68rem;color:#f59e0b;font-weight:600">Pendente</span>';
-      h += '</div>';
+    for (var i = 0; i < pendentes.length; i++) {
+      h += renderClientRow(pendentes[i], 'Pendente', '#f59e0b');
     }
-    if (pendentes.length > 8) h += '<div style="font-size:0.72rem;color:var(--text-muted);padding:4px 0">+' + (pendentes.length - 8) + ' mais...</div>';
   }
 
   if (gerados.length > 0) {
-    h += '<div style="font-size:0.72rem;font-weight:700;color:#1e40af;margin:8px 0 4px">Gerados (aguardando envio)</div>';
-    var showG = gerados.slice(0, 5);
-    for (var j = 0; j < showG.length; j++) {
-      var g = showG[j];
-      var gCss = g.company === 'Starken' ? 'starken' : 'alpha';
-      h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border-light)">';
-      h += '<div class="client-avatar ' + gCss + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(g.name) + '</div>';
-      h += '<span style="font-size:0.8rem;flex:1">' + esc(g.name) + '</span>';
-      h += '<span style="font-size:0.68rem;color:#3b82f6;font-weight:600">Gerado</span>';
+    h += '<div style="font-size:0.72rem;font-weight:700;color:#1e40af;margin:10px 0 4px">Gerados (aguardando envio)</div>';
+    for (var j = 0; j < gerados.length; j++) {
+      h += renderClientRow(gerados[j], 'Gerado', '#3b82f6');
+    }
+  }
+
+  if (enviados.length > 0) {
+    h += '<div style="font-size:0.72rem;font-weight:700;color:#166534;margin:10px 0 4px">Enviados</div>';
+    for (var k = 0; k < enviados.length; k++) {
+      var sentDate = enviados[k].sent_date ? new Date(enviados[k].sent_date).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+      var css2 = enviados[k].company === 'Starken' ? 'starken' : 'alpha';
+      h += '<div onclick="switchTab(\'sched-weekly\')" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
+      h += '<div class="client-avatar ' + css2 + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(enviados[k].name) + '</div>';
+      h += '<span style="font-size:0.8rem;flex:1">' + esc(enviados[k].name) + '</span>';
+      h += '<span style="font-size:0.65rem;color:var(--text-muted)">' + sentDate + '</span>';
+      h += '<span style="font-size:0.68rem;color:#22c55e;font-weight:600">Enviado</span>';
       h += '</div>';
     }
-    if (gerados.length > 5) h += '<div style="font-size:0.72rem;color:var(--text-muted);padding:4px 0">+' + (gerados.length - 5) + ' mais...</div>';
   }
 
-  if (!pendentes.length && !gerados.length) {
-    h += '<div style="text-align:center;padding:16px;color:#22c55e;font-size:0.85rem">Todos cronogramas enviados!</div>';
+  if (!pendentes.length && !gerados.length && !enviados.length) {
+    h += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem">Nenhum cronograma esta semana</div>';
   }
+
+  if (!pendentes.length && !gerados.length && enviados.length > 0) {
+    h += '<div style="text-align:center;padding:12px;color:#22c55e;font-size:0.85rem;font-weight:600">Todos cronogramas enviados!</div>';
+  }
+
+  h += '</div>'; // scrollable container
 
   // Link to full view
-  h += '<div style="text-align:right;margin-top:8px"><a href="#" onclick="switchTab(\'sched-weekly\');return false" style="font-size:0.75rem;color:var(--primary);font-weight:600;text-decoration:none">Ver completo &rarr;</a></div>';
+  h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px"><a href="#" onclick="switchTab(\'sched-weekly\');return false" style="font-size:0.75rem;color:var(--primary);font-weight:600;text-decoration:none">Ver completo &rarr;</a></div>';
 
   el.innerHTML = h;
 }
