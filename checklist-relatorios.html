@@ -7866,9 +7866,10 @@ async function renderDashWeekPosts(weekKey) {
 
     // Query content_tasks with publish_config for this week range
     var res = await _supabase.from('content_tasks')
-      .select('group_id,name,status,due_date,publish_config')
+      .select('group_id,name,status,due_date,publish_config,assignee,priority')
       .gte('due_date', startDate)
-      .lte('due_date', endDate);
+      .lte('due_date', endDate)
+      .order('due_date', { ascending: true });
     var tasks = res.data || [];
 
     // Get group → client mapping
@@ -7876,49 +7877,63 @@ async function renderDashWeekPosts(weekKey) {
     var groupToClient = {};
     (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
 
-    // Aggregate per client
-    var clientStats = {}; // { clientKey: { scheduled: N, published: N, total: N, name: '' } }
+    // Build per-day → per-client structure with individual tasks
+    var dayData = {}; // { 'YYYY-MM-DD': { clientKey: { name, tenant, tasks: [], scheduled, published, total } } }
+    var totalSched = 0, totalPub = 0, totalPosts = 0;
+
     tasks.forEach(function(t) {
       var clientKey = groupToClient[t.group_id];
       if (!clientKey) return;
+      var day = t.due_date || 'sem-data';
 
-      if (!clientStats[clientKey]) {
-        clientStats[clientKey] = { scheduled: 0, published: 0, total: 0, name: '' };
-        // Resolve client name from _metaClients
+      if (!dayData[day]) dayData[day] = {};
+      if (!dayData[day][clientKey]) {
+        var cName = clientKey;
+        var cTenant = '';
         if (typeof _metaClients !== 'undefined' && _metaClients[clientKey]) {
-          clientStats[clientKey].name = _metaClients[clientKey].name || clientKey;
-          clientStats[clientKey].tenant = _metaClients[clientKey].tenant || '';
-        } else {
-          clientStats[clientKey].name = clientKey;
+          cName = _metaClients[clientKey].name || clientKey;
+          cTenant = _metaClients[clientKey].tenant || '';
         }
+        dayData[day][clientKey] = { name: cName, tenant: cTenant, tasks: [], scheduled: 0, published: 0, total: 0 };
       }
 
-      // Count from publish_config entries
+      var taskStatus = 'pending';
       var pc = t.publish_config || {};
       var entries = pc.entries || [];
-      // Also check format-specific entries (feed, story, carrossel, reels)
       ['feed','story','carrossel','reels'].forEach(function(fmt) {
         if (pc[fmt] && pc[fmt].entries) entries = entries.concat(pc[fmt].entries);
       });
 
       if (entries.length > 0) {
+        var hasPub = entries.some(function(e) { return e.status === 'published'; });
+        var hasSched = entries.some(function(e) { return e.status === 'scheduled' || e.status === 'queued'; });
+        if (hasPub) taskStatus = 'published';
+        else if (hasSched) taskStatus = 'scheduled';
         entries.forEach(function(e) {
           if (e.status === 'cancelled') return;
-          clientStats[clientKey].total++;
-          if (e.status === 'published') clientStats[clientKey].published++;
-          else if (e.status === 'scheduled' || e.status === 'queued') clientStats[clientKey].scheduled++;
+          dayData[day][clientKey].total++;
+          totalPosts++;
+          if (e.status === 'published') { dayData[day][clientKey].published++; totalPub++; }
+          else if (e.status === 'scheduled' || e.status === 'queued') { dayData[day][clientKey].scheduled++; totalSched++; }
         });
       } else {
-        // Task without entries — check task-level status
-        if (t.status === 'nao-publicado' || t.status === 'cancelado' || t.status === 'arquivado') return; // skip closed
-        clientStats[clientKey].total++;
-        if (t.status === 'publicado') clientStats[clientKey].published++;
-        else if (t.status === 'agendado' || t.status === 'agendar') clientStats[clientKey].scheduled++;
+        if (t.status === 'nao-publicado' || t.status === 'cancelado' || t.status === 'arquivado') return;
+        dayData[day][clientKey].total++;
+        totalPosts++;
+        if (t.status === 'publicado') { dayData[day][clientKey].published++; totalPub++; taskStatus = 'published'; }
+        else if (t.status === 'agendado' || t.status === 'agendar') { dayData[day][clientKey].scheduled++; totalSched++; taskStatus = 'scheduled'; }
       }
+
+      // Get format info
+      var formats = (pc.formats || []);
+      if (formats.length === 0 && pc.content_type) formats = [pc.content_type];
+
+      dayData[day][clientKey].tasks.push({ name: t.name, status: t.status, taskStatus: taskStatus, formats: formats });
     });
 
-    _dashWeekPostsCache[weekKey] = clientStats;
-    _renderDashWeekPostsUI(el, clientStats, startDate, endDate);
+    var cacheData = { dayData: dayData, totalSched: totalSched, totalPub: totalPub, totalPosts: totalPosts };
+    _dashWeekPostsCache[weekKey] = cacheData;
+    _renderDashWeekPostsUI(el, cacheData, startDate, endDate);
 
   } catch(e) {
     console.warn('renderDashWeekPosts error:', e);
@@ -7926,14 +7941,14 @@ async function renderDashWeekPosts(weekKey) {
   }
 }
 
-function _renderDashWeekPostsUI(el, clientStats, startDate, endDate) {
-  var clients = Object.keys(clientStats).map(function(k) {
-    return Object.assign({ key: k }, clientStats[k]);
-  });
-  clients.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+function _renderDashWeekPostsUI(el, cacheData, startDate, endDate) {
+  var dayData = cacheData.dayData || {};
+  var totalSched = cacheData.totalSched || 0;
+  var totalPub = cacheData.totalPub || 0;
+  var totalPosts = cacheData.totalPosts || 0;
 
-  var totalSched = 0, totalPub = 0, totalPosts = 0;
-  clients.forEach(function(c) { totalSched += c.scheduled; totalPub += c.published; totalPosts += c.total; });
+  var dayNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  var dayNamesShort = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
 
   var h = '';
   // Summary badges
@@ -7943,7 +7958,11 @@ function _renderDashWeekPostsUI(el, clientStats, startDate, endDate) {
   h += '<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Total: ' + totalPosts + '</span>';
   h += '</div>';
 
-  if (clients.length === 0) {
+  // Get sorted day keys
+  var days = Object.keys(dayData).filter(function(d) { return d !== 'sem-data'; }).sort();
+  if (dayData['sem-data']) days.push('sem-data');
+
+  if (days.length === 0) {
     h += '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">Nenhum agendamento para esta semana</div>';
     el.innerHTML = h;
     return;
@@ -7952,21 +7971,79 @@ function _renderDashWeekPostsUI(el, clientStats, startDate, endDate) {
   // Period label
   var sLabel = startDate.split('-').reverse().slice(0,2).join('/');
   var eLabel = endDate.split('-').reverse().slice(0,2).join('/');
-  h += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px">Período: ' + sLabel + ' a ' + eLabel + '</div>';
+  h += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:10px">Período: ' + sLabel + ' a ' + eLabel + '</div>';
 
-  // Scrollable client list
-  h += '<div style="max-height:400px;overflow-y:auto">';
+  // Scrollable content
+  h += '<div style="max-height:450px;overflow-y:auto">';
 
-  clients.forEach(function(c) {
-    var schedBadge = c.scheduled > 0 ? '<span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:600">' + c.scheduled + ' agend</span>' : '';
-    var pubBadge = c.published > 0 ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:600">' + c.published + ' pub</span>' : '';
-    var pendBadge = (c.total - c.scheduled - c.published) > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:600">' + (c.total - c.scheduled - c.published) + ' pend</span>' : '';
-    var tenantCss = c.tenant === 'alpha' ? 'alpha' : 'starken';
+  // Format icon map
+  var fmtIcons = { feed: '📷', reels: '🎬', carrossel: '🖼️', story: '📱' };
 
-    h += '<div onclick="hubOpen(\'' + c.key + '\')" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
-    h += '<div class="client-avatar ' + tenantCss + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(c.name) + '</div>';
-    h += '<span style="font-size:0.8rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</span>';
-    h += '<div style="display:flex;gap:4px;flex-shrink:0">' + schedBadge + pubBadge + pendBadge + '</div>';
+  days.forEach(function(day) {
+    var clientsForDay = dayData[day];
+    var clientKeys = Object.keys(clientsForDay).sort(function(a,b) {
+      return clientsForDay[a].name.localeCompare(clientsForDay[b].name, 'pt-BR');
+    });
+
+    // Day header
+    var dayLabel = 'Sem data';
+    var dayCount = 0;
+    clientKeys.forEach(function(ck) { dayCount += clientsForDay[ck].total; });
+
+    if (day !== 'sem-data') {
+      var dt = new Date(day + 'T12:00:00');
+      var dayOfWeek = dayNamesShort[dt.getDay()];
+      var dayNum = day.split('-')[2];
+      var monthNum = day.split('-')[1];
+      dayLabel = dayOfWeek + ' ' + dayNum + '/' + monthNum;
+    }
+
+    // Check if day is today
+    var today = new Date(); var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+    var isToday = day === todayStr;
+
+    h += '<div style="margin-bottom:12px">';
+    h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:' + (isToday ? 'linear-gradient(135deg,#3b82f620,#1d4ed820)' : 'var(--surface-container,#f1f3f5)') + ';border-radius:8px;margin-bottom:4px' + (isToday ? ';border:1px solid #3b82f640' : '') + '">';
+    h += '<span style="font-size:0.78rem;font-weight:800;color:' + (isToday ? '#1d4ed8' : 'var(--text)') + '">' + dayLabel + '</span>';
+    if (isToday) h += '<span style="font-size:0.62rem;font-weight:700;background:#3b82f6;color:white;padding:1px 6px;border-radius:4px">HOJE</span>';
+    h += '<span style="font-size:0.68rem;color:var(--text-muted);margin-left:auto;font-weight:600">' + dayCount + ' post' + (dayCount !== 1 ? 's' : '') + '</span>';
+    h += '</div>';
+
+    // Clients for this day
+    clientKeys.forEach(function(ck) {
+      var c = clientsForDay[ck];
+      var tenantCss = c.tenant === 'alpha' ? 'alpha' : 'starken';
+
+      h += '<div style="margin-left:8px;padding:4px 0;border-bottom:1px solid var(--border-light,#e5e7eb)">';
+      h += '<div onclick="hubOpen(\'' + ck + '\')" style="display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
+      h += '<div class="client-avatar ' + tenantCss + '" style="width:22px;height:22px;font-size:0.5rem">' + getInitials(c.name) + '</div>';
+      h += '<span style="font-size:0.78rem;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</span>';
+
+      var schedBadge = c.scheduled > 0 ? '<span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600">' + c.scheduled + ' agend</span>' : '';
+      var pubBadge = c.published > 0 ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600">' + c.published + ' pub</span>' : '';
+      var pendCount = c.total - c.scheduled - c.published;
+      var pendBadge = pendCount > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600">' + pendCount + ' pend</span>' : '';
+      h += '<div style="display:flex;gap:3px;flex-shrink:0">' + schedBadge + pubBadge + pendBadge + '</div>';
+      h += '</div>';
+
+      // Individual tasks under the client
+      c.tasks.forEach(function(tk) {
+        var sIcon = tk.taskStatus === 'published' ? '✅' : tk.taskStatus === 'scheduled' ? '📅' : '⏳';
+        var sColor = tk.taskStatus === 'published' ? '#166534' : tk.taskStatus === 'scheduled' ? '#1e40af' : '#92400e';
+        var fmtStr = '';
+        if (tk.formats && tk.formats.length > 0) {
+          fmtStr = tk.formats.map(function(f) { return fmtIcons[f] || f; }).join(' ');
+        }
+        h += '<div style="margin-left:30px;padding:2px 4px;font-size:0.72rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px">';
+        h += '<span style="color:' + sColor + '">' + sIcon + '</span>';
+        h += '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(tk.name || '') + '</span>';
+        if (fmtStr) h += '<span style="font-size:0.65rem;flex-shrink:0">' + fmtStr + '</span>';
+        h += '</div>';
+      });
+
+      h += '</div>';
+    });
+
     h += '</div>';
   });
 
