@@ -3128,9 +3128,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div id="dashWeekCronoList"></div>
           </div>
           <div class="card">
-            <div class="card-title" style="margin-bottom:14px">Últimos Envios</div>
-            <div id="recentSends"></div>
+            <div class="card-title" style="margin-bottom:14px">Agendamentos & Publicações da Semana</div>
+            <div id="dashWeekPostsList"></div>
           </div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="margin-bottom:14px">Últimos Envios</div>
+          <div id="recentSends"></div>
         </div>
       </div>
 
@@ -7626,6 +7630,7 @@ function renderDashboard() {
   renderProgress('weeklyProgress', wk, active);
   renderProgress('monthlyProgress', mk, active);
   renderDashWeekCronoList(wk, active);
+  renderDashWeekPosts(wk);
   renderRecentSends();
 }
 
@@ -7807,6 +7812,155 @@ function renderRecentSends() {
     rh += '</div>';
   }
   el.innerHTML = rh;
+}
+
+// Agendamentos & Publicações da Semana
+var _dashWeekPostsCache = {}; // { periodKey: { clientKey: { scheduled: N, published: N, total: N } } }
+
+async function renderDashWeekPosts(weekKey) {
+  var el = document.getElementById('dashWeekPostsList');
+  if (!el) return;
+
+  // Show loading on first load
+  if (!_dashWeekPostsCache[weekKey]) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">⏳ Carregando agendamentos...</div>';
+  }
+
+  // Parse week range from weekKey
+  var parts = weekKey.split('-S');
+  if (parts.length !== 2) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Período inválido</p>'; return; }
+  var monthKey = parts[0];
+  var weekNum = parseInt(parts[1]);
+  var mParts = monthKey.split('-');
+  var year = parseInt(mParts[0]);
+  var month = parseInt(mParts[1]) - 1;
+  var weeks = getMonthWeeks(year, month);
+  var wk = weeks.find(function(w) { return w.week === weekNum; });
+  if (!wk) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Semana não encontrada</p>'; return; }
+
+  var startDate = wk.periodStartISO;
+  var endDate = wk.periodEndISO;
+
+  // Use cache if available
+  if (_dashWeekPostsCache[weekKey]) {
+    _renderDashWeekPostsUI(el, _dashWeekPostsCache[weekKey], startDate, endDate);
+    return;
+  }
+
+  try {
+    if (!_supabase) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Supabase não disponível</p>'; return; }
+
+    // Query content_tasks with publish_config for this week range
+    var res = await _supabase.from('content_tasks')
+      .select('group_id,name,status,due_date,publish_config')
+      .gte('due_date', startDate)
+      .lte('due_date', endDate);
+    var tasks = res.data || [];
+
+    // Get group → client mapping
+    var gRes = await _supabase.from('content_groups').select('id,client_id');
+    var groupToClient = {};
+    (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
+
+    // Aggregate per client
+    var clientStats = {}; // { clientKey: { scheduled: N, published: N, total: N, name: '' } }
+    tasks.forEach(function(t) {
+      var clientKey = groupToClient[t.group_id];
+      if (!clientKey) return;
+
+      if (!clientStats[clientKey]) {
+        clientStats[clientKey] = { scheduled: 0, published: 0, total: 0, name: '' };
+        // Resolve client name from _metaClients
+        if (typeof _metaClients !== 'undefined' && _metaClients[clientKey]) {
+          clientStats[clientKey].name = _metaClients[clientKey].name || clientKey;
+          clientStats[clientKey].tenant = _metaClients[clientKey].tenant || '';
+        } else {
+          clientStats[clientKey].name = clientKey;
+        }
+      }
+
+      // Count from publish_config entries
+      var pc = t.publish_config || {};
+      var entries = pc.entries || [];
+      // Also check format-specific entries (feed, story, carrossel, reels)
+      ['feed','story','carrossel','reels'].forEach(function(fmt) {
+        if (pc[fmt] && pc[fmt].entries) entries = entries.concat(pc[fmt].entries);
+      });
+
+      if (entries.length > 0) {
+        entries.forEach(function(e) {
+          if (e.status === 'cancelled') return;
+          clientStats[clientKey].total++;
+          if (e.status === 'published') clientStats[clientKey].published++;
+          else if (e.status === 'scheduled' || e.status === 'queued') clientStats[clientKey].scheduled++;
+        });
+      } else {
+        // Task without entries — check task-level status
+        clientStats[clientKey].total++;
+        if (t.status === 'publicado') clientStats[clientKey].published++;
+        else if (t.status === 'agendado' || t.status === 'agendar') clientStats[clientKey].scheduled++;
+      }
+    });
+
+    _dashWeekPostsCache[weekKey] = clientStats;
+    _renderDashWeekPostsUI(el, clientStats, startDate, endDate);
+
+  } catch(e) {
+    console.warn('renderDashWeekPosts error:', e);
+    el.innerHTML = '<p style="color:#ef4444;font-size:0.85rem">Erro ao carregar: ' + e.message + '</p>';
+  }
+}
+
+function _renderDashWeekPostsUI(el, clientStats, startDate, endDate) {
+  var clients = Object.keys(clientStats).map(function(k) {
+    return Object.assign({ key: k }, clientStats[k]);
+  });
+  clients.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+
+  var totalSched = 0, totalPub = 0, totalPosts = 0;
+  clients.forEach(function(c) { totalSched += c.scheduled; totalPub += c.published; totalPosts += c.total; });
+
+  var h = '';
+  // Summary badges
+  h += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
+  h += '<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Agendados: ' + totalSched + '</span>';
+  h += '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Publicados: ' + totalPub + '</span>';
+  h += '<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Total: ' + totalPosts + '</span>';
+  h += '</div>';
+
+  if (clients.length === 0) {
+    h += '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">Nenhum agendamento para esta semana</div>';
+    el.innerHTML = h;
+    return;
+  }
+
+  // Period label
+  var sLabel = startDate.split('-').reverse().slice(0,2).join('/');
+  var eLabel = endDate.split('-').reverse().slice(0,2).join('/');
+  h += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:8px">Período: ' + sLabel + ' a ' + eLabel + '</div>';
+
+  // Scrollable client list
+  h += '<div style="max-height:400px;overflow-y:auto">';
+
+  clients.forEach(function(c) {
+    var schedBadge = c.scheduled > 0 ? '<span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:600">' + c.scheduled + ' agend</span>' : '';
+    var pubBadge = c.published > 0 ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:600">' + c.published + ' pub</span>' : '';
+    var pendBadge = (c.total - c.scheduled - c.published) > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:0.68rem;font-weight:600">' + (c.total - c.scheduled - c.published) + ' pend</span>' : '';
+    var tenantCss = c.tenant === 'alpha' ? 'alpha' : 'starken';
+
+    h += '<div onclick="hubOpen(\'' + c.key + '\')" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
+    h += '<div class="client-avatar ' + tenantCss + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(c.name) + '</div>';
+    h += '<span style="font-size:0.8rem;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</span>';
+    h += '<div style="display:flex;gap:4px;flex-shrink:0">' + schedBadge + pubBadge + pendBadge + '</div>';
+    h += '</div>';
+  });
+
+  h += '</div>'; // scrollable
+
+  // Link to calendar
+  h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px"><a href="#" onclick="switchTab(\'calendario\');return false" style="font-size:0.75rem;color:var(--primary);font-weight:600;text-decoration:none">Ver calendário &rarr;</a></div>';
+
+  el.innerHTML = h;
 }
 
 // ============ CLIENTS ============
