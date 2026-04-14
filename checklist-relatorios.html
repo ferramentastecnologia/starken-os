@@ -22817,15 +22817,15 @@ function mtRender() {
   // Render pipeline (executor sees only 'agendar' tasks)
   let pipelineTasks = mtTasks;
   if (gpState.user && gpState.user.role === 'executor') {
-    pipelineTasks = mtTasks.filter(t => (t.status || 'a-fazer') === 'agendar');
+    pipelineTasks = mtTasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao'; });
   }
   mtRenderPipeline(pipelineTasks);
 
   let tasks = mtTasks;
 
-  // Executor role (Dante): only show tasks with status 'agendar'
+  // Executor role (Dante): only show tasks with status 'agendar' or 'aprovacao'
   if (gpState.user && gpState.user.role === 'executor') {
-    tasks = tasks.filter(t => (t.status || 'a-fazer') === 'agendar');
+    tasks = tasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao'; });
   }
 
   if (statusFilter) {
