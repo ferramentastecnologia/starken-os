@@ -22724,6 +22724,13 @@ async function mtInit() {
   if (!gpState.user) return;
   const el = document.getElementById('mtContent');
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-tertiary)">Carregando...</div>';
+
+  // Executor role: hide status filter (only 'agendar' tasks shown)
+  var mtStatusFilterEl = document.getElementById('mtStatusFilter');
+  if (gpState.user.role === 'executor' && mtStatusFilterEl) {
+    mtStatusFilterEl.style.display = 'none';
+  }
+
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
     mtTasks = Array.isArray(res) ? res : (res.data || []);
@@ -22807,10 +22814,20 @@ function mtRender() {
     viewListBtn.style.color = mtView === 'list' ? 'white' : 'var(--text-secondary)';
   }
 
-  // Always render pipeline with full task list (before filter)
-  mtRenderPipeline(mtTasks);
+  // Render pipeline (executor sees only 'agendar' tasks)
+  let pipelineTasks = mtTasks;
+  if (gpState.user && gpState.user.role === 'executor') {
+    pipelineTasks = mtTasks.filter(t => (t.status || 'a-fazer') === 'agendar');
+  }
+  mtRenderPipeline(pipelineTasks);
 
   let tasks = mtTasks;
+
+  // Executor role (Dante): only show tasks with status 'agendar'
+  if (gpState.user && gpState.user.role === 'executor') {
+    tasks = tasks.filter(t => (t.status || 'a-fazer') === 'agendar');
+  }
+
   if (statusFilter) {
     tasks = tasks.filter(t => (t.status || 'a-fazer') === statusFilter);
   }
