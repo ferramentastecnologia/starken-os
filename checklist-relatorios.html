@@ -5438,6 +5438,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 <script>
 // ─── HELPER: Find meta client key by name + tenant ───
 if (typeof _metaClients === 'undefined') var _metaClients = {};
+// Pre-declare cronograma cache so dashboard can access it before script 3 loads
+if (typeof _cronogramaStatusCache === 'undefined') var _cronogramaStatusCache = {};
 function findMetaClientKey(clientName, tenant) {
   if (!_metaClients || Object.keys(_metaClients).length === 0) return null;
   var nameLower = (clientName || '').toLowerCase().trim();
@@ -7602,16 +7604,6 @@ function renderDashboard() {
 
   var mk = getCurrentMonthKey();
   var wk = _dashGetCurrentWeekKey();
-
-  // DEBUG: log what we're looking for vs what cache has
-  console.log('Dashboard week key:', wk);
-  console.log('Cache keys (first 10):', Object.keys(_cronogramaStatusCache).slice(0, 10));
-  if (active.length > 0) {
-    var sample = active[0];
-    console.log('Sample client:', sample.name, 'id:', sample.id);
-    console.log('Looking for key:', sample.id + '_' + wk);
-    console.log('getCronogramaStatus result:', getCronogramaStatus(sample.id, wk));
-  }
 
   // Count using Supabase cache for sched-weekly
   var wGen = 0, wSent = 0, wPending = 0;
@@ -21773,6 +21765,8 @@ async function loadCronogramaStatus() {
       _cronogramaStatusCache[r.id] = r;
     });
     console.log('Cronograma status loaded:', Object.keys(_cronogramaStatusCache).length, 'entries');
+    // Re-render dashboard now that cache is populated
+    if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) {
     console.warn('cronograma_status load error:', e);
   }
