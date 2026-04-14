@@ -7611,12 +7611,21 @@ function renderDashboard() {
 
   // Count using Supabase cache for sched-weekly
   var wGen = 0, wSent = 0, wPending = 0;
+  // Use _ctClientsWithWeekTasks to identify clients with actual content (not "sem demanda")
+  var weekTaskClients = (_ctClientsWithWeekTasks && _ctClientsWithWeekTasks[wk]) ? _ctClientsWithWeekTasks[wk] : null;
   active.forEach(function(c) {
     var st = _dashGetStatus(c.id, 'sched-weekly', wk);
     if (st.status >= 1) wGen++;
     if (st.status === 2) wSent++;
+    else if (st.status < 1 && weekTaskClients) {
+      // Only count as pending if client has tasks for this week
+      var coTenant = c.company === 'Alpha' ? 'alpha' : 'starken';
+      var metaKey = (typeof findMetaClientKey === 'function') ? findMetaClientKey(c.name, coTenant) : null;
+      if (metaKey && weekTaskClients.has(metaKey)) wPending++;
+    }
   });
-  wPending = Math.max(0, active.length - wGen);
+  // Fallback: if weekTaskClients not loaded yet, count all non-generated as pending
+  if (!weekTaskClients) wPending = Math.max(0, active.length - wGen);
 
   // Monthly from localStorage (monthly doesn't use cronograma_status)
   var mSent = data.reports.filter(function(r) { return r.type === 'monthly' && r.period === mk && r.status === 2; }).length;
@@ -7631,6 +7640,11 @@ function renderDashboard() {
   renderProgress('monthlyProgress', mk, active);
   renderDashWeekCronoList(wk, active);
   renderDashWeekPosts(wk);
+
+  // Async: load week tasks data if not yet available, then re-render cards
+  if (!weekTaskClients && typeof ensureClientsWithWeekTasks === 'function' && _supabase) {
+    ensureClientsWithWeekTasks(wk).then(function() { renderDashboard(); });
+  }
   renderRecentSends();
 }
 
