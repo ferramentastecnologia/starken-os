@@ -7624,8 +7624,8 @@ function renderDashboard() {
   document.getElementById('dashboardStats').innerHTML =
     '<div class="stat-card starken"><div class="stat-icon starken">S</div><div class="stat-label">Clientes Starken</div><div class="stat-value">' + starken.length + '</div></div>' +
     '<div class="stat-card alpha"><div class="stat-icon alpha">A</div><div class="stat-label">Clientes Alpha</div><div class="stat-value">' + alpha.length + '</div></div>' +
-    '<div class="stat-card warning"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Pendentes Semana</div><div class="stat-value">' + wPending + '</div></div>' +
-    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Enviados Semana</div><div class="stat-value">' + wSent + '/' + active.length + '</div></div>';
+    '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Pendentes Semana</div><div class="stat-value">' + wPending + '</div></div>' +
+    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Enviados Semana</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
 
   renderProgress('weeklyProgress', wk, active);
   renderProgress('monthlyProgress', mk, active);
