@@ -14633,8 +14633,8 @@ function ctRenderStoriesView(groups) {
       var dayLabel = dayTask.name || '';
       var dayShort = RS_DAYS_SHORT[RS_DAYS.findIndex(function(d){ return dayLabel.toUpperCase().includes(d.toUpperCase().substring(0,3)); })] || dayLabel.substring(0,3).toUpperCase();
 
-      // Story subtasks for this day
-      var stories = dayTask.id ? tasks.filter(function(t){ return t.parent_id === dayTask.id; }) : [];
+      // Story subtasks for this day (API returns nested .subtasks, not flat)
+      var stories = (dayTask.subtasks || []);
       stories.sort(function(a,b){ return (a.position||0)-(b.position||0); });
 
       html += '<div class="rs-day-col">';
@@ -14851,7 +14851,7 @@ async function ctRsRunSchedule() {
     var dayDate = new Date(baseDate);
     dayDate.setDate(baseDate.getDate() + dayIdx);
 
-    var stories = tasks.filter(function(t){ return t.parent_id === dayTask.id; });
+    var stories = (dayTask.subtasks || []);
     stories.sort(function(a,b){ return (a.position||0)-(b.position||0); });
 
     for (var si = 0; si < stories.length; si++) {
