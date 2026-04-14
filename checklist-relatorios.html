@@ -7910,6 +7910,7 @@ async function renderDashWeekPosts(weekKey) {
         });
       } else {
         // Task without entries — check task-level status
+        if (t.status === 'nao-publicado' || t.status === 'cancelado' || t.status === 'arquivado') return; // skip closed
         clientStats[clientKey].total++;
         if (t.status === 'publicado') clientStats[clientKey].published++;
         else if (t.status === 'agendado' || t.status === 'agendar') clientStats[clientKey].scheduled++;
@@ -14083,6 +14084,7 @@ const CT_STATUSES = [
   { key: 'agendar', label: 'Agendar', color: '#92400e', bg: '#fffbeb' },
   { key: 'agendado', label: 'Agendado', color: '#1e40af', bg: '#dbeafe' },
   { key: 'publicado', label: 'Publicado', color: '#065f46', bg: '#ecfdf5' },
+  { key: 'nao-publicado', label: 'Não Publicado', color: '#991b1b', bg: '#fee2e2' },
 ];
 
 const CT_PRIORITIES = [
