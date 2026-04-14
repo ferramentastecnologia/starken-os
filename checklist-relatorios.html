@@ -14156,6 +14156,61 @@ function ctInit() {
   ctLoadStatusFilter();
   // Prewarm: fire a lightweight request to wake up the serverless function
   fetch(ctApiBase() + '/api/content', { method: 'OPTIONS' }).catch(() => {});
+  // Auto-promote agendado → publicado for past dates
+  ctAutoPromotePublished();
+}
+
+// Auto-promote tasks with status 'agendado' to 'publicado' if post date has passed
+async function ctAutoPromotePublished() {
+  if (!_supabase) return;
+  try {
+    var today = new Date();
+    var todayISO = today.getFullYear() + '-' + ('0'+(today.getMonth()+1)).slice(-2) + '-' + ('0'+today.getDate()).slice(-2);
+
+    // Query all tasks with status = 'agendado'
+    var res = await _supabase.from('content_tasks')
+      .select('id,status,due_date,publish_config')
+      .eq('status', 'agendado');
+    var tasks = res.data || [];
+    if (!tasks.length) return;
+
+    var toPromote = [];
+    tasks.forEach(function(t) {
+      // Check post_date from publish_config, fallback to due_date
+      var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date || '';
+      if (!postDate) return;
+
+      // Also check scheduled_for in entries (use latest one)
+      var latestScheduled = postDate;
+      var entries = (t.publish_config && t.publish_config.entries) || [];
+      entries.forEach(function(e) {
+        if (e.scheduled_for) {
+          var entryDate = e.scheduled_for.substring(0, 10);
+          if (entryDate > latestScheduled) latestScheduled = entryDate;
+        }
+      });
+
+      // If the latest relevant date is before today, auto-promote
+      if (latestScheduled < todayISO) {
+        toPromote.push(t.id);
+      }
+    });
+
+    if (!toPromote.length) return;
+    console.log('Auto-promoting ' + toPromote.length + ' tasks from agendado → publicado');
+
+    // Batch update via API
+    await Promise.all(toPromote.map(function(taskId) {
+      return ctApi('change_status', { id: taskId, status: 'publicado', user: 'Sistema (auto)' });
+    }));
+
+    // Reload groups if content tab is active
+    if (document.getElementById('tab-content') && document.getElementById('tab-content').classList.contains('active')) {
+      ctLoadGroups();
+    }
+  } catch(e) {
+    console.warn('ctAutoPromotePublished error:', e);
+  }
 }
 
 function ctLoadClientDropdown() {
