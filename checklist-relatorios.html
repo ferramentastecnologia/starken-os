@@ -24104,6 +24104,12 @@ async function ctCancelFormatEntry(fmt, entryIdx, postId, historyId) {
 async function ctPublishFormat() {
   if (!ctModalTask || !_ctActiveFormatTab) return;
 
+  // Ensure ctCurrentClient is set (may be empty when opened from Minhas Tasks)
+  if (!ctCurrentClient && ctModalTask.client_id) {
+    ctCurrentClient = ctModalTask.client_id;
+  }
+  if (!ctCurrentClient) return alert('Cliente não identificado. Feche e reabra a task.');
+
   var fmt = _ctActiveFormatTab;
   // Auto-select both platforms if platform buttons aren't in the DOM or publish section is hidden
   if (_ctFmtPlatforms.length === 0) {
