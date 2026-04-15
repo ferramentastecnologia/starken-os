@@ -7444,13 +7444,15 @@ async function ensureCtClientsWithContent() {
 
 // Cache of clients with actual tasks for a given week period
 var _ctClientsWithWeekTasks = {}; // { periodKey: Set }
+var _weekTasksLoading = {}; // lock per periodKey
 async function ensureClientsWithWeekTasks(periodKey) {
   if (_ctClientsWithWeekTasks[periodKey] && _ctClientsWithWeekTasks[periodKey].size > 0) return;
-  // Also skip if explicitly loaded and confirmed empty (flag _loaded)
   if (_ctClientsWithWeekTasks[periodKey] && _ctClientsWithWeekTasks[periodKey]._loaded) return;
-  console.log('ensureClientsWithWeekTasks: loading for', periodKey);
+  // Prevent duplicate parallel calls
+  if (_weekTasksLoading[periodKey]) return _weekTasksLoading[periodKey];
+  _weekTasksLoading[periodKey] = (async function() {
   try {
-    if (!_supabase) { return; } // Don't cache when supabase not ready
+    if (!_supabase) { return; }
     var parts = periodKey.split('-S');
     if (parts.length !== 2) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
     var monthKey = parts[0];
@@ -7464,20 +7466,16 @@ async function ensureClientsWithWeekTasks(periodKey) {
 
     var startDate = wk.periodStartISO;
     var endDate = wk.periodEndISO;
-    console.log('Week range:', startDate, '→', endDate);
 
-    // Query 1: tasks with due_date in range
+    // Query tasks with due_date in range
     var res = await _supabase.from('content_tasks')
       .select('group_id,due_date,publish_config')
       .gte('due_date', startDate)
       .lte('due_date', endDate);
     var tasks = res.data || [];
-    console.log('Tasks with due_date in range:', tasks.length);
 
-    // Query 2: ALL groups → client mapping
-    var gRes = await _supabase.from('content_groups').select('id,client_id');
-    var groupToClient = {};
-    (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
+    // Use cached group → client mapping
+    var groupToClient = await _ensureGroupToClient();
 
     // Collect client IDs
     var clientIds = new Set();
@@ -7490,12 +7488,15 @@ async function ensureClientsWithWeekTasks(periodKey) {
     });
 
     console.log('Week tasks for', periodKey, '→ clients:', [...clientIds]);
-    clientIds._loaded = true; // Mark as successfully loaded (even if empty)
+    clientIds._loaded = true;
     _ctClientsWithWeekTasks[periodKey] = clientIds;
   } catch(e) {
     console.warn('ensureClientsWithWeekTasks error:', e);
-    // Don't cache on error so it retries next render
+  } finally {
+    delete _weekTasksLoading[periodKey];
   }
+  })();
+  return _weekTasksLoading[periodKey];
 }
 async function renderSchedWeekly() {
   const monthKey = document.getElementById('schedWeekMonth').value;
@@ -16291,7 +16292,7 @@ function ctBuildAttCard(a, badge, badgeColor) {
       + '</div>';
   } else {
     // Image thumbnail
-    preview = '<img src="' + a.file_url + '" style="width:100%;aspect-ratio:1;object-fit:cover" onerror="this.outerHTML=\'<div style=padding:30px;text-align:center;color:var(--text-secondary);font-size:0.75rem>📄 Arquivo</div>\'">';
+    preview = '<img src="' + a.file_url + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" onerror="this.outerHTML=\'<div style=padding:30px;text-align:center;color:var(--text-secondary);font-size:0.75rem>📄 Arquivo</div>\'">';
   }
 
   var sizeTxt = a.file_size ? (a.file_size > 1048576 ? (a.file_size/1048576).toFixed(1) + ' MB' : Math.round(a.file_size/1024) + ' KB') : '';
@@ -19138,7 +19139,7 @@ function ctOpenLightbox(url, isVideo) {
         var thumb = '';
         if (imageUrl && !isVideo) {
           thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f3f4f6">'
-            + '<img src="' + imageUrl + '" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem>\uD83D\uDDBC\uFE0F</div>\'">'
+            + '<img src="' + imageUrl + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem>\uD83D\uDDBC\uFE0F</div>\'">'
             + '</div>';
         } else if (isVideo) {
           thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;position:relative">'
