@@ -24263,13 +24263,18 @@ async function ctPublishFormat() {
       // IG and FB stories always go via queue (no native story scheduling in FB API)
       var useQueue = plat === 'ig' || fmt === 'story';
       if (useQueue) {
-        var scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 5000).toISOString();
+        var scheduledFor;
+        try {
+          scheduledFor = isSchedule ? new Date(datetime).toISOString() : new Date(Date.now() + 5000).toISOString();
+        } catch(e) {
+          scheduledFor = new Date(Date.now() + 5000).toISOString();
+        }
         var clientName = (_metaClients && _metaClients[ctCurrentClient]) ? _metaClients[ctCurrentClient].name : ctCurrentClient;
         var queueBody = {
           action: 'queue',
-          client_key: ctCurrentClient,
+          client_key: ctCurrentClient || ctModalTask.client_id || '',
           client_name: clientName,
-          platform: plat,
+          platform: plat || 'ig',
           caption: fmt === 'story' ? '' : copy,
           scheduled_for: scheduledFor,
           task_id: ctModalTask.id,
@@ -24283,12 +24288,12 @@ async function ctPublishFormat() {
           queueBody.image_urls = videoUrls;
         } else if (fmt === 'story') {
           queueBody.image_urls = videos.length > 0 ? [videoUrls[0]] : [imageUrls[0]];
-          // Cross-post to FB page via IG container — encode in media_type to avoid needing a new DB column
           if (hasBothForStory && plat === 'ig') queueBody.media_type = 'STORIES_CROSSPOST';
         } else {
           queueBody.image_urls = imageUrls;
         }
 
+        console.log('[Publish] IG queue body:', JSON.stringify(queueBody).substring(0, 500));
         var qRes = await fetch(ctApiBase() + '/api/meta/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
