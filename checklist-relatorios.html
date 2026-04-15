@@ -7686,6 +7686,17 @@ function renderProgress(containerId, periodKey, active) {
 
 // Progress from content_tasks (Supabase) — replaces old renderProgress for dashboard
 var _contentProgressCache = {};
+var _groupToClientCache = null;
+
+async function _ensureGroupToClient() {
+  if (_groupToClientCache) return _groupToClientCache;
+  if (!_supabase) return {};
+  var gRes = await _supabase.from('content_groups').select('id,client_id');
+  _groupToClientCache = {};
+  (gRes.data || []).forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
+  return _groupToClientCache;
+}
+
 async function renderContentProgress(containerId, periodKey, active, mode) {
   var el = document.getElementById(containerId);
   if (!el) return;
@@ -7738,10 +7749,8 @@ async function renderContentProgress(containerId, periodKey, active, mode) {
       .lte('due_date', endDate);
     var tasks = res.data || [];
 
-    // Get group → client mapping
-    var gRes = await _supabase.from('content_groups').select('id,client_id');
-    var groupToClient = {};
-    (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
+    // Get group → client mapping (cached)
+    var groupToClient = await _ensureGroupToClient();
 
     // Aggregate per client: total, published, scheduled
     var clientStats = {};
@@ -8007,10 +8016,8 @@ async function renderDashWeekPosts(weekKey) {
       .order('due_date', { ascending: true });
     var tasks = res.data || [];
 
-    // Get group → client mapping
-    var gRes = await _supabase.from('content_groups').select('id,client_id');
-    var groupToClient = {};
-    (gRes.data || []).forEach(function(g) { groupToClient[g.id] = g.client_id; });
+    // Get group → client mapping (cached)
+    var groupToClient = await _ensureGroupToClient();
 
     // Build per-day → per-client structure with individual tasks
     var dayData = {}; // { 'YYYY-MM-DD': { clientKey: { name, tenant, tasks: [], scheduled, published, total } } }
