@@ -22969,6 +22969,7 @@ function cronogramaGetWeekLabel(tasks) {
 
 // ═══ MINHAS TASKS ═══
 let mtTasks = [];
+let mtRecentTasks = []; // agendado/publicado últimos 7 dias
 let mtView = 'list'; // default: lista única para designers
 
 async function mtInit() {
@@ -22985,8 +22986,32 @@ async function mtInit() {
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
     mtTasks = Array.isArray(res) ? res : (res.data || []);
-    // Ensure lista única is default
     mtView = 'list';
+
+    // Load recent agendado/publicado tasks (last 7 days)
+    mtRecentTasks = [];
+    if (_supabase) {
+      var sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      var sinceDate = sevenDaysAgo.toISOString().slice(0, 10);
+      var recentRes = await _supabase.from('content_tasks')
+        .select('*,content_groups!inner(id,name,client_id)')
+        .in('status', ['agendado', 'publicado'])
+        .gte('due_date', sinceDate)
+        .order('due_date', { ascending: false })
+        .limit(50);
+      var recentRaw = recentRes.data || [];
+      mtRecentTasks = recentRaw.map(function(t) {
+        return {
+          ...t,
+          group_name: t.content_groups?.name || '',
+          client_id: t.content_groups?.client_id || '',
+          group_id: t.content_groups?.id || t.group_id,
+          content_groups: undefined,
+        };
+      });
+    }
+
     mtRender();
   } catch (e) {
     el.innerHTML = '<div class="mt-empty">Erro ao carregar tasks: ' + e.message + '</div>';
@@ -23099,16 +23124,60 @@ function mtRender() {
 
   document.getElementById('mtCount').textContent = tasks.length + ' task' + (tasks.length !== 1 ? 's' : '');
 
-  if (!tasks.length) {
+  if (!tasks.length && !mtRecentTasks.length) {
     el.innerHTML = '<div class="mt-empty">🎉 Nenhuma task encontrada' + (statusFilter ? ' com esse filtro' : '') + '</div>';
     return;
   }
 
-  if (mtView === 'client') {
-    mtRenderByClient(el, tasks);
+  if (tasks.length) {
+    if (mtView === 'client') {
+      mtRenderByClient(el, tasks);
+    } else {
+      mtRenderList(el, tasks);
+    }
   } else {
-    mtRenderList(el, tasks);
+    el.innerHTML = '<div class="mt-empty">Nenhuma task pendente</div>';
   }
+
+  // Render recent agendado/publicado section
+  if (mtRecentTasks.length > 0) {
+    mtRenderRecent(el);
+  }
+}
+
+function mtRenderRecent(container) {
+  var h = '<div style="margin-top:24px">';
+  h += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">';
+  h += '<h3 style="font-size:15px;font-weight:700;margin:0;color:var(--text-primary)">📋 Agendados & Publicados (últimos 7 dias)</h3>';
+  var agCount = mtRecentTasks.filter(function(t) { return t.status === 'agendado'; }).length;
+  var pubCount = mtRecentTasks.filter(function(t) { return t.status === 'publicado'; }).length;
+  h += '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">' + agCount + ' agendados</span>';
+  h += '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">' + pubCount + ' publicados</span>';
+  h += '</div>';
+
+  var cols = _mtGetColWidths('by-list');
+  h += '<div class="mt-list">';
+  h += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
+  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','📐 ENTREGA','📅 POST','PUBLICAÇÃO','PRIO'];
+  hdrs.forEach(function(hdr, i) {
+    h += '<div class="mt-header-col" data-col="' + i + '">' + hdr + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
+  });
+  h += '</div>';
+
+  // Sort: agendado first, then by due_date desc
+  var sorted = mtRecentTasks.slice().sort(function(a, b) {
+    if (a.status === 'agendado' && b.status !== 'agendado') return -1;
+    if (a.status !== 'agendado' && b.status === 'agendado') return 1;
+    return (b.due_date || '').localeCompare(a.due_date || '');
+  });
+
+  sorted.forEach(function(t) {
+    h += mtRenderRow(t, 'by-list');
+  });
+  h += '</div></div>';
+
+  container.innerHTML += h;
+  _mtInitResize(container, 'by-list');
 }
 
 // ── Resizable columns (Finder-style) ──
