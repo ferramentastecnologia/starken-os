@@ -3648,7 +3648,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 </div>
                 <div class="form-group" id="metaPubDatetimeWrap" style="display:none;margin-bottom:16px">
                   <label class="form-label">&#128197; Data e Hora do Agendamento</label>
-                  <input type="datetime-local" class="form-input" id="metaPubDatetime" style="font-weight:600">
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <input type="date" class="form-input" id="metaPubDate" style="font-weight:600;flex:1;cursor:pointer" onclick="this.showPicker?this.showPicker():null">
+                    <input type="time" class="form-input" id="metaPubTime" style="font-weight:600;width:120px" value="10:00">
+                  </div>
+                  <input type="hidden" class="form-input" id="metaPubDatetime" style="font-weight:600">
                   <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">&#9888;&#65039; Meta exige no mínimo 10 minutos no futuro e máximo 75 dias</div>
                 </div>
 
@@ -4159,7 +4163,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                       </div>
                       <div id="ctFmtPubDateWrap" style="display:none;flex:1">
                         <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Data/Hora</div>
-                        <input type="datetime-local" id="ctFmtPubDatetime" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+                        <div style="display:flex;gap:6px;align-items:center">
+                          <input type="date" id="ctFmtPubDate" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box;cursor:pointer" onclick="this.showPicker?this.showPicker():null">
+                          <input type="time" id="ctFmtPubTime" value="10:00" style="width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+                        </div>
+                        <input type="hidden" id="ctFmtPubDatetime">
                       </div>
                     </div>
 
@@ -4259,7 +4267,11 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                     <option value="schedule">📅 Agendar</option>
                   </select>
                   <div id="ctPubDateWrap" style="display:none;margin-top:8px">
-                    <input type="datetime-local" id="ctPubDatetime" class="form-input" style="font-size:0.85rem">
+                    <div style="display:flex;gap:6px;align-items:center">
+                      <input type="date" id="ctPubDate" class="form-input" style="font-size:0.85rem;flex:1;cursor:pointer" onclick="this.showPicker?this.showPicker():null">
+                      <input type="time" id="ctPubTime" class="form-input" style="font-size:0.85rem;width:100px" value="10:00">
+                    </div>
+                    <input type="hidden" id="ctPubDatetime">
                   </div>
                 </div>
               </div>
@@ -13387,6 +13399,29 @@ function metaPublishSelectAspect(ratio, btn) {
   metaPublishUpdatePreview();
 }
 
+// ── Date+Time picker sync (replaces datetime-local) ──
+function _syncDateTimePicker(dateId, timeId, hiddenId) {
+  var dateEl = document.getElementById(dateId);
+  var timeEl = document.getElementById(timeId);
+  var hiddenEl = document.getElementById(hiddenId);
+  if (!dateEl || !timeEl || !hiddenEl) return;
+  if (dateEl.value && timeEl.value) {
+    hiddenEl.value = dateEl.value + 'T' + timeEl.value;
+  } else if (dateEl.value) {
+    hiddenEl.value = dateEl.value + 'T10:00';
+  } else {
+    hiddenEl.value = '';
+  }
+}
+
+// Auto-bind date/time sync listeners
+document.addEventListener('change', function(e) {
+  var id = e.target.id;
+  if (id === 'metaPubDate' || id === 'metaPubTime') _syncDateTimePicker('metaPubDate', 'metaPubTime', 'metaPubDatetime');
+  if (id === 'ctPubDate' || id === 'ctPubTime') _syncDateTimePicker('ctPubDate', 'ctPubTime', 'ctPubDatetime');
+  if (id === 'ctFmtPubDate' || id === 'ctFmtPubTime') _syncDateTimePicker('ctFmtPubDate', 'ctFmtPubTime', 'ctFmtPubDatetime');
+});
+
 function metaPublishScheduleChange() {
   const mode = document.getElementById('metaPubScheduleMode').value;
   document.getElementById('metaPubDatetimeWrap').style.display = mode === 'schedule' ? 'block' : 'none';
@@ -13399,10 +13434,15 @@ function metaPublishScheduleChange() {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(10, 0, 0, 0);
-    const dtInput = document.getElementById('metaPubDatetime');
-    if (!dtInput.value) {
-      dtInput.value = tomorrow.toISOString().slice(0, 16);
+    var dateInput = document.getElementById('metaPubDate');
+    var timeInput = document.getElementById('metaPubTime');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = tomorrow.toISOString().slice(0, 10);
     }
+    if (timeInput && !timeInput.value) {
+      timeInput.value = '10:00';
+    }
+    _syncDateTimePicker('metaPubDate', 'metaPubTime', 'metaPubDatetime');
   }
   metaPublishUpdatePreview();
 }
@@ -23061,6 +23101,73 @@ function mtRender() {
   }
 }
 
+// ── Resizable columns (Finder-style) ──
+var _mtColWidthsCache = {};
+var _mtDefaultCols = {
+  'by-list':   [160, 280, 90, 120, 85, 85, 100, 100],
+  'by-client': [280, 90, 140, 120, 85, 85, 100, 100]
+};
+
+function _mtGetColWidths(mode) {
+  if (!_mtColWidthsCache[mode]) {
+    try {
+      var saved = localStorage.getItem('mt_col_widths_' + mode);
+      if (saved) _mtColWidthsCache[mode] = JSON.parse(saved);
+    } catch(e) {}
+    if (!_mtColWidthsCache[mode]) _mtColWidthsCache[mode] = _mtDefaultCols[mode].slice();
+  }
+  return _mtColWidthsCache[mode].map(function(w) { return w + 'px'; });
+}
+
+function _mtSaveColWidths(mode, widths) {
+  _mtColWidthsCache[mode] = widths;
+  try { localStorage.setItem('mt_col_widths_' + mode, JSON.stringify(widths)); } catch(e) {}
+}
+
+function _mtInitResize(container, mode) {
+  var handles = container.querySelectorAll('.mt-resize-handle');
+  handles.forEach(function(handle) {
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var colIdx = parseInt(handle.getAttribute('data-col'));
+      var headerRow = handle.closest('.mt-header-row');
+      var startX = e.clientX;
+      var widths = (_mtColWidthsCache[mode] || _mtDefaultCols[mode]).slice();
+      var startW = widths[colIdx];
+      handle.classList.add('active');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      function onMove(ev) {
+        var delta = ev.clientX - startX;
+        var newW = Math.max(50, startW + delta);
+        widths[colIdx] = newW;
+        var colStr = widths.map(function(w) { return w + 'px'; }).join(' ');
+        // Update header
+        headerRow.style.gridTemplateColumns = colStr;
+        // Update all rows in same list
+        var listEl = headerRow.closest('.mt-list');
+        if (listEl) {
+          listEl.querySelectorAll('.mt-row.' + mode).forEach(function(row) {
+            row.style.gridTemplateColumns = colStr;
+          });
+        }
+      }
+      function onUp() {
+        handle.classList.remove('active');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        _mtSaveColWidths(mode, widths);
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
 function mtRenderByClient(el, tasks) {
   // Group by client_id
   const groups = {};
@@ -23086,9 +23193,13 @@ function mtRenderByClient(el, tasks) {
     html += '<span class="mt-client-name">' + clientName + '</span>';
     html += '<span class="mt-client-count">' + clientTasks.length + '</span>';
     html += '</div>';
+    var cols = _mtGetColWidths('by-client');
     html += '<div class="mt-list">';
-    html += '<div class="mt-header-row by-client">';
-    html += '<span>NOME</span><span>FORMATO</span><span>STATUS</span><span>RESPONSÁVEL</span><span>📐 ENTREGA</span><span>📅 POST</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
+    html += '<div class="mt-header-row by-client" style="grid-template-columns:' + cols.join(' ') + '">';
+    var hdrs = ['NOME','FORMATO','STATUS','RESPONSÁVEL','📐 ENTREGA','📅 POST','PUBLICAÇÃO','PRIO'];
+    hdrs.forEach(function(h, i) {
+      html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
+    });
     html += '</div>';
     clientTasks.forEach(t => {
       html += mtRenderRow(t, 'by-client');
@@ -23097,18 +23208,24 @@ function mtRenderByClient(el, tasks) {
   });
 
   el.innerHTML = html;
+  _mtInitResize(el, 'by-client');
 }
 
 function mtRenderList(el, tasks) {
+  var cols = _mtGetColWidths('by-list');
   let html = '<div class="mt-list">';
-  html += '<div class="mt-header-row by-list">';
-  html += '<span>CLIENTE</span><span>NOME</span><span>FORMATO</span><span>STATUS</span><span>📐 ENTREGA</span><span>📅 POST</span><span>PUBLICAÇÃO</span><span>PRIO</span>';
+  html += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
+  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','📐 ENTREGA','📅 POST','PUBLICAÇÃO','PRIO'];
+  hdrs.forEach(function(h, i) {
+    html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
+  });
   html += '</div>';
   tasks.forEach(t => {
     html += mtRenderRow(t, 'by-list');
   });
   html += '</div>';
   el.innerHTML = html;
+  _mtInitResize(el, 'by-list');
 }
 
 function mtRenderRow(task, mode) {
@@ -23155,7 +23272,8 @@ function mtRenderRow(task, mode) {
     quickAction = '<span style="font-size:10px;color:#c2410c;background:#fff7ed;padding:3px 8px;border-radius:6px;white-space:nowrap">⏳ Aguardando</span>';
   }
 
-  let html = '<div class="mt-row ' + mode + '" style="' + rowStyle + '" onclick="ctOpenModal(\'' + task.id + '\')">';
+  var colStyle = 'grid-template-columns:' + _mtGetColWidths(mode).join(' ') + ';';
+  let html = '<div class="mt-row ' + mode + '" style="' + colStyle + rowStyle + '" onclick="ctOpenModal(\'' + task.id + '\')">';
 
   if (mode === 'by-list') {
     html += '<div style="font-size:12px;font-weight:500;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + clientName + '">' + clientName + '</div>';
@@ -23354,7 +23472,7 @@ function ctRenderFormatTabs() {
       + '<div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Quando</div>'
       + '<select id="ctFmtPubMode" onchange="document.getElementById(\'ctFmtPubDateWrap\').style.display=this.value===\'schedule\'?\'block\':\'none\'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text)"><option value="now">⚡ Publicar Agora</option><option value="schedule">📅 Agendar</option></select>'
       + '</div><div id="ctFmtPubDateWrap" style="display:none;flex:1"><div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Data/Hora</div>'
-      + '<input type="datetime-local" id="ctFmtPubDatetime" style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box"></div></div>'
+      + '<div style="display:flex;gap:6px"><input type="date" id="ctFmtPubDate" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box;cursor:pointer" onclick="this.showPicker?this.showPicker():null"><input type="time" id="ctFmtPubTime" value="10:00" style="width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box"></div><input type="hidden" id="ctFmtPubDatetime"></div></div>'
       + '<button onclick="ctPublishFormat()" id="ctFmtPubBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s">🚀 Publicar</button>'
       + '<div id="ctFmtPubStatus" style="display:none;margin-top:10px;padding:8px 12px;border-radius:8px;font-size:0.8rem"></div>'
       + '<div style="margin-top:12px"><div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px">📋 Histórico</div>'
@@ -23479,7 +23597,17 @@ function ctColPublish(fmt) {
   var fmtModeEl = document.getElementById('ctFmtPubMode');
   var fmtDateEl = document.getElementById('ctFmtPubDatetime');
   if (fmtModeEl && modeEl) fmtModeEl.value = modeEl.value;
-  if (fmtDateEl && dateEl) fmtDateEl.value = dateEl.value;
+  if (fmtDateEl && dateEl) {
+    fmtDateEl.value = dateEl.value;
+    // Also sync to split date/time inputs
+    if (dateEl.value) {
+      var parts = dateEl.value.split('T');
+      var dEl = document.getElementById('ctFmtPubDate');
+      var tEl = document.getElementById('ctFmtPubTime');
+      if (dEl) dEl.value = parts[0] || '';
+      if (tEl) tEl.value = parts[1] || '10:00';
+    }
+  }
   // If publish section controls don't exist, create temporary hidden ones
   if (!fmtModeEl) {
     var tmp = document.createElement('select'); tmp.id = 'ctFmtPubMode'; tmp.value = modeEl ? modeEl.value : 'now'; tmp.style.display = 'none'; document.body.appendChild(tmp);
