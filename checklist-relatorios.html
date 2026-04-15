@@ -24380,30 +24380,22 @@ async function ctPublishFormat() {
 
   btn.disabled = false; btn.style.opacity = '1';
 
-  // Auto-update task status to 'agendado' when successfully scheduled
-  if (allOk && isSchedule && ctModalTask.status !== 'agendado') {
-    try {
-      await ctApi('change_status', { id: ctModalTask.id, status: 'agendado', user: gpState.user ? gpState.user.name : 'Sistema' });
-      ctModalTask.status = 'agendado';
-      // Update in mtTasks (Minhas Tasks)
-      var mt = mtTasks.find(function(t) { return t.id === ctModalTask.id; });
-      if (mt) mt.status = 'agendado';
-      // Refresh status badge in modal
-      var statusBadge = document.querySelector('.ct-modal-status-badge');
-      if (statusBadge) {
-        var sDef = CT_STATUSES.find(function(s) { return s.key === 'agendado'; });
-        if (sDef) { statusBadge.textContent = sDef.label; statusBadge.style.background = sDef.bg; statusBadge.style.color = sDef.color; statusBadge.setAttribute('data-status', 'agendado'); }
-      }
-    } catch(e) { console.warn('Auto-status change error:', e); }
-  }
-  // Auto-update task status to 'publicado' when successfully published now
-  if (allOk && !isSchedule && ctModalTask.status !== 'publicado') {
-    try {
-      await ctApi('change_status', { id: ctModalTask.id, status: 'publicado', user: gpState.user ? gpState.user.name : 'Sistema' });
-      ctModalTask.status = 'publicado';
-      var mt2 = mtTasks.find(function(t) { return t.id === ctModalTask.id; });
-      if (mt2) mt2.status = 'publicado';
-    } catch(e) { console.warn('Auto-status change error:', e); }
+  // Auto-update task status to agendado/publicado
+  if (allOk || results.some(function(r) { return r.ok; })) {
+    var newStatus = isSchedule ? 'agendado' : 'publicado';
+    if (ctModalTask.status !== newStatus) {
+      try {
+        if (typeof ctChangeModalStatus === 'function') {
+          await ctChangeModalStatus(newStatus);
+        } else {
+          await ctApi('change_status', { id: ctModalTask.id, status: newStatus, user: gpState.user ? gpState.user.name : 'Sistema' });
+          ctModalTask.status = newStatus;
+        }
+        // Update in mtTasks
+        var mt = mtTasks.find(function(t) { return t.id === ctModalTask.id; });
+        if (mt) mt.status = newStatus;
+      } catch(e) { console.warn('Auto-status change error:', e); }
+    }
   }
 
   // Refresh history
