@@ -13607,6 +13607,7 @@ function metaPublishUpdatePreview() {
 
   // Time
   if (mode === 'schedule') {
+    _syncDateTimePicker('metaPubDate', 'metaPubTime', 'metaPubDatetime');
     const dt = document.getElementById('metaPubDatetime').value;
     timeEl.textContent = dt ? new Date(dt).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Agendado';
   } else {
@@ -13856,6 +13857,7 @@ async function metaPublishSubmit() {
   const type = document.getElementById('metaPubType').value;
   const caption = document.getElementById('metaPubCaption').value;
   const mode = document.getElementById('metaPubScheduleMode').value;
+  _syncDateTimePicker('metaPubDate', 'metaPubTime', 'metaPubDatetime');
   const datetime = document.getElementById('metaPubDatetime').value;
   const mediaUrl = document.getElementById('metaPubMediaUrl') ? document.getElementById('metaPubMediaUrl').value : '';
   const statusDiv = document.getElementById('metaPubStatus');
@@ -17727,6 +17729,7 @@ async function ctPublishFromModal() {
   if (!copy) { alert('Preencha a Copy do Post antes de publicar'); return; }
 
   const mode = document.getElementById('ctPubMode').value;
+  _syncDateTimePicker('ctPubDate', 'ctPubTime', 'ctPubDatetime');
   const datetime = document.getElementById('ctPubDatetime').value;
   const isSchedule = mode === 'schedule' && datetime;
 
@@ -24139,6 +24142,8 @@ async function ctPublishFormat() {
   if (fmt === 'carrossel' && images.length < 2) return alert('Carrossel precisa de pelo menos 2 imagens');
 
   var mode = document.getElementById('ctFmtPubMode').value;
+  // Sync date+time pickers to hidden datetime field
+  _syncDateTimePicker('ctFmtPubDate', 'ctFmtPubTime', 'ctFmtPubDatetime');
   var datetime = document.getElementById('ctFmtPubDatetime').value;
   var isSchedule = mode === 'schedule';
   if (isSchedule && !datetime) return alert('Selecione data e hora para agendamento');
