@@ -24148,9 +24148,20 @@ async function ctPublishFormat() {
   if (fmt === 'carrossel' && images.length < 2) return alert('Carrossel precisa de pelo menos 2 imagens');
 
   var mode = document.getElementById('ctFmtPubMode').value;
-  // Sync date+time pickers to hidden datetime field
+  // Sync date+time pickers to hidden datetime field (with fallback)
   _syncDateTimePicker('ctFmtPubDate', 'ctFmtPubTime', 'ctFmtPubDatetime');
   var datetime = document.getElementById('ctFmtPubDatetime').value;
+  // Fallback: read directly from date+time inputs if hidden is still empty
+  if (!datetime) {
+    var _d = document.getElementById('ctFmtPubDate');
+    var _t = document.getElementById('ctFmtPubTime');
+    if (_d && _d.value) datetime = _d.value + 'T' + (_t && _t.value ? _t.value : '10:00');
+  }
+  // Last fallback: try the old datetime-local input (may exist in some views)
+  if (!datetime) {
+    var _old = document.querySelector('#ctFmtPubDateWrap input[type="datetime-local"]');
+    if (_old) datetime = _old.value;
+  }
   var isSchedule = mode === 'schedule';
   if (isSchedule && !datetime) return alert('Selecione data e hora para agendamento');
 
