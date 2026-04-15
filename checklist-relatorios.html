@@ -14425,23 +14425,40 @@ async function ctAutoPromotePublished() {
     if (!tasks.length) return;
 
     var toPromote = [];
+    var now = new Date();
     tasks.forEach(function(t) {
-      // Check post_date from publish_config, fallback to due_date
       var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date || '';
       if (!postDate) return;
 
-      // Also check scheduled_for in entries (use latest one)
-      var latestScheduled = postDate;
+      // Check scheduled_for in entries — use the LATEST scheduled time (with hour precision)
+      var latestScheduledTime = null;
       var entries = (t.publish_config && t.publish_config.entries) || [];
+      // Also check format-specific entries
+      ['feed','story','carrossel','reels'].forEach(function(fmt) {
+        if (t.publish_config && t.publish_config[fmt] && t.publish_config[fmt].entries) {
+          entries = entries.concat(t.publish_config[fmt].entries);
+        }
+      });
       entries.forEach(function(e) {
+        if (e.status === 'cancelled') return;
         if (e.scheduled_for) {
-          var entryDate = e.scheduled_for.substring(0, 10);
-          if (entryDate > latestScheduled) latestScheduled = entryDate;
+          var d = new Date(e.scheduled_for);
+          if (!isNaN(d.getTime()) && (!latestScheduledTime || d > latestScheduledTime)) {
+            latestScheduledTime = d;
+          }
         }
       });
 
-      // If the latest relevant date is before today, auto-promote
-      if (latestScheduled < todayISO) {
+      // If we have a precise scheduled time, check if it's in the past
+      if (latestScheduledTime) {
+        if (latestScheduledTime < now) {
+          toPromote.push(t.id);
+        }
+        return;
+      }
+
+      // Fallback: compare by date only (for tasks without scheduled_for entries)
+      if (postDate < todayISO) {
         toPromote.push(t.id);
       }
     });
@@ -14457,6 +14474,10 @@ async function ctAutoPromotePublished() {
     // Reload groups if content tab is active
     if (document.getElementById('tab-content') && document.getElementById('tab-content').classList.contains('active')) {
       ctLoadGroups();
+    }
+    // Also refresh Minhas Tasks if active
+    if (document.getElementById('tab-minhas-tasks') && document.getElementById('tab-minhas-tasks').classList.contains('active')) {
+      if (typeof mtInit === 'function') mtInit();
     }
   } catch(e) {
     console.warn('ctAutoPromotePublished error:', e);
@@ -14900,6 +14921,8 @@ async function ctRefreshAgendadoStatuses() {
   if (typeof _ctStatusRefreshTimer !== 'undefined' && _ctStatusRefreshTimer) return;
   _ctStatusRefreshTimer = setInterval(function() {
     if (ctGroups.length > 0) ctRefreshAgendadoStatuses();
+    // Also auto-promote agendado → publicado (checks scheduled_for time)
+    if (_supabase) ctAutoPromotePublished();
   }, 45000);
 })();
 
