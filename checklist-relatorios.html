@@ -2923,16 +2923,15 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .mt-client-count { font-size:11px;font-weight:700;color:var(--text-tertiary);background:var(--surface-container,#eceef1);padding:2px 8px;border-radius:4px; }
 .mt-list { border:1px solid rgba(196,197,215,0.15);border-radius:10px;overflow-x:auto;overflow-y:hidden;margin-bottom:4px; }
 .mt-header-row { display:grid;gap:0;background:var(--surface-container-low,#f2f4f7);padding:0 16px;height:36px;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--on-surface-variant,#444654);letter-spacing:0.8px;border-bottom:1px solid var(--outline-variant,#c4c5d7);align-items:center;min-width:max-content; }
-.mt-header-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(160px,auto) 100px; }
-.mt-header-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 80px 80px minmax(160px,auto) 100px; }
-.mt-header-col { position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:none; }
-.mt-header-col .mt-resize-handle { position:absolute;right:0;top:0;bottom:0;width:6px;cursor:col-resize;background:transparent;z-index:2;transition:background 0.15s; }
-.mt-header-col .mt-resize-handle:hover, .mt-header-col .mt-resize-handle.active { background:var(--brand,#2a4dd7);opacity:0.5; }
+.mt-header-row.by-client, .mt-header-row.by-list { grid-template-columns:none; }
+.mt-header-col { position:relative;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;user-select:none;padding-right:8px; }
+.mt-header-col .mt-resize-handle { position:absolute;right:0;top:6px;bottom:6px;width:4px;cursor:col-resize;background:var(--border-default,#e5e7eb);border-radius:2px;z-index:2;transition:background 0.15s;opacity:0.6; }
+.mt-header-col .mt-resize-handle:hover, .mt-header-col .mt-resize-handle.active { background:var(--brand,#2a4dd7);opacity:1; }
+.mt-header-col:last-child .mt-resize-handle { display:none; }
 .mt-row { display:grid;gap:0;padding:0 16px;height:42px;border-bottom:1px solid rgba(196,197,215,0.15);font-size:13px;align-items:center;transition:background 0.08s;cursor:pointer;min-width:max-content; }
 .mt-row:hover { background:#f8fafc; }
 .mt-row:last-child { border-bottom:none; }
-.mt-row.by-client { grid-template-columns:minmax(200px,2fr) 90px 140px 110px 80px 80px minmax(160px,auto) 100px; }
-.mt-row.by-list { grid-template-columns:140px minmax(200px,2fr) 90px 120px 80px 80px minmax(160px,auto) 100px; }
+.mt-row.by-client, .mt-row.by-list { grid-template-columns:none; }
 .mt-empty { text-align:center;padding:60px 20px;color:var(--text-tertiary);font-size:14px; }
 
 /* ═══════════════════════════════════════════════════════════════ */
@@ -23104,8 +23103,8 @@ function mtRender() {
 // ── Resizable columns (Finder-style) ──
 var _mtColWidthsCache = {};
 var _mtDefaultCols = {
-  'by-list':   [160, 280, 90, 120, 85, 85, 100, 100],
-  'by-client': [280, 90, 140, 120, 85, 85, 100, 100]
+  'by-list':   [200, 320, 95, 120, 85, 85, 100, 110],
+  'by-client': [320, 95, 140, 130, 85, 85, 100, 110]
 };
 
 function _mtGetColWidths(mode) {
