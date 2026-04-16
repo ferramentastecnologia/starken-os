@@ -23674,11 +23674,20 @@ function mtRenderRecent(container) {
   });
   h += '</div>';
 
-  // Sort: agendado first, then by due_date desc
+  // Sort: 1) Agendado antes de Publicado  2) Data POST crescente (mais próxima primeiro)  3) Alfabético por cliente
   var sorted = mtRecentTasks.slice().sort(function(a, b) {
+    // 1. Status: agendado primeiro
     if (a.status === 'agendado' && b.status !== 'agendado') return -1;
     if (a.status !== 'agendado' && b.status === 'agendado') return 1;
-    return (b.due_date || '').localeCompare(a.due_date || '');
+    // 2. Data de postagem (POST) crescente — mais atual/próxima primeiro
+    var da = (a.publish_config && a.publish_config.post_date) || a.due_date || 'zzzz';
+    var db = (b.publish_config && b.publish_config.post_date) || b.due_date || 'zzzz';
+    if (da !== db) return da.localeCompare(db);
+    // 3. Alfabético pelo nome do cliente
+    var clients = _metaClients || {};
+    var ca = ((clients[a.client_id] && (clients[a.client_id].pageName || clients[a.client_id].name)) || a.client_id || '').toLowerCase();
+    var cb = ((clients[b.client_id] && (clients[b.client_id].pageName || clients[b.client_id].name)) || b.client_id || '').toLowerCase();
+    return ca.localeCompare(cb);
   });
 
   sorted.forEach(function(t) {
