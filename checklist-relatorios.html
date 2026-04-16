@@ -5169,6 +5169,25 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   </div>
 </div>
 
+<!-- Modal Reagendar (pub-history) -->
+<div id="pubHistReschedModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center">
+  <div style="background:var(--card);border-radius:16px;padding:24px 28px;width:320px;max-width:92vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
+    <h3 style="margin:0 0 18px;font-size:1rem;font-weight:700;color:var(--text)">📅 Reagendar Publicação</h3>
+    <div style="margin-bottom:12px">
+      <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:5px;color:var(--text-secondary)">Data</label>
+      <input type="date" id="pubHistReschedDate" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;background:var(--bg);color:var(--text);box-sizing:border-box;cursor:pointer" onclick="this.showPicker?this.showPicker():null">
+    </div>
+    <div style="margin-bottom:20px">
+      <label style="font-size:0.75rem;font-weight:600;display:block;margin-bottom:5px;color:var(--text-secondary)">Hora</label>
+      <input type="time" id="pubHistReschedTime" value="10:00" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;font-family:inherit;background:var(--bg);color:var(--text);box-sizing:border-box">
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="pubHistCancelReschedule()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:600">Cancelar</button>
+      <button onclick="pubHistConfirmReschedule()" style="flex:1;padding:10px;border:none;border-radius:8px;background:#1d4ed8;color:#fff;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700">📅 Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Cliente -->
 <div class="modal-overlay" id="clientModal">
   <div class="modal">
@@ -6726,6 +6745,7 @@ function sysLogCard(label, count, color, bg, border) {
 // ═══════════════════════════════════════════════════════
 var _pubHistExpanded = {};
 var _pubHistLoaded = false;
+var _pubHistPostData = {}; // histId → { clientKey, platform, caption } para retry
 
 async function pubHistoryRefresh() {
   _pubHistLoaded = false;
@@ -6875,6 +6895,15 @@ function pubHistoryRender() {
       if (h.user_name) html += '<span>👤 ' + esc(sysLogParseUser(h.user_name)) + '</span>';
       html += '</div>';
 
+      // Botões de ação para FAILED
+      if (h.status === 'FAILED' && h.id) {
+        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '' };
+        html += '<div style="display:flex;gap:6px;margin-top:6px">'
+          + '<button onclick="event.stopPropagation();pubHistRetry(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
+          + '<button onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #1d4ed8;border-radius:6px;background:transparent;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">📅 Reagendar</button>'
+          + '</div>';
+      }
+
       html += '</div></div>';
     });
 
@@ -6894,6 +6923,88 @@ function pubHistToggle(safeId) {
 
 function pubHistSafeId(key) {
   return (key || 'x').replace(/[^a-zA-Z0-9]/g, '_');
+}
+
+// ── Retry: pré-preenche meta-publish e muda de aba ──
+function pubHistRetry(histId) {
+  var d = _pubHistPostData[histId];
+  if (!d) return;
+  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'now', null);
+}
+
+// ── Reagendar: abre mini-modal de data/hora ──
+var _pubHistReschedId = null;
+function pubHistShowReschedule(histId) {
+  _pubHistReschedId = histId;
+  var tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  var tISO = tomorrow.getFullYear() + '-' + ('0'+(tomorrow.getMonth()+1)).slice(-2) + '-' + ('0'+tomorrow.getDate()).slice(-2);
+  document.getElementById('pubHistReschedDate').value = tISO;
+  document.getElementById('pubHistReschedTime').value = '10:00';
+  document.getElementById('pubHistReschedModal').style.display = 'flex';
+}
+function pubHistCancelReschedule() {
+  document.getElementById('pubHistReschedModal').style.display = 'none';
+  _pubHistReschedId = null;
+}
+function pubHistConfirmReschedule() {
+  var date = document.getElementById('pubHistReschedDate').value;
+  var time = document.getElementById('pubHistReschedTime').value || '10:00';
+  if (!date) { showToast('Selecione uma data'); return; }
+  var d = _pubHistPostData[_pubHistReschedId];
+  if (!d) return;
+  document.getElementById('pubHistReschedModal').style.display = 'none';
+  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'schedule', date + 'T' + time + ':00');
+  _pubHistReschedId = null;
+}
+
+// ── Pré-preenche o form de meta-publish e muda pra aba ──
+async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, scheduleIso) {
+  switchTab('meta-publish');
+  await new Promise(function(r) { setTimeout(r, 400); });
+
+  // Cliente
+  var clientSel = document.getElementById('metaPubClient');
+  if (clientSel && clientKey) {
+    clientSel.value = clientKey;
+    if (clientSel._ssRefresh) clientSel._ssRefresh();
+    metaPublishClientChange();
+    await new Promise(function(r) { setTimeout(r, 100); });
+  }
+
+  // Plataforma — limpa e re-seleciona
+  var fbBtn = document.getElementById('metaPubPlatFb');
+  var igBtn = document.getElementById('metaPubPlatIg');
+  var platformInput = document.getElementById('metaPubPlatform');
+  if (fbBtn) fbBtn.classList.remove('selected');
+  if (igBtn) igBtn.classList.remove('selected');
+  if (platformInput) platformInput.value = '';
+  (platform || '').split(',').map(function(p) { return p.trim(); }).filter(Boolean).forEach(function(p) {
+    metaPublishSelectPlatform(p);
+  });
+
+  // Legenda
+  var cap = document.getElementById('metaPubCaption');
+  if (cap) { cap.value = caption || ''; metaPublishCaptionInput(); }
+
+  // Modo agendamento
+  var modeSel = document.getElementById('metaPubScheduleMode');
+  if (modeSel) {
+    modeSel.value = mode === 'schedule' ? 'schedule' : 'now';
+    metaPublishScheduleChange();
+    if (mode === 'schedule' && scheduleIso) {
+      var dt = new Date(scheduleIso);
+      var dStr = dt.getFullYear() + '-' + ('0'+(dt.getMonth()+1)).slice(-2) + '-' + ('0'+dt.getDate()).slice(-2);
+      var tStr = ('0'+dt.getHours()).slice(-2) + ':' + ('0'+dt.getMinutes()).slice(-2);
+      document.getElementById('metaPubDate').value = dStr;
+      document.getElementById('metaPubTime').value = tStr;
+      _syncDateTimePicker('metaPubDate', 'metaPubTime', 'metaPubDatetime');
+    }
+  }
+
+  metaPublishValidateForm();
+  metaPublishUpdatePreview();
+  showToast(mode === 'schedule' ? '📅 Form pré-preenchido — adicione a mídia e confirme' : '↺ Form pré-preenchido — adicione a mídia e publique');
 }
 
 const TAB_TITLES = {
