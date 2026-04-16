@@ -3113,8 +3113,20 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
       <!-- DASHBOARD -->
       <div id="tab-dashboard" class="tab-content active">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button id="dashRefreshBtn" onclick="dashRefreshAll()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;font-size:0.8rem;font-weight:600;font-family:inherit;transition:all 0.15s" onmouseover="this.style.background='var(--bg-hover,rgba(0,0,0,0.05))'" onmouseout="this.style.background='var(--bg-card)'">
+            <span id="dashRefreshIcon">🔄</span> <span>Atualizar</span>
+          </button>
+        </div>
         <div class="stats-grid" id="dashboardStats"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card" style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div class="card-title" style="margin:0">📊 Score Operacional do Mês</div>
+            <div id="dashOpProjection" style="font-size:0.75rem;color:var(--text-muted)"></div>
+          </div>
+          <div id="dashOpScore"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
           <div class="card">
             <div class="card-title" style="margin-bottom:14px">Progresso Semanal</div>
             <div id="weeklyProgress"></div>
@@ -8140,12 +8152,251 @@ function renderDashboard() {
   renderContentProgress('monthlyProgress', mk, active, 'monthly');
   renderDashWeekCronoList(wk, active);
   renderDashWeekPosts(wk);
+  renderOperationalScore(mk, active);
 
   // Async: load week tasks data if not yet available, then re-render cards
   if (!weekTaskClients && typeof ensureClientsWithWeekTasks === 'function' && _supabase) {
     ensureClientsWithWeekTasks(wk).then(function() { renderDashboard(); });
   }
   renderRecentSends();
+}
+
+// ═══ SCORE OPERACIONAL ═══
+var _opScoreCache = {}; // { monthKey: { score, breakdown, weekly, tasks } }
+
+async function renderOperationalScore(monthKey, active) {
+  var el = document.getElementById('dashOpScore');
+  var projEl = document.getElementById('dashOpProjection');
+  if (!el) return;
+
+  // Loading
+  if (!_opScoreCache[monthKey]) {
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);font-size:0.85rem">⏳ Calculando score operacional...</div>';
+  }
+
+  try {
+    var cached = _opScoreCache[monthKey];
+    if (!cached) {
+      // Fetch tasks for this month
+      var mParts = monthKey.split('-');
+      var year = parseInt(mParts[0]);
+      var month = parseInt(mParts[1]) - 1;
+      var firstDay = monthKey + '-01';
+      var lastDay = new Date(year, month + 1, 0);
+      var lastDayStr = monthKey + '-' + String(lastDay.getDate()).padStart(2, '0');
+
+      var tasks;
+      if (_supabase) {
+        var res = await _supabase.from('content_tasks')
+          .select('id,name,group_id,status,due_date,publish_config,assignee')
+          .gte('due_date', firstDay)
+          .lte('due_date', lastDayStr);
+        tasks = res.data || [];
+      } else {
+        tasks = await _sbQuery('content_tasks', {
+          select: 'id,name,group_id,status,due_date,publish_config,assignee',
+          filters: ['due_date=gte.' + firstDay, 'due_date=lte.' + lastDayStr]
+        });
+      }
+
+      var groupToClient = await _ensureGroupToClient();
+      var todayStr = new Date().toISOString().slice(0, 10);
+
+      // Classify each task
+      var breakdown = { onTime: [], late: [], pending: [], failed: [], skipped: [] };
+      var byCompany = { Starken: { t: 0, p: 0 }, Alpha: { t: 0, p: 0 } };
+
+      tasks.forEach(function(t) {
+        var clientId = groupToClient[t.group_id];
+        var client = data.clients.find(function(c) { return c.id === clientId; });
+        var company = client ? client.company : null;
+
+        // Skip cancelled/archived/not-to-post
+        if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado') {
+          breakdown.skipped.push(t);
+          return;
+        }
+
+        if (company && byCompany[company]) byCompany[company].t++;
+
+        var isFailed = (t.publish_config && t.publish_config.error) || t.status === 'failed';
+        if (isFailed) { breakdown.failed.push(t); return; }
+
+        if (t.status === 'publicado') {
+          breakdown.onTime.push(t);
+          if (company && byCompany[company]) byCompany[company].p++;
+          return;
+        }
+
+        // Due date passed but not published
+        if (t.due_date && t.due_date < todayStr) {
+          breakdown.late.push({ ...t, client_name: client ? client.name : '?', company: company });
+          return;
+        }
+
+        // Future or today — still pending
+        breakdown.pending.push(t);
+      });
+
+      // Score = published / (total - pending)
+      var totalDue = breakdown.onTime.length + breakdown.late.length + breakdown.failed.length;
+      var score = totalDue === 0 ? 100 : Math.round((breakdown.onTime.length / totalDue) * 100);
+
+      // Weekly trend (last 4 weeks)
+      var weekly = [];
+      for (var w = 3; w >= 0; w--) {
+        var weekEnd = new Date(); weekEnd.setDate(weekEnd.getDate() - (w * 7));
+        var weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
+        var wsStr = weekStart.toISOString().slice(0, 10);
+        var weStr = weekEnd.toISOString().slice(0, 10);
+        var wkTasks = tasks.filter(function(t) { return t.due_date >= wsStr && t.due_date <= weStr && t.status !== 'cancelado' && t.status !== 'arquivado' && t.status !== 'nao-publicado'; });
+        var wkPub = wkTasks.filter(function(t) { return t.status === 'publicado'; }).length;
+        var wkDue = wkTasks.filter(function(t) { var late = t.due_date < todayStr && t.status !== 'publicado'; return t.status === 'publicado' || late || (t.publish_config && t.publish_config.error); }).length;
+        var wkScore = wkDue === 0 ? null : Math.round((wkPub / wkDue) * 100);
+        weekly.push({ label: weStr.slice(5).split('-').reverse().join('/'), score: wkScore, pub: wkPub, due: wkDue });
+      }
+
+      cached = { score: score, breakdown: breakdown, byCompany: byCompany, weekly: weekly, totalMonth: tasks.length };
+      _opScoreCache[monthKey] = cached;
+    }
+
+    var score = cached.score;
+    var bd = cached.breakdown;
+    var wk = cached.weekly;
+    var bc = cached.byCompany;
+
+    // Score color
+    var scoreColor = score >= 85 ? '#10b981' : score >= 70 ? '#f59e0b' : '#ef4444';
+    var scoreLabel = score >= 85 ? 'Excelente' : score >= 70 ? 'Atenção' : 'Crítico';
+    var scoreEmoji = score >= 85 ? '🚀' : score >= 70 ? '⚠️' : '🚨';
+
+    // Projection
+    var now = new Date();
+    var dayOfMonth = now.getDate();
+    var totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    var projTotal = dayOfMonth > 0 ? Math.round((bd.onTime.length / dayOfMonth) * totalDays) : 0;
+    if (projEl) projEl.innerHTML = projTotal > 0 ? ('📈 Projeção mês: <b style="color:var(--text)">' + projTotal + '</b> posts publicados') : '';
+
+    // Main layout: big score + 4 mini cards + weekly trend
+    var h = '<div style="display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start">';
+
+    // Big score card (left)
+    h += '<div style="display:flex;flex-direction:column;align-items:center;padding:20px;border-radius:12px;background:linear-gradient(135deg,' + scoreColor + '15,' + scoreColor + '05);border:2px solid ' + scoreColor + '40">';
+    h += '<div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Score do Mês</div>';
+    h += '<div style="font-size:3.2rem;font-weight:800;color:' + scoreColor + ';line-height:1;font-family:system-ui,-apple-system">' + score + '<span style="font-size:1.5rem;font-weight:600">%</span></div>';
+    h += '<div style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;padding:4px 12px;border-radius:20px;background:' + scoreColor + ';color:white;font-size:0.75rem;font-weight:700">' + scoreEmoji + ' ' + scoreLabel + '</div>';
+    // Split by company
+    if (bc.Starken.t > 0 || bc.Alpha.t > 0) {
+      h += '<div style="margin-top:14px;width:100%;display:flex;flex-direction:column;gap:4px;font-size:0.7rem">';
+      if (bc.Starken.t > 0) {
+        var sPct = Math.round((bc.Starken.p / bc.Starken.t) * 100);
+        h += '<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Starken</span><b>' + bc.Starken.p + '/' + bc.Starken.t + ' · ' + sPct + '%</b></div>';
+      }
+      if (bc.Alpha.t > 0) {
+        var aPct = Math.round((bc.Alpha.p / bc.Alpha.t) * 100);
+        h += '<div style="display:flex;justify-content:space-between"><span style="color:var(--text-muted)">Alpha</span><b>' + bc.Alpha.p + '/' + bc.Alpha.t + ' · ' + aPct + '%</b></div>';
+      }
+      h += '</div>';
+    }
+    h += '</div>';
+
+    // Right side: 4 mini cards + weekly bars
+    h += '<div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+    var miniCards = [
+      { label: 'No Prazo', icon: '✅', count: bd.onTime.length, color: '#10b981', bg: '#dcfce7', drill: 'onTime' },
+      { label: 'Atrasado', icon: '⚠️', count: bd.late.length, color: '#f59e0b', bg: '#fef3c7', drill: 'late' },
+      { label: 'Pendente', icon: '📅', count: bd.pending.length, color: '#3b82f6', bg: '#dbeafe', drill: 'pending' },
+      { label: 'Falhou', icon: '❌', count: bd.failed.length, color: '#ef4444', bg: '#fee2e2', drill: 'failed' },
+    ];
+    miniCards.forEach(function(mc) {
+      h += '<div onclick="dashOpDrilldown(\'' + mc.drill + '\',\'' + monthKey + '\')" style="cursor:pointer;padding:12px;border-radius:10px;background:' + mc.bg + ';border:1px solid ' + mc.color + '30;transition:transform 0.15s" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'translateY(0)\'">';
+      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:1.1rem">' + mc.icon + '</span><span style="font-size:0.72rem;font-weight:700;color:' + mc.color + ';text-transform:uppercase">' + mc.label + '</span></div>';
+      h += '<div style="font-size:1.6rem;font-weight:800;color:' + mc.color + ';line-height:1">' + mc.count + '</div>';
+      h += '</div>';
+    });
+    h += '</div>';
+
+    // Weekly trend bars
+    h += '<div style="padding:12px;border-radius:10px;background:var(--bg-card,rgba(0,0,0,0.02));border:1px solid var(--border)">';
+    h += '<div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px">Tendência (últimas 4 semanas)</div>';
+    h += '<div style="display:flex;align-items:flex-end;gap:10px;height:70px">';
+    wk.forEach(function(w) {
+      var barH = w.score === null ? 5 : Math.max(5, w.score * 0.6);
+      var barColor = w.score === null ? '#d1d5db' : w.score >= 85 ? '#10b981' : w.score >= 70 ? '#f59e0b' : '#ef4444';
+      h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">';
+      h += '<div style="font-size:0.7rem;font-weight:700;color:' + barColor + '">' + (w.score === null ? '—' : w.score + '%') + '</div>';
+      h += '<div style="width:100%;height:' + barH + 'px;background:' + barColor + ';border-radius:4px 4px 0 0;min-height:5px"></div>';
+      h += '<div style="font-size:0.65rem;color:var(--text-muted)">' + w.label + '</div>';
+      h += '</div>';
+    });
+    h += '</div></div>';
+
+    h += '</div>'; // end right
+    h += '</div>'; // end grid
+
+    el.innerHTML = h;
+  } catch(e) {
+    console.warn('renderOperationalScore error:', e);
+    el.innerHTML = '<p style="color:#ef4444;font-size:0.85rem">Erro ao calcular score: ' + e.message + '</p>';
+  }
+}
+
+// Drilldown modal
+function dashOpDrilldown(type, monthKey) {
+  var cached = _opScoreCache[monthKey];
+  if (!cached) return;
+  var list = cached.breakdown[type] || [];
+  var titles = { onTime: '✅ Publicados no prazo', late: '⚠️ Atrasados (venceu e não publicou)', pending: '📅 Pendentes (ainda no prazo)', failed: '❌ Com falha' };
+  var colors = { onTime: '#10b981', late: '#f59e0b', pending: '#3b82f6', failed: '#ef4444' };
+
+  var groupToClient = _groupToClientCache || {};
+  var h = '<div id="dashOpModal" onclick="if(event.target===this)document.getElementById(\'dashOpModal\').remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px">';
+  h += '<div style="background:var(--bg-card,#fff);color:var(--text);border-radius:14px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)">';
+  h += '<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
+  h += '<div style="font-size:1.05rem;font-weight:700;color:' + colors[type] + '">' + titles[type] + ' <span style="color:var(--text-muted);font-weight:500">(' + list.length + ')</span></div>';
+  h += '<button onclick="document.getElementById(\'dashOpModal\').remove()" style="background:transparent;border:0;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">×</button>';
+  h += '</div>';
+  h += '<div style="padding:12px 20px;overflow-y:auto;flex:1">';
+  if (list.length === 0) {
+    h += '<p style="text-align:center;color:var(--text-muted);padding:30px">Nenhum item.</p>';
+  } else {
+    list.forEach(function(t) {
+      var clientId = groupToClient[t.group_id];
+      var client = data.clients.find(function(c) { return c.id === clientId; });
+      var dueDate = t.due_date ? t.due_date.split('-').reverse().slice(0,2).join('/') : '—';
+      h += '<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">';
+      h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">';
+      h += '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.name || '(sem nome)') + '</div>';
+      h += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">' + (client ? esc(client.name) : '?') + ' · ' + esc(t.status) + ' · ' + (t.assignee ? esc(t.assignee) : '—') + '</div></div>';
+      h += '<div style="font-size:0.8rem;font-weight:600;color:' + colors[type] + '">' + dueDate + '</div>';
+      h += '</div></div>';
+    });
+  }
+  h += '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', h);
+}
+
+// Refresh button — clears caches and re-renders everything
+async function dashRefreshAll() {
+  var btn = document.getElementById('dashRefreshBtn');
+  var icon = document.getElementById('dashRefreshIcon');
+  if (btn) btn.disabled = true;
+  if (icon) { icon.textContent = '⏳'; icon.style.animation = 'spin 1s linear infinite'; }
+  try {
+    _contentProgressCache = {};
+    _dashWeekPostsCache = {};
+    _opScoreCache = {};
+    _groupToClientCache = null;
+    if (typeof loadCronogramaStatus === 'function') await loadCronogramaStatus();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (icon) icon.textContent = '✅';
+    setTimeout(function() { if (icon) { icon.textContent = '🔄'; icon.style.animation = ''; } if (btn) btn.disabled = false; }, 1000);
+  } catch(e) {
+    console.warn('dashRefreshAll error:', e);
+    if (icon) icon.textContent = '⚠️';
+    if (btn) btn.disabled = false;
+  }
 }
 
 function renderProgress(containerId, periodKey, active) {
