@@ -5779,6 +5779,20 @@ function initSupabase() {
   }
 }
 
+// Direct Supabase REST fallback (works even when supabase-js client fails to init)
+const _SB_REST_BASE = SUPABASE_URL + '/rest/v1';
+const _SB_REST_HDRS = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
+
+async function _sbQuery(table, { select='*', filters=[], order=null, limit=null } = {}) {
+  let url = _SB_REST_BASE + '/' + table + '?select=' + encodeURIComponent(select);
+  filters.forEach(function(f) { url += '&' + f; });
+  if (order) url += '&order=' + order;
+  if (limit) url += '&limit=' + limit;
+  const res = await fetch(url, { headers: _SB_REST_HDRS });
+  if (!res.ok) { const txt = await res.text(); throw new Error('Supabase REST ' + res.status + ': ' + txt.slice(0, 120)); }
+  return res.json();
+}
+
 function setSyncStatus(status) {
   const el = document.getElementById('syncStatus');
   if (!el) return;
@@ -8145,10 +8159,15 @@ var _groupToClientCache = null;
 
 async function _ensureGroupToClient() {
   if (_groupToClientCache) return _groupToClientCache;
-  if (!_supabase) return {};
-  var gRes = await _supabase.from('content_groups').select('id,client_id');
+  var rows;
+  if (_supabase) {
+    var gRes = await _supabase.from('content_groups').select('id,client_id');
+    rows = gRes.data || [];
+  } else {
+    rows = await _sbQuery('content_groups', { select: 'id,client_id' });
+  }
   _groupToClientCache = {};
-  (gRes.data || []).forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
+  rows.forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
   return _groupToClientCache;
 }
 
@@ -8166,8 +8185,6 @@ async function renderContentProgress(containerId, periodKey, active, mode) {
     _renderContentProgressUI(el, _contentProgressCache[periodKey], active);
     return;
   }
-
-  if (!_supabase) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Supabase não disponível</p>'; return; }
 
   try {
     // Determine date range
@@ -8198,11 +8215,19 @@ async function renderContentProgress(containerId, periodKey, active, mode) {
     }
 
     // Query content_tasks within date range
-    var res = await _supabase.from('content_tasks')
-      .select('group_id,status,due_date,publish_config')
-      .gte('due_date', startDate)
-      .lte('due_date', endDate);
-    var tasks = res.data || [];
+    var tasks;
+    if (_supabase) {
+      var res = await _supabase.from('content_tasks')
+        .select('group_id,status,due_date,publish_config')
+        .gte('due_date', startDate)
+        .lte('due_date', endDate);
+      tasks = res.data || [];
+    } else {
+      tasks = await _sbQuery('content_tasks', {
+        select: 'group_id,status,due_date,publish_config',
+        filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate]
+      });
+    }
 
     // Get group → client mapping (cached)
     var groupToClient = await _ensureGroupToClient();
@@ -8461,15 +8486,22 @@ async function renderDashWeekPosts(weekKey) {
   }
 
   try {
-    if (!_supabase) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Supabase não disponível</p>'; return; }
-
     // Query content_tasks with publish_config for this week range
-    var res = await _supabase.from('content_tasks')
-      .select('group_id,name,status,due_date,publish_config,assignee,priority')
-      .gte('due_date', startDate)
-      .lte('due_date', endDate)
-      .order('due_date', { ascending: true });
-    var tasks = res.data || [];
+    var tasks;
+    if (_supabase) {
+      var res = await _supabase.from('content_tasks')
+        .select('group_id,name,status,due_date,publish_config,assignee,priority')
+        .gte('due_date', startDate)
+        .lte('due_date', endDate)
+        .order('due_date', { ascending: true });
+      tasks = res.data || [];
+    } else {
+      tasks = await _sbQuery('content_tasks', {
+        select: 'group_id,name,status,due_date,publish_config,assignee,priority',
+        filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate],
+        order: 'due_date.asc'
+      });
+    }
 
     // Get group → client mapping (cached)
     var groupToClient = await _ensureGroupToClient();
@@ -23475,27 +23507,35 @@ async function mtInit() {
 
     // Load recent agendado/publicado tasks (last 7 days)
     mtRecentTasks = [];
+    var sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    var sinceDate = sevenDaysAgo.toISOString().slice(0, 10);
+    var recentRaw;
     if (_supabase) {
-      var sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      var sinceDate = sevenDaysAgo.toISOString().slice(0, 10);
       var recentRes = await _supabase.from('content_tasks')
         .select('*,content_groups!inner(id,name,client_id)')
         .in('status', ['agendado', 'publicado'])
         .gte('due_date', sinceDate)
         .order('due_date', { ascending: false })
         .limit(50);
-      var recentRaw = recentRes.data || [];
-      mtRecentTasks = recentRaw.map(function(t) {
-        return {
-          ...t,
-          group_name: t.content_groups?.name || '',
-          client_id: t.content_groups?.client_id || '',
-          group_id: t.content_groups?.id || t.group_id,
-          content_groups: undefined,
-        };
+      recentRaw = recentRes.data || [];
+    } else {
+      recentRaw = await _sbQuery('content_tasks', {
+        select: '*,content_groups!inner(id,name,client_id)',
+        filters: ['status=in.(agendado,publicado)', 'due_date=gte.' + sinceDate],
+        order: 'due_date.desc',
+        limit: 50
       });
     }
+    mtRecentTasks = recentRaw.map(function(t) {
+      return {
+        ...t,
+        group_name: t.content_groups?.name || '',
+        client_id: t.content_groups?.client_id || '',
+        group_id: t.content_groups?.id || t.group_id,
+        content_groups: undefined,
+      };
+    });
 
     mtRender();
   } catch (e) {
