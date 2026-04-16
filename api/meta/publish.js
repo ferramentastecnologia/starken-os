@@ -22,6 +22,14 @@ function supabaseHeaders() {
   return { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
 }
 
+// Encodes image URLs for publish_history: single URL stays as string,
+// multiple URLs (carousel) stored as JSON array string for full recovery on retry.
+function encodeImageUrl(urls) {
+  if (!urls || urls.length === 0) return null;
+  if (urls.length === 1) return urls[0];
+  return JSON.stringify(urls);
+}
+
 // ─── Queue helpers ───
 async function saveToQueue(record) {
   const url = SUPABASE_URL();
@@ -219,7 +227,7 @@ async function processPublishQueue() {
         post_id: publishedId,
         caption: item.caption || '',
         has_image: imageUrls.length > 0,
-        image_url: imageUrls[0] || null,
+        image_url: encodeImageUrl(imageUrls),
         scheduled_for: item.scheduled_for,
         published_at: publishedAt,
       });
@@ -314,7 +322,7 @@ async function processPublishQueue() {
         status: 'FAILED',
         caption: item.caption || '',
         has_image: (item.image_urls || []).length > 0,
-        image_url: (item.image_urls || [])[0] || null,
+        image_url: encodeImageUrl(item.image_urls || []),
         scheduled_for: item.scheduled_for,
         error_message: errorDetail,
       });
@@ -488,7 +496,7 @@ module.exports = async function handler(req, res) {
         user_name: user_name || 'Sistema', client_key, client_name: client_name || client_key,
         platform, status: 'SCHEDULED', post_id: queued.id,
         caption: caption || '', has_image: (image_urls || []).length > 0,
-        image_url: (image_urls || [])[0] || null,
+        image_url: encodeImageUrl(image_urls || []),
         scheduled_for, ...(task_id && { task_id }),
       });
 
@@ -647,7 +655,7 @@ module.exports = async function handler(req, res) {
         post_id: publishedId,
         caption: caption || '',
         has_image: true,
-        image_url: image_url || video_url || (image_urls[0] || null),
+        image_url: encodeImageUrl(image_urls && image_urls.length ? image_urls : (image_url || video_url ? [image_url || video_url] : [])),
         ...(task_id && { task_id }),
       });
 
@@ -869,7 +877,7 @@ module.exports = async function handler(req, res) {
         post_id: result.post_id,
         caption: caption || '',
         has_image: result.has_image || !!video_url,
-        image_url: image_url || video_url || fbImgUrls[0] || null,
+        image_url: encodeImageUrl(fbImgUrls.length ? fbImgUrls : (image_url || video_url ? [image_url || video_url] : [])),
         scheduled_for: result.scheduled_for || null,
         ...(task_id && { task_id }),
       });
