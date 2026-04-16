@@ -23903,6 +23903,7 @@ function mtRenderRow(task, mode) {
         + '📱 Enviar WA</button></div>';
     }
   }
+  var colStyle = 'grid-template-columns:' + _mtGetColWidths(mode).join(' ') + ';';
   let html = '<div class="mt-row ' + mode + '" style="' + colStyle + rowStyle + '" onclick="ctOpenModal(\'' + task.id + '\')">';
 
   if (mode === 'by-list') {
