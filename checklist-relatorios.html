@@ -6901,7 +6901,7 @@ function pubHistoryRender() {
         _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null, imageUrls: parsedUrls };
         var mediaInfo = parsedUrls.length > 1 ? ' · 🖼️ ' + parsedUrls.length + ' imgs' : (parsedUrls.length === 1 ? ' · 🖼️ 1 img' : '');
         html += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'
-          + '<button onclick="event.stopPropagation();pubHistRetry(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
+          + '<button id="pubHistRetryBtn_' + h.id + '" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
           + '<button onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #1d4ed8;border-radius:6px;background:transparent;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">📅 Reagendar</button>'
           + (mediaInfo ? '<span style="font-size:0.65rem;color:var(--text-secondary)">' + mediaInfo + '</span>' : '')
           + '</div>';
@@ -6942,6 +6942,73 @@ function pubHistRetry(histId) {
   var d = _pubHistPostData[histId];
   if (!d) return;
   pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'now', null, d.imageUrls || []);
+}
+
+// ── Republicar direto com 1 click (sem navegar para outra aba) ──
+async function pubHistRetryDirect(histId) {
+  var d = _pubHistPostData[histId];
+  if (!d) return;
+
+  var btn = document.getElementById('pubHistRetryBtn_' + histId);
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Publicando...'; btn.style.background = '#6b7280'; }
+
+  var imageUrls = (d.imageUrls && d.imageUrls.length) ? d.imageUrls : (d.imageUrl ? [d.imageUrl] : []);
+  var plat = (d.platform || 'fb').trim();
+  var userName = (gpState.user ? gpState.user.name : 'Sistema');
+
+  try {
+    var data;
+
+    if (plat === 'ig') {
+      // IG via fila imediata (evita timeout do Vercel; mesmo caminho do original)
+      var qRes = await fetch(metaApiBase() + '/api/meta/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'queue',
+          client_key: d.clientKey,
+          platform: 'ig',
+          caption: d.caption,
+          image_urls: imageUrls,
+          scheduled_for: new Date().toISOString(),
+          user_name: userName,
+        }),
+      });
+      data = await qRes.json();
+      if (!data.error) {
+        // Dispara o processador de fila imediatamente
+        fetch(metaApiBase() + '/api/meta/publish?cron=process').catch(function() {});
+      }
+    } else {
+      // FB: publicação direta
+      var body = { destination: 'fb', client: d.clientKey, caption: d.caption, user: userName };
+      if (imageUrls.length > 1)      { body.image_urls = imageUrls; body.type = 'carousel'; }
+      else if (imageUrls.length === 1) { body.image_url = imageUrls[0]; }
+
+      var res = await fetch(metaApiBase() + '/api/meta/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      data = await res.json();
+    }
+
+    if (data && data.error) {
+      if (btn) { btn.disabled = false; btn.innerHTML = '↺ Tentar agora'; btn.style.background = '#dc2626'; }
+      showToast('❌ ' + (data.message || 'Falha ao republicar'));
+    } else if (plat === 'ig') {
+      if (btn) { btn.innerHTML = '📅 Na fila...'; btn.style.background = '#1d4ed8'; }
+      showToast('📅 Instagram adicionado à fila — publicando em instantes...');
+      setTimeout(pubHistoryRefresh, 7000);
+    } else {
+      if (btn) { btn.innerHTML = '✅ Publicado!'; btn.style.background = '#059669'; }
+      showToast('✅ Publicado no Facebook com sucesso!');
+      setTimeout(pubHistoryRefresh, 2500);
+    }
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '↺ Tentar agora'; btn.style.background = '#dc2626'; }
+    showToast('❌ Erro: ' + err.message);
+  }
 }
 
 // ── Reagendar: abre mini-modal de data/hora ──
