@@ -5130,6 +5130,41 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div><!-- end #tab-system-logs -->
 
+      <!-- ═══ PUB HISTORY TAB ═══ -->
+      <div id="tab-pub-history" class="tab-content">
+        <div style="padding:20px">
+          <!-- Header & Filtros -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+            <h2 style="font-size:1.1rem;font-weight:700;margin:0">📋 Publicações &amp; Agendamentos</h2>
+            <button id="pubHistRefreshBtn" onclick="pubHistoryRefresh()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600">🔄 Atualizar</button>
+            <div style="flex:1"></div>
+            <select id="pubHistDateFilter" onchange="pubHistoryRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="1">📅 Hoje</option>
+              <option value="7">📅 Últimos 7 dias</option>
+              <option value="30" selected>📅 Últimos 30 dias</option>
+              <option value="all">📋 Todos</option>
+            </select>
+            <select id="pubHistStatusFilter" onchange="pubHistoryRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="all">📋 Todos os status</option>
+              <option value="PUBLISHED">✅ Publicados</option>
+              <option value="SCHEDULED">📅 Agendados</option>
+              <option value="FAILED">❌ Falhas</option>
+            </select>
+            <select id="pubHistPlatformFilter" onchange="pubHistoryRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
+              <option value="">📡 Todas plataformas</option>
+              <option value="fb">📘 Facebook</option>
+              <option value="ig">📷 Instagram</option>
+            </select>
+          </div>
+          <!-- Resumo -->
+          <div id="pubHistSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px"></div>
+          <!-- Cards por cliente -->
+          <div id="pubHistList">
+            <div style="text-align:center;padding:60px;color:var(--text-secondary)">⏳ Carregando...</div>
+          </div>
+        </div>
+      </div><!-- end #tab-pub-history -->
+
     </div>
   </div>
 </div>
@@ -6092,6 +6127,7 @@ let SIDEBAR_MENU = [
     { type: 'item', id: 'meta-balance', label: 'Saldo Contas', icon: '💰', tab: 'meta-balance' },
     { type: 'item', id: 'meta-bi', label: 'BI Campanhas', icon: '📊', tab: 'meta-bi' },
     { type: 'item', id: 'meta-publish', label: 'Agendamento', icon: '📤', tab: 'meta-publish' },
+    { type: 'item', id: 'pub-history', label: 'Publicações', icon: '📋', tab: 'pub-history' },
   ]},
   { type: 'category', id: 'cat-trafego', label: 'Gestão de Tráfego', items: [
     { type: 'item', id: 'traffic', label: 'Campanhas', icon: '📣', tab: 'traffic' },
@@ -6685,6 +6721,181 @@ function sysLogCard(label, count, color, bg, border) {
     + '</div>';
 }
 
+// ═══════════════════════════════════════════════════════
+// PUB HISTORY MODULE — Publicações & Agendamentos por cliente
+// ═══════════════════════════════════════════════════════
+var _pubHistExpanded = {};
+var _pubHistLoaded = false;
+
+async function pubHistoryRefresh() {
+  _pubHistLoaded = false;
+  var listEl = document.getElementById('pubHistList');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">⏳ Carregando...</div>';
+  var btn = document.getElementById('pubHistRefreshBtn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Carregando...'; }
+
+  try {
+    var res = await fetch(metaApiBase() + '/api/meta/publish?limit=500');
+    var payload = await res.json();
+    _sysLogs = payload.history || [];
+    _pubHistLoaded = true;
+  } catch(e) {
+    console.warn('pubHistoryRefresh error', e);
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = '🔄 Atualizar'; }
+  pubHistoryRender();
+}
+
+function pubHistoryRender() {
+  var daysVal     = (document.getElementById('pubHistDateFilter')     || {}).value || '30';
+  var statusVal   = (document.getElementById('pubHistStatusFilter')   || {}).value || 'all';
+  var platformVal = (document.getElementById('pubHistPlatformFilter') || {}).value || '';
+
+  var now = new Date();
+  var cutoff = daysVal !== 'all' ? new Date(now - parseInt(daysVal) * 24 * 60 * 60 * 1000) : null;
+
+  var filtered = (_sysLogs || []).filter(function(h) {
+    if (statusVal !== 'all' && h.status !== statusVal) return false;
+    if (platformVal && h.platform !== platformVal) return false;
+    if (cutoff) {
+      var ref = h.published_at || h.scheduled_for || h.created_at;
+      if (!ref || new Date(ref) < cutoff) return false;
+    }
+    return true;
+  });
+
+  // Resumo
+  var published = filtered.filter(function(h) { return h.status === 'PUBLISHED'; }).length;
+  var scheduled = filtered.filter(function(h) { return h.status === 'SCHEDULED'; }).length;
+  var failed    = filtered.filter(function(h) { return h.status === 'FAILED'; }).length;
+
+  var summaryEl = document.getElementById('pubHistSummary');
+  if (summaryEl) {
+    summaryEl.innerHTML =
+      sysLogCard('✅ Publicados', published, '#059669', '#ecfdf5', '#a7f3d0') +
+      sysLogCard('📅 Agendados',  scheduled, '#1d4ed8', '#eff6ff', '#bfdbfe') +
+      sysLogCard('❌ Falhas',     failed,    '#dc2626', '#fef2f2', '#fecaca') +
+      sysLogCard('📊 Total',      filtered.length, '#6b7280', '#f3f4f6', '#d1d5db');
+  }
+
+  // Agrupar por cliente
+  var clientMap = {};
+  filtered.forEach(function(h) {
+    var key = h.client_key || h.client_name || 'desconhecido';
+    if (!clientMap[key]) {
+      clientMap[key] = { key: key, name: h.client_name || key, posts: [], published: 0, scheduled: 0, failed: 0, lastAt: null };
+    }
+    var c = clientMap[key];
+    c.posts.push(h);
+    if (h.status === 'PUBLISHED') c.published++;
+    else if (h.status === 'SCHEDULED') c.scheduled++;
+    else if (h.status === 'FAILED') c.failed++;
+    var d = new Date(h.published_at || h.scheduled_for || h.created_at || 0);
+    if (!c.lastAt || d > c.lastAt) c.lastAt = d;
+  });
+
+  // Ordenar: clientes com falhas primeiro, depois por atividade mais recente
+  var sorted = Object.values(clientMap).sort(function(a, b) {
+    if (a.failed > 0 && b.failed === 0) return -1;
+    if (b.failed > 0 && a.failed === 0) return 1;
+    return (b.lastAt || 0) - (a.lastAt || 0);
+  });
+
+  var listEl = document.getElementById('pubHistList');
+  if (!listEl) return;
+
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary)"><div style="font-size:2.5rem;margin-bottom:10px">📭</div><p style="font-weight:600;margin:0">Nenhuma publicação encontrada</p><p style="font-size:0.82rem;margin:4px 0 0">Ajuste os filtros ou clique em Atualizar</p></div>';
+    return;
+  }
+
+  var html = '';
+
+  sorted.forEach(function(client) {
+    var safeId = pubHistSafeId(client.key);
+    var isExpanded = !!_pubHistExpanded[safeId];
+    var hasFailed = client.failed > 0;
+
+    client.posts.sort(function(a, b) {
+      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+
+    html += '<div style="border:1px solid ' + (hasFailed ? '#fecaca' : 'var(--border)') + ';border-radius:12px;overflow:hidden;margin-bottom:10px">';
+
+    // Header clicável
+    html += '<div onclick="pubHistToggle(\'' + safeId.replace(/'/g, "\\'") + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:' + (hasFailed ? '#fef2f2' : 'var(--card)') + ';user-select:none">';
+    html += '<div style="flex:1">';
+    html += '<div style="font-weight:700;font-size:0.88rem;color:var(--text)">' + esc(client.name) + '</div>';
+    html += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">';
+    if (client.published > 0) html += '<span style="font-size:0.68rem;padding:1px 8px;border-radius:20px;background:#ecfdf5;color:#059669;font-weight:700">✅ ' + client.published + ' publicado' + (client.published !== 1 ? 's' : '') + '</span>';
+    if (client.scheduled > 0) html += '<span style="font-size:0.68rem;padding:1px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;font-weight:700">📅 ' + client.scheduled + ' agendado' + (client.scheduled !== 1 ? 's' : '') + '</span>';
+    if (client.failed > 0)    html += '<span style="font-size:0.68rem;padding:1px 8px;border-radius:20px;background:#fef2f2;color:#dc2626;font-weight:700">❌ ' + client.failed + ' falha' + (client.failed !== 1 ? 's' : '') + '</span>';
+    html += '</div></div>';
+    html += '<span data-arrow="' + safeId + '" style="color:var(--text-secondary);font-size:0.75rem;display:inline-block;transform:rotate(' + (isExpanded ? '0' : '180') + 'deg);transition:transform 0.2s">▲</span>';
+    html += '</div>';
+
+    // Lista de posts
+    html += '<div id="pubHistClient_' + safeId + '" style="display:' + (isExpanded ? 'block' : 'none') + '">';
+
+    client.posts.forEach(function(h) {
+      var stMap = {
+        'PUBLISHED': { bg: 'var(--card)', color: '#059669', icon: '✅', label: 'Publicado' },
+        'SCHEDULED': { bg: 'var(--card)', color: '#1d4ed8', icon: '📅', label: 'Agendado' },
+        'FAILED':    { bg: '#fef2f2',    color: '#dc2626', icon: '❌', label: 'Falhou' },
+        'DELETED':   { bg: 'var(--card)', color: '#6b7280', icon: '🚫', label: 'Cancelado' }
+      };
+      var st = stMap[h.status] || { bg: 'var(--card)', color: '#6b7280', icon: '❓', label: h.status };
+      var platIcon = h.platform === 'ig' ? '📷' : '📘';
+      var platName = h.platform === 'ig' ? 'Instagram' : 'Facebook';
+
+      var dateStr  = h.created_at    ? new Date(h.created_at).toLocaleString('pt-BR',    { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      var schedStr = h.scheduled_for ? new Date(h.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+      var pubStr   = h.published_at  ? new Date(h.published_at).toLocaleString('pt-BR',  { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+
+      html += '<div style="display:flex;gap:10px;padding:9px 16px;border-top:1px solid var(--border);background:' + st.bg + '">';
+      html += '<div style="font-size:0.95rem;padding-top:1px">' + st.icon + '</div>';
+      html += '<div style="flex:1;min-width:0">';
+      html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+      html += '<span style="font-size:0.72rem;color:var(--text-secondary)">' + platIcon + ' ' + platName + '</span>';
+      html += '<span style="font-size:0.68rem;padding:1px 7px;border-radius:4px;background:' + st.color + '20;color:' + st.color + ';font-weight:700">' + st.label + '</span>';
+      html += '</div>';
+
+      if (h.caption) {
+        html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc((h.caption || '').substring(0, 140)) + '</div>';
+      }
+      if (h.error_message) {
+        html += '<div style="font-size:0.71rem;color:#dc2626;margin-top:4px;padding:4px 8px;border-radius:5px;border:1px solid #fecaca;word-break:break-word">🐛 ' + esc(h.error_message) + '</div>';
+      }
+
+      html += '<div style="display:flex;gap:10px;margin-top:3px;font-size:0.67rem;color:var(--text-secondary);flex-wrap:wrap">';
+      if (dateStr)  html += '<span>🕐 ' + dateStr + '</span>';
+      if (schedStr) html += '<span>📅 Ag: ' + schedStr + '</span>';
+      if (pubStr)   html += '<span style="color:#059669;font-weight:600">✅ Pub: ' + pubStr + '</span>';
+      if (h.user_name) html += '<span>👤 ' + esc(sysLogParseUser(h.user_name)) + '</span>';
+      html += '</div>';
+
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  listEl.innerHTML = html;
+}
+
+function pubHistToggle(safeId) {
+  _pubHistExpanded[safeId] = !_pubHistExpanded[safeId];
+  var el = document.getElementById('pubHistClient_' + safeId);
+  if (el) el.style.display = _pubHistExpanded[safeId] ? 'block' : 'none';
+  var arrow = document.querySelector('[data-arrow="' + safeId + '"]');
+  if (arrow) arrow.style.transform = 'rotate(' + (_pubHistExpanded[safeId] ? '0' : '180') + 'deg)';
+}
+
+function pubHistSafeId(key) {
+  return (key || 'x').replace(/[^a-zA-Z0-9]/g, '_');
+}
+
 const TAB_TITLES = {
   gestao:        'Gestão de Projetos',
   dashboard:     'Dashboard',
@@ -6705,7 +6916,8 @@ const TAB_TITLES = {
   'client-info':       'Info do Cliente',
   'minhas-tasks':      'Minhas Tasks',
   'traffic':           'Gestão de Tráfego',
-  'system-logs':       'Logs do Sistema'
+  'system-logs':       'Logs do Sistema',
+  'pub-history':       'Publicações & Agendamentos'
 };
 
 function switchTab(tabName) {
@@ -6747,6 +6959,7 @@ function switchTab(tabName) {
     calInit();
   }
   else if (tabName === 'system-logs') sysLogsInit();
+  else if (tabName === 'pub-history') { if (!_pubHistLoaded || !_sysLogs.length) pubHistoryRefresh(); else pubHistoryRender(); }
   else if (tabName === 'client-hub') { /* hubOpen() handles init */ }
   else if (tabName === 'dashboard') renderDashboard();
   else renderAll();
