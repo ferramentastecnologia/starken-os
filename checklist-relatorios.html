@@ -8604,8 +8604,8 @@ function _renderDashWeekPostsUI(el, cacheData, startDate, endDate) {
   h += '<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Total: ' + totalPosts + '</span>';
   h += '</div>';
 
-  // Get sorted day keys
-  var days = Object.keys(dayData).filter(function(d) { return d !== 'sem-data'; }).sort();
+  // Get sorted day keys — most recent first
+  var days = Object.keys(dayData).filter(function(d) { return d !== 'sem-data'; }).sort().reverse();
   if (dayData['sem-data']) days.push('sem-data');
 
   if (days.length === 0) {
@@ -22783,10 +22783,15 @@ window.switchTab = (function(orig) {
 var _cronogramaStatusCache = {}; // { "clientId_periodKey": { status, pdf_url, pdf_name, generated_at } }
 
 async function loadCronogramaStatus() {
-  if (!_supabase) return;
   try {
-    var { data: rows, error } = await _supabase.from('cronograma_status').select('*').limit(500);
-    if (error) { console.warn('cronograma_status load error:', error); return; }
+    var rows;
+    if (_supabase) {
+      var { data, error } = await _supabase.from('cronograma_status').select('*').limit(500);
+      if (error) { console.warn('cronograma_status load error:', error); return; }
+      rows = data || [];
+    } else {
+      rows = await _sbQuery('cronograma_status', { limit: 500 });
+    }
     _cronogramaStatusCache = {};
     (rows || []).forEach(function(r) {
       // Key by client_id + period_key (used by getCronogramaStatus lookup)
