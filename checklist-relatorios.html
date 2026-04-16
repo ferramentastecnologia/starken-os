@@ -6900,9 +6900,10 @@ function pubHistoryRender() {
         var parsedUrls = pubHistParseImageUrls(h.image_url);
         _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null, imageUrls: parsedUrls, taskId: h.task_id || null };
         var mediaInfo = parsedUrls.length > 1 ? ' · 🖼️ ' + parsedUrls.length + ' imgs' : (parsedUrls.length === 1 ? ' · 🖼️ 1 img' : '');
-        html += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'
+        html += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap">'
           + '<button id="pubHistRetryBtn_' + h.id + '" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
           + '<button onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #1d4ed8;border-radius:6px;background:transparent;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">📅 Reagendar</button>'
+          + '<button id="pubHistMarkPubBtn_' + h.id + '" onclick="event.stopPropagation();pubHistMarkPublished(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #059669;border-radius:6px;background:transparent;color:#059669;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">✅ Publicado manualmente</button>'
           + (mediaInfo ? '<span style="font-size:0.65rem;color:var(--text-secondary)">' + mediaInfo + '</span>' : '')
           + '</div>';
       }
@@ -7024,6 +7025,30 @@ async function pubHistRetryDirect(histId) {
   } catch (err) {
     if (btn) { btn.disabled = false; btn.innerHTML = '↺ Tentar agora'; btn.style.background = '#dc2626'; }
     showToast('❌ Erro: ' + err.message);
+  }
+}
+
+// ── Marcar como publicado manualmente (publicou fora do sistema) ──
+async function pubHistMarkPublished(histId) {
+  var btn = document.getElementById('pubHistMarkPubBtn_' + histId);
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳...'; }
+  try {
+    var res = await fetch(metaApiBase() + '/api/meta/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'mark_published',
+        history_id: histId,
+        user_name: gpState.user ? gpState.user.name + ' (manual)' : 'Manual',
+      }),
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.message);
+    showToast('✅ Marcado como publicado');
+    setTimeout(pubHistoryRefresh, 800);
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '✅ Publicado manualmente'; }
+    showToast('❌ Erro: ' + e.message);
   }
 }
 

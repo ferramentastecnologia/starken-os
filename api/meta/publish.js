@@ -476,6 +476,23 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: true, code: 'METHOD_NOT_ALLOWED', message: 'Use GET, POST ou DELETE' });
   }
 
+  // ─── MARK AS PUBLISHED: marcar entrada FAILED como publicado manualmente ───
+  if (req.body && req.body.action === 'mark_published') {
+    try {
+      const { history_id, user_name } = req.body;
+      if (!history_id) return res.status(400).json({ error: true, message: 'history_id é obrigatório' });
+      const url = SUPABASE_URL();
+      await fetch(`${url}/rest/v1/publish_history?id=eq.${history_id}`, {
+        method: 'PATCH',
+        headers: supabaseHeaders(),
+        body: JSON.stringify({ status: 'PUBLISHED', published_at: new Date().toISOString(), user_name: user_name || 'Manual' }),
+      });
+      return res.status(200).json({ ok: true });
+    } catch (err) {
+      return res.status(500).json({ error: true, message: err.message });
+    }
+  }
+
   // ─── QUEUE: Agendar para publicação futura ───
   if (req.body && req.body.action === 'queue') {
     try {
