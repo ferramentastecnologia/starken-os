@@ -15736,9 +15736,19 @@ async function ctRsUploadStory(file, dayTaskId, groupId) {
     var isVideo = /mp4|mov|avi|webm|mkv/.test(ext);
     var ts = Date.now();
     var storagePath = ctCurrentClient + '/recurring/' + dayTaskId + '_' + ts + '.' + ext;
-    var { data, error } = await _supabase.storage.from('client-hub-materials').upload(storagePath, file, { upsert: true });
-    if (error) throw error;
-    var publicUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + storagePath;
+    var uploadUrl = SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + storagePath;
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', uploadUrl, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status + ' ' + xhr.responseText.slice(0,100))); };
+      xhr.onerror = function() { reject(new Error('Erro de rede')); };
+      xhr.send(file);
+    });
+    var publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + storagePath;
 
     // Count existing stories for this day to set default time offset
     var existingCount = document.querySelectorAll('#rsGrid_' + dayTaskId + ' .rs-story-card').length;
@@ -17265,10 +17275,19 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
     // Upload thumbnail
     var thumbName = 'thumb_frame_' + Date.now() + '.jpg';
     var thumbPath = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + thumbName;
-    var upRes = await _supabase.storage.from('client-hub-materials').upload(thumbPath, blob, { contentType: 'image/jpeg', upsert: true });
-    if (upRes.error) throw new Error(upRes.error.message);
-
-    var thumbUrl = _supabase.storage.from('client-hub-materials').getPublicUrl(thumbPath).data.publicUrl;
+    var thumbUploadUrl = SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + thumbPath;
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', thumbUploadUrl, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', 'image/jpeg');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)); };
+      xhr.onerror = function() { reject(new Error('Erro de rede')); };
+      xhr.send(blob);
+    });
+    var thumbUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + thumbPath;
 
     // Save as attachment
     await ctApi('add_attachment', {
@@ -17701,9 +17720,18 @@ async function ctUploadMusicFileFmt(file) {
   statusEl.style.display = ''; statusEl.textContent = 'Enviando...'; statusEl.style.color = 'var(--text-secondary)';
   try {
     var path = 'music/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    var { error } = await _supabase.storage.from('client-hub-materials').upload(path, file, { upsert: true });
-    if (error) throw error;
-    var publicUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + path;
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + path, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)); };
+      xhr.onerror = function() { reject(new Error('Erro de rede')); };
+      xhr.send(file);
+    });
+    var publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + path;
     document.getElementById('ctMusicUrlFmt').value = publicUrl;
     statusEl.innerHTML = '✅ Enviado!'; statusEl.style.color = '#10b981';
     ctMusicTabFmt('url');
@@ -17833,10 +17861,19 @@ async function ctUseMusicVideoFmt() {
     var fileName = 'video_music_' + Date.now() + '.mp4';
     var path = 'content/' + ctSafeClientPath(ctCurrentClient) + '/' + fileName;
 
-    // Upload to Supabase
-    var { error } = await _supabase.storage.from('client-hub-materials').upload(path, videoBlob, { contentType: 'video/mp4', upsert: true });
-    if (error) throw error;
-    var publicUrl = 'https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/' + path;
+    // Upload to Supabase Storage (direct XHR — no supabase-js client needed)
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + path, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', 'video/mp4');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)); };
+      xhr.onerror = function() { reject(new Error('Erro de rede')); };
+      xhr.send(videoBlob);
+    });
+    var publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + path;
 
     // Delete old attachment and add new one
     if (videoAtt) {
@@ -17897,10 +17934,18 @@ async function ctUploadMusicFile(file) {
   statusEl.textContent = 'Enviando ' + file.name + '...';
 
   try {
-    var SUPABASE_URL = 'https://cpwpxckmuecejtkcobre.supabase.co';
     var path = 'music/' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    var { data, error } = await _supabase.storage.from('client-hub-materials').upload(path, file, { upsert: true });
-    if (error) throw error;
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + path, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)); };
+      xhr.onerror = function() { reject(new Error('Erro de rede')); };
+      xhr.send(file);
+    });
     var publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + path;
     document.getElementById('ctMusicUrl').value = publicUrl;
     statusEl.innerHTML = '✅ <b>' + file.name + '</b> enviado! URL preenchida automaticamente.';
@@ -18097,12 +18142,18 @@ async function ctUseMusicVideo() {
     var videoRes = await fetch(_ctRenderedVideoUrl);
     var videoBlob = await videoRes.blob();
 
-    // Upload to Supabase Storage
-    var { data, error } = await _supabase.storage.from('client-hub-materials').upload(path, videoBlob, {
-      contentType: 'video/mp4', upsert: true
+    // Upload to Supabase Storage (direct XHR)
+    await new Promise(function(resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + path, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+      xhr.setRequestHeader('apikey', SUPABASE_KEY);
+      xhr.setRequestHeader('Content-Type', 'video/mp4');
+      xhr.setRequestHeader('x-upsert', 'true');
+      xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)); };
+      xhr.onerror = function() { reject(new Error('Erro de rede')); };
+      xhr.send(videoBlob);
     });
-    if (error) throw error;
-
     var publicUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + path;
 
     // Save as attachment
@@ -23400,17 +23451,22 @@ async function cronogramaBuildPdf(opts) {
     updateLoading(100, shouldDownload ? 'Baixando PDF...' : 'Salvando no sistema...');
     if (shouldDownload) pdf.save(filename);
 
-    // Auto-upload PDF to Supabase Storage via SDK (same approach as logo upload)
+    // Auto-upload PDF to Supabase Storage (direct XHR — no supabase-js client needed)
     try {
       var pdfBlob = pdf.output('blob');
-      var pdfFile = new File([pdfBlob], filename, { type: 'application/pdf' });
       var storagePath = 'cronogramas/' + _cronoState.clientId + '/' + Date.now() + '_' + filename;
-      var { data: upData, error: upError } = await _supabase.storage
-        .from('client-hub-materials')
-        .upload(storagePath, pdfFile, { cacheControl: '3600', upsert: true });
-      if (upError) throw upError;
-      var { data: urlData } = _supabase.storage.from('client-hub-materials').getPublicUrl(storagePath);
-      var pdfUrl = urlData.publicUrl;
+      await new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SUPABASE_URL + '/storage/v1/object/client-hub-materials/' + storagePath, true);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_KEY);
+        xhr.setRequestHeader('apikey', SUPABASE_KEY);
+        xhr.setRequestHeader('Content-Type', 'application/pdf');
+        xhr.setRequestHeader('x-upsert', 'true');
+        xhr.onload = function() { xhr.status < 300 ? resolve() : reject(new Error('HTTP ' + xhr.status)); };
+        xhr.onerror = function() { reject(new Error('Erro de rede')); };
+        xhr.send(pdfBlob);
+      });
+      var pdfUrl = SUPABASE_URL + '/storage/v1/object/public/client-hub-materials/' + storagePath;
       console.log('Cronograma PDF uploaded:', pdfUrl);
       _cronoState.lastPdfUrl = pdfUrl;
       _cronoState.lastPdfFilename = filename;
