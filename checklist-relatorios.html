@@ -7099,6 +7099,14 @@ async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, schedul
     if (countEl) countEl.textContent = imageUrls.length + ' imagem(ns) recuperada(s)';
   } else if (imageUrls && imageUrls.length === 1) {
     if (mediaInput) mediaInput.value = imageUrls[0];
+    // Mostra miniatura visual para o usuário saber que a imagem foi recuperada
+    var prevEl2 = document.getElementById('metaPubPreviews');
+    if (prevEl2) {
+      prevEl2.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0">'
+        + '<img src="' + imageUrls[0] + '" style="height:56px;width:56px;object-fit:cover;border-radius:6px;flex-shrink:0" onerror="this.style.display=\'none\'">'
+        + '<span style="font-size:0.75rem;color:#166534;font-weight:600">✅ Imagem recuperada do histórico</span>'
+        + '</div>';
+    }
   } else {
     if (mediaInput) mediaInput.value = '';
   }
