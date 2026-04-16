@@ -23870,7 +23870,39 @@ function mtRenderRow(task, mode) {
     quickAction = '<span style="font-size:10px;color:#c2410c;background:#fff7ed;padding:3px 8px;border-radius:6px;white-space:nowrap">⏳ Aguardando</span>';
   }
 
-  var colStyle = 'grid-template-columns:' + _mtGetColWidths(mode).join(' ') + ';';
+  // Badge de dias até o post
+  var _mtDaysBadge = '';
+  if (_mtPostDate) {
+    var _today = new Date(); _today.setHours(0,0,0,0);
+    var _postD  = new Date(_mtPostDate + 'T00:00:00');
+    var _diff   = Math.ceil((_postD - _today) / 86400000);
+    var _dColor, _dBg, _dLabel;
+    if (_diff < 0)       { _dColor = '#6b7280'; _dBg = '#f3f4f6'; _dLabel = Math.abs(_diff) + 'd atrás'; }
+    else if (_diff === 0){ _dColor = '#dc2626'; _dBg = '#fee2e2'; _dLabel = 'Hoje!'; }
+    else if (_diff === 1){ _dColor = '#dc2626'; _dBg = '#fee2e2'; _dLabel = '1 dia'; }
+    else if (_diff <= 3) { _dColor = '#d97706'; _dBg = '#fffbeb'; _dLabel = _diff + ' dias'; }
+    else if (_diff <= 7) { _dColor = '#1d4ed8'; _dBg = '#eff6ff'; _dLabel = _diff + ' dias'; }
+    else                 { _dColor = '#059669'; _dBg = '#f0fdf4'; _dLabel = _diff + ' dias'; }
+    _mtDaysBadge = '<br><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:' + _dBg + ';color:' + _dColor + '">' + _dLabel + '</span>';
+  }
+
+  // Célula WhatsApp (apenas para aprovacao)
+  var _waCell = '<div style="font-size:12px;color:var(--text-secondary)">—</div>';
+  if (statusKey === 'aprovacao') {
+    var _waSentAt = task.publish_config && task.publish_config.whatsapp_sent_at;
+    if (_waSentAt) {
+      var _waD   = new Date(_waSentAt);
+      var _waStr = _waD.toLocaleDateString('pt-BR',{ day:'2-digit', month:'2-digit' }) + ' ' + _waD.toLocaleTimeString('pt-BR',{ hour:'2-digit', minute:'2-digit' });
+      _waCell = '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
+        + '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#dcfce7;color:#166534;white-space:nowrap">✅ WA ' + _waStr + '</span>'
+        + '<button onclick="event.stopPropagation();mtClearWhatsappSent(\'' + task.id + '\')" style="padding:0 4px;border:none;background:transparent;color:#9ca3af;cursor:pointer;font-size:11px;line-height:1" title="Resetar">✕</button>'
+        + '</div>';
+    } else {
+      _waCell = '<div><button onclick="event.stopPropagation();mtMarkWhatsappSent(\'' + task.id + '\')" '
+        + 'style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #16a34a;background:transparent;color:#16a34a;cursor:pointer;font-family:inherit;white-space:nowrap">'
+        + '📱 Enviar WA</button></div>';
+    }
+  }
   let html = '<div class="mt-row ' + mode + '" style="' + colStyle + rowStyle + '" onclick="ctOpenModal(\'' + task.id + '\')">';
 
   if (mode === 'by-list') {
@@ -23889,12 +23921,38 @@ function mtRenderRow(task, mode) {
   }
 
   html += '<div style="font-size:12px;color:var(--text-secondary)">' + dueStr + '</div>';
-  html += '<div style="font-size:12px;color:var(--text-secondary)">' + mtPostStr + '</div>';
-  html += '<div>—</div>';
+  html += '<div style="font-size:12px;color:var(--text-secondary);line-height:1.4">' + mtPostStr + _mtDaysBadge + '</div>';
+  html += _waCell;
   html += '<div style="text-align:center">' + priorityBadge + '</div>';
   html += '</div>';
 
   return html;
+}
+
+// ── WhatsApp: marcar aprovação solicitada ──
+async function mtMarkWhatsappSent(taskId) {
+  var task = mtRecentTasks.find(function(t){ return t.id === taskId; }) || mtTasks.find(function(t){ return t.id === taskId; });
+  if (!task) return;
+  var pc = Object.assign({}, task.publish_config || {});
+  pc.whatsapp_sent_at = new Date().toISOString();
+  try {
+    await ctApi('upsert_task', { id: taskId, publish_config: pc, user: gpState.user ? gpState.user.name : 'Sistema' });
+    task.publish_config = pc;
+    mtRender();
+    showToast('📱 Aprovação via WhatsApp registrada');
+  } catch(e) { showToast('❌ Erro: ' + e.message); }
+}
+
+async function mtClearWhatsappSent(taskId) {
+  var task = mtRecentTasks.find(function(t){ return t.id === taskId; }) || mtTasks.find(function(t){ return t.id === taskId; });
+  if (!task) return;
+  var pc = Object.assign({}, task.publish_config || {});
+  delete pc.whatsapp_sent_at;
+  try {
+    await ctApi('upsert_task', { id: taskId, publish_config: pc, user: gpState.user ? gpState.user.name : 'Sistema' });
+    task.publish_config = pc;
+    mtRender();
+  } catch(e) { showToast('❌ Erro: ' + e.message); }
 }
 
 // ═══ POST FORMAT ═══
