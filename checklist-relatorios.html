@@ -6897,10 +6897,13 @@ function pubHistoryRender() {
 
       // Botões de ação para FAILED
       if (h.status === 'FAILED' && h.id) {
-        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null };
-        html += '<div style="display:flex;gap:6px;margin-top:6px">'
+        var parsedUrls = pubHistParseImageUrls(h.image_url);
+        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null, imageUrls: parsedUrls };
+        var mediaInfo = parsedUrls.length > 1 ? ' · 🖼️ ' + parsedUrls.length + ' imgs' : (parsedUrls.length === 1 ? ' · 🖼️ 1 img' : '');
+        html += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'
           + '<button onclick="event.stopPropagation();pubHistRetry(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
           + '<button onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #1d4ed8;border-radius:6px;background:transparent;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">📅 Reagendar</button>'
+          + (mediaInfo ? '<span style="font-size:0.65rem;color:var(--text-secondary)">' + mediaInfo + '</span>' : '')
           + '</div>';
       }
 
@@ -6925,11 +6928,20 @@ function pubHistSafeId(key) {
   return (key || 'x').replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+// Decodifica o campo image_url do histórico: pode ser URL string ou JSON array de URLs (carrossel)
+function pubHistParseImageUrls(val) {
+  if (!val) return [];
+  if (typeof val === 'string' && val.trim().startsWith('[')) {
+    try { return JSON.parse(val); } catch(e) {}
+  }
+  return [val];
+}
+
 // ── Retry: pré-preenche meta-publish e muda de aba ──
 function pubHistRetry(histId) {
   var d = _pubHistPostData[histId];
   if (!d) return;
-  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'now', null, d.imageUrl);
+  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'now', null, d.imageUrls || []);
 }
 
 // ── Reagendar: abre mini-modal de data/hora ──
@@ -6954,12 +6966,12 @@ function pubHistConfirmReschedule() {
   var d = _pubHistPostData[_pubHistReschedId];
   if (!d) return;
   document.getElementById('pubHistReschedModal').style.display = 'none';
-  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'schedule', date + 'T' + time + ':00', d.imageUrl);
+  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'schedule', date + 'T' + time + ':00', d.imageUrls || []);
   _pubHistReschedId = null;
 }
 
 // ── Pré-preenche o form de meta-publish e muda pra aba ──
-async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, scheduleIso, imageUrl) {
+async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, scheduleIso, imageUrls) {
   switchTab('meta-publish');
   await new Promise(function(r) { setTimeout(r, 400); });
 
@@ -7002,16 +7014,34 @@ async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, schedul
     }
   }
 
-  // Mídia original (URL salva no publish_history)
+  // Mídia original (URLs salvas no publish_history)
   var mediaInput = document.getElementById('metaPubMediaUrl');
-  if (mediaInput) {
-    mediaInput.value = imageUrl || '';
+  _metaPubPreloadedUrls = [];
+  _metaPubFiles = [];
+
+  if (imageUrls && imageUrls.length > 1) {
+    // Carrossel: usa mecanismo de URLs pré-carregadas
+    _metaPubPreloadedUrls = imageUrls;
+    if (mediaInput) mediaInput.value = '';
+    // Mostra indicador visual na área de previews
+    var prevEl = document.getElementById('metaPubPreviews');
+    if (prevEl) {
+      prevEl.innerHTML = '<div style="padding:7px 12px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;font-size:0.78rem;color:#1d4ed8;font-weight:600">🖼️ ' + imageUrls.length + ' imagens do carrossel recuperadas</div>';
+    }
+    var countEl = document.getElementById('metaPubMediaCount');
+    if (countEl) countEl.textContent = imageUrls.length + ' imagem(ns) recuperada(s)';
+  } else if (imageUrls && imageUrls.length === 1) {
+    if (mediaInput) mediaInput.value = imageUrls[0];
+  } else {
+    if (mediaInput) mediaInput.value = '';
   }
 
   metaPublishValidateForm();
   metaPublishUpdatePreview();
 
-  var mediaMsg = imageUrl ? '🖼️ Mídia recuperada automaticamente' : '⚠️ Sem mídia salva — adicione manualmente';
+  var mediaMsg = (imageUrls && imageUrls.length > 1) ? '🖼️ ' + imageUrls.length + ' imagens do carrossel recuperadas'
+    : (imageUrls && imageUrls.length === 1) ? '🖼️ Mídia recuperada automaticamente'
+    : '⚠️ Sem mídia salva — adicione manualmente';
   var modeMsg = mode === 'schedule' ? '📅 Form pré-preenchido — ' : '↺ Form pré-preenchido — ';
   showToast(modeMsg + mediaMsg);
 }
@@ -13534,6 +13564,7 @@ function metaBiRenderDashboardCharts(data) {
 
 // ============ META PUBLISH ============
 let _metaPubFiles = [];
+let _metaPubPreloadedUrls = []; // URLs de carrossel recuperadas do histórico no retry
 let _metaPubHistory = [];
 let _metaPubHistoryFilter = 'all';
 
@@ -13836,7 +13867,7 @@ function metaPublishValidateForm() {
   const clientKey = document.getElementById('metaPubClient').value;
   const platform = document.getElementById('metaPubPlatform').value;
   const caption = document.getElementById('metaPubCaption').value;
-  const hasMedia = _metaPubFiles.length > 0 || (document.getElementById('metaPubMediaUrl') && document.getElementById('metaPubMediaUrl').value);
+  const hasMedia = _metaPubFiles.length > 0 || _metaPubPreloadedUrls.length > 0 || (document.getElementById('metaPubMediaUrl') && document.getElementById('metaPubMediaUrl').value);
   const hasContent = !!caption || hasMedia;
   const plats = platform.split(',').filter(Boolean);
   const igNeedsMedia = plats.includes('ig') && !hasMedia;
@@ -14228,11 +14259,17 @@ async function metaPublishSubmit() {
   try {
     const imageUrl = mediaUrl.trim();
     const hasLocalFile = _metaPubFiles.length > 0;
-    const hasMedia = !!imageUrl || hasLocalFile;
+    const hasMedia = !!imageUrl || hasLocalFile || _metaPubPreloadedUrls.length > 0;
     let resolvedImageUrl = imageUrl || null;
     let resolvedImageUrls = []; // For carousel (multiple images)
     let containerId = null;  // IG
     let containerIds = [];   // IG carousel
+
+    // Carousel URLs pré-carregadas do histórico (retry sem re-upload)
+    if (_metaPubPreloadedUrls.length > 0 && !hasLocalFile) {
+      resolvedImageUrls = _metaPubPreloadedUrls;
+      resolvedImageUrl = _metaPubPreloadedUrls[0];
+    }
 
     // ─── ETAPA 1: Upload de arquivo(s) local → Supabase Storage ───
     if (hasLocalFile) {
@@ -14457,6 +14494,7 @@ async function metaPublishSubmit() {
       if (document.getElementById('metaPubMediaUrl')) document.getElementById('metaPubMediaUrl').value = '';
       if (document.getElementById('metaPubCaptionTips')) document.getElementById('metaPubCaptionTips').innerHTML = '';
       _metaPubFiles = [];
+      _metaPubPreloadedUrls = [];
       const countEl = document.getElementById('metaPubMediaCount');
       if (countEl) countEl.textContent = '';
       metaPublishRenderPreviews();
