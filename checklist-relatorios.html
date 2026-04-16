@@ -6897,7 +6897,7 @@ function pubHistoryRender() {
 
       // Botões de ação para FAILED
       if (h.status === 'FAILED' && h.id) {
-        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '' };
+        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null };
         html += '<div style="display:flex;gap:6px;margin-top:6px">'
           + '<button onclick="event.stopPropagation();pubHistRetry(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
           + '<button onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #1d4ed8;border-radius:6px;background:transparent;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">📅 Reagendar</button>'
@@ -6929,7 +6929,7 @@ function pubHistSafeId(key) {
 function pubHistRetry(histId) {
   var d = _pubHistPostData[histId];
   if (!d) return;
-  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'now', null);
+  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'now', null, d.imageUrl);
 }
 
 // ── Reagendar: abre mini-modal de data/hora ──
@@ -6954,12 +6954,12 @@ function pubHistConfirmReschedule() {
   var d = _pubHistPostData[_pubHistReschedId];
   if (!d) return;
   document.getElementById('pubHistReschedModal').style.display = 'none';
-  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'schedule', date + 'T' + time + ':00');
+  pubHistRetryInMetaPub(d.clientKey, d.platform, d.caption, 'schedule', date + 'T' + time + ':00', d.imageUrl);
   _pubHistReschedId = null;
 }
 
 // ── Pré-preenche o form de meta-publish e muda pra aba ──
-async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, scheduleIso) {
+async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, scheduleIso, imageUrl) {
   switchTab('meta-publish');
   await new Promise(function(r) { setTimeout(r, 400); });
 
@@ -7002,9 +7002,18 @@ async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, schedul
     }
   }
 
+  // Mídia original (URL salva no publish_history)
+  var mediaInput = document.getElementById('metaPubMediaUrl');
+  if (mediaInput) {
+    mediaInput.value = imageUrl || '';
+  }
+
   metaPublishValidateForm();
   metaPublishUpdatePreview();
-  showToast(mode === 'schedule' ? '📅 Form pré-preenchido — adicione a mídia e confirme' : '↺ Form pré-preenchido — adicione a mídia e publique');
+
+  var mediaMsg = imageUrl ? '🖼️ Mídia recuperada automaticamente' : '⚠️ Sem mídia salva — adicione manualmente';
+  var modeMsg = mode === 'schedule' ? '📅 Form pré-preenchido — ' : '↺ Form pré-preenchido — ';
+  showToast(modeMsg + mediaMsg);
 }
 
 const TAB_TITLES = {
