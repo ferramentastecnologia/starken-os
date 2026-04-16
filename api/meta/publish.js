@@ -325,6 +325,7 @@ async function processPublishQueue() {
         image_url: encodeImageUrl(item.image_urls || []),
         scheduled_for: item.scheduled_for,
         error_message: errorDetail,
+        ...(item.task_id && { task_id: item.task_id }),
       });
 
       results.push({ id: item.id, status: 'FAILED', error: errorDetail });

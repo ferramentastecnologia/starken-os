@@ -6898,7 +6898,7 @@ function pubHistoryRender() {
       // Botões de ação para FAILED
       if (h.status === 'FAILED' && h.id) {
         var parsedUrls = pubHistParseImageUrls(h.image_url);
-        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null, imageUrls: parsedUrls };
+        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null, imageUrls: parsedUrls, taskId: h.task_id || null };
         var mediaInfo = parsedUrls.length > 1 ? ' · 🖼️ ' + parsedUrls.length + ' imgs' : (parsedUrls.length === 1 ? ' · 🖼️ 1 img' : '');
         html += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center">'
           + '<button id="pubHistRetryBtn_' + h.id + '" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
@@ -6955,6 +6955,22 @@ async function pubHistRetryDirect(histId) {
   var imageUrls = (d.imageUrls && d.imageUrls.length) ? d.imageUrls : (d.imageUrl ? [d.imageUrl] : []);
   var plat = (d.platform || 'fb').trim();
   var userName = (gpState.user ? gpState.user.name : 'Sistema');
+
+  // Se o post está vinculado a uma task, busca os criativos frescos (garante carrossel completo)
+  if (d.taskId) {
+    try {
+      var attRes = await fetch(metaApiBase() + '/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_attachments', task_id: d.taskId }),
+      });
+      var attData = await attRes.json();
+      var attachments = Array.isArray(attData) ? attData : (attData.attachments || []);
+      var creatives = attachments.filter(function(a) { return a.category === 'creative' || a.category === 'final'; });
+      var taskImages = creatives.filter(function(a) { return !ctIsVideo(a); }).map(function(a) { return a.file_url; });
+      if (taskImages.length > 0) imageUrls = taskImages;
+    } catch(e) { /* usa URLs salvas no histórico como fallback */ }
+  }
 
   try {
     var data;
