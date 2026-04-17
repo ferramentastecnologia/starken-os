@@ -770,6 +770,19 @@ async function queryProxy({ table, select = '*', filters, order, limit }) {
   return ok(data);
 }
 
+async function deleteCronogramaPeriod({ period_key }) {
+  if (!period_key) return fail('period_key required');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cronograma_status?period_key=eq.${encodeURIComponent(period_key)}`, {
+    method: 'DELETE',
+    headers: { ...HEADERS, Prefer: 'return=minimal' },
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`DELETE cronograma_status failed: ${err}`);
+  }
+  return ok({ success: true });
+}
+
 async function upsertCronograma({ payload }) {
   if (!payload || !payload.id) return fail('payload.id required');
   const res = await fetch(`${SUPABASE_URL}/rest/v1/cronograma_status?on_conflict=id`, {
@@ -822,6 +835,7 @@ const ACTIONS = {
   // Dashboard proxy (service-role reads + upserts)
   query: queryProxy,
   upsert_cronograma: upsertCronograma,
+  delete_cronograma_period: deleteCronogramaPeriod,
 };
 
 // =============================================================================
