@@ -8251,6 +8251,47 @@ async function renderOperationalScore(monthKey, active) {
         breakdown.pending.push(enriched);
       });
 
+      // Fetch thumbnails for all tasks in the breakdown (one batch query)
+      var allTaskIds = []
+        .concat(breakdown.onTime, breakdown.late, breakdown.pending, breakdown.failed)
+        .map(function(t) { return t.id; })
+        .filter(Boolean);
+      var attachmentsByTask = {};
+      if (allTaskIds.length > 0) {
+        try {
+          var idFilter = 'task_id=in.(' + allTaskIds.join(',') + ')';
+          var catFilter = 'category=in.(creative,final,reference)';
+          var atts;
+          if (_supabase) {
+            var aRes = await _supabase.from('content_attachments')
+              .select('task_id,file_url,file_type,file_name,category')
+              .in('task_id', allTaskIds)
+              .in('category', ['creative', 'final', 'reference']);
+            atts = aRes.data || [];
+          } else {
+            atts = await _sbQuery('content_attachments', {
+              select: 'task_id,file_url,file_type,file_name,category',
+              filters: [idFilter, catFilter]
+            });
+          }
+          // Prefer creative/final over reference; keep first one per task
+          var priority = { final: 3, creative: 2, reference: 1 };
+          (atts || []).forEach(function(a) {
+            var existing = attachmentsByTask[a.task_id];
+            if (!existing || (priority[a.category] || 0) > (priority[existing.category] || 0)) {
+              attachmentsByTask[a.task_id] = a;
+            }
+          });
+        } catch(attErr) { console.warn('attachments fetch failed:', attErr); }
+      }
+      // Attach thumbnail info to each enriched task
+      ['onTime', 'late', 'pending', 'failed'].forEach(function(k) {
+        breakdown[k].forEach(function(t) {
+          var a = attachmentsByTask[t.id];
+          if (a) { t.thumb_url = a.file_url; t.thumb_type = a.file_type; t.thumb_name = a.file_name; }
+        });
+      });
+
       // Score = published / (total - pending)
       var totalDue = breakdown.onTime.length + breakdown.late.length + breakdown.failed.length;
       var score = totalDue === 0 ? 100 : Math.round((breakdown.onTime.length / totalDue) * 100);
@@ -8395,6 +8436,19 @@ function dashOpDrilldown(type, monthKey) {
     var d2 = new Date(todayStr + 'T12:00:00');
     return Math.floor((d2 - d1) / 86400000);
   }
+  function thumbHtml(t) {
+    if (!t.thumb_url) {
+      return '<div style="width:44px;height:44px;border-radius:8px;background:var(--bg-muted,#f3f4f6);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#9ca3af;flex-shrink:0">📄</div>';
+    }
+    var isVid = (t.thumb_type && t.thumb_type.startsWith('video/')) || /\.(mp4|mov|avi|webm|mkv|m4v)$/i.test(t.thumb_name || '');
+    if (isVid) {
+      return '<div style="width:44px;height:44px;border-radius:8px;background:#0f172a;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;overflow:hidden">'
+        + '<video src="' + esc(t.thumb_url) + '" style="width:100%;height:100%;object-fit:cover;pointer-events:none" muted preload="metadata"></video>'
+        + '<span style="position:absolute;color:#fff;font-size:0.9rem;text-shadow:0 1px 3px rgba(0,0,0,0.6)">▶</span>'
+        + '</div>';
+    }
+    return '<img src="' + esc(t.thumb_url) + '" loading="lazy" style="width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;background:#f3f4f6" onerror="this.style.display=\'none\'">';
+  }
   function avatarHtml(assignee) {
     var names = (assignee || '').split(',').map(function(n){ return n.trim(); }).filter(Boolean);
     if (!names.length) return '<div style="width:30px;height:30px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#6b7280;flex-shrink:0">—</div>';
@@ -8444,6 +8498,7 @@ function dashOpDrilldown(type, monthKey) {
         var vLate = (type === 'late' && daysLate(t.due_date) > 3);
         var rowBg = vLate ? 'rgba(239,68,68,0.06)' : 'transparent';
         h += '<div onclick="document.getElementById(\'dashOpModal\').remove();if(typeof ctOpenModal===\'function\')ctOpenModal(\'' + t.id + '\')" style="padding:12px 22px;border-bottom:1px solid var(--border-light);display:flex;gap:12px;align-items:center;cursor:pointer;background:' + rowBg + '" onmouseover="this.style.background=\'var(--bg-hover,rgba(59,130,246,0.06))\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
+        h += thumbHtml(t);
         h += avatarHtml(t.assignee);
         h += '<div style="flex:1;min-width:0">';
         h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">';

@@ -755,8 +755,8 @@ async function createRecurringWeek({ client_id, group_name, position, stories_pe
 // =============================================================================
 
 const QUERY_ALLOWED_TABLES = new Set([
-  'content_tasks', 'content_groups', 'cronograma_status',
-  'publish_history', 'publish_queue',
+  'content_tasks', 'content_groups', 'content_attachments',
+  'cronograma_status', 'publish_history', 'publish_queue',
 ]);
 
 async function queryProxy({ table, select = '*', filters, order, limit }) {
