@@ -9031,16 +9031,17 @@ function renderDashboard() {
 
   var mk = getCurrentMonthKey();
   var wk = _dashGetCurrentWeekKey();
+  var cronoWk = _dashCronoWeek || wk; // semana selecionada no widget de cronogramas
 
-  // Count using Supabase cache for sched-weekly
-  var wGen = 0, wSent = 0, wPending = 0;
+  // Count using cronograma_status cache — usa a mesma semana do widget
+  var wGen = 0, wSent = 0;
   active.forEach(function(c) {
-    var st = _dashGetStatus(c.id, 'sched-weekly', wk);
+    var st = _dashGetStatus(c.id, 'sched-weekly', cronoWk);
     if (st.status >= 1) wGen++;
     if (st.status === 2) wSent++;
-    // Pendente = gerado mas ainda não enviado ao cliente (precisa de ação)
-    if (st.status === 1) wPending++;
   });
+  // Pendente = qualquer cliente que ainda NÃO teve cronograma enviado nessa semana
+  var wPending = active.length - wSent;
 
   // Monthly from localStorage (monthly doesn't use cronograma_status)
   var mSent = data.reports.filter(function(r) { return r.type === 'monthly' && r.period === mk && r.status === 2; }).length;
@@ -9049,18 +9050,17 @@ function renderDashboard() {
     '<div class="stat-card starken"><div class="stat-icon starken">S</div><div class="stat-label">Clientes Starken</div><div class="stat-value">' + starken.length + '</div></div>' +
     '<div class="stat-card alpha"><div class="stat-icon alpha">A</div><div class="stat-label">Clientes Alpha</div><div class="stat-value">' + alpha.length + '</div></div>' +
     '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes de envio"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Cronogramas Pendentes</div><div class="stat-value">' + wPending + '</div></div>' +
-    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)"><span class="mso">check</span></div><div class="stat-label">Cronogramas Enviados</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
+    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)"><span class="mso">check</span></div><div class="stat-label">Cronogramas Enviados</div><div class="stat-value">' + wSent + '/' + active.length + '</div></div>';
 
   renderContentProgress('weeklyProgress', wk, active, 'weekly');
   renderContentProgress('monthlyProgress', mk, active, 'monthly');
-  var cronoWk = _dashCronoWeek || wk;
   renderDashWeekCronoList(cronoWk, active);
   renderDashWeekPosts(wk);
   renderOperationalScore(mk, active);
   renderRecentSends();
 
   // Emerald-only enhancements (hero, bento grid, implementations table)
-  try { emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, wk); } catch(e) { console.warn('emerald dash error', e); }
+  try { emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, cronoWk); } catch(e) { console.warn('emerald dash error', e); }
 }
 
 // ═══ PDF EXPORT ═══
@@ -9079,13 +9079,14 @@ async function dashExportPdf() {
     var starken = active.filter(function(c) { return c.company === 'Starken'; });
     var alpha = active.filter(function(c) { return c.company === 'Alpha'; });
     var wk = _dashGetCurrentWeekKey();
-    var wGen = 0, wSent = 0, wPending = 0;
+    var wGen = 0, wSent = 0;
+    var _pdfCronoWk = _dashCronoWeek || wk;
     active.forEach(function(c) {
-      var st = _dashGetStatus(c.id, 'sched-weekly', wk);
+      var st = _dashGetStatus(c.id, 'sched-weekly', _pdfCronoWk);
       if (st.status >= 1) wGen++;
       if (st.status === 2) wSent++;
-      if (st.status === 1) wPending++;
     });
+    var wPending = active.length - wSent;
 
     var score = cached.score;
     var bd = cached.breakdown;
@@ -9392,23 +9393,21 @@ function emGetWeeklySeriesByCompany(company, weeks) {
   return series;
 }
 function emGetWeeklyPendingSeries(active, weeks) {
-  // Pendência semanal: quantos clientes tiveram cronograma apenas gerado (status 1) nas últimas semanas
+  // Pendência semanal: quantos clientes NÃO enviaram o cronograma (status 0 ou 1)
   var series = [];
   var now = new Date();
   for (var w = weeks - 1; w >= 0; w--) {
     var d = new Date(now); d.setDate(d.getDate() - (w * 7));
     var key = _dashGetWeekKeyFromDate ? _dashGetWeekKeyFromDate(d) : null;
-    var cnt = 0;
+    var sentCnt = 0;
     if (key) {
       active.forEach(function(c){
         var st = _dashGetStatus(c.id, 'sched-weekly', key);
-        if (st && st.status === 1) cnt++;
+        if (st && st.status === 2) sentCnt++;
       });
     }
-    series.push(cnt);
+    series.push(active.length - sentCnt);
   }
-  // Fallback: curva simétrica ao redor do valor atual
-  if (series.every(function(v){ return v === 0; })) return [2,1,3,2,1,0];
   return series;
 }
 function emGetWeeklySentSeries(active, weeks) {
