@@ -831,7 +831,9 @@
 
 /* Stat cards pub-history emerald */
 .em-ph-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
-.em-ph-card { background:#151c27; border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:18px 20px; display:flex; flex-direction:column; gap:8px; }
+.em-ph-card { background:#151c27; border:1px solid rgba(255,255,255,0.05); border-radius:14px; padding:18px 20px; display:flex; flex-direction:column; gap:8px; cursor:pointer; transition:border-color .2s,background .2s; }
+.em-ph-card:hover { border-color:rgba(70,238,205,0.25); background:#19202c; }
+.em-ph-card:active { transform:scale(0.98); }
 .em-ph-card-top { display:flex; justify-content:space-between; align-items:flex-start; }
 .em-ph-card-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
 .em-ph-card-delta { font-size:0.7rem; font-weight:700; padding:3px 8px; border-radius:999px; }
@@ -7631,6 +7633,7 @@ function sysLogCard(label, count, color, bg, border) {
 // PUB HISTORY MODULE — Publicações & Agendamentos por cliente
 // ═══════════════════════════════════════════════════════
 var _pubHistExpanded = {};
+var _phSortedData = []; // cache dos dados processados para drilldown
 var _pubHistLoaded = false;
 var _pubHistPostData = {}; // histId → { clientKey, platform, caption } para retry
 var _phTasks = [];          // content_tasks cache
@@ -7967,11 +7970,12 @@ function emPubHistRender(pub, sch, fail, total, sorted) {
   if (summaryEl) {
     summaryEl.style.display = '';
     summaryEl.className = 'em-ph-stats';
+    _phSortedData = sorted || [];
     summaryEl.innerHTML =
-      emPhStatCard('check', 'Publicados', pub,  '#46eecd', pub > 0 ? '+' + pub : '—') +
-      emPhStatCard('bell',  'Agendados',  sch,  '#5febd8', sch > 0 ? 'ATIVOS' : '—') +
-      emPhStatCard('click', 'Falhas',     fail, '#ffb4ab', fail > 0 ? 'FALHA' : 'OK') +
-      emPhStatCard('chart', 'Total',      total,'#b9c7e4', 'PERÍODO');
+      emPhStatCard('check', 'Publicados', pub,  '#46eecd', pub > 0 ? '+' + pub : '—', 'PUBLISHED') +
+      emPhStatCard('bell',  'Agendados',  sch,  '#5febd8', sch > 0 ? 'ATIVOS' : '—', 'SCHEDULED') +
+      emPhStatCard('click', 'Falhas',     fail, '#ffb4ab', fail > 0 ? 'FALHA' : 'OK', 'FAILED') +
+      emPhStatCard('chart', 'Total',      total,'#b9c7e4', 'PERÍODO', 'ALL');
   }
 
   // ── Client table
@@ -8097,8 +8101,8 @@ function emPubHistRender(pub, sch, fail, total, sorted) {
   listEl.innerHTML = html;
 }
 
-function emPhStatCard(icon, label, val, color, delta) {
-  return '<div class="em-ph-card">'
+function emPhStatCard(icon, label, val, color, delta, filter) {
+  return '<div class="em-ph-card" onclick="emPhStatDrilldown(\'' + (filter||'ALL') + '\')">'
     + '<div class="em-ph-card-top">'
     + '<div class="em-ph-card-icon" style="background:rgba(70,238,205,0.08);color:' + color + '">' + iconSvg(icon,{size:18}) + '</div>'
     + '<span class="em-ph-card-delta" style="background:rgba(70,238,205,0.08);color:' + color + ';font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:999px">' + emEsc(String(delta)) + '</span>'
@@ -8106,6 +8110,125 @@ function emPhStatCard(icon, label, val, color, delta) {
     + '<div class="em-ph-card-val" style="color:' + color + '">' + val + '</div>'
     + '<div class="em-ph-card-lbl">' + label + '</div>'
     + '</div>';
+}
+
+function emPhStatDrilldown(filter) {
+  // Flatten all tasks from sorted clients
+  var allTasks = [];
+  (_phSortedData || []).forEach(function(client) {
+    (client.tasks || []).forEach(function(t) {
+      if (filter === 'ALL' || t.status === filter) {
+        allTasks.push({ task: t, clientName: client.name, clientCompany: client.company });
+      }
+    });
+  });
+  allTasks.sort(function(a, b) { return (b.task.date || '').localeCompare(a.task.date || ''); });
+
+  var labels = { PUBLISHED: 'Publicados', SCHEDULED: 'Agendados', FAILED: 'Falhas', ALL: 'Todos' };
+  var colors = { PUBLISHED: '#46eecd', SCHEDULED: '#5febd8', FAILED: '#ffb4ab', ALL: '#b9c7e4' };
+  var icons  = { PUBLISHED: 'check', SCHEDULED: 'bell', FAILED: 'click', ALL: 'chart' };
+  var label  = labels[filter] || filter;
+  var color  = colors[filter] || '#b9c7e4';
+  var icn    = icons[filter]  || 'chart';
+
+  var fmtMap = { feed:'Feed', reels:'Reels', story:'Story', carrossel:'Carrossel' };
+  var stConf = {
+    PUBLISHED: { cls:'pub',  label:'Publicado' },
+    SCHEDULED: { cls:'sch',  label:'Agendado' },
+    FAILED:    { cls:'fail', label:'Falhou' }
+  };
+
+  var rows = '';
+  if (!allTasks.length) {
+    rows = '<div style="text-align:center;padding:48px 0;color:#85948f">'
+      + '<div style="margin-bottom:10px">' + iconSvg('search',{size:36}) + '</div>'
+      + '<div style="font-size:0.85rem">Nenhuma publicação encontrada</div></div>';
+  } else {
+    allTasks.forEach(function(entry) {
+      var t = entry.task;
+      var st = stConf[t.status] || { cls:'del', label: t.status };
+
+      // Platform badges
+      var plats = (t.platforms || []).map(function(p) {
+        var bg = p === 'ig' ? 'rgba(193,53,132,0.18)' : 'rgba(59,89,152,0.18)';
+        var col = p === 'ig' ? '#e1306c' : '#4267B2';
+        return '<span style="background:' + bg + ';color:' + col + ';padding:2px 7px;border-radius:5px;font-size:0.63rem;font-weight:700">' + (p === 'ig' ? 'IG' : 'FB') + '</span>';
+      }).join('');
+
+      // Format badge
+      var fmt = t.formats && t.formats[0] ? '<span style="background:rgba(70,238,205,0.08);color:#46eecd;padding:2px 7px;border-radius:5px;font-size:0.63rem;font-weight:700">' + (fmtMap[t.formats[0]] || t.formats[0]) + '</span>' : '';
+
+      // Thumbnail
+      var thumbHtml = '';
+      (t.histEntries || []).forEach(function(h) {
+        if (!thumbHtml && h.image_url) {
+          var url = h.image_url;
+          if (url && url[0] === '[') { try { url = JSON.parse(url)[0]; } catch(e){} }
+          if (url) thumbHtml = '<img src="' + emEsc(url) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover">';
+        }
+      });
+      if (!thumbHtml && t.creative_url) {
+        var isVid = t.creative_type && t.creative_type.indexOf('video') >= 0;
+        thumbHtml = isVid
+          ? '<video src="' + emEsc(t.creative_url) + '" style="width:100%;height:100%;object-fit:cover" muted preload="metadata"></video>'
+          : '<img src="' + emEsc(t.creative_url) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">';
+      }
+      if (!thumbHtml) thumbHtml = '<div style="color:#85948f">' + iconSvg('palette',{size:18}) + '</div>';
+
+      // Date format
+      var dateStr = t.date ? new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+
+      var onClick = typeof ctOpenModal === 'function' && t.id ? 'onclick="emPhCloseDrilldown();ctOpenModal(\'' + t.id + '\')"' : '';
+
+      rows += '<div class="em-ph-post-row" ' + onClick + ' style="' + (onClick ? 'cursor:pointer' : '') + '">'
+        + '<div class="em-ph-thumb">' + thumbHtml + '</div>'
+        + '<div class="em-ph-post-body" style="flex:1;min-width:0">'
+        + '<div class="em-ph-post-title">' + emEsc(t.name || '—') + '</div>'
+        + '<div class="em-ph-post-meta" style="margin-top:4px">'
+        + plats + fmt
+        + '<span style="color:#85948f">' + iconSvg('bell',{size:10}) + ' ' + dateStr + '</span>'
+        + (entry.clientName ? '<span style="background:rgba(70,238,205,0.06);color:#46eecd;padding:1px 6px;border-radius:4px;font-size:0.62rem;font-weight:700">' + emEsc(entry.clientName) + '</span>' : '')
+        + (t.assignee ? '<span style="color:#85948f">' + iconSvg('users',{size:10}) + ' ' + emEsc(t.assignee) + '</span>' : '')
+        + '</div>'
+        + (t.error ? '<div style="margin-top:4px;font-size:0.68rem;color:#ffb4ab;background:rgba(255,180,171,0.07);padding:3px 8px;border-radius:4px">' + emEsc(t.error) + '</div>' : '')
+        + '</div>'
+        + '<div style="flex-shrink:0"><span class="em-ph-status-chip ' + st.cls + '">' + st.label + '</span></div>'
+        + '</div>';
+    });
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'emPhDrilldownOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9800;display:flex;align-items:flex-start;justify-content:center;padding:32px 16px;overflow-y:auto;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px)';
+  overlay.onclick = function(e) { if (e.target === overlay) emPhCloseDrilldown(); };
+
+  overlay.innerHTML = '<div style="width:100%;max-width:720px;background:#0c141f;border:1px solid rgba(70,238,205,0.12);border-radius:20px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.6)">'
+    // Header
+    + '<div style="padding:24px 28px;border-bottom:1px solid rgba(70,238,205,0.08);display:flex;align-items:center;gap:16px">'
+    + '<div style="width:44px;height:44px;border-radius:12px;background:rgba(70,238,205,0.08);display:flex;align-items:center;justify-content:center;color:' + color + ';flex-shrink:0">' + iconSvg(icn,{size:22}) + '</div>'
+    + '<div style="flex:1">'
+    + '<div style="font-size:1.2rem;font-weight:800;color:#dce3f3;letter-spacing:-0.02em">' + label
+    + ' <span style="font-size:1rem;font-weight:700;color:' + color + '">' + allTasks.length + '</span></div>'
+    + '<div style="font-size:0.72rem;color:#85948f;margin-top:2px">Clique em um item para abrir a task</div>'
+    + '</div>'
+    + '<button onclick="emPhCloseDrilldown()" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,0.08);background:transparent;color:#85948f;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;flex-shrink:0">×</button>'
+    + '</div>'
+    // Teal accent bar
+    + '<div style="height:2px;background:linear-gradient(90deg,' + color + ',transparent)"></div>'
+    // Task list
+    + '<div style="max-height:calc(80vh - 120px);overflow-y:auto">'
+    + rows
+    + '</div>'
+    + '</div>';
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+}
+
+function emPhCloseDrilldown() {
+  var el = document.getElementById('emPhDrilldownOverlay');
+  if (el) el.remove();
+  document.body.style.overflow = '';
 }
 
 function emPhSetTab(tab) {
