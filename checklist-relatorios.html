@@ -7357,16 +7357,18 @@ async function pubHistoryRefresh() {
       _sysLogs = payload.history || [];
     } catch(e) { console.warn('publish_history fetch err', e); _sysLogs = []; }
 
-    // 2. Fetch content_tasks dos últimos 30 dias (filtro mais fino no render)
-    if (typeof _supabase !== 'undefined' && _supabase) {
+    // 2. Fetch content_tasks dos últimos 30 dias (sempre via /api/content)
+    try {
       var start30 = new Date(); start30.setDate(start30.getDate() - 30);
-      var tRes = await _supabase.from('content_tasks')
-        .select('id,name,group_id,status,due_date,publish_config,assignee,updated_at')
-        .in('status', ['publicado', 'agendado', 'failed'])
-        .gte('updated_at', start30.toISOString());
-      _phTasks = tRes.data || [];
+      _phTasks = await _sbQuery('content_tasks', {
+        select: 'id,name,group_id,status,due_date,publish_config,assignee,updated_at',
+        filters: [
+          'status=in.(publicado,agendado,failed)',
+          'updated_at=gte.' + start30.toISOString()
+        ]
+      }) || [];
       _phGroupToClient = await _ensureGroupToClient();
-    }
+    } catch(e) { console.warn('phTasks fetch err', e); _phTasks = []; }
 
     _pubHistLoaded = true;
   } catch(e) {
@@ -8780,9 +8782,9 @@ var _ctClientsWithContent = null;
 async function ensureCtClientsWithContent() {
   if (_ctClientsWithContent !== null) return;
   try {
-    if (!_supabase) { _ctClientsWithContent = new Set(); return; }
-    var res = await _supabase.from('content_groups').select('client_id');
-    _ctClientsWithContent = new Set((res.data || []).map(function(r) { return r.client_id; }).filter(Boolean));
+    // Sempre via /api/content (service role)
+    var rows = await _sbQuery('content_groups', { select: 'client_id' }) || [];
+    _ctClientsWithContent = new Set(rows.map(function(r) { return r.client_id; }).filter(Boolean));
   } catch(e) {
     _ctClientsWithContent = new Set();
   }
@@ -8798,7 +8800,6 @@ async function ensureClientsWithWeekTasks(periodKey) {
   if (_weekTasksLoading[periodKey]) return _weekTasksLoading[periodKey];
   _weekTasksLoading[periodKey] = (async function() {
   try {
-    if (!_supabase) { return; }
     var parts = periodKey.split('-S');
     if (parts.length !== 2) { _ctClientsWithWeekTasks[periodKey] = new Set(); return; }
     var monthKey = parts[0];
@@ -8813,12 +8814,11 @@ async function ensureClientsWithWeekTasks(periodKey) {
     var startDate = wk.periodStartISO;
     var endDate = wk.periodEndISO;
 
-    // Query tasks with due_date in range
-    var res = await _supabase.from('content_tasks')
-      .select('group_id,due_date,publish_config')
-      .gte('due_date', startDate)
-      .lte('due_date', endDate);
-    var tasks = res.data || [];
+    // Query tasks with due_date in range (sempre via /api/content)
+    var tasks = await _sbQuery('content_tasks', {
+      select: 'group_id,due_date,publish_config',
+      filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate]
+    }) || [];
 
     // Use cached group → client mapping
     var groupToClient = await _ensureGroupToClient();
@@ -9430,21 +9430,23 @@ async function emRenderPerformanceChart() {
   }
 
   try {
-    if (typeof _supabase !== 'undefined' && _supabase) {
-      var res = await _supabase.from('content_tasks')
-        .select('id,status,due_date,publish_config')
-        .in('status', ['publicado', 'agendado'])
-        .gte('due_date', dateKeys[0])
-        .lte('due_date', dateKeys[days - 1]);
-      (res.data || []).forEach(function(t) {
-        var dateStr = (t.publish_config && t.publish_config.post_date) || t.due_date;
-        if (!dateStr) return;
-        var idx = dateKeys.indexOf(dateStr.slice(0, 10));
-        if (idx < 0) return;
-        if (t.status === 'publicado') published[idx]++;
-        else if (t.status === 'agendado') scheduled[idx]++;
-      });
-    }
+    // Sempre via /api/content (service role)
+    var rows = await _sbQuery('content_tasks', {
+      select: 'id,status,due_date,publish_config',
+      filters: [
+        'status=in.(publicado,agendado)',
+        'due_date=gte.' + dateKeys[0],
+        'due_date=lte.' + dateKeys[days - 1]
+      ]
+    }) || [];
+    rows.forEach(function(t) {
+      var dateStr = (t.publish_config && t.publish_config.post_date) || t.due_date;
+      if (!dateStr) return;
+      var idx = dateKeys.indexOf(dateStr.slice(0, 10));
+      if (idx < 0) return;
+      if (t.status === 'publicado') published[idx]++;
+      else if (t.status === 'agendado') scheduled[idx]++;
+    });
   } catch(e) { console.warn('chart data err', e); }
 
   // Fallback se vier tudo zero
@@ -9513,23 +9515,25 @@ async function emRenderMilestones() {
   if (!el) return;
   var tasks = [];
   try {
-    if (typeof _supabase !== 'undefined' && _supabase) {
-      var todayStr = new Date().toISOString().slice(0,10);
-      var futureStr = new Date(Date.now() + 45 * 86400000).toISOString().slice(0,10);
-      var res = await _supabase.from('content_tasks')
-        .select('id,name,group_id,status,due_date,publish_config,assignee')
-        .gte('due_date', todayStr)
-        .lte('due_date', futureStr)
-        .not('publish_config', 'is', null)
-        .not('status', 'in', '("cancelado","arquivado","nao-publicado","publicado","standby")')
-        .order('due_date', { ascending: true })
-        .limit(4);
-      tasks = (res.data || []).filter(function(t) {
-        // Garante que publish_config tem algum conteúdo real
-        var pc = t.publish_config;
-        return pc && (pc.post_date || pc.entries || pc.feed || pc.story || pc.reels || pc.carrossel);
-      }).slice(0, 3);
-    }
+    var todayStr = new Date().toISOString().slice(0,10);
+    var futureStr = new Date(Date.now() + 45 * 86400000).toISOString().slice(0,10);
+    // Sempre via /api/content (service role bypassa RLS)
+    var rows = await _sbQuery('content_tasks', {
+      select: 'id,name,group_id,status,due_date,publish_config,assignee',
+      filters: [
+        'due_date=gte.' + todayStr,
+        'due_date=lte.' + futureStr,
+        'publish_config=not.is.null',
+        'status=not.in.(cancelado,arquivado,nao-publicado,publicado,standby)'
+      ],
+      order: 'due_date.asc',
+      limit: 4
+    }) || [];
+    tasks = rows.filter(function(t) {
+      // Garante que publish_config tem algum conteúdo real
+      var pc = t.publish_config;
+      return pc && (pc.post_date || pc.entries || pc.feed || pc.story || pc.reels || pc.carrossel);
+    }).slice(0, 3);
   } catch(e) { console.warn('milestones err', e); }
 
   if (!tasks.length) {
@@ -9596,14 +9600,13 @@ async function emRenderImplementations() {
 
   var rows = [];
   try {
-    if (typeof _supabase !== 'undefined' && _supabase) {
-      var res = await _supabase.from('publish_history')
-        .select('id,client_key,client_name,status,platform,caption,created_at,scheduled_for')
-        .in('status', ['PUBLISHED','SCHEDULED'])
-        .order('created_at', { ascending: false })
-        .limit(5);
-      rows = res.data || [];
-    }
+    // Sempre via /api/content (service role)
+    rows = await _sbQuery('publish_history', {
+      select: 'id,client_key,client_name,status,platform,caption,created_at,scheduled_for',
+      filters: ['status=in.(PUBLISHED,SCHEDULED)'],
+      order: 'created_at.desc',
+      limit: 5
+    }) || [];
   } catch(e) { console.warn('impl err', e); }
 
   var body = document.getElementById('emImplBody');
@@ -9699,19 +9702,11 @@ async function renderOperationalScore(monthKey, active) {
       var lastDay = new Date(year, month + 1, 0);
       var lastDayStr = monthKey + '-' + String(lastDay.getDate()).padStart(2, '0');
 
-      var tasks;
-      if (_supabase) {
-        var res = await _supabase.from('content_tasks')
-          .select('id,name,group_id,status,due_date,publish_config,assignee')
-          .gte('due_date', firstDay)
-          .lte('due_date', lastDayStr);
-        tasks = res.data || [];
-      } else {
-        tasks = await _sbQuery('content_tasks', {
-          select: 'id,name,group_id,status,due_date,publish_config,assignee',
-          filters: ['due_date=gte.' + firstDay, 'due_date=lte.' + lastDayStr]
-        });
-      }
+      // Sempre via /api/content (service role bypassa RLS)
+      var tasks = await _sbQuery('content_tasks', {
+        select: 'id,name,group_id,status,due_date,publish_config,assignee',
+        filters: ['due_date=gte.' + firstDay, 'due_date=lte.' + lastDayStr]
+      }) || [];
 
       var groupToClient = await _ensureGroupToClient();
       var todayStr = new Date().toISOString().slice(0, 10);
@@ -9784,19 +9779,11 @@ async function renderOperationalScore(monthKey, active) {
         try {
           var idFilter = 'task_id=in.(' + allTaskIds.join(',') + ')';
           var catFilter = 'category=in.(creative,final,reference)';
-          var atts;
-          if (_supabase) {
-            var aRes = await _supabase.from('content_attachments')
-              .select('task_id,file_url,file_type,file_name,category')
-              .in('task_id', allTaskIds)
-              .in('category', ['creative', 'final', 'reference']);
-            atts = aRes.data || [];
-          } else {
-            atts = await _sbQuery('content_attachments', {
-              select: 'task_id,file_url,file_type,file_name,category',
-              filters: [idFilter, catFilter]
-            });
-          }
+          // Sempre via /api/content (service role)
+          var atts = await _sbQuery('content_attachments', {
+            select: 'task_id,file_url,file_type,file_name,category',
+            filters: [idFilter, catFilter]
+          }) || [];
           // Prefer creative/final over reference; keep first one per task
           var priority = { final: 3, creative: 2, reference: 1 };
           (atts || []).forEach(function(a) {
@@ -10135,15 +10122,10 @@ async function _ensureGroupToClient() {
   if (_groupToClientPromise) return _groupToClientPromise;
   _groupToClientPromise = (async function() {
     try {
-      var rows;
-      if (_supabase) {
-        var gRes = await _supabase.from('content_groups').select('id,client_id');
-        rows = gRes.data || [];
-      } else {
-        rows = await _sbQuery('content_groups', { select: 'id,client_id' });
-      }
+      // Sempre via /api/content (service role) — direct supabase falha em RLS p/ sb_publishable
+      var rows = await _sbQuery('content_groups', { select: 'id,client_id' });
       _groupToClientCache = {};
-      rows.forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
+      (rows || []).forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
       return _groupToClientCache;
     } finally {
       _groupToClientPromise = null;
@@ -10195,20 +10177,11 @@ async function renderContentProgress(containerId, periodKey, active, mode) {
       return;
     }
 
-    // Query content_tasks within date range
-    var tasks;
-    if (_supabase) {
-      var res = await _supabase.from('content_tasks')
-        .select('group_id,status,due_date,publish_config')
-        .gte('due_date', startDate)
-        .lte('due_date', endDate);
-      tasks = res.data || [];
-    } else {
-      tasks = await _sbQuery('content_tasks', {
-        select: 'group_id,status,due_date,publish_config',
-        filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate]
-      });
-    }
+    // Query content_tasks via /api/content (service role bypassa RLS)
+    var tasks = await _sbQuery('content_tasks', {
+      select: 'group_id,status,due_date,publish_config',
+      filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate]
+    }) || [];
 
     // Get group → client mapping (cached)
     var groupToClient = await _ensureGroupToClient();
@@ -10552,22 +10525,12 @@ async function renderDashWeekPosts(weekKey) {
   }
 
   try {
-    // Query content_tasks with publish_config for this week range
-    var tasks;
-    if (_supabase) {
-      var res = await _supabase.from('content_tasks')
-        .select('group_id,name,status,due_date,publish_config,assignee,priority')
-        .gte('due_date', startDate)
-        .lte('due_date', endDate)
-        .order('due_date', { ascending: true });
-      tasks = res.data || [];
-    } else {
-      tasks = await _sbQuery('content_tasks', {
-        select: 'group_id,name,status,due_date,publish_config,assignee,priority',
-        filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate],
-        order: 'due_date.asc'
-      });
-    }
+    // Query content_tasks with publish_config for this week range (sempre via /api/content)
+    var tasks = await _sbQuery('content_tasks', {
+      select: 'group_id,name,status,due_date,publish_config,assignee,priority',
+      filters: ['due_date=gte.' + startDate, 'due_date=lte.' + endDate],
+      order: 'due_date.asc'
+    }) || [];
 
     // Get group → client mapping (cached)
     var groupToClient = await _ensureGroupToClient();
