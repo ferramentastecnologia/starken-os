@@ -2147,6 +2147,53 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-status[data-status="agendar"] { background:#fffbeb;color:#92400e; }
 .ct-status[data-status="agendado"] { background:#dbeafe;color:#1e40af; }
 .ct-status[data-status="publicado"] { background:#ecfdf5;color:#047857;font-weight:700; }
+[data-theme="emerald"] .ct-status { box-shadow:none; }
+[data-theme="emerald"] .ct-status[data-status="a-fazer"]          { background:rgba(148,163,184,0.10);color:#94a3b8; }
+[data-theme="emerald"] .ct-status[data-status="em-andamento"]     { background:rgba(70,238,205,0.10);color:#46eecd; }
+[data-theme="emerald"] .ct-status[data-status="criacao-conteudo"] { background:rgba(167,139,250,0.13);color:#a78bfa; }
+[data-theme="emerald"] .ct-status[data-status="design"]           { background:rgba(96,165,250,0.12);color:#60a5fa; }
+[data-theme="emerald"] .ct-status[data-status="em-revisao"]       { background:rgba(251,146,60,0.12);color:#fb923c;border-color:rgba(251,146,60,0.30); }
+[data-theme="emerald"] .ct-status[data-status="aprovacao-design"] { background:rgba(248,113,113,0.12);color:#f87171; }
+[data-theme="emerald"] .ct-status[data-status="alteracao-design"] { background:rgba(248,113,113,0.12);color:#f87171; }
+[data-theme="emerald"] .ct-status[data-status="aprovacao"]        { background:rgba(70,238,205,0.12);color:#46eecd; }
+[data-theme="emerald"] .ct-status[data-status="alteracao"]        { background:rgba(251,191,36,0.12);color:#fbbf24; }
+[data-theme="emerald"] .ct-status[data-status="revisao"]          { background:rgba(248,113,113,0.12);color:#f87171; }
+[data-theme="emerald"] .ct-status[data-status="aguardando"]       { background:rgba(45,212,191,0.10);color:#2dd4bf; }
+[data-theme="emerald"] .ct-status[data-status="standby"]          { background:rgba(148,163,184,0.10);color:#94a3b8; }
+[data-theme="emerald"] .ct-status[data-status="aprovado"]         { background:rgba(70,238,205,0.12);color:#46eecd; }
+[data-theme="emerald"] .ct-status[data-status="agendar"]          { background:rgba(251,191,36,0.12);color:#fbbf24; }
+[data-theme="emerald"] .ct-status[data-status="agendado"]         { background:rgba(147,197,253,0.12);color:#93c5fd; }
+[data-theme="emerald"] .ct-status[data-status="publicado"]        { background:rgba(70,238,205,0.15);color:#46eecd; }
+
+/* Days countdown badge */
+.mt-days-badge { font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;display:inline-block; }
+.mt-days-badge.past  { background:#f3f4f6;color:#6b7280; }
+.mt-days-badge.today { background:#fee2e2;color:#dc2626; }
+.mt-days-badge.soon  { background:#fffbeb;color:#d97706; }
+.mt-days-badge.week  { background:#eff6ff;color:#1d4ed8; }
+.mt-days-badge.ok    { background:#f0fdf4;color:#059669; }
+[data-theme="emerald"] .mt-days-badge.past  { background:rgba(148,163,184,0.10);color:#85948f; }
+[data-theme="emerald"] .mt-days-badge.today { background:rgba(248,113,113,0.14);color:#f87171; }
+[data-theme="emerald"] .mt-days-badge.soon  { background:rgba(251,191,36,0.12);color:#fbbf24; }
+[data-theme="emerald"] .mt-days-badge.week  { background:rgba(96,165,250,0.12);color:#93c5fd; }
+[data-theme="emerald"] .mt-days-badge.ok    { background:rgba(70,238,205,0.10);color:#46eecd; }
+
+/* Priority badge (used in both ct-row and mt-row) */
+.mt-prio-badge { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid;white-space:nowrap;letter-spacing:0.4px; }
+.mt-prio-badge.urgente { background:#fef2f2;color:#dc2626;border-color:#fecaca; }
+.mt-prio-badge.alta    { background:#fffbeb;color:#b45309;border-color:#fde68a; }
+.mt-prio-badge.normal  { background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe; }
+.mt-prio-badge.baixa   { background:#f9fafb;color:#6b7280;border-color:#e5e7eb; }
+[data-theme="emerald"] .mt-prio-badge.urgente { background:rgba(248,113,113,0.12);color:#f87171;border-color:rgba(248,113,113,0.30); }
+[data-theme="emerald"] .mt-prio-badge.alta    { background:rgba(251,191,36,0.10);color:#fbbf24;border-color:rgba(251,191,36,0.30); }
+[data-theme="emerald"] .mt-prio-badge.normal  { background:rgba(70,238,205,0.07);color:#46eecd;border-color:rgba(70,238,205,0.22); }
+[data-theme="emerald"] .mt-prio-badge.baixa   { background:rgba(185,199,228,0.05);color:#85948f;border-color:rgba(185,199,228,0.10); }
+
+/* WhatsApp cell badges */
+.mt-wa-sent { font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;display:inline-flex;align-items:center;gap:3px;background:#dcfce7;color:#166534; }
+.mt-wa-btn  { font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #16a34a;background:transparent;color:#16a34a;cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:3px; }
+[data-theme="emerald"] .mt-wa-sent { background:rgba(70,238,205,0.10);color:#46eecd; }
+[data-theme="emerald"] .mt-wa-btn  { border-color:rgba(70,238,205,0.30);color:#46eecd;background:rgba(70,238,205,0.05); }
 
 /* Priority flags */
 .ct-priority { font-size:0.9rem;cursor:pointer; }
@@ -18224,9 +18271,7 @@ function ctRenderList() {
 
         const status = CT_STATUSES.find(s => s.key === task.status) || CT_STATUSES[0];
         const priority = CT_PRIORITIES.find(p => p.key === task.priority) || CT_PRIORITIES[2];
-        const _prioColors = { urgente:{bg:'#fef2f2',color:'#dc2626',border:'#fecaca'}, alta:{bg:'#fffbeb',color:'#b45309',border:'#fde68a'}, normal:{bg:'#eff6ff',color:'#1d4ed8',border:'#bfdbfe'}, baixa:{bg:'#f9fafb',color:'#6b7280',border:'#e5e7eb'} };
-        const _pc = _prioColors[priority.key] || _prioColors.normal;
-        const priorityBadgeHtml = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid ' + _pc.border + ';background:' + _pc.bg + ';color:' + _pc.color + ';white-space:nowrap;letter-spacing:0.3px">' + priority.icon + ' ' + priority.label.toUpperCase() + '</span>';
+        const priorityBadgeHtml = '<span class="mt-prio-badge ' + priority.key + '" style="font-size:11px">' + priority.icon + ' ' + priority.label.toUpperCase() + '</span>';
         const user = CT_USERS.find(u => u.name === task.assignee);
         const hasSubtasks = task.subtasks && task.subtasks.length > 0;
         const taskExpanded = ctExpandedTasks[task.id] !== false;
@@ -26771,14 +26816,7 @@ function mtRenderRow(task, mode) {
   const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
 
   const priorityMatch = CT_PRIORITIES.find(p => p.key === (task.priority || 'normal')) || CT_PRIORITIES[2];
-  const priorityColors = {
-    urgente: { bg: '#dc2626', color: '#fff', border: '#dc2626' },
-    alta:    { bg: '#d97706', color: '#fff', border: '#d97706' },
-    normal:  { bg: '#1d4ed8', color: '#fff', border: '#1d4ed8' },
-    baixa:   { bg: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)', border: 'rgba(255,255,255,0.1)' },
-  };
-  const pc = priorityColors[priorityMatch.key] || priorityColors.normal;
-  const priorityBadge = '<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid ' + pc.border + ';background:' + pc.bg + ';color:' + pc.color + ';white-space:nowrap;letter-spacing:0.4px">' + priorityMatch.icon + ' ' + priorityMatch.label.toUpperCase() + '</span>';
+  const priorityBadge = '<span class="mt-prio-badge ' + priorityMatch.key + '">' + priorityMatch.icon + ' ' + priorityMatch.label.toUpperCase() + '</span>';
 
   // Row highlight for tasks needing attention
   const isAlteracao = statusKey === 'alteracao-design';
@@ -26803,14 +26841,14 @@ function mtRenderRow(task, mode) {
     var _today = new Date(); _today.setHours(0,0,0,0);
     var _postD  = new Date(_mtPostDate + 'T00:00:00');
     var _diff   = Math.ceil((_postD - _today) / 86400000);
-    var _dColor, _dBg, _dLabel;
-    if (_diff < 0)       { _dColor = '#6b7280'; _dBg = '#f3f4f6'; _dLabel = Math.abs(_diff) + 'd atrás'; }
-    else if (_diff === 0){ _dColor = '#dc2626'; _dBg = '#fee2e2'; _dLabel = 'Hoje!'; }
-    else if (_diff === 1){ _dColor = '#dc2626'; _dBg = '#fee2e2'; _dLabel = '1 dia'; }
-    else if (_diff <= 3) { _dColor = '#d97706'; _dBg = '#fffbeb'; _dLabel = _diff + ' dias'; }
-    else if (_diff <= 7) { _dColor = '#1d4ed8'; _dBg = '#eff6ff'; _dLabel = _diff + ' dias'; }
-    else                 { _dColor = '#059669'; _dBg = '#f0fdf4'; _dLabel = _diff + ' dias'; }
-    _mtDaysBadge = '<br><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:' + _dBg + ';color:' + _dColor + '">' + _dLabel + '</span>';
+    var _dClass, _dLabel;
+    if (_diff < 0)       { _dClass = 'past';  _dLabel = Math.abs(_diff) + 'd atrás'; }
+    else if (_diff === 0){ _dClass = 'today'; _dLabel = 'Hoje!'; }
+    else if (_diff === 1){ _dClass = 'today'; _dLabel = '1 dia'; }
+    else if (_diff <= 3) { _dClass = 'soon';  _dLabel = _diff + ' dias'; }
+    else if (_diff <= 7) { _dClass = 'week';  _dLabel = _diff + ' dias'; }
+    else                 { _dClass = 'ok';    _dLabel = _diff + ' dias'; }
+    _mtDaysBadge = '<br><span class="mt-days-badge ' + _dClass + '">' + _dLabel + '</span>';
   }
 
   // Célula WhatsApp (apenas para aprovacao)
@@ -26821,12 +26859,11 @@ function mtRenderRow(task, mode) {
       var _waD   = new Date(_waSentAt);
       var _waStr = _waD.toLocaleDateString('pt-BR',{ day:'2-digit', month:'2-digit' }) + ' ' + _waD.toLocaleTimeString('pt-BR',{ hour:'2-digit', minute:'2-digit' });
       _waCell = '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
-        + '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:#dcfce7;color:#166534;white-space:nowrap"><span class="mso mso-fill">check_circle</span> WA ' + _waStr + '</span>'
+        + '<span class="mt-wa-sent"><span class="mso mso-fill">check_circle</span> WA ' + _waStr + '</span>'
         + '<button onclick="event.stopPropagation();mtClearWhatsappSent(\'' + task.id + '\')" style="padding:0 4px;border:none;background:transparent;color:#9ca3af;cursor:pointer;font-size:11px;line-height:1" title="Resetar"><span class="mso">close</span></button>'
         + '</div>';
     } else {
-      _waCell = '<div><button onclick="event.stopPropagation();mtMarkWhatsappSent(\'' + task.id + '\')" '
-        + 'style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;border:1px solid #16a34a;background:transparent;color:#16a34a;cursor:pointer;font-family:inherit;white-space:nowrap">'
+      _waCell = '<div><button onclick="event.stopPropagation();mtMarkWhatsappSent(\'' + task.id + '\')" class="mt-wa-btn">'
         + '<span class="mso">smartphone</span> Enviar WA</button></div>';
     }
   }
