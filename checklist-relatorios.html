@@ -8224,8 +8224,8 @@ async function renderOperationalScore(monthKey, active) {
           company: company
         });
 
-        // Skip cancelled/archived/not-to-post
-        if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado') {
+        // Skip cancelled/archived/not-to-post/standby
+        if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado' || t.status === 'standby') {
           breakdown.skipped.push(enriched);
           return;
         }
