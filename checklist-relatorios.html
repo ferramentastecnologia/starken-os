@@ -9643,7 +9643,10 @@ async function emRenderImplementations() {
   var el = document.getElementById('emImplementations');
   if (!el || !emIsActive()) return;
   el.innerHTML =
-    '<div class="em-section-label" style="margin-top:24px">Implementações Recentes</div>'
+    '<div class="em-section-label" style="margin-top:24px;display:flex;align-items:center;justify-content:space-between">'
+    + '<span>Últimas Postagens</span>'
+    + '<button onclick="switchTab(\'pub-history\')" style="font-size:0.72rem;font-weight:700;color:#46eecd;background:none;border:1px solid rgba(70,238,205,0.3);border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit">Ver todas →</button>'
+    + '</div>'
     + '<div style="background:var(--bg-surface);border:1px solid rgba(255,255,255,0.05);border-radius:14px;overflow:hidden">'
     + '<div id="emImplBody" style="padding:18px;color:#85948f;font-size:0.85rem">Carregando...</div>'
     + '</div>';
@@ -9655,7 +9658,7 @@ async function emRenderImplementations() {
       select: 'id,client_key,client_name,status,platform,caption,created_at,scheduled_for',
       filters: ['status=in.(PUBLISHED,SCHEDULED)'],
       order: 'created_at.desc',
-      limit: 5
+      limit: 50
     }) || [];
   } catch(e) { console.warn('impl err', e); }
 
@@ -9690,6 +9693,15 @@ async function emRenderImplementations() {
     if (p.indexOf('facebook') >= 0 || p === 'fb') return iconSvg('campaign',{size:16});
     return iconSvg('rocket',{size:16});
   }
+
+  // Ordena alfabeticamente por nome do cliente
+  rows.sort(function(a, b) {
+    var ma = (typeof _metaClients !== 'undefined' && _metaClients && a.client_key) ? _metaClients[a.client_key] : null;
+    var mb = (typeof _metaClients !== 'undefined' && _metaClients && b.client_key) ? _metaClients[b.client_key] : null;
+    var na = a.client_name || (ma ? ma.name : null) || a.client_key || '';
+    var nb = b.client_name || (mb ? mb.name : null) || b.client_key || '';
+    return na.localeCompare(nb, 'pt-BR');
+  });
 
   var html = '<table class="em-table"><thead><tr>'
     + '<th>Projeto</th><th>Cliente</th><th>Status</th><th>Data</th><th>Impacto</th>'
