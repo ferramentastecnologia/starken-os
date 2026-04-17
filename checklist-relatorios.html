@@ -5800,9 +5800,19 @@ async function _sbQuery(table, { select='*', filters=[], order=null, limit=null 
   filters.forEach(function(f) { url += '&' + f; });
   if (order) url += '&order=' + order;
   if (limit) url += '&limit=' + limit;
-  const res = await fetch(url, { headers: _SB_REST_HDRS });
-  if (!res.ok) { const txt = await res.text(); throw new Error('Supabase REST ' + res.status + ': ' + txt.slice(0, 120)); }
-  return res.json();
+  // 15s timeout to avoid hanging forever if the server doesn't respond
+  const ctrl = new AbortController();
+  const timer = setTimeout(function() { ctrl.abort(); }, 15000);
+  try {
+    const res = await fetch(url, { headers: _SB_REST_HDRS, signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) { const txt = await res.text(); throw new Error('Supabase REST ' + res.status + ': ' + txt.slice(0, 120)); }
+    return res.json();
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('Timeout (15s) em ' + table);
+    throw e;
+  }
 }
 
 function setSyncStatus(status) {
@@ -8346,7 +8356,13 @@ async function renderOperationalScore(monthKey, active) {
 function dashOpDrilldown(type, monthKey) {
   var cached = _opScoreCache[monthKey];
   if (!cached) return;
-  var list = cached.breakdown[type] || [];
+  var list = (cached.breakdown[type] || []).slice();
+  // Sort chronologically: soonest due first (most urgent at top)
+  list.sort(function(a, b) {
+    var da = a.due_date || '9999-99-99';
+    var db = b.due_date || '9999-99-99';
+    return da.localeCompare(db);
+  });
   var titles = { onTime: '✅ Publicados no prazo', late: '⚠️ Atrasados (venceu e não publicou)', pending: '📅 Pendentes (ainda no prazo)', failed: '❌ Com falha' };
   var colors = { onTime: '#10b981', late: '#f59e0b', pending: '#3b82f6', failed: '#ef4444' };
 
@@ -8388,6 +8404,7 @@ async function dashRefreshAll() {
     _dashWeekPostsCache = {};
     _opScoreCache = {};
     _groupToClientCache = null;
+    _groupToClientPromise = null;
     if (typeof loadCronogramaStatus === 'function') await loadCronogramaStatus();
     if (typeof renderDashboard === 'function') renderDashboard();
     if (icon) icon.textContent = '✅';
@@ -8425,18 +8442,27 @@ function renderProgress(containerId, periodKey, active) {
 var _contentProgressCache = {};
 var _groupToClientCache = null;
 
+var _groupToClientPromise = null;
 async function _ensureGroupToClient() {
   if (_groupToClientCache) return _groupToClientCache;
-  var rows;
-  if (_supabase) {
-    var gRes = await _supabase.from('content_groups').select('id,client_id');
-    rows = gRes.data || [];
-  } else {
-    rows = await _sbQuery('content_groups', { select: 'id,client_id' });
-  }
-  _groupToClientCache = {};
-  rows.forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
-  return _groupToClientCache;
+  if (_groupToClientPromise) return _groupToClientPromise;
+  _groupToClientPromise = (async function() {
+    try {
+      var rows;
+      if (_supabase) {
+        var gRes = await _supabase.from('content_groups').select('id,client_id');
+        rows = gRes.data || [];
+      } else {
+        rows = await _sbQuery('content_groups', { select: 'id,client_id' });
+      }
+      _groupToClientCache = {};
+      rows.forEach(function(g) { _groupToClientCache[g.id] = g.client_id; });
+      return _groupToClientCache;
+    } finally {
+      _groupToClientPromise = null;
+    }
+  })();
+  return _groupToClientPromise;
 }
 
 async function renderContentProgress(containerId, periodKey, active, mode) {
