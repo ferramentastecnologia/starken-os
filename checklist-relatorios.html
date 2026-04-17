@@ -16220,8 +16220,10 @@ function ctRenderStoriesView(groups) {
       var dayShort = RS_DAYS_SHORT[RS_DAYS.findIndex(function(d){ return dayLabel.toUpperCase().includes(d.toUpperCase().substring(0,3)); })] || dayLabel.substring(0,3).toUpperCase();
 
       // Story subtasks for this day (API returns nested .subtasks, not flat)
-      var stories = (dayTask.subtasks || []);
-      stories.sort(function(a,b){ return (a.position||0)-(b.position||0); });
+      // Only show stories that have a thumbnail (uploaded by user via +)
+      var allSubtasks = (dayTask.subtasks || []);
+      allSubtasks.sort(function(a,b){ return (a.position||0)-(b.position||0); });
+      var stories = allSubtasks.filter(function(s){ return s.publish_config && s.publish_config.thumbnail_url; });
 
       html += '<div class="rs-day-col">';
       html += '<div class="rs-day-header"><span class="rs-day-name">' + dayShort + '</span><span class="rs-day-count">' + stories.length + '</span></div>';
@@ -16236,11 +16238,7 @@ function ctRenderStoriesView(groups) {
         var fbBadge = platforms.includes('fb') ? '<span class="rs-plat fb">FB</span>' : '';
 
         html += '<div class="rs-story-card" data-task-id="' + story.id + '">';
-        if (thumbUrl) {
-          html += '<img class="rs-thumb" src="' + thumbUrl + '" loading="lazy" onclick="ctRsPreview(\'' + thumbUrl.replace(/'/g,"\\'") + '\')" title="Ver em tamanho real">';
-        } else {
-          html += '<div class="rs-thumb-empty">📷</div>';
-        }
+        html += '<img class="rs-thumb" src="' + thumbUrl + '" loading="lazy" onclick="ctRsPreview(\'' + thumbUrl.replace(/'/g,"\\'") + '\')" title="Ver em tamanho real">';
         html += '<div class="rs-story-footer">'
           + '<input type="time" class="rs-time-input" value="' + schedTime + '" onchange="ctRsUpdateTime(\'' + story.id + '\',this.value)" title="Horário de publicação">'
           + '<div class="rs-plats">' + igBadge + fbBadge + '</div>'
