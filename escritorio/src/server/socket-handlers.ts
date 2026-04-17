@@ -55,6 +55,8 @@ import { registerMeetingDiscussionHandlers } from "./meeting-discussion";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
 const { OpenClawGateway } = require("../lib/openclaw-gateway.js") as { OpenClawGateway: new () => any };
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const { OpenAIGateway, isOpenAIGateway } = require("../lib/openai-gateway.js") as { OpenAIGateway: new () => any; isOpenAIGateway: (url: string) => boolean };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { parseNpcResponse, isValidTaskAction } = require("../lib/task-parser.js") as typeof import("../lib/task-parser.js");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -449,7 +451,9 @@ export async function getOrConnectGateway(channelId: string): Promise<any | null
   }
 
   try {
-    const gw = new OpenClawGateway();
+    const gw = isOpenAIGateway(gatewayConfig.baseUrl)
+      ? new OpenAIGateway()
+      : new OpenClawGateway();
     await gw.connect(gatewayConfig.baseUrl, gatewayConfig.token);
     channelGateways.set(gatewayKey, gw);
     return gw;

@@ -132,6 +132,9 @@ export default function NpcHireModal({
     error?: string;
   }>({ phase: "idle", status: "" });
 
+  // Motor selection: openai (cloud 24/7) | claude-local (Claude Code CLI)
+  const [motorType, setMotorType] = useState<"openai" | "claude-local">("openai");
+
   // Agent selection state
   const [gatewayAgents, setGatewayAgents] = useState<GatewayAgent[]>([]);
   const [agentsLoading, setAgentsLoading] = useState(false);
@@ -442,7 +445,7 @@ export default function NpcHireModal({
         if (createNewAgent && newAgentId.trim()) { agentId = newAgentId.trim(); agentAction = "create"; }
         else if (selectedAgentId) { agentId = selectedAgentId; agentAction = selectedAgentId !== editingNpc!.agentId ? "select" : undefined; }
       }
-      onSaveEdit(editingNpc!.id, { presetId: activePresetId, name: name.trim(), persona: personaCompat, appearance, direction, identity: identity.trim(), soul: soul.trim(), agentId, agentAction, locale });
+      onSaveEdit(editingNpc!.id, { presetId: activePresetId, name: name.trim(), persona: personaCompat, appearance, direction, identity: identity.trim(), soul: soul.trim(), agentId, agentAction, locale, motorType });
     } else {
       let agentId: string | undefined;
       let agentAction: "select" | "create" | undefined;
@@ -450,7 +453,7 @@ export default function NpcHireModal({
         if (createNewAgent && newAgentId.trim()) { agentId = newAgentId.trim(); agentAction = "create"; }
         else if (selectedAgentId) { agentId = selectedAgentId; agentAction = "select"; }
       }
-      onPlaceOnMap({ presetId: activePresetId, name: name.trim(), persona: personaCompat, appearance, direction, agentId, agentAction, identity: identity.trim(), soul: soul.trim(), locale });
+      onPlaceOnMap({ presetId: activePresetId, name: name.trim(), persona: personaCompat, appearance, direction, agentId, agentAction, identity: identity.trim(), soul: soul.trim(), locale, motorType });
     }
   };
 
@@ -488,10 +491,32 @@ export default function NpcHireModal({
               />
             </div>
 
+            {/* Motor selector */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Motor do Agente</label>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMotorType("openai")}
+                  className={`flex-1 py-2 px-3 rounded text-sm font-semibold border transition-colors ${motorType === "openai" ? "bg-green-700 border-green-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"}`}
+                >
+                  🌐 OpenAI <span className="text-xs font-normal opacity-75">(Cloud 24/7)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMotorType("claude-local")}
+                  className={`flex-1 py-2 px-3 rounded text-sm font-semibold border transition-colors ${motorType === "claude-local" ? "bg-indigo-700 border-indigo-500 text-white" : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"}`}
+                >
+                  ⚡ Claude <span className="text-xs font-normal opacity-75">(Local Max)</span>
+                </button>
+              </div>
+            </div>
+
             {/* AI Agent Section */}
             <AgentSection
               hasGateway={hasGateway}
               isEdit={isEdit}
+              motorType={motorType}
               gatewayAgents={gatewayAgents} setGatewayAgents={setGatewayAgents}
               agentsLoading={agentsLoading}
               gatewayConnectionState={gatewayConnectionState}
@@ -675,6 +700,7 @@ export default function NpcHireModal({
 function AgentSection({
   hasGateway,
   isEdit,
+  motorType,
   gatewayAgents, setGatewayAgents,
   agentsLoading,
   gatewayConnectionState,
@@ -689,6 +715,7 @@ function AgentSection({
 }: {
   hasGateway: boolean;
   isEdit: boolean;
+  motorType: "openai" | "claude-local";
   gatewayAgents: GatewayAgent[];
   setGatewayAgents: React.Dispatch<React.SetStateAction<GatewayAgent[]>>;
   agentsLoading: boolean;
