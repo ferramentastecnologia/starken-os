@@ -7340,6 +7340,7 @@ var _pubHistExpanded = {};
 var _pubHistLoaded = false;
 var _pubHistPostData = {}; // histId → { clientKey, platform, caption } para retry
 var _phTasks = [];          // content_tasks cache
+var _phClients = [];        // clients table cache
 var _phGroupToClient = {};  // group_id → client_id
 
 async function pubHistoryRefresh() {
@@ -7360,11 +7361,15 @@ async function pubHistoryRefresh() {
     // 2. Fetch content_tasks dos últimos 30 dias (filtro mais fino no render)
     if (typeof _supabase !== 'undefined' && _supabase) {
       var start30 = new Date(); start30.setDate(start30.getDate() - 30);
-      var tRes = await _supabase.from('content_tasks')
-        .select('id,name,group_id,status,due_date,publish_config,assignee')
-        .gte('due_date', start30.toISOString().slice(0, 10))
-        .not('status', 'in', '("cancelado","arquivado","nao-publicado","standby","nao-utilizado")');
+      var [tRes, cRes] = await Promise.all([
+        _supabase.from('content_tasks')
+          .select('id,name,group_id,status,due_date,publish_config,assignee,updated_at')
+          .in('status', ['publicado', 'agendado', 'failed'])
+          .gte('updated_at', start30.toISOString()),
+        _supabase.from('clients').select('id,name,company,slug')
+      ]);
       _phTasks = tRes.data || [];
+      _phClients = cRes.data || [];
       _phGroupToClient = await _ensureGroupToClient();
     }
 
@@ -7398,14 +7403,16 @@ function pubHistoryRender() {
 
   if (_phTasks.length > 0) {
     var clientById = {};
-    (data.clients || []).forEach(function(c) { clientById[c.id] = c; });
+    (_phClients || []).forEach(function(c) { clientById[c.id] = c; });
     var gc = _phGroupToClient || {};
     var clientMap = {};
 
     _phTasks.forEach(function(t) {
       var pc = t.publish_config || {};
+      // Use updated_at as period reference (when status changed to publicado/agendado)
+      var refDate = (t.updated_at || t.due_date || '').slice(0, 10);
       var taskDate = (pc.post_date || t.due_date || '').slice(0, 10);
-      if (cutoffStr && taskDate && taskDate < cutoffStr) return;
+      if (cutoffStr && refDate && refDate < cutoffStr) return;
 
       // Map task status to publish-style status
       var hasError = !!pc.error || t.status === 'failed';
