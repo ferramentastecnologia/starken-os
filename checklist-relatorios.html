@@ -8217,32 +8217,38 @@ async function renderOperationalScore(monthKey, active) {
         var clientId = groupToClient[t.group_id];
         var client = data.clients.find(function(c) { return c.id === clientId; });
         var company = client ? client.company : null;
+        // Enrich every task with client info so drilldown doesn't show "?"
+        var enriched = Object.assign({}, t, {
+          client_name: client ? client.name : '?',
+          client_id: clientId || null,
+          company: company
+        });
 
         // Skip cancelled/archived/not-to-post
         if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado') {
-          breakdown.skipped.push(t);
+          breakdown.skipped.push(enriched);
           return;
         }
 
         if (company && byCompany[company]) byCompany[company].t++;
 
         var isFailed = (t.publish_config && t.publish_config.error) || t.status === 'failed';
-        if (isFailed) { breakdown.failed.push(t); return; }
+        if (isFailed) { breakdown.failed.push(enriched); return; }
 
         if (t.status === 'publicado') {
-          breakdown.onTime.push(t);
+          breakdown.onTime.push(enriched);
           if (company && byCompany[company]) byCompany[company].p++;
           return;
         }
 
         // Due date passed but not published
         if (t.due_date && t.due_date < todayStr) {
-          breakdown.late.push({ ...t, client_name: client ? client.name : '?', company: company });
+          breakdown.late.push(enriched);
           return;
         }
 
         // Future or today — still pending
-        breakdown.pending.push(t);
+        breakdown.pending.push(enriched);
       });
 
       // Score = published / (total - pending)
@@ -8354,40 +8360,145 @@ function dashOpDrilldown(type, monthKey) {
   var cached = _opScoreCache[monthKey];
   if (!cached) return;
   var list = (cached.breakdown[type] || []).slice();
-  // Sort chronologically: soonest due first (most urgent at top)
   list.sort(function(a, b) {
     var da = a.due_date || '9999-99-99';
     var db = b.due_date || '9999-99-99';
     return da.localeCompare(db);
   });
-  var titles = { onTime: '✅ Publicados no prazo', late: '⚠️ Atrasados (venceu e não publicou)', pending: '📅 Pendentes (ainda no prazo)', failed: '❌ Com falha' };
-  var colors = { onTime: '#10b981', late: '#f59e0b', pending: '#3b82f6', failed: '#ef4444' };
 
-  var groupToClient = _groupToClientCache || {};
+  var titles = { onTime: '✅ Publicados no prazo', late: '⚠️ Atrasados (venceu e não publicou)', pending: '📅 Pendentes (ainda no prazo)', failed: '❌ Com falha' };
+  var headerColors = { onTime: '#10b981', late: '#f59e0b', pending: '#3b82f6', failed: '#ef4444' };
+
+  var todayStr = new Date().toISOString().slice(0, 10);
+  var yDt = new Date(); yDt.setDate(yDt.getDate() - 1);
+  var yesterdayStr = yDt.toISOString().slice(0, 10);
+
+  // Group by due_date
+  var groups = {};
+  list.forEach(function(t) {
+    var k = t.due_date || '9999-12-31';
+    (groups[k] = groups[k] || []).push(t);
+  });
+  var sortedKeys = Object.keys(groups).sort();
+
+  function fmtDateHeader(dateStr) {
+    if (dateStr === todayStr) return '📌 HOJE';
+    if (dateStr === yesterdayStr) return 'ONTEM';
+    if (dateStr === '9999-12-31') return 'SEM DATA';
+    var parts = dateStr.split('-');
+    var dayOfWeek = new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+    return dayOfWeek.toUpperCase() + ' ' + parts[2] + '/' + parts[1];
+  }
+  function daysLate(dateStr) {
+    if (!dateStr) return 0;
+    var d1 = new Date(dateStr + 'T12:00:00');
+    var d2 = new Date(todayStr + 'T12:00:00');
+    return Math.floor((d2 - d1) / 86400000);
+  }
+  function avatarHtml(assignee) {
+    var names = (assignee || '').split(',').map(function(n){ return n.trim(); }).filter(Boolean);
+    if (!names.length) return '<div style="width:30px;height:30px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#6b7280;flex-shrink:0">—</div>';
+    var html = '<div style="display:flex;flex-shrink:0">';
+    names.slice(0, 3).forEach(function(n, i) {
+      var user = (typeof CT_USERS !== 'undefined') ? CT_USERS.find(function(u) { return u.name === n; }) : null;
+      var color = user ? user.color : '#64748b';
+      html += '<div title="' + esc(n) + '" style="width:30px;height:30px;border-radius:50%;background:' + color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;margin-left:' + (i > 0 ? '-9px' : '0') + ';border:2px solid var(--bg-card,#fff)">' + n.charAt(0).toUpperCase() + '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+  function companyPill(company) {
+    if (company === 'Starken') return '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:5px;font-size:0.62rem;font-weight:800;letter-spacing:0.3px">STARKEN</span>';
+    if (company === 'Alpha')   return '<span style="background:#fed7aa;color:#9a3412;padding:2px 8px;border-radius:5px;font-size:0.62rem;font-weight:800;letter-spacing:0.3px">ALPHA</span>';
+    return '';
+  }
+  function statusBadge(statusKey) {
+    var s = (typeof CT_STATUSES !== 'undefined') ? CT_STATUSES.find(function(x){ return x.key === statusKey; }) : null;
+    if (!s) s = { label: statusKey || '—', color: '#6b7280', bg: '#f3f4f6' };
+    return '<span style="background:' + s.bg + ';color:' + s.color + ';padding:2px 8px;border-radius:5px;font-size:0.65rem;font-weight:700">' + s.label + '</span>';
+  }
+
   var h = '<div id="dashOpModal" onclick="if(event.target===this)document.getElementById(\'dashOpModal\').remove()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px">';
-  h += '<div style="background:var(--bg-card,#fff);color:var(--text);border-radius:14px;max-width:640px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)">';
-  h += '<div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
-  h += '<div style="font-size:1.05rem;font-weight:700;color:' + colors[type] + '">' + titles[type] + ' <span style="color:var(--text-muted);font-weight:500">(' + list.length + ')</span></div>';
+  h += '<div style="background:var(--bg-card,#fff);color:var(--text);border-radius:14px;max-width:780px;width:100%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.3)">';
+  h += '<div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
+  h += '<div style="font-size:1.05rem;font-weight:700;color:' + headerColors[type] + '">' + titles[type] + ' <span style="color:var(--text-muted);font-weight:500">(' + list.length + ')</span></div>';
   h += '<button onclick="document.getElementById(\'dashOpModal\').remove()" style="background:transparent;border:0;font-size:1.5rem;cursor:pointer;color:var(--text-muted)">×</button>';
   h += '</div>';
-  h += '<div style="padding:12px 20px;overflow-y:auto;flex:1">';
+  h += '<div style="overflow-y:auto;flex:1">';
+
   if (list.length === 0) {
-    h += '<p style="text-align:center;color:var(--text-muted);padding:30px">Nenhum item.</p>';
+    h += '<p style="text-align:center;color:var(--text-muted);padding:40px">Nenhum item.</p>';
   } else {
-    list.forEach(function(t) {
-      var clientId = groupToClient[t.group_id];
-      var client = data.clients.find(function(c) { return c.id === clientId; });
-      var dueDate = t.due_date ? t.due_date.split('-').reverse().slice(0,2).join('/') : '—';
-      h += '<div style="padding:10px 0;border-bottom:1px solid var(--border-light)">';
-      h += '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center">';
-      h += '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.name || '(sem nome)') + '</div>';
-      h += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">' + (client ? esc(client.name) : '?') + ' · ' + esc(t.status) + ' · ' + (t.assignee ? esc(t.assignee) : '—') + '</div></div>';
-      h += '<div style="font-size:0.8rem;font-weight:600;color:' + colors[type] + '">' + dueDate + '</div>';
-      h += '</div></div>';
+    sortedKeys.forEach(function(dateStr) {
+      var dateTasks = groups[dateStr];
+      var late = daysLate(dateStr);
+      var veryLate = (type === 'late' && late > 3);
+      var hdrColor = veryLate ? '#dc2626' : 'var(--text-muted)';
+      h += '<div style="padding:10px 22px 6px;font-size:0.68rem;font-weight:800;color:' + hdrColor + ';letter-spacing:0.5px;background:var(--bg-muted,#f9fafb);border-bottom:1px solid var(--border-light);position:sticky;top:0;z-index:2">';
+      h += fmtDateHeader(dateStr);
+      if (veryLate) h += ' 🔥 ' + late + ' DIAS ATRASO';
+      h += ' · ' + dateTasks.length + (dateTasks.length === 1 ? ' TASK' : ' TASKS');
+      h += '</div>';
+
+      dateTasks.forEach(function(t) {
+        var vLate = (type === 'late' && daysLate(t.due_date) > 3);
+        var rowBg = vLate ? 'rgba(239,68,68,0.06)' : 'transparent';
+        h += '<div onclick="document.getElementById(\'dashOpModal\').remove();if(typeof ctOpenModal===\'function\')ctOpenModal(\'' + t.id + '\')" style="padding:12px 22px;border-bottom:1px solid var(--border-light);display:flex;gap:12px;align-items:center;cursor:pointer;background:' + rowBg + '" onmouseover="this.style.background=\'var(--bg-hover,rgba(59,130,246,0.06))\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
+        h += avatarHtml(t.assignee);
+        h += '<div style="flex:1;min-width:0">';
+        h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">';
+        h += companyPill(t.company);
+        h += '<span style="font-size:0.72rem;color:var(--text-muted);font-weight:600">' + esc(t.client_name || '—') + '</span>';
+        h += '</div>';
+        h += '<div style="font-weight:600;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px">' + esc(t.name || '(sem nome)') + '</div>';
+        h += '<div>' + statusBadge(t.status) + '</div>';
+        h += '</div>';
+        h += '<button onclick="event.stopPropagation();dashOpStatusDropdown(event,\'' + t.id + '\')" style="background:var(--bg-hover,#f3f4f6);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:0.95rem;cursor:pointer;color:var(--text);font-family:inherit;font-weight:600;flex-shrink:0" title="Alterar status">🔄</button>';
+        h += '</div>';
+      });
     });
   }
+
   h += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', h);
+}
+
+// Dedicated status dropdown for the drilldown modal — invalidates dashboard caches after change
+function dashOpStatusDropdown(event, taskId) {
+  event.stopPropagation();
+  if (typeof ctCloseDropdowns === 'function') ctCloseDropdowns();
+  var rect = event.currentTarget.getBoundingClientRect();
+  var dropdown = document.createElement('div');
+  dropdown.className = 'ct-dropdown';
+  dropdown.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + Math.max(12, rect.left - 140) + 'px;background:var(--bg-card,#fff);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.2);z-index:10002;max-height:360px;overflow-y:auto;min-width:200px;padding:4px';
+
+  CT_STATUSES.forEach(function(s) {
+    var item = document.createElement('div');
+    item.style.cssText = 'padding:8px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:0.82rem;border-radius:6px;color:var(--text)';
+    item.onmouseover = function() { item.style.background = 'var(--bg-hover,#f3f4f6)'; };
+    item.onmouseout = function() { item.style.background = 'transparent'; };
+    item.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></span>' + s.label;
+    item.onclick = async function(e) {
+      e.stopPropagation();
+      dropdown.remove();
+      try {
+        await ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() });
+        _opScoreCache = {}; _dashWeekPostsCache = {}; _contentProgressCache = {};
+        var modal = document.getElementById('dashOpModal');
+        if (modal) modal.remove();
+        if (typeof renderDashboard === 'function') renderDashboard();
+        if (typeof showToast === 'function') showToast('Status: ' + s.label, 'success');
+      } catch(err) {
+        if (typeof showToast === 'function') showToast('Erro: ' + err.message, 'error');
+      }
+    };
+    dropdown.appendChild(item);
+  });
+
+  document.body.appendChild(dropdown);
+  setTimeout(function() {
+    document.addEventListener('click', function rm() { dropdown.remove(); document.removeEventListener('click', rm); });
+  }, 10);
 }
 
 // Refresh button — clears caches and re-renders everything
