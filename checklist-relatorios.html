@@ -8225,7 +8225,7 @@ async function renderOperationalScore(monthKey, active) {
         });
 
         // Skip cancelled/archived/not-to-post/standby
-        if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado' || t.status === 'standby') {
+        if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado' || t.status === 'standby' || t.status === 'nao-utilizado') {
           breakdown.skipped.push(enriched);
           return;
         }
@@ -8315,7 +8315,7 @@ async function renderOperationalScore(monthKey, active) {
         var weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
         var wsStr = weekStart.toISOString().slice(0, 10);
         var weStr = weekEnd.toISOString().slice(0, 10);
-        var wkTasks = tasks.filter(function(t) { return t.due_date >= wsStr && t.due_date <= weStr && t.status !== 'cancelado' && t.status !== 'arquivado' && t.status !== 'nao-publicado'; });
+        var wkTasks = tasks.filter(function(t) { return t.due_date >= wsStr && t.due_date <= weStr && t.status !== 'cancelado' && t.status !== 'arquivado' && t.status !== 'nao-publicado' && t.status !== 'standby' && t.status !== 'nao-utilizado'; });
         var wkPub = wkTasks.filter(function(t) { return t.status === 'publicado'; }).length;
         var wkDue = wkTasks.filter(function(t) { var late = t.due_date < todayStr && t.status !== 'publicado'; return t.status === 'publicado' || late || (t.publish_config && t.publish_config.error); }).length;
         var wkScore = wkDue === 0 ? null : Math.round((wkPub / wkDue) * 100);
@@ -8707,8 +8707,8 @@ async function renderContentProgress(containerId, periodKey, active, mode) {
       var clientKey = groupToClient[t.group_id];
       if (!clientKey) return;
       if (!clientStats[clientKey]) clientStats[clientKey] = { total: 0, published: 0, scheduled: 0 };
-      // Skip cancelled/archived
-      if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado') return;
+      // Skip cancelled/archived/standby/not-used
+      if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado' || t.status === 'standby' || t.status === 'nao-utilizado') return;
       clientStats[clientKey].total++;
       if (t.status === 'publicado') clientStats[clientKey].published++;
       else if (t.status === 'agendado') clientStats[clientKey].scheduled++;
@@ -9112,7 +9112,7 @@ async function renderDashWeekPosts(weekKey) {
           else if (e.status === 'scheduled' || e.status === 'queued') { dayData[day][clientKey].scheduled++; totalSched++; }
         });
       } else {
-        if (t.status === 'nao-publicado' || t.status === 'cancelado' || t.status === 'arquivado') return;
+        if (t.status === 'nao-publicado' || t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'standby' || t.status === 'nao-utilizado') return;
         dayData[day][clientKey].total++;
         totalPosts++;
         if (t.status === 'publicado') { dayData[day][clientKey].published++; totalPub++; taskStatus = 'published'; }
@@ -15395,6 +15395,7 @@ const CT_STATUSES = [
   { key: 'agendado', label: 'Agendado', color: '#1e40af', bg: '#dbeafe' },
   { key: 'publicado', label: 'Publicado', color: '#065f46', bg: '#ecfdf5' },
   { key: 'nao-publicado', label: 'Não Publicado', color: '#991b1b', bg: '#fee2e2' },
+  { key: 'nao-utilizado', label: 'Não Utilizado', color: '#6b7280', bg: '#f3f4f6' },
 ];
 
 const CT_PRIORITIES = [
