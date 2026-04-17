@@ -8232,10 +8232,22 @@ async function renderOperationalScore(monthKey, active) {
 
         if (company && byCompany[company]) byCompany[company].t++;
 
-        var isFailed = (t.publish_config && t.publish_config.error) || t.status === 'failed';
-        if (isFailed) { breakdown.failed.push(enriched); return; }
+        // Collect all publish entries from root + per-format
+        var pcEntries = (t.publish_config && t.publish_config.entries) || [];
+        ['feed','story','carrossel','reels'].forEach(function(fmt) {
+          if (t.publish_config && t.publish_config[fmt] && t.publish_config[fmt].entries) {
+            pcEntries = pcEntries.concat(t.publish_config[fmt].entries);
+          }
+        });
+        var activeEntries = pcEntries.filter(function(e) { return e.status !== 'cancelled'; });
+        var hasPublishedEntry = activeEntries.some(function(e) { return e.status === 'published'; });
 
-        if (t.status === 'publicado') {
+        var isFailed = (t.publish_config && t.publish_config.error) || t.status === 'failed';
+        if (isFailed && !hasPublishedEntry) { breakdown.failed.push(enriched); return; }
+
+        // Task is published if status=publicado OR any entry has status=published
+        var isPublished = t.status === 'publicado' || hasPublishedEntry;
+        if (isPublished) {
           breakdown.onTime.push(enriched);
           if (company && byCompany[company]) byCompany[company].p++;
           return;
