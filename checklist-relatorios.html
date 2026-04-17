@@ -7635,6 +7635,7 @@ var _pubHistLoaded = false;
 var _pubHistPostData = {}; // histId → { clientKey, platform, caption } para retry
 var _phTasks = [];          // content_tasks cache
 var _phGroupToClient = {};  // group_id → client_id (meta_clients key)
+var _phAttachments = {};    // task_id → { file_url, file_type } (criativo final)
 
 async function pubHistoryRefresh() {
   _pubHistLoaded = false;
@@ -7663,6 +7664,28 @@ async function pubHistoryRefresh() {
       }) || [];
       _phGroupToClient = await _ensureGroupToClient();
     } catch(e) { console.warn('phTasks fetch err', e); _phTasks = []; }
+
+    // 3. Fetch criativo final (content_attachments) para miniaturas
+    _phAttachments = {};
+    try {
+      if (_phTasks.length > 0) {
+        var _phIds = _phTasks.map(function(t){ return t.id; });
+        var _priMap = { final: 2, creative: 1 };
+        for (var _bi = 0; _bi < _phIds.length; _bi += 50) {
+          var _batch = _phIds.slice(_bi, _bi + 50);
+          var _batAtts = await _sbQuery('content_attachments', {
+            select: 'task_id,file_url,file_type,category',
+            filters: ['task_id=in.(' + _batch.join(',') + ')', 'category=in.(creative,final)'],
+            order: 'created_at.desc',
+            limit: 200
+          }) || [];
+          _batAtts.forEach(function(a) {
+            var ex = _phAttachments[a.task_id];
+            if (!ex || (_priMap[a.category]||0) > (_priMap[ex.category]||0)) _phAttachments[a.task_id] = a;
+          });
+        }
+      }
+    } catch(e) { console.warn('phAttachments fetch err', e); }
 
     _pubHistLoaded = true;
   } catch(e) {
@@ -7737,10 +7760,13 @@ function pubHistoryRender() {
         };
       }
       var cm = clientMap[cKey];
+      var _phAtt = _phAttachments[t.id];
       cm.tasks.push({ id: t.id, name: t.name || '', status: taskStatus,
         date: taskDate, platforms: taskPlatforms, formats: formats,
         assignee: t.assignee, error: pc.error || null,
-        histEntries: histByTask[t.id] || [] });
+        histEntries: histByTask[t.id] || [],
+        creative_url: _phAtt ? _phAtt.file_url : null,
+        creative_type: _phAtt ? _phAtt.file_type : null });
       if (taskStatus === 'PUBLISHED') { cm.published++; totalPub++; }
       else if (taskStatus === 'SCHEDULED') { cm.scheduled++; totalSch++; }
       else if (taskStatus === 'FAILED') { cm.failed++; totalFail++; }
@@ -8018,7 +8044,7 @@ function emPubHistRender(pub, sch, fail, total, sorted) {
       var fmtMap = { feed:'Feed', reels:'Reels', story:'Story', carrossel:'Carrossel' };
       var fmtBadge = item.formats.length ? '<span style="background:rgba(70,238,205,0.08);color:#46eecd;padding:2px 7px;border-radius:5px;font-size:0.65rem;font-weight:700">' + (fmtMap[item.formats[0]] || item.formats[0]) + '</span>' : '';
 
-      // Thumb from histEntries (Meta publish)
+      // Thumb: 1) Meta publish history image  2) Criativo final (content_attachments)  3) palette icon
       var thumbHtml = '';
       item.histEntries.forEach(function(h) {
         if (!thumbHtml && h.image_url) {
@@ -8027,6 +8053,14 @@ function emPubHistRender(pub, sch, fail, total, sorted) {
           if (url) thumbHtml = '<img src="' + emEsc(url) + '" loading="lazy" onerror="this.style.display=\'none\'">';
         }
       });
+      if (!thumbHtml && item.creative_url) {
+        var _isVid = item.creative_type && item.creative_type.indexOf('video') >= 0;
+        if (_isVid) {
+          thumbHtml = '<video src="' + emEsc(item.creative_url) + '" style="width:100%;height:100%;object-fit:cover" muted playsinline preload="metadata"></video>';
+        } else {
+          thumbHtml = '<img src="' + emEsc(item.creative_url) + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'' + iconSvg('palette',{size:18}).replace(/'/g,'&#39;').replace(/"/g,'&quot;') + '\'">';
+        }
+      }
       if (!thumbHtml) thumbHtml = iconSvg('palette',{size:18});
 
       html += '<div class="em-ph-post-row">'
