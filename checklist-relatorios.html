@@ -599,6 +599,158 @@
 [data-theme="emerald"] #dashWeekPostsList > div,
 [data-theme="emerald"] #recentSends > div { border-color: rgba(255,255,255,0.05) !important; }
 
+/* ── Dashboard responsive grid ── */
+.dash-2col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* ── Dashboard filter chips ── */
+.dash-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.dash-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: inherit;
+  transition: all .15s;
+  letter-spacing: 0.2px;
+}
+.dash-filter-chip:hover { border-color: var(--border-strong,rgba(255,255,255,0.14)); color: var(--text-primary); }
+.dash-filter-chip.active { background: rgba(70,238,205,0.12); border-color: rgba(70,238,205,0.35); color: #46eecd; }
+.dash-filter-chip .chip-ct { font-size: 0.65rem; opacity: 0.75; margin-left: 2px; }
+[data-theme="light"] .dash-filter-chip.active,
+[data-theme="warm"] .dash-filter-chip.active { background: #f0fdf4; border-color: #86efac; color: #166534; }
+[data-theme="light"] .dash-filter-chip,
+[data-theme="warm"] .dash-filter-chip { background: var(--bg-elevated); color: var(--text-secondary); }
+
+/* ── Dashboard section card header ── */
+.dash-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dash-card-head .card-title { margin: 0; }
+
+/* ── Dashboard client row (crono + posts) ── */
+.dash-client-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background .15s;
+}
+.dash-client-row:hover { background: var(--bg-elevated); }
+.dash-client-row:last-child { border-bottom: none; }
+.dash-client-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dash-client-acts { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.dash-client-date { font-size: 0.65rem; color: var(--text-tertiary,var(--text-muted)); flex-shrink: 0; }
+
+/* ── Dash action buttons (Gerar / Enviar) ── */
+.dash-act-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid;
+  transition: opacity .12s;
+}
+.dash-act-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.dash-act-btn.gerar { background: rgba(59,130,246,0.10); color: #3b82f6; border-color: rgba(59,130,246,0.30); }
+.dash-act-btn.enviar { background: rgba(34,197,94,0.10); color: #22c55e; border-color: rgba(34,197,94,0.30); }
+.dash-act-btn.undo { background: rgba(251,191,36,0.10); color: #fbbf24; border-color: rgba(251,191,36,0.30); }
+[data-theme="emerald"] .dash-act-btn.gerar { background: rgba(185,199,228,0.10); color: #b9c7e4; border-color: rgba(185,199,228,0.20); }
+[data-theme="emerald"] .dash-act-btn.enviar { background: rgba(70,238,205,0.10); color: #46eecd; border-color: rgba(70,238,205,0.25); }
+[data-theme="emerald"] .dash-act-btn.undo { background: rgba(251,191,36,0.08); color: #fbbf24; border-color: rgba(251,191,36,0.20); }
+
+/* ── Dash section label ── */
+.dash-group-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  color: var(--text-tertiary,var(--text-muted));
+  margin: 10px 0 5px;
+}
+.dash-group-label:first-child { margin-top: 0; }
+
+/* ── Dash week nav button ── */
+.dash-nav-btn {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 700;
+  line-height: 1.4;
+  transition: all .15s;
+}
+.dash-nav-btn:hover { border-color: var(--border-strong,rgba(255,255,255,0.14)); color: var(--text-primary); }
+.dash-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.dash-nav-btn.atual { background: rgba(59,130,246,0.10); color: #3b82f6; border-color: rgba(59,130,246,0.35); font-size: 0.62rem; }
+[data-theme="emerald"] .dash-nav-btn.atual { background: rgba(70,238,205,0.10); color: #46eecd; border-color: rgba(70,238,205,0.25); }
+
+/* ── Day group header ── */
+.dash-day-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  margin-bottom: 4px;
+}
+.dash-day-head.today { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.20); }
+[data-theme="emerald"] .dash-day-head.today { background: rgba(70,238,205,0.07); border-color: rgba(70,238,205,0.20); }
+.dash-day-name { font-size: 0.78rem; font-weight: 800; color: var(--text-primary); }
+.dash-day-today-badge { font-size: 0.6rem; font-weight: 700; background: #3b82f6; color: #fff; padding: 1px 6px; border-radius: 4px; }
+[data-theme="emerald"] .dash-day-today-badge { background: #46eecd; color: #0c141f; }
+.dash-day-count { font-size: 0.68rem; color: var(--text-tertiary,var(--text-muted)); margin-left: auto; font-weight: 600; }
+
+/* ── Scrollable lists in dash cards ── */
+.dash-scroll { max-height: 400px; overflow-y: auto; padding-right: 2px; }
+.dash-scroll::-webkit-scrollbar { width: 4px; }
+.dash-scroll::-webkit-scrollbar-track { background: transparent; }
+.dash-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
 /* Select/filter pills inside dashboard look darker */
 [data-theme="emerald"] select,
 [data-theme="emerald"] input[type="text"],
@@ -3653,7 +3805,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           </div>
           <div id="dashOpScore"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div class="dash-2col">
           <div class="card">
             <div class="card-title" style="margin-bottom:14px">Progresso Semanal</div>
             <div id="weeklyProgress"></div>
@@ -3663,16 +3815,18 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div id="monthlyProgress"></div>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div class="dash-2col">
           <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
-              <div class="card-title" style="margin:0">Cronogramas</div>
+            <div class="dash-card-head">
+              <div class="card-title">Cronogramas</div>
               <div id="dashCronoWeekNav" style="display:flex;align-items:center;gap:4px"></div>
             </div>
             <div id="dashWeekCronoList"></div>
           </div>
           <div class="card">
-            <div class="card-title" style="margin-bottom:14px">Agendamentos & Publicações da Semana</div>
+            <div class="dash-card-head">
+              <div class="card-title">Agendamentos &amp; Publicações da Semana</div>
+            </div>
             <div id="dashWeekPostsList"></div>
           </div>
         </div>
@@ -10599,10 +10753,19 @@ function _renderContentProgressUI(el, clientStats, active) {
   el.innerHTML = h || '<p style="color:var(--text-muted);font-size:0.85rem">Nenhuma task no período.</p>';
 }
 
+// Filter state for dashboard crono/posts lists
+var _dashCronoFilter = 'all'; // 'all' | 'pendentes' | 'gerados' | 'enviados'
+var _dashPostsFilter = 'all'; // 'all' | 'agendados' | 'publicados'
+function _dashSetCronoFilter(f) { _dashCronoFilter = f; if (typeof _dashLastWeekKey !== 'undefined') renderDashWeekCronoList(_dashLastWeekKey, _dashLastActive || []); }
+function _dashSetPostsFilter(f) { _dashPostsFilter = f; var cached = Object.values(_dashWeekPostsCache || {})[0]; if (cached) { var cr = _dashGetCalendarWeekRange(); _renderDashWeekPostsUI(document.getElementById('dashWeekPostsList'), cached, cr.startISO, cr.endISO); } }
+var _dashLastWeekKey = null, _dashLastActive = null;
+
 // Mini-lista de cronogramas da semana
 function renderDashWeekCronoList(weekKey, active) {
   var el = document.getElementById('dashWeekCronoList');
   if (!el) return;
+  _dashLastWeekKey = weekKey;
+  _dashLastActive = active;
 
   // ── Renderiza nav de semana
   var navEl = document.getElementById('dashCronoWeekNav');
@@ -10611,12 +10774,11 @@ function renderDashWeekCronoList(weekKey, active) {
     var idx = all.indexOf(weekKey);
     var currentAutoKey = _dashGetCurrentWeekKey();
     var isCurrentWeek = (weekKey === currentAutoKey);
-    var btnStyle = 'padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.75rem;cursor:pointer;font-family:inherit;font-weight:700;line-height:1.4';
-    var navH = '<button onclick="dashCronoNavWeek(-1)" title="Semana anterior" style="' + btnStyle + '"' + (idx <= 0 ? ' disabled' : '') + '>‹</button>';
+    var navH = '<button class="dash-nav-btn" onclick="dashCronoNavWeek(-1)" title="Semana anterior"' + (idx <= 0 ? ' disabled' : '') + '>‹</button>';
     navH += '<span style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);padding:0 4px;white-space:nowrap">' + _dashWeekLabel(weekKey) + '</span>';
-    navH += '<button onclick="dashCronoNavWeek(1)" title="Próxima semana" style="' + btnStyle + '"' + (idx >= all.length - 1 ? ' disabled' : '') + '>›</button>';
+    navH += '<button class="dash-nav-btn" onclick="dashCronoNavWeek(1)" title="Próxima semana"' + (idx >= all.length - 1 ? ' disabled' : '') + '>›</button>';
     if (!isCurrentWeek) {
-      navH += '<button onclick="dashCronoResetWeek()" title="Ir para semana atual" style="' + btnStyle + ';background:#dbeafe;color:#1e40af;border-color:#93c5fd;font-size:0.65rem">Atual</button>';
+      navH += '<button class="dash-nav-btn atual" onclick="dashCronoResetWeek()" title="Ir para semana atual">Atual</button>';
     }
     navEl.innerHTML = navH;
   }
@@ -10632,12 +10794,16 @@ function renderDashWeekCronoList(weekKey, active) {
     else pendentes.push(item);
   });
 
+  var f = _dashCronoFilter;
+  var total = pendentes.length + gerados.length + enviados.length;
+
   var h = '';
-  // Summary bar
-  h += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
-  h += '<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Pendentes: ' + pendentes.length + '</span>';
-  h += '<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Gerados: ' + gerados.length + '</span>';
-  h += '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Enviados: ' + enviados.length + '</span>';
+  // ── Interactive filter chips
+  h += '<div class="dash-filter-bar">';
+  h += '<button class="dash-filter-chip' + (f === 'all' ? ' active' : '') + '" onclick="_dashSetCronoFilter(\'all\')">Todos <span class="chip-ct">' + total + '</span></button>';
+  h += '<button class="dash-filter-chip' + (f === 'pendentes' ? ' active' : '') + '" onclick="_dashSetCronoFilter(\'pendentes\')">Pendentes <span class="chip-ct">' + pendentes.length + '</span></button>';
+  h += '<button class="dash-filter-chip' + (f === 'gerados' ? ' active' : '') + '" onclick="_dashSetCronoFilter(\'gerados\')">Gerados <span class="chip-ct">' + gerados.length + '</span></button>';
+  h += '<button class="dash-filter-chip' + (f === 'enviados' ? ' active' : '') + '" onclick="_dashSetCronoFilter(\'enviados\')">Enviados <span class="chip-ct">' + enviados.length + '</span></button>';
   h += '</div>';
 
   pendentes.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
@@ -10645,73 +10811,76 @@ function renderDashWeekCronoList(weekKey, active) {
   enviados.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
 
   // Scrollable list container
-  h += '<div style="max-height:400px;overflow-y:auto">';
-
-  function renderClientRow(item, statusLabel, statusColor) {
+  // ── Render client row helper
+  function renderClientRow(item, groupKey) {
     var css = item.company === 'Starken' ? 'starken' : 'alpha';
     var onclick = 'switchTab(\'sched-weekly\')';
-    if (item.metaKey && statusLabel === 'Pendente') {
-      onclick = 'cronogramaFromSchedule(\'' + item.metaKey + '\',\'' + item.id + '\',\'sched-weekly\',\'' + weekKey + '\')';
+    if (item.metaKey && groupKey === 'pendentes') {
+      onclick = 'cronogramaFromSchedule(' + JSON.stringify(item.metaKey) + ',' + JSON.stringify(item.id) + ',\'sched-weekly\',' + JSON.stringify(weekKey) + ')';
     }
-    // Quick action buttons (manual status change)
     var btns = '';
-    var stopEvt = 'event.stopPropagation();';
-    if (statusLabel === 'Pendente') {
-      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',1,this)" title="Marcar como Gerado" style="padding:2px 7px;border-radius:4px;border:1px solid #3b82f6;background:#dbeafe;color:#1e40af;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit"><span class="mso">description</span> Gerar</button>';
-      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',2,this)" title="Marcar como Enviado" style="padding:2px 7px;border-radius:4px;border:1px solid #22c55e;background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit"><span class="mso">upload</span> Enviar</button>';
-    } else if (statusLabel === 'Gerado') {
-      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',2,this)" title="Marcar como Enviado" style="padding:2px 7px;border-radius:4px;border:1px solid #22c55e;background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit"><span class="mso">upload</span> Enviar</button>';
-      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',0,this)" title="Voltar para Pendente" style="padding:2px 7px;border-radius:4px;border:1px solid #f59e0b;background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">↩</button>';
+    var sid = 'dcrBtn_' + item.id + '_' + weekKey + '_' + groupKey;
+    if (groupKey === 'pendentes') {
+      btns += '<button id="' + sid + '_g" class="dash-act-btn gerar" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(item.id) + ',' + JSON.stringify(weekKey) + ',1,this)" title="Marcar como Gerado"><span class="mso" style="font-size:12px">description</span> Gerar</button>';
+      btns += '<button id="' + sid + '_e" class="dash-act-btn enviar" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(item.id) + ',' + JSON.stringify(weekKey) + ',2,this)" title="Marcar como Enviado"><span class="mso" style="font-size:12px">upload</span> Enviar</button>';
+    } else if (groupKey === 'gerados') {
+      btns += '<button id="' + sid + '_e" class="dash-act-btn enviar" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(item.id) + ',' + JSON.stringify(weekKey) + ',2,this)" title="Marcar como Enviado"><span class="mso" style="font-size:12px">upload</span> Enviar</button>';
+      btns += '<button id="' + sid + '_u" class="dash-act-btn undo" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(item.id) + ',' + JSON.stringify(weekKey) + ',0,this)" title="Voltar para Pendente">↩</button>';
+    } else if (groupKey === 'enviados') {
+      var sentDate = item.sent_date ? new Date(item.sent_date).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
+      btns = '<span class="dash-client-date">' + sentDate + '</span>'
+           + '<button id="' + sid + '_u" class="dash-act-btn undo" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(item.id) + ',' + JSON.stringify(weekKey) + ',0,this)" title="Voltar para Pendente">↩</button>';
     }
-    return '<div onclick="' + onclick + '" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">'
-      + '<div class="client-avatar ' + css + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(item.name) + '</div>'
-      + '<span style="font-size:0.8rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(item.name) + '</span>'
-      + (btns ? '<div style="display:flex;gap:4px">' + btns + '</div>' : '')
-      + '<span style="font-size:0.68rem;color:' + statusColor + ';font-weight:600;min-width:52px;text-align:right">' + statusLabel + '</span>'
+    var chip = '';
+    if (groupKey === 'pendentes') chip = '<span class="em-chip warn">Pendente</span>';
+    else if (groupKey === 'gerados') chip = '<span class="em-chip wait">Gerado</span>';
+    else chip = '<span class="em-chip ok">Enviado</span>';
+
+    return '<div onclick="' + onclick + '" class="dash-client-row">'
+      + '<div class="client-avatar ' + css + '" style="width:24px;height:24px;font-size:0.55rem;flex-shrink:0">' + getInitials(item.name) + '</div>'
+      + '<span class="dash-client-name">' + esc(item.name) + '</span>'
+      + '<div class="dash-client-acts">' + btns + chip + '</div>'
       + '</div>';
   }
 
-  if (pendentes.length > 0) {
-    h += '<div style="font-size:0.72rem;font-weight:700;color:#92400e;margin-bottom:4px">Pendentes</div>';
-    for (var i = 0; i < pendentes.length; i++) {
-      h += renderClientRow(pendentes[i], 'Pendente', '#f59e0b');
+  // ── Apply filter
+  var showPendentes = (f === 'all' || f === 'pendentes');
+  var showGerados   = (f === 'all' || f === 'gerados');
+  var showEnviados  = (f === 'all' || f === 'enviados');
+
+  h += '<div class="dash-scroll">';
+
+  gerados.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+  enviados.sort(function(a,b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+
+  if (showPendentes && pendentes.length > 0) {
+    h += '<div class="dash-group-label">Pendentes</div>';
+    for (var i = 0; i < pendentes.length; i++) h += renderClientRow(pendentes[i], 'pendentes');
+  }
+  if (showGerados && gerados.length > 0) {
+    h += '<div class="dash-group-label">Gerados — aguardando envio</div>';
+    for (var j = 0; j < gerados.length; j++) h += renderClientRow(gerados[j], 'gerados');
+  }
+  if (showEnviados && enviados.length > 0) {
+    h += '<div class="dash-group-label">Enviados</div>';
+    for (var k = 0; k < enviados.length; k++) h += renderClientRow(enviados[k], 'enviados');
+  }
+
+  var visLen = (showPendentes ? pendentes.length : 0) + (showGerados ? gerados.length : 0) + (showEnviados ? enviados.length : 0);
+  if (visLen === 0) {
+    if (total === 0) {
+      h += '<div style="text-align:center;padding:20px;color:var(--text-tertiary,var(--text-muted));font-size:0.85rem">Nenhum cronograma esta semana</div>';
+    } else {
+      h += '<div style="text-align:center;padding:16px;color:var(--text-tertiary,var(--text-muted));font-size:0.82rem">Nenhum item neste filtro</div>';
     }
   }
-
-  if (gerados.length > 0) {
-    h += '<div style="font-size:0.72rem;font-weight:700;color:#1e40af;margin:10px 0 4px">Gerados (aguardando envio)</div>';
-    for (var j = 0; j < gerados.length; j++) {
-      h += renderClientRow(gerados[j], 'Gerado', '#3b82f6');
-    }
+  if (f === 'all' && !pendentes.length && !gerados.length && enviados.length > 0) {
+    h += '<div style="text-align:center;padding:8px;color:var(--color-success,#22c55e);font-size:0.82rem;font-weight:700"><span class="mso mso-fill">check_circle</span> Todos enviados!</div>';
   }
 
-  if (enviados.length > 0) {
-    h += '<div style="font-size:0.72rem;font-weight:700;color:#166534;margin:10px 0 4px">Enviados</div>';
-    for (var k = 0; k < enviados.length; k++) {
-      var sentDate = enviados[k].sent_date ? new Date(enviados[k].sent_date).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '';
-      var css2 = enviados[k].company === 'Starken' ? 'starken' : 'alpha';
-      h += '<div onclick="switchTab(\'sched-weekly\')" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
-      h += '<div class="client-avatar ' + css2 + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(enviados[k].name) + '</div>';
-      h += '<span style="font-size:0.8rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(enviados[k].name) + '</span>';
-      h += '<span style="font-size:0.65rem;color:var(--text-muted)">' + sentDate + '</span>';
-      h += '<button onclick="event.stopPropagation();dashMarkCronoStatus(\'' + enviados[k].id + '\',\'' + weekKey + '\',0,this)" title="Voltar para Pendente" style="padding:2px 7px;border-radius:4px;border:1px solid #f59e0b;background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">↩</button>';
-      h += '<span style="font-size:0.68rem;color:#22c55e;font-weight:600">Enviado</span>';
-      h += '</div>';
-    }
-  }
+  h += '</div>';
 
-  if (!pendentes.length && !gerados.length && !enviados.length) {
-    h += '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem">Nenhum cronograma esta semana</div>';
-  }
-
-  if (!pendentes.length && !gerados.length && enviados.length > 0) {
-    h += '<div style="text-align:center;padding:12px;color:#22c55e;font-size:0.85rem;font-weight:600">Todos cronogramas enviados!</div>';
-  }
-
-  h += '</div>'; // scrollable container
-
-  // Link to full view
-  h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px"><a href="#" onclick="switchTab(\'sched-weekly\');return false" style="font-size:0.75rem;color:var(--primary);font-weight:600;text-decoration:none">Ver completo &rarr;</a></div>';
+  h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><a href="#" onclick="switchTab(\'sched-weekly\');return false" style="font-size:0.75rem;color:var(--primary,#3b82f6);font-weight:600;text-decoration:none">Ver completo &rarr;</a></div>';
 
   el.innerHTML = h;
 }
@@ -10962,42 +11131,39 @@ async function renderDashWeekPosts(weekKey) {
 }
 
 function _renderDashWeekPostsUI(el, cacheData, startDate, endDate) {
+  if (!el) return;
   var dayData = cacheData.dayData || {};
   var totalSched = cacheData.totalSched || 0;
   var totalPub = cacheData.totalPub || 0;
   var totalPosts = cacheData.totalPosts || 0;
 
-  var dayNames = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   var dayNamesShort = ['DOM','SEG','TER','QUA','QUI','SEX','SÁB'];
+  var pf = _dashPostsFilter;
 
   var h = '';
-  // Summary badges
-  h += '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">';
-  h += '<span style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Agendados: ' + totalSched + '</span>';
-  h += '<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Publicados: ' + totalPub + '</span>';
-  h += '<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:700">Total: ' + totalPosts + '</span>';
+  // ── Interactive filter chips
+  h += '<div class="dash-filter-bar">';
+  h += '<button class="dash-filter-chip' + (pf === 'all' ? ' active' : '') + '" onclick="_dashSetPostsFilter(\'all\')">Todos <span class="chip-ct">' + totalPosts + '</span></button>';
+  h += '<button class="dash-filter-chip' + (pf === 'agendados' ? ' active' : '') + '" onclick="_dashSetPostsFilter(\'agendados\')">Agendados <span class="chip-ct">' + totalSched + '</span></button>';
+  h += '<button class="dash-filter-chip' + (pf === 'publicados' ? ' active' : '') + '" onclick="_dashSetPostsFilter(\'publicados\')">Publicados <span class="chip-ct">' + totalPub + '</span></button>';
   h += '</div>';
-
-  // Get sorted day keys — most recent first
-  var days = Object.keys(dayData).filter(function(d) { return d !== 'sem-data'; }).sort().reverse();
-  if (dayData['sem-data']) days.push('sem-data');
-
-  if (days.length === 0) {
-    h += '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">Nenhum agendamento para esta semana</div>';
-    el.innerHTML = h;
-    return;
-  }
 
   // Period label
   var sLabel = startDate.split('-').reverse().slice(0,2).join('/');
   var eLabel = endDate.split('-').reverse().slice(0,2).join('/');
-  h += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:10px">Período: ' + sLabel + ' a ' + eLabel + '</div>';
+  h += '<div style="font-size:0.7rem;color:var(--text-tertiary,var(--text-muted));margin-bottom:10px">Período: ' + sLabel + ' — ' + eLabel + '</div>';
 
-  // Scrollable content
-  h += '<div style="max-height:450px;overflow-y:auto">';
+  // Build sorted days
+  var days = Object.keys(dayData).filter(function(d) { return d !== 'sem-data'; }).sort().reverse();
+  if (dayData['sem-data']) days.push('sem-data');
 
-  // Format icon map
-  var fmtIcons = { feed: '<span class="mso">photo_camera</span>', reels: '<span class="mso">movie</span>', carrossel: '<span class="mso">image</span>', story: '<span class="mso">smartphone</span>' };
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+
+  var fmtIcons = { feed: '<span class="mso" style="font-size:13px">photo_camera</span>', reels: '<span class="mso" style="font-size:13px">movie</span>', carrossel: '<span class="mso" style="font-size:13px">image</span>', story: '<span class="mso" style="font-size:13px">smartphone</span>' };
+
+  var anyVisible = false;
+  var bodyH = '';
 
   days.forEach(function(day) {
     var clientsForDay = dayData[day];
@@ -11005,72 +11171,85 @@ function _renderDashWeekPostsUI(el, cacheData, startDate, endDate) {
       return clientsForDay[a].name.localeCompare(clientsForDay[b].name, 'pt-BR');
     });
 
-    // Day header
-    var dayLabel = 'Sem data';
-    var dayCount = 0;
-    clientKeys.forEach(function(ck) { dayCount += clientsForDay[ck].total; });
+    // Apply post filter to clients/tasks
+    var filteredKeys = clientKeys.filter(function(ck) {
+      var c = clientsForDay[ck];
+      if (pf === 'agendados') return c.scheduled > 0;
+      if (pf === 'publicados') return c.published > 0;
+      return c.total > 0;
+    });
+    if (!filteredKeys.length) return;
+    anyVisible = true;
 
+    var dayCount = 0;
+    filteredKeys.forEach(function(ck) {
+      var c = clientsForDay[ck];
+      if (pf === 'agendados') dayCount += c.scheduled;
+      else if (pf === 'publicados') dayCount += c.published;
+      else dayCount += c.total;
+    });
+
+    var dayLabel = 'Sem data';
     if (day !== 'sem-data') {
       var dt = new Date(day + 'T12:00:00');
-      var dayOfWeek = dayNamesShort[dt.getDay()];
-      var dayNum = day.split('-')[2];
-      var monthNum = day.split('-')[1];
-      dayLabel = dayOfWeek + ' ' + dayNum + '/' + monthNum;
+      var dn = dayNamesShort[dt.getDay()];
+      dayLabel = dn + ' ' + day.split('-')[2] + '/' + day.split('-')[1];
     }
-
-    // Check if day is today
-    var today = new Date(); var todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
     var isToday = day === todayStr;
 
-    h += '<div style="margin-bottom:12px">';
-    h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:' + (isToday ? 'linear-gradient(135deg,#3b82f620,#1d4ed820)' : 'var(--surface-container,#f1f3f5)') + ';border-radius:8px;margin-bottom:4px' + (isToday ? ';border:1px solid #3b82f640' : '') + '">';
-    h += '<span style="font-size:0.78rem;font-weight:800;color:' + (isToday ? '#1d4ed8' : 'var(--text)') + '">' + dayLabel + '</span>';
-    if (isToday) h += '<span style="font-size:0.62rem;font-weight:700;background:#3b82f6;color:white;padding:1px 6px;border-radius:4px">HOJE</span>';
-    h += '<span style="font-size:0.68rem;color:var(--text-muted);margin-left:auto;font-weight:600">' + dayCount + ' post' + (dayCount !== 1 ? 's' : '') + '</span>';
-    h += '</div>';
+    bodyH += '<div style="margin-bottom:12px">';
+    bodyH += '<div class="dash-day-head' + (isToday ? ' today' : '') + '">';
+    bodyH += '<span class="dash-day-name">' + dayLabel + '</span>';
+    if (isToday) bodyH += '<span class="dash-day-today-badge">HOJE</span>';
+    bodyH += '<span class="dash-day-count">' + dayCount + ' post' + (dayCount !== 1 ? 's' : '') + '</span>';
+    bodyH += '</div>';
 
-    // Clients for this day
-    clientKeys.forEach(function(ck) {
+    filteredKeys.forEach(function(ck) {
       var c = clientsForDay[ck];
       var tenantCss = c.tenant === 'alpha' ? 'alpha' : 'starken';
 
-      h += '<div style="margin-left:8px;padding:4px 0;border-bottom:1px solid var(--border-light,#e5e7eb)">';
-      h += '<div onclick="hubOpen(\'' + ck + '\')" style="display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
-      h += '<div class="client-avatar ' + tenantCss + '" style="width:22px;height:22px;font-size:0.5rem">' + getInitials(c.name) + '</div>';
-      h += '<span style="font-size:0.78rem;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</span>';
-
-      var schedBadge = c.scheduled > 0 ? '<span style="background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600">' + c.scheduled + ' agend</span>' : '';
-      var pubBadge = c.published > 0 ? '<span style="background:#dcfce7;color:#166534;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600">' + c.published + ' pub</span>' : '';
+      bodyH += '<div style="margin-left:8px;padding:4px 0;border-bottom:1px solid var(--border)">';
+      bodyH += '<div onclick="hubOpen(' + JSON.stringify(ck) + ')" class="dash-client-row" style="border-bottom:none;margin-bottom:2px">';
+      bodyH += '<div class="client-avatar ' + tenantCss + '" style="width:22px;height:22px;font-size:0.5rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
+      bodyH += '<span class="dash-client-name">' + esc(c.name) + '</span>';
+      bodyH += '<div style="display:flex;gap:3px;flex-shrink:0">';
+      if (c.scheduled > 0) bodyH += '<span class="em-chip wait">' + c.scheduled + ' agend</span>';
+      if (c.published > 0) bodyH += '<span class="em-chip ok">' + c.published + ' pub</span>';
       var pendCount = c.total - c.scheduled - c.published;
-      var pendBadge = pendCount > 0 ? '<span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:0.65rem;font-weight:600">' + pendCount + ' pend</span>' : '';
-      h += '<div style="display:flex;gap:3px;flex-shrink:0">' + schedBadge + pubBadge + pendBadge + '</div>';
-      h += '</div>';
+      if (pendCount > 0) bodyH += '<span class="em-chip warn">' + pendCount + ' pend</span>';
+      bodyH += '</div></div>';
 
-      // Individual tasks under the client
-      c.tasks.forEach(function(tk) {
-        var sIcon = tk.taskStatus === 'published' ? '<span class="mso mso-fill">check_circle</span>' : tk.taskStatus === 'scheduled' ? '<span class="mso">calendar_today</span>' : '⏳';
-        var sColor = tk.taskStatus === 'published' ? '#166534' : tk.taskStatus === 'scheduled' ? '#1e40af' : '#92400e';
-        var fmtStr = '';
-        if (tk.formats && tk.formats.length > 0) {
-          fmtStr = tk.formats.map(function(f) { return fmtIcons[f] || f; }).join(' ');
-        }
-        h += '<div style="margin-left:30px;padding:2px 4px;font-size:0.72rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px">';
-        h += '<span style="color:' + sColor + '">' + sIcon + '</span>';
-        h += '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(tk.name || '') + '</span>';
-        if (fmtStr) h += '<span style="font-size:0.65rem;flex-shrink:0">' + fmtStr + '</span>';
-        h += '</div>';
+      // Task rows — filter by post filter
+      var tasksToShow = c.tasks.filter(function(tk) {
+        if (pf === 'agendados') return tk.taskStatus === 'scheduled';
+        if (pf === 'publicados') return tk.taskStatus === 'published';
+        return true;
       });
-
-      h += '</div>';
+      tasksToShow.forEach(function(tk) {
+        var chipCls = tk.taskStatus === 'published' ? 'ok' : tk.taskStatus === 'scheduled' ? 'wait' : 'warn';
+        var fmtStr = (tk.formats && tk.formats.length > 0) ? tk.formats.map(function(fmt) { return fmtIcons[fmt] || fmt; }).join(' ') : '';
+        bodyH += '<div style="margin-left:30px;padding:2px 4px;font-size:0.72rem;color:var(--text-secondary);display:flex;align-items:center;gap:6px">';
+        bodyH += '<span class="em-chip ' + chipCls + '" style="font-size:9px">' + (tk.taskStatus === 'published' ? 'Pub' : tk.taskStatus === 'scheduled' ? 'Agend' : 'Pend') + '</span>';
+        bodyH += '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-secondary)">' + esc(tk.name || '') + '</span>';
+        if (fmtStr) bodyH += '<span style="font-size:0.65rem;flex-shrink:0;color:var(--text-tertiary,var(--text-muted))">' + fmtStr + '</span>';
+        bodyH += '</div>';
+      });
+      bodyH += '</div>';
     });
 
-    h += '</div>';
+    bodyH += '</div>';
   });
 
-  h += '</div>'; // scrollable
+  if (!anyVisible) {
+    if (days.length === 0) {
+      bodyH = '<div style="text-align:center;padding:24px;color:var(--text-tertiary,var(--text-muted));font-size:0.85rem">Nenhum agendamento para esta semana</div>';
+    } else {
+      bodyH = '<div style="text-align:center;padding:16px;color:var(--text-tertiary,var(--text-muted));font-size:0.82rem">Nenhum item neste filtro</div>';
+    }
+  }
 
-  // Link to calendar
-  h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px"><a href="#" onclick="switchTab(\'calendario\');return false" style="font-size:0.75rem;color:var(--primary);font-weight:600;text-decoration:none">Ver calendário &rarr;</a></div>';
+  h += '<div class="dash-scroll">' + bodyH + '</div>';
+  h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border);padding-top:8px"><a href="#" onclick="switchTab(\'calendario\');return false" style="font-size:0.75rem;color:var(--primary,#3b82f6);font-weight:600;text-decoration:none">Ver calendário &rarr;</a></div>';
 
   el.innerHTML = h;
 }
