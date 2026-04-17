@@ -8221,14 +8221,18 @@ async function renderOperationalScore(monthKey, active) {
         var clientId = groupToClient[t.group_id];
         var client = data.clients.find(function(c) { return c.id === clientId; });
         var company = client ? client.company : null;
-        // Enrich every task with client info so drilldown doesn't show "?"
+
+        // post_date = data real da publicação (não a entrega do design)
+        var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date || null;
+
         var enriched = Object.assign({}, t, {
           client_name: client ? client.name : '?',
           client_id: clientId || null,
-          company: company
+          company: company,
+          post_date: postDate   // usado no drilldown para agrupar e mostrar dias de atraso
         });
 
-        // Skip cancelled/archived/not-to-post/standby
+        // Skip cancelled/archived/not-to-post/standby/not-used
         if (t.status === 'cancelado' || t.status === 'arquivado' || t.status === 'nao-publicado' || t.status === 'standby' || t.status === 'nao-utilizado') {
           breakdown.skipped.push(enriched);
           return;
@@ -8249,7 +8253,7 @@ async function renderOperationalScore(monthKey, active) {
         var isFailed = (t.publish_config && t.publish_config.error) || t.status === 'failed';
         if (isFailed && !hasPublishedEntry) { breakdown.failed.push(enriched); return; }
 
-        // Task is published if status=publicado OR any entry has status=published
+        // Published if status=publicado OR any entry has status=published
         var isPublished = t.status === 'publicado' || hasPublishedEntry;
         if (isPublished) {
           breakdown.onTime.push(enriched);
@@ -8257,8 +8261,8 @@ async function renderOperationalScore(monthKey, active) {
           return;
         }
 
-        // Due date passed but not published
-        if (t.due_date && t.due_date < todayStr) {
+        // Late = post_date passed but not published
+        if (postDate && postDate < todayStr) {
           breakdown.late.push(enriched);
           return;
         }
@@ -8430,10 +8434,10 @@ function dashOpDrilldown(type, monthKey) {
   var yDt = new Date(); yDt.setDate(yDt.getDate() - 1);
   var yesterdayStr = yDt.toISOString().slice(0, 10);
 
-  // Group by due_date
+  // Group by post_date (data real da publicação), não due_date (entrega design)
   var groups = {};
   list.forEach(function(t) {
-    var k = t.due_date || '9999-12-31';
+    var k = t.post_date || t.due_date || '9999-12-31';
     (groups[k] = groups[k] || []).push(t);
   });
   var sortedKeys = Object.keys(groups).sort();
@@ -8511,7 +8515,7 @@ function dashOpDrilldown(type, monthKey) {
       h += '</div>';
 
       dateTasks.forEach(function(t) {
-        var vLate = (type === 'late' && daysLate(t.due_date) > 3);
+        var vLate = (type === 'late' && daysLate(t.post_date || t.due_date) > 3);
         var rowBg = vLate ? 'rgba(239,68,68,0.06)' : 'transparent';
         h += '<div onclick="document.getElementById(\'dashOpModal\').remove();if(typeof ctOpenModal===\'function\')ctOpenModal(\'' + t.id + '\')" style="padding:12px 22px;border-bottom:1px solid var(--border-light);display:flex;gap:12px;align-items:center;cursor:pointer;background:' + rowBg + '" onmouseover="this.style.background=\'var(--bg-hover,rgba(59,130,246,0.06))\'" onmouseout="this.style.background=\'' + rowBg + '\'">';
         h += thumbHtml(t);
