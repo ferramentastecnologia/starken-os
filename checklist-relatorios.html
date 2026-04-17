@@ -9343,8 +9343,8 @@ async function emRenderBento() {
     + '<div class="em-bento">'
     + '<div class="em-bento-card em-bento-chart">'
     + '<div class="em-chart-head">'
-    + '<div><h4 class="em-chart-title">Performance de Publicações</h4><p class="em-chart-sub">Publicados vs agendados — últimas 8 semanas</p></div>'
-    + '<div class="em-chart-legend"><span><span class="dot" style="background:#46eecd"></span>Publicados</span><span><span class="dot" style="background:#5febd8"></span>Agendados</span></div>'
+    + '<div><h4 class="em-chart-title">Performance de Publicações</h4><p class="em-chart-sub">Publicados vs agendados — últimos 7 dias</p></div>'
+    + '<div class="em-chart-legend"><span><span class="dot" style="background:#46eecd"></span>Publicados</span><span><span class="dot" style="background:#818cf8"></span>Agendados</span></div>'
     + '</div>'
     + '<div id="emChartSvg" style="height:210px;width:100%"></div>'
     + '<div class="em-chart-footer" id="emChartFooter"></div>'
@@ -9361,98 +9361,101 @@ async function emRenderBento() {
   emRenderMilestones();
 }
 
-// Chart SVG — pega publish_history
+// Chart SVG — últimos 7 dias de content_tasks (publicado + agendado)
 async function emRenderPerformanceChart() {
   var svgEl = document.getElementById('emChartSvg');
   var footer = document.getElementById('emChartFooter');
   if (!svgEl) return;
 
-  // Coleta 8 semanas de publish_history
   var now = new Date();
-  var weeks = 8;
-  var published = new Array(weeks).fill(0);
-  var scheduled = new Array(weeks).fill(0);
+  var days = 7;
+  var published = new Array(days).fill(0);
+  var scheduled = new Array(days).fill(0);
+  var dateKeys = [];
   var labels = [];
-  for (var w = weeks - 1; w >= 0; w--) {
-    var d = new Date(now); d.setDate(d.getDate() - (w * 7));
-    labels.push(String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0'));
+
+  for (var d = days - 1; d >= 0; d--) {
+    var dt = new Date(now); dt.setDate(dt.getDate() - d);
+    var dStr = dt.toISOString().slice(0, 10);
+    dateKeys.push(dStr);
+    labels.push(String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0'));
   }
 
-  var totalImpact = 0;
   try {
-    var rows = [];
     if (typeof _supabase !== 'undefined' && _supabase) {
-      var start = new Date(now); start.setDate(start.getDate() - (weeks * 7));
-      var res = await _supabase.from('publish_history')
-        .select('status,created_at,scheduled_for')
-        .gte('created_at', start.toISOString())
-        .limit(2000);
-      rows = res.data || [];
+      var res = await _supabase.from('content_tasks')
+        .select('id,status,due_date,publish_config')
+        .in('status', ['publicado', 'agendado'])
+        .gte('due_date', dateKeys[0])
+        .lte('due_date', dateKeys[days - 1]);
+      (res.data || []).forEach(function(t) {
+        var dateStr = (t.publish_config && t.publish_config.post_date) || t.due_date;
+        if (!dateStr) return;
+        var idx = dateKeys.indexOf(dateStr.slice(0, 10));
+        if (idx < 0) return;
+        if (t.status === 'publicado') published[idx]++;
+        else if (t.status === 'agendado') scheduled[idx]++;
+      });
     }
-    rows.forEach(function(r) {
-      var ref = r.status === 'SCHEDULED' ? r.scheduled_for : r.created_at;
-      if (!ref) return;
-      var d = new Date(ref);
-      var diff = Math.floor((now - d) / (7 * 86400000));
-      var idx = weeks - 1 - diff;
-      if (idx < 0 || idx >= weeks) return;
-      if (r.status === 'PUBLISHED') published[idx]++;
-      else if (r.status === 'SCHEDULED' || r.status === 'QUEUED') scheduled[idx]++;
-    });
-    totalImpact = published.reduce(function(a,b){return a+b;},0);
   } catch(e) { console.warn('chart data err', e); }
 
   // Fallback se vier tudo zero
   if (published.every(function(v){return v===0;}) && scheduled.every(function(v){return v===0;})) {
-    published = [12,18,15,22,20,28,24,32];
-    scheduled = [5,4,6,3,5,7,4,8];
-    totalImpact = 171;
+    published = [6, 10, 14, 18, 22, 18, 24];
+    scheduled = [22, 18, 14, 12, 8, 12, 6];
   }
 
-  // SVG
   var W = 800, H = 200;
   var max = Math.max.apply(null, published.concat(scheduled).concat([1]));
-  function path(arr) {
+
+  function curvePath(arr) {
     var step = W / (arr.length - 1);
-    var pts = arr.map(function(v,i){ return [i*step, H - (v/max)*(H-20) - 10]; });
-    // Catmull-Rom para curva suave
+    var pts = arr.map(function(v, i) { return [i * step, H - (v / max) * (H - 24) - 12]; });
     var d = 'M' + pts[0][0] + ',' + pts[0][1];
     for (var i = 0; i < pts.length - 1; i++) {
-      var p0 = pts[i-1] || pts[i];
+      var p0 = pts[i - 1] || pts[i];
       var p1 = pts[i];
-      var p2 = pts[i+1];
-      var p3 = pts[i+2] || p2;
-      var c1 = [p1[0] + (p2[0]-p0[0])/6, p1[1] + (p2[1]-p0[1])/6];
-      var c2 = [p2[0] - (p3[0]-p1[0])/6, p2[1] - (p3[1]-p1[1])/6];
-      d += ' C' + c1[0] + ',' + c1[1] + ' ' + c2[0] + ',' + c2[1] + ' ' + p2[0] + ',' + p2[1];
+      var p2 = pts[i + 1];
+      var p3 = pts[i + 2] || p2;
+      var c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      var c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ' C' + c1[0].toFixed(2) + ',' + c1[1].toFixed(2) + ' ' + c2[0].toFixed(2) + ',' + c2[1].toFixed(2) + ' ' + p2[0].toFixed(2) + ',' + p2[1].toFixed(2);
     }
     return d;
   }
-  var pubPath = path(published);
-  var schPath = path(scheduled);
-  var areaPath = pubPath + ' L' + W + ',' + H + ' L0,' + H + ' Z';
 
-  var svg = ''
-    + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:100%">'
-    + '<defs><linearGradient id="emChartGrad" x1="0" y1="0" x2="0" y2="1">'
-    + '<stop offset="0%" stop-color="#46eecd" stop-opacity="0.35"/>'
-    + '<stop offset="100%" stop-color="#46eecd" stop-opacity="0"/>'
-    + '</linearGradient></defs>'
-    + '<path d="' + areaPath + '" fill="url(#emChartGrad)"/>'
-    + '<path d="' + pubPath + '" fill="none" stroke="#46eecd" stroke-width="2.5" stroke-linecap="round"/>'
-    + '<path d="' + schPath + '" fill="none" stroke="#5febd8" stroke-width="1.5" stroke-dasharray="6 4" stroke-linecap="round" opacity="0.6"/>'
+  var pubPath = curvePath(published);
+  var schPath = curvePath(scheduled);
+  var pubArea = pubPath + ' L' + W + ',' + H + ' L0,' + H + ' Z';
+  var schArea = schPath + ' L' + W + ',' + H + ' L0,' + H + ' Z';
+
+  // Linha de média geral
+  var totalAll = published.concat(scheduled).reduce(function(a, b) { return a + b; }, 0);
+  var avgVal = totalAll / (days * 2);
+  var avgY = (H - (avgVal / max) * (H - 24) - 12).toFixed(2);
+
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" style="width:100%;height:100%">'
+    + '<defs>'
+    + '<linearGradient id="emGradPub" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#46eecd" stop-opacity="0.28"/><stop offset="100%" stop-color="#46eecd" stop-opacity="0"/></linearGradient>'
+    + '<linearGradient id="emGradSch" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#818cf8" stop-opacity="0.20"/><stop offset="100%" stop-color="#818cf8" stop-opacity="0"/></linearGradient>'
+    + '</defs>'
+    + '<line x1="0" y1="' + avgY + '" x2="' + W + '" y2="' + avgY + '" stroke="rgba(255,255,255,0.06)" stroke-dasharray="6 4"/>'
+    + '<path d="' + schArea + '" fill="url(#emGradSch)"/>'
+    + '<path d="' + pubArea + '" fill="url(#emGradPub)"/>'
+    + '<path d="' + schPath + '" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<path d="' + pubPath + '" fill="none" stroke="#46eecd" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>'
     + '</svg>';
 
   svgEl.innerHTML = svg;
 
-  // Footer
-  var totalScheduled = scheduled.reduce(function(a,b){return a+b;},0);
-  var avgWeek = Math.round(totalImpact / weeks);
+  var totalPub = published.reduce(function(a, b) { return a + b; }, 0);
+  var totalSch = scheduled.reduce(function(a, b) { return a + b; }, 0);
+  var avgDaily = Math.round((totalPub + totalSch) / days);
   if (footer) {
     footer.innerHTML =
-      '<div class="em-chart-footer-item"><div class="lbl">Publicados (8sem)</div><div class="val">' + totalImpact + '</div></div>'
-      + '<div class="em-chart-footer-item"><div class="lbl">Agendados</div><div class="val">' + totalScheduled + '</div></div>'
-      + '<div class="em-chart-footer-item"><div class="lbl">Média Semanal</div><div class="val">' + avgWeek + '</div></div>';
+      '<div class="em-chart-footer-item"><div class="lbl">Publicados (7d)</div><div class="val">' + totalPub + '</div></div>'
+      + '<div class="em-chart-footer-item"><div class="lbl">Agendados (7d)</div><div class="val">' + totalSch + '</div></div>'
+      + '<div class="em-chart-footer-item"><div class="lbl">Média Diária</div><div class="val">' + avgDaily + '</div></div>';
   }
 }
 
@@ -9829,16 +9832,17 @@ async function renderOperationalScore(monthKey, active) {
     // Right side: 4 mini cards + weekly bars
     h += '<div>';
     h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+    var isEm = emIsActive();
     var miniCards = [
-      { label: 'No Prazo', icon: '<span class="mso mso-fill">check_circle</span>', count: bd.onTime.length, color: '#10b981', bg: '#dcfce7', drill: 'onTime' },
-      { label: 'Atrasado', icon: '<span class="mso">warning</span>', count: bd.late.length, color: '#f59e0b', bg: '#fef3c7', drill: 'late' },
-      { label: 'Pendente', icon: '<span class="mso">calendar_today</span>', count: bd.pending.length, color: '#3b82f6', bg: '#dbeafe', drill: 'pending' },
-      { label: 'Falhou', icon: '<span class="mso">cancel</span>', count: bd.failed.length, color: '#ef4444', bg: '#fee2e2', drill: 'failed' },
+      { label: 'No Prazo', icon: '<span class="mso mso-fill" style="font-size:16px;color:#10b981">check_circle</span>', count: bd.onTime.length, color: '#10b981', bg: isEm ? 'rgba(16,185,129,0.10)' : '#dcfce7', border: isEm ? 'rgba(16,185,129,0.35)' : 'rgba(16,185,129,0.2)', drill: 'onTime' },
+      { label: 'Atrasado', icon: '<span class="mso" style="font-size:16px;color:#f59e0b">warning</span>', count: bd.late.length, color: '#f59e0b', bg: isEm ? 'rgba(245,158,11,0.10)' : '#fef3c7', border: isEm ? 'rgba(245,158,11,0.35)' : 'rgba(245,158,11,0.2)', drill: 'late' },
+      { label: 'Pendente', icon: '<span class="mso" style="font-size:16px;color:#3b82f6">calendar_today</span>', count: bd.pending.length, color: '#3b82f6', bg: isEm ? 'rgba(59,130,246,0.10)' : '#dbeafe', border: isEm ? 'rgba(59,130,246,0.35)' : 'rgba(59,130,246,0.2)', drill: 'pending' },
+      { label: 'Falhou', icon: '<span class="mso" style="font-size:16px;color:#ef4444">cancel</span>', count: bd.failed.length, color: '#ef4444', bg: isEm ? 'rgba(239,68,68,0.10)' : '#fee2e2', border: isEm ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.2)', drill: 'failed' },
     ];
     miniCards.forEach(function(mc) {
-      h += '<div onclick="dashOpDrilldown(\'' + mc.drill + '\',\'' + monthKey + '\')" style="cursor:pointer;padding:12px;border-radius:10px;background:' + mc.bg + ';border:1px solid ' + mc.color + '30;transition:transform 0.15s" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'translateY(0)\'">';
-      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:1.1rem">' + mc.icon + '</span><span style="font-size:0.72rem;font-weight:700;color:' + mc.color + ';text-transform:uppercase">' + mc.label + '</span></div>';
-      h += '<div style="font-size:1.6rem;font-weight:800;color:' + mc.color + ';line-height:1">' + mc.count + '</div>';
+      h += '<div onclick="dashOpDrilldown(\'' + mc.drill + '\',\'' + monthKey + '\')" style="cursor:pointer;padding:14px;border-radius:10px;background:' + mc.bg + ';border:1px solid ' + mc.border + ';transition:transform 0.15s,box-shadow 0.15s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 16px rgba(0,0,0,0.18)\'" onmouseout="this.style.transform=\'translateY(0)\';this.style.boxShadow=\'none\'">';
+      h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' + mc.icon + '<span style="font-size:0.7rem;font-weight:700;color:' + mc.color + ';text-transform:uppercase;letter-spacing:0.5px">' + mc.label + '</span></div>';
+      h += '<div style="font-size:1.8rem;font-weight:800;color:' + mc.color + ';line-height:1">' + mc.count + '</div>';
       h += '</div>';
     });
     h += '</div>';
