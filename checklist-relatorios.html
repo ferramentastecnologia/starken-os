@@ -10445,20 +10445,14 @@ async function dashMarkCronoStatus(clientId, periodKey, newStatus, btn) {
   else { payload.sent = false; payload.sent_date = null; payload.generated_at = null; payload.pdf_url = null; payload.pdf_name = null; }
 
   try {
-    if (_supabase) {
-      var { error } = await _supabase.from('cronograma_status').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-    } else {
-      // Proxy upsert through /api/content (service role key)
-      var upRes = await fetch('/api/content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'upsert_cronograma', payload: payload })
-      });
-      if (!upRes.ok) throw new Error('HTTP ' + upRes.status + ' ' + (await upRes.text()).slice(0,120));
-      var upJson = await upRes.json();
-      if (upJson && upJson.error) throw new Error(upJson.error);
-    }
+    var upRes = await fetch('/api/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'upsert_cronograma', payload: payload })
+    });
+    if (!upRes.ok) throw new Error('HTTP ' + upRes.status + ' ' + (await upRes.text()).slice(0,120));
+    var upJson = await upRes.json();
+    if (upJson && upJson.error) throw new Error(upJson.error);
 
     // Update local cache
     _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, payload);
