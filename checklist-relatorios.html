@@ -733,6 +733,53 @@
 .em-ph-action-btn.manual:hover { background:rgba(70,238,205,0.08); }
 .em-ph-plat-icon { width:20px; height:20px; border-radius:4px; display:inline-flex; align-items:center; justify-content:center; font-size:0.75rem; flex-shrink:0; }
 
+/* ─── EMERALD MINHAS TASKS ─── */
+[data-theme="emerald"] .mt-legacy-header { display:none !important; }
+[data-theme="emerald"] #mtPipeline { display:none !important; }
+[data-theme="emerald"] #mtCount { display:none !important; }
+[data-theme="emerald"] #mtStatusFilter { display:none !important; }
+[data-theme="emerald"] #mtViewClient,[data-theme="emerald"] #mtViewList { display:none !important; }
+[data-theme="emerald"] #mtContent { display:none !important; }
+.em-mt-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+@media(max-width:900px){.em-mt-stats{grid-template-columns:repeat(3,1fr);}}
+.em-mt-stat-card { background:#131b24; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:16px 14px; display:flex; flex-direction:column; gap:8px; transition:border-color .2s; }
+.em-mt-stat-card:hover { border-color:rgba(70,238,205,0.2); }
+.em-mt-stat-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.em-mt-stat-val { font-size:1.8rem; font-weight:800; letter-spacing:-0.03em; line-height:1; }
+.em-mt-stat-label { font-size:0.7rem; font-weight:600; color:#85948f; text-transform:uppercase; letter-spacing:0.8px; }
+.em-mt-tabs { display:flex; gap:0; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:20px; overflow-x:auto; }
+.em-mt-tab { padding:10px 0; margin-right:22px; font-size:0.8rem; font-weight:600; color:#85948f; cursor:pointer; border:none; border-bottom:2px solid transparent; background:none; font-family:inherit; transition:all .15s; white-space:nowrap; }
+.em-mt-tab:hover { color:#bacac4; }
+.em-mt-tab.active { color:#46eecd; border-bottom-color:#46eecd; }
+.em-mt-table { background:#131b24; border:1px solid rgba(255,255,255,0.06); border-radius:12px; overflow:hidden; }
+.em-mt-thead { display:grid; grid-template-columns:150px 1fr 115px 125px 72px 88px 105px; padding:10px 16px; font-size:0.62rem; font-weight:800; color:#85948f; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid rgba(255,255,255,0.06); background:#0f1720; }
+.em-mt-row { display:grid; grid-template-columns:150px 1fr 115px 125px 72px 88px 105px; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); align-items:center; cursor:pointer; transition:background .15s; gap:0; }
+.em-mt-row:last-child { border-bottom:none; }
+.em-mt-row:hover { background:rgba(255,255,255,0.025); }
+.em-mt-row.alt { border-left:3px solid rgba(255,180,171,0.7); background:rgba(255,180,171,0.025); }
+.em-mt-cell-client { display:flex; align-items:center; gap:7px; overflow:hidden; }
+.em-mt-format { display:inline-flex; align-items:center; gap:4px; font-size:0.62rem; font-weight:700; padding:2px 6px; border-radius:5px; white-space:nowrap; letter-spacing:0.2px; }
+.em-mt-status-chip { display:inline-flex; align-items:center; padding:4px 9px; border-radius:6px; font-size:0.65rem; font-weight:700; letter-spacing:0.2px; white-space:nowrap; }
+.em-mt-priority { display:inline-flex; align-items:center; gap:4px; font-size:0.62rem; font-weight:700; padding:3px 8px; border-radius:6px; white-space:nowrap; }
+.em-mt-quick-btn { display:inline-flex; align-items:center; gap:3px; font-size:0.62rem; font-weight:700; padding:2px 7px; border-radius:5px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:all .15s; flex-shrink:0; }
+.em-mt-quick-btn.review { background:rgba(95,235,216,0.10); color:#5febd8; border:1px solid rgba(95,235,216,0.25); }
+.em-mt-quick-btn.corrigir { background:rgba(255,180,171,0.10); color:#ffb4ab; border:1px solid rgba(255,180,171,0.25); }
+.em-mt-empty { text-align:center; padding:60px 20px; color:#85948f; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.em-mt-empty p { font-size:0.9rem; font-weight:600; color:#bacac4; margin:0; }
+.em-mt-recent-section { margin-top:24px; }
+.em-mt-recent-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:0.82rem; font-weight:700; color:#bacac4; }
+.em-mt-badge-sch { background:rgba(95,235,216,0.10); color:#5febd8; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
+.em-mt-badge-pub { background:rgba(70,238,205,0.10); color:#46eecd; padding:2px 8px; border-radius:10px; font-size:0.7rem; font-weight:700; }
+.em-mt-insights { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:24px; }
+@media(max-width:900px){.em-mt-insights{grid-template-columns:1fr;}}
+.em-mt-insight-card { background:#131b24; border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:18px 20px; }
+.em-mt-insight-card.danger { border-left:3px solid rgba(255,180,171,0.6); }
+.em-mt-insight-card.info { border-left:3px solid rgba(95,235,216,0.5); }
+.em-mt-insight-card.gradient { background:linear-gradient(135deg,rgba(70,238,205,0.07) 0%,rgba(95,235,216,0.04) 100%); border-color:rgba(70,238,205,0.15); }
+.em-mt-insight-label { display:flex; align-items:center; gap:6px; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:#85948f; margin-bottom:8px; }
+.em-mt-insight-val { font-size:2rem; font-weight:800; letter-spacing:-0.04em; color:#dce3f3; line-height:1; }
+.em-mt-insight-sub { font-size:0.72rem; color:#85948f; margin-top:4px; }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
@@ -5399,8 +5446,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
       <!-- ═══ MINHAS TASKS ═══ -->
       <div id="tab-minhas-tasks" class="tab-content">
-        <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <!-- Emerald premium container (rendered by emMinhasTasksRender) -->
+        <div id="emMtHero"></div>
+        <!-- Header (hidden in emerald theme) -->
+        <div class="mt-legacy-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
           <h2 style="font-size:20px;font-weight:700;letter-spacing:-0.025em;margin:0">🎯 Minhas Tasks</h2>
           <div style="display:flex;align-items:center;gap:12px">
             <div style="display:flex;background:var(--surface-container,#eceef1);border-radius:8px;overflow:hidden">
@@ -5965,7 +6014,17 @@ var STARKEN_ICONS = {
   trophy:      '<path d="M7 4h10v5a5 5 0 01-10 0z"/><path d="M7 4H4v2a3 3 0 003 3M17 4h3v2a3 3 0 01-3 3M9 14h6v2H9zM8 20h8"/>',
   rocket:      '<path d="M5 13c2-3 5-6 9-8l5-2-2 5c-2 4-5 7-8 9l-2-2z"/><path d="M9 15l-4 4M5 11l-2 3 2 2 3-2"/><circle cx="15" cy="9" r="1.5"/>',
   mail:        '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/>',
-  palette:     '<path d="M12 3a9 9 0 000 18c1 0 1.5-.5 1.5-1.5 0-.4-.2-.8-.5-1.1-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.7-1.7H16a5 5 0 005-5c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="10.5" r="1.3"/><circle cx="12" cy="7.5" r="1.3"/><circle cx="16.5" cy="10.5" r="1.3"/>'
+  palette:     '<path d="M12 3a9 9 0 000 18c1 0 1.5-.5 1.5-1.5 0-.4-.2-.8-.5-1.1-.3-.3-.5-.7-.5-1.2 0-1 .8-1.7 1.7-1.7H16a5 5 0 005-5c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="10.5" r="1.3"/><circle cx="12" cy="7.5" r="1.3"/><circle cx="16.5" cy="10.5" r="1.3"/>',
+  check:       '<polyline points="20 6 9 17 4 12"/>',
+  camera:      '<path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/>',
+  film:        '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/>',
+  smartphone:  '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+  layers:      '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  flag:        '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+  edit:        '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/>',
+  eye:         '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  minus:       '<line x1="5" y1="12" x2="19" y2="12"/>',
+  send:        '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>'
 };
 function iconSvg(name, opts) {
   opts = opts || {};
@@ -7640,6 +7699,283 @@ function emPhSetTab(tab) {
 function emPhOnSearch(val) {
   _emPhSearch = val;
   pubHistoryRender();
+}
+
+// ═══════════════════════════════════════════════════
+//  EMERALD ─ MINHAS TASKS PREMIUM RENDER
+// ═══════════════════════════════════════════════════
+function emMtStatCard(iconHtml, label, val, color, bg) {
+  return '<div class="em-mt-stat-card" style="border-color:' + color + '22">'
+    + '<div class="em-mt-stat-icon" style="background:' + bg + ';color:' + color + '">' + iconHtml + '</div>'
+    + '<div class="em-mt-stat-val" style="color:' + color + '">' + val + '</div>'
+    + '<div class="em-mt-stat-label">' + label + '</div>'
+    + '</div>';
+}
+
+function emMtFormatBadge(publishConfig) {
+  if (!publishConfig) return '<span style="color:#85948f;font-size:0.7rem">—</span>';
+  var formats = publishConfig.formats || [];
+  if (!formats.length && publishConfig.content_type) formats = [publishConfig.content_type];
+  if (!formats.length) return '<span style="color:#85948f;font-size:0.7rem">—</span>';
+  var fmtDef = {
+    feed:      { icon:'camera',     label:'Feed',      color:'#5febd8', bg:'rgba(95,235,216,0.1)' },
+    reels:     { icon:'film',       label:'Reels',     color:'#b39ddb', bg:'rgba(179,157,219,0.1)' },
+    story:     { icon:'smartphone', label:'Story',     color:'#f48fb1', bg:'rgba(244,143,177,0.1)' },
+    carrossel: { icon:'layers',     label:'Carrossel', color:'#ffd680', bg:'rgba(255,214,128,0.1)' }
+  };
+  var h = '<div style="display:flex;gap:3px;flex-wrap:wrap">';
+  formats.forEach(function(type) {
+    var d = fmtDef[type];
+    if (d) h += '<span class="em-mt-format" style="background:' + d.bg + ';color:' + d.color + '">'
+      + iconSvg(d.icon, {size:9}) + ' ' + d.label + '</span>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function emMtPriorityBadge(priority) {
+  var map = {
+    urgente: { icon:'flag',        color:'#ffb4ab', bg:'rgba(255,180,171,0.12)', label:'URGENTE' },
+    alta:    { icon:'trending-up', color:'#ffd680', bg:'rgba(255,214,128,0.12)', label:'ALTA' },
+    normal:  { icon:'minus',       color:'#5febd8', bg:'rgba(95,235,216,0.08)',  label:'NORMAL' },
+    baixa:   { icon:'download',    color:'#85948f', bg:'rgba(133,148,143,0.08)', label:'BAIXA' }
+  };
+  var p = map[priority || 'normal'] || map.normal;
+  return '<span class="em-mt-priority" style="background:' + p.bg + ';color:' + p.color + '">'
+    + iconSvg(p.icon, {size:9}) + ' ' + p.label + '</span>';
+}
+
+function emMtRow(task, showClient) {
+  var statusDef = (typeof CT_STATUSES !== 'undefined' ? CT_STATUSES : []).find(function(s) { return s.key === (task.status || 'a-fazer'); }) || { key:'a-fazer', label:'A Fazer' };
+  var isAlteracao = statusDef.key === 'alteracao-design';
+  var rowClass = 'em-mt-row' + (isAlteracao ? ' alt' : '');
+  var clients = _metaClients || {};
+  var client = clients[task.client_id] || null;
+  var clientName = client ? (client.pageName || client.name || task.client_id) : (task.group_name || '');
+  var initials = clientName ? clientName.substring(0, 2).toUpperCase() : '?';
+  var dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) : '—';
+  var postDate = task.publish_config && task.publish_config.post_date;
+  var postStr = postDate ? new Date(postDate + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) : '—';
+
+  // Days countdown badge
+  var daysBadge = '';
+  if (postDate) {
+    var _td = new Date(); _td.setHours(0,0,0,0);
+    var _pd = new Date(postDate + 'T00:00:00');
+    var _diff = Math.ceil((_pd - _td) / 86400000);
+    var dColor, dBg, dLabel;
+    if (_diff < 0)       { dColor='#85948f'; dBg='rgba(133,148,143,0.08)'; dLabel=Math.abs(_diff)+'d atrás'; }
+    else if (_diff===0)  { dColor='#ffb4ab'; dBg='rgba(255,180,171,0.12)'; dLabel='Hoje!'; }
+    else if (_diff===1)  { dColor='#ffb4ab'; dBg='rgba(255,180,171,0.12)'; dLabel='1 dia'; }
+    else if (_diff<=3)   { dColor='#ffd680'; dBg='rgba(255,214,128,0.10)'; dLabel=_diff+' dias'; }
+    else if (_diff<=7)   { dColor='#5febd8'; dBg='rgba(95,235,216,0.08)';  dLabel=_diff+' dias'; }
+    else                 { dColor='#46eecd'; dBg='rgba(70,238,205,0.08)';  dLabel=_diff+' dias'; }
+    daysBadge = '<br><span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:' + dBg + ';color:' + dColor + '">' + dLabel + '</span>';
+  }
+
+  // Quick action for designers
+  var quickAction = '';
+  var isDesigner = gpState.user && gpState.user.role === 'designer';
+  if (isDesigner && statusDef.key === 'design') {
+    quickAction = '<button onclick="event.stopPropagation();mtSendToReview(\'' + task.id + '\',this)" class="em-mt-quick-btn review">'
+      + iconSvg('send', {size:9}) + ' Revisão</button>';
+  } else if (isDesigner && statusDef.key === 'alteracao-design') {
+    quickAction = '<span class="em-mt-quick-btn corrigir">' + iconSvg('edit', {size:9}) + ' CORRIGIR</span>';
+  }
+
+  // Status chip color
+  var scMap = {
+    'alteracao-design':  { bg:'rgba(255,180,171,0.12)', color:'#ffb4ab' },
+    'design':            { bg:'rgba(179,157,219,0.12)', color:'#b39ddb' },
+    'em-revisao':        { bg:'rgba(255,214,128,0.12)', color:'#ffd680' },
+    'aprovacao':         { bg:'rgba(95,235,216,0.12)',  color:'#5febd8' },
+    'aprovacao-design':  { bg:'rgba(95,235,216,0.10)',  color:'#5febd8' },
+    'aprovado':          { bg:'rgba(70,238,205,0.12)',  color:'#46eecd' },
+    'agendado':          { bg:'rgba(95,235,216,0.10)',  color:'#5febd8' },
+    'publicado':         { bg:'rgba(70,238,205,0.12)',  color:'#46eecd' },
+    'a-fazer':           { bg:'rgba(255,255,255,0.05)', color:'#85948f' },
+    'em-andamento':      { bg:'rgba(179,157,219,0.10)', color:'#b39ddb' }
+  };
+  var sc = scMap[statusDef.key] || { bg:'rgba(255,255,255,0.05)', color:'#85948f' };
+  var avatarColor = typeof emPhClientColor === 'function' ? emPhClientColor(clientName) : '#46eecd';
+
+  var h = '<div class="' + rowClass + '" onclick="ctOpenModal(\'' + task.id + '\')">';
+  if (showClient) {
+    h += '<div class="em-mt-cell-client">'
+      + '<div class="em-ph-avatar" style="background:' + avatarColor + ';width:26px;height:26px;min-width:26px;font-size:0.62rem;flex-shrink:0">' + initials + '</div>'
+      + '<span style="font-size:0.75rem;color:#bacac4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + emEsc(clientName) + '</span>'
+      + '</div>';
+  }
+  h += '<div style="display:flex;align-items:center;gap:6px;overflow:hidden;min-width:0">'
+    + '<span style="font-weight:500;color:#dce3f3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.8rem;flex:1;min-width:0">' + emEsc(task.name || '') + '</span>'
+    + quickAction
+    + '</div>';
+  h += '<div>' + emMtFormatBadge(task.publish_config) + '</div>';
+  h += '<div><span class="em-mt-status-chip" style="background:' + sc.bg + ';color:' + sc.color + '">' + emEsc(statusDef.label) + '</span></div>';
+  h += '<div style="font-size:0.75rem;color:#85948f">' + dueStr + '</div>';
+  h += '<div style="font-size:0.75rem;color:#85948f;line-height:1.4">' + postStr + daysBadge + '</div>';
+  h += '<div>' + emMtPriorityBadge(task.priority) + '</div>';
+  h += '</div>';
+  return h;
+}
+
+function emMinhasTasksRender() {
+  if (!emIsActive()) return;
+  var hero = document.getElementById('emMtHero');
+  if (!hero) return;
+
+  var allTasks = (typeof mtTasks !== 'undefined' && Array.isArray(mtTasks)) ? mtTasks : [];
+  var recentTasks = (typeof mtRecentTasks !== 'undefined' && Array.isArray(mtRecentTasks)) ? mtRecentTasks : [];
+  var statusFilter = (document.getElementById('emMtActiveFilter') || {}).value || (window._emMtFilter || '');
+
+  // Stats
+  var altCount    = allTasks.filter(function(t) { return t.status === 'alteracao-design'; }).length;
+  var designCount = allTasks.filter(function(t) { return t.status === 'design'; }).length;
+  var revisCount  = allTasks.filter(function(t) { return t.status === 'em-revisao'; }).length;
+  var aprvCount   = allTasks.filter(function(t) { return t.status === 'aprovacao' || t.status === 'aprovacao-design'; }).length;
+  var pubCount    = recentTasks.filter(function(t) { return t.status === 'publicado'; }).length;
+
+  // ── Hero (once) ──
+  if (!hero._rendered) {
+    hero._rendered = true;
+    var uName = gpState.user ? gpState.user.name : '';
+    hero.innerHTML =
+      '<div class="em-hero" style="margin-bottom:20px">'
+      + '<div>'
+      + '<h2 class="em-hero-title">Minhas Tasks</h2>'
+      + '<p class="em-hero-sub">Olá, ' + emEsc(uName) + '! Gerencie suas entregas com foco.</p>'
+      + '</div>'
+      + '<div class="em-hero-actions">'
+      + '<button class="em-btn-secondary" onclick="mtInit()">' + iconSvg('refresh', {size:14}) + ' Atualizar</button>'
+      + '</div>'
+      + '</div>'
+      + '<div id="emMtStats" class="em-mt-stats"></div>'
+      + '<div class="em-mt-tabs" id="emMtTabs"></div>'
+      + '<div id="emMtTable" class="em-mt-table-wrap"></div>'
+      + '<div id="emMtRecent"></div>'
+      + '<div id="emMtInsights" class="em-mt-insights"></div>';
+  }
+
+  // ── Stats ──
+  var statsEl = document.getElementById('emMtStats');
+  if (statsEl) {
+    statsEl.innerHTML =
+      emMtStatCard(iconSvg('edit',   {size:16}), 'Alteração',  altCount,    '#ffb4ab', 'rgba(255,180,171,0.12)') +
+      emMtStatCard(iconSvg('palette',{size:16}), 'Design',     designCount, '#b39ddb', 'rgba(179,157,219,0.12)') +
+      emMtStatCard(iconSvg('eye',    {size:16}), 'Em Revisão', revisCount,  '#ffd680', 'rgba(255,214,128,0.12)') +
+      emMtStatCard(iconSvg('check',  {size:16}), 'Aprovação',  aprvCount,   '#5febd8', 'rgba(95,235,216,0.10)') +
+      emMtStatCard(iconSvg('rocket', {size:16}), 'Publicados', pubCount,    '#46eecd', 'rgba(70,238,205,0.10)');
+  }
+
+  // ── Filter Tabs ──
+  var tabsEl = document.getElementById('emMtTabs');
+  if (tabsEl) {
+    var tabDefs = [
+      { key:'',                label:'Todos',      count: allTasks.length },
+      { key:'alteracao-design',label:'Alteração',  count: altCount },
+      { key:'design',          label:'Design',     count: designCount },
+      { key:'em-revisao',      label:'Em Revisão', count: revisCount },
+      { key:'aprovacao',       label:'Aprovação',  count: aprvCount },
+      { key:'a-fazer',         label:'A Fazer',    count: allTasks.filter(function(t){return (t.status||'a-fazer')==='a-fazer';}).length }
+    ];
+    tabsEl.innerHTML = tabDefs.map(function(td) {
+      var active = (window._emMtFilter || '') === td.key;
+      var badge = td.count > 0 ? ' <span style="background:rgba(255,255,255,0.08);color:#bacac4;border-radius:10px;padding:0 6px;font-size:0.65rem">' + td.count + '</span>' : '';
+      return '<button class="em-mt-tab' + (active ? ' active' : '') + '" '
+        + 'onclick="window._emMtFilter=\'' + td.key + '\';emMinhasTasksRender()">'
+        + td.label + badge + '</button>';
+    }).join('');
+  }
+
+  // ── Filter + Sort tasks ──
+  var tasks = allTasks.slice();
+  if (gpState.user && gpState.user.role === 'executor') {
+    tasks = tasks.filter(function(t) { var s=t.status||'a-fazer'; return s==='agendar'||s==='aprovacao'; });
+  }
+  var sf = window._emMtFilter || '';
+  if (sf) tasks = tasks.filter(function(t) { return (t.status||'a-fazer') === sf; });
+  var sOrder = {'alteracao-design':0,'design':1,'em-revisao':2,'aprovacao-design':3,'a-fazer':4,'em-andamento':5};
+  var pOrder = {urgente:0,alta:1,normal:2,baixa:3};
+  tasks.sort(function(a,b) {
+    var sA=sOrder[a.status]!=null?sOrder[a.status]:9, sB=sOrder[b.status]!=null?sOrder[b.status]:9;
+    if (sA!==sB) return sA-sB;
+    var pA=pOrder[a.priority]!=null?pOrder[a.priority]:2, pB=pOrder[b.priority]!=null?pOrder[b.priority]:2;
+    if (pA!==pB) return pA-pB;
+    if (a.due_date&&b.due_date) return a.due_date.localeCompare(b.due_date);
+    return 0;
+  });
+
+  // ── Task Table ──
+  var tableEl = document.getElementById('emMtTable');
+  if (tableEl) {
+    if (!tasks.length && !allTasks.length) {
+      tableEl.innerHTML = '<div class="em-mt-empty">' + iconSvg('target',{size:36}) + '<p>Carregando tasks...</p></div>';
+    } else if (!tasks.length) {
+      tableEl.innerHTML = '<div class="em-mt-empty">' + iconSvg('check',{size:36}) + '<p>Nenhuma task' + (sf ? ' com esse filtro' : '') + '</p></div>';
+    } else {
+      var th = '<div class="em-mt-table">'
+        + '<div class="em-mt-thead"><span>Cliente</span><span>Nome da Task</span><span>Formato</span><span>Status</span><span>Entrega</span><span>Post</span><span>Prio</span></div>';
+      tasks.forEach(function(t) { th += emMtRow(t, true); });
+      th += '</div>';
+      tableEl.innerHTML = th;
+    }
+  }
+
+  // ── Recent Section ──
+  var recentEl = document.getElementById('emMtRecent');
+  if (recentEl) {
+    if (recentTasks.length > 0) {
+      var agCount = recentTasks.filter(function(t) { return t.status==='agendado'; }).length;
+      var sortedR = recentTasks.slice().sort(function(a,b) {
+        if (a.status==='agendado'&&b.status!=='agendado') return -1;
+        if (b.status==='agendado'&&a.status!=='agendado') return 1;
+        var da=(a.publish_config&&a.publish_config.post_date)||a.due_date||'zzzz';
+        var db=(b.publish_config&&b.publish_config.post_date)||b.due_date||'zzzz';
+        return da.localeCompare(db);
+      });
+      var rh = '<div class="em-mt-recent-section">'
+        + '<div class="em-mt-recent-header">'
+        + iconSvg('bell',{size:13}) + '<span>Agendados &amp; Publicados — últimos 7 dias</span>'
+        + '<span class="em-mt-badge-sch">' + agCount + ' agendados</span>'
+        + '<span class="em-mt-badge-pub">' + pubCount + ' publicados</span>'
+        + '</div>'
+        + '<div class="em-mt-table">'
+        + '<div class="em-mt-thead"><span>Cliente</span><span>Nome da Task</span><span>Formato</span><span>Status</span><span>Entrega</span><span>Post</span><span>Prio</span></div>';
+      sortedR.forEach(function(t) { rh += emMtRow(t, true); });
+      rh += '</div></div>';
+      recentEl.innerHTML = rh;
+    } else {
+      recentEl.innerHTML = '';
+    }
+  }
+
+  // ── Insight Cards ──
+  var insightsEl = document.getElementById('emMtInsights');
+  if (insightsEl) {
+    if (allTasks.length > 0 || recentTasks.length > 0) {
+      var urgentCount = allTasks.filter(function(t) { return t.status==='alteracao-design'||t.priority==='urgente'; }).length;
+      var totalWork = allTasks.length + recentTasks.length;
+      var efficiency = totalWork > 0 ? Math.round((pubCount / totalWork) * 100) : 0;
+      insightsEl.innerHTML =
+        '<div class="em-mt-insight-card danger">'
+        + '<div class="em-mt-insight-label">' + iconSvg('flag',{size:12}) + ' Atenção Necessária</div>'
+        + '<div class="em-mt-insight-val">' + urgentCount + '</div>'
+        + '<div class="em-mt-insight-sub">tasks urgentes ou em alteração</div>'
+        + '</div>'
+        + '<div class="em-mt-insight-card info">'
+        + '<div class="em-mt-insight-label">' + iconSvg('chart',{size:12}) + ' Eficiência da Semana</div>'
+        + '<div class="em-mt-insight-val">' + efficiency + '%</div>'
+        + '<div class="em-mt-insight-sub">publicações vs total de tasks</div>'
+        + '</div>'
+        + '<div class="em-mt-insight-card gradient">'
+        + '<div class="em-mt-insight-label">' + iconSvg('rocket',{size:12}) + ' Starken OS</div>'
+        + '<div style="font-size:0.8rem;font-weight:600;color:#dce3f3;margin-top:8px">Sistema premium de gestão.</div>'
+        + '<div class="em-mt-insight-sub" style="margin-top:6px">Cada task concluída é uma vitória da equipe Starken.</div>'
+        + '</div>';
+    } else {
+      insightsEl.innerHTML = '';
+    }
+  }
 }
 
 function pubHistSafeId(key) {
@@ -25601,6 +25937,12 @@ function mtRenderPipeline(tasks) {
 }
 
 function mtRender() {
+  // Emerald override
+  if (emIsActive()) { emMinhasTasksRender(); return; }
+  // Reset emerald hero when switching away from emerald
+  var emMtH = document.getElementById('emMtHero');
+  if (emMtH && emMtH._rendered) { emMtH.innerHTML = ''; emMtH._rendered = false; window._emMtFilter = ''; }
+
   const el = document.getElementById('mtContent');
   const statusFilter = document.getElementById('mtStatusFilter').value;
 
