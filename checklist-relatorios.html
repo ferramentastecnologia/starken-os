@@ -8155,7 +8155,7 @@ function renderDashboard() {
   renderOperationalScore(mk, active);
 
   // Async: load week tasks data if not yet available, then re-render cards
-  if (!weekTaskClients && typeof ensureClientsWithWeekTasks === 'function' && _supabase) {
+  if (typeof weekTaskClients === 'undefined' && typeof ensureClientsWithWeekTasks === 'function' && _supabase) {
     ensureClientsWithWeekTasks(wk).then(function() { renderDashboard(); });
   }
   renderRecentSends();
