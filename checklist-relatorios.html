@@ -9388,12 +9388,21 @@ function _dashGetCurrentWeekKey() {
   if (!weeks.length) return mk + '-S1';
   var today = new Date();
   var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
-  var autoWeek = null;
-  for (var i = weeks.length - 1; i >= 0; i--) {
-    if (todayStr >= weeks[i].sendDateISO) { autoWeek = weeks[i]; break; }
+
+  // Encontra a semana cujo PERÍODO contém hoje (não a data de envio)
+  for (var i = 0; i < weeks.length; i++) {
+    if (todayStr >= weeks[i].periodStartISO && todayStr <= weeks[i].periodEndISO) {
+      return mk + '-S' + weeks[i].week;
+    }
   }
-  if (!autoWeek) autoWeek = weeks[0];
-  return mk + '-S' + (autoWeek ? autoWeek.week : 1);
+  // Se hoje está antes do início do 1º período, retorna S1
+  if (todayStr < weeks[0].periodStartISO) return mk + '-S1';
+  // Se hoje está depois do fim do último período (ex: dias entre um mês e outro),
+  // usa sendDateISO como fallback para não perder a semana ainda não encerrada
+  for (var j = weeks.length - 1; j >= 0; j--) {
+    if (todayStr >= weeks[j].sendDateISO) return mk + '-S' + weeks[j].week;
+  }
+  return mk + '-S1';
 }
 
 // Retorna {startISO, endISO} da semana calendário atual (seg-dom)
@@ -9545,6 +9554,68 @@ async function dashExportPdf() {
     var emScoreBdr   = score >= 85 ? 'rgba(70,238,205,0.30)' : score >= 70 ? 'rgba(251,191,36,0.28)' : 'rgba(255,180,171,0.28)';
     var emScoreBadgeBg = score >= 85 ? 'rgba(70,238,205,0.15)' : score >= 70 ? 'rgba(251,191,36,0.15)' : 'rgba(255,180,171,0.15)';
 
+    // ── Gera texto de análise executiva
+    var _wkLast = wkData.filter(function(w) { return w.score !== null; });
+    var _wkTrend = _wkLast.length >= 2 ? (_wkLast[_wkLast.length-1].score - _wkLast[_wkLast.length-2].score) : 0;
+    var _trendText = _wkTrend > 5 ? 'com tendência de <strong style="color:#46eecd">melhora</strong>' : _wkTrend < -5 ? 'com tendência de <strong style="color:#ffb4ab">queda</strong>' : 'estável nas últimas semanas';
+    var _pendingNames = (bd.pending || []).slice(0, 5).map(function(t) { return t.client_name || t.name || ''; }).filter(Boolean);
+    var _lateNames    = (bd.late    || []).slice(0, 5).map(function(t) { return t.client_name || t.name || ''; }).filter(Boolean);
+    var _failedNames  = (bd.failed  || []).slice(0, 3).map(function(t) { return t.client_name || t.name || ''; }).filter(Boolean);
+    var _wSentPct     = active.length > 0 ? Math.round((wSent / active.length) * 100) : 0;
+
+    var analysisParagraphs = [];
+
+    // Parágrafo 1 — Score geral
+    if (score >= 85) {
+      analysisParagraphs.push('O mês de <strong>' + monthName + '</strong> registrou performance <strong style="color:#46eecd">excelente</strong> com score operacional de <strong style="color:#46eecd">' + score + '%</strong>, ' + _trendText + '. A equipe manteve alta consistência na entrega de conteúdo para todos os clientes.');
+    } else if (score >= 70) {
+      analysisParagraphs.push('O mês de <strong>' + monthName + '</strong> registrou performance <strong style="color:#fbbf24">satisfatória</strong> com score operacional de <strong style="color:#fbbf24">' + score + '%</strong>, ' + _trendText + '. Há espaço para melhoria, especialmente na redução de tarefas atrasadas.');
+    } else {
+      analysisParagraphs.push('O mês de <strong>' + monthName + '</strong> apresentou <strong style="color:#ffb4ab">performance crítica</strong> com score operacional de <strong style="color:#ffb4ab">' + score + '%</strong>, ' + _trendText + '. Ação imediata é necessária para regularizar o fluxo de entregas.');
+    }
+
+    // Parágrafo 2 — Breakdown Starken vs Alpha
+    if (bc.Starken.t > 0 || bc.Alpha.t > 0) {
+      var compTxt = '';
+      if (bc.Starken.t > 0) compTxt += 'Starken Performance: <strong>' + bc.Starken.p + '/' + bc.Starken.t + ' posts</strong> publicados (' + sPct + '%)';
+      if (bc.Alpha.t > 0)   compTxt += (compTxt ? '; ' : '') + 'Alpha Assessoria: <strong>' + bc.Alpha.p + '/' + bc.Alpha.t + ' posts</strong> publicados (' + aPct + '%)';
+      analysisParagraphs.push('Distribuição por empresa — ' + compTxt + '. Total de <strong>' + active.length + ' clientes ativos</strong> na carteira.');
+    }
+
+    // Parágrafo 3 — Cronogramas da semana
+    if (wGen > 0 || wSent > 0) {
+      analysisParagraphs.push('Cronogramas semanais: <strong style="color:#46eecd">' + wSent + ' enviados</strong> de ' + active.length + ' clientes (' + _wSentPct + '%)' + (wGen > wSent ? ', com ' + (wGen - wSent) + ' gerados aguardando envio' : '') + (wPending > 0 ? '. <strong style="color:#fbbf24">' + wPending + ' clientes ainda pendentes</strong> de geração de cronograma' : '. Todos os cronogramas foram enviados') + '.');
+    }
+
+    // Parágrafo 4 — Pendentes e atrasados
+    if (bd.pending.length > 0 || bd.late.length > 0) {
+      var attnParts = [];
+      if (bd.pending.length > 0) {
+        var pendTxt = '<strong style="color:#fbbf24">' + bd.pending.length + ' tarefas pendentes</strong> ainda dentro do prazo';
+        if (_pendingNames.length) pendTxt += ' (' + _pendingNames.join(', ') + (bd.pending.length > 5 ? ' e mais ' + (bd.pending.length - 5) : '') + ')';
+        attnParts.push(pendTxt);
+      }
+      if (bd.late.length > 0) {
+        var lateTxt = '<strong style="color:#ffb4ab">' + bd.late.length + ' tarefas atrasadas</strong> (prazo vencido sem publicação)';
+        if (_lateNames.length) lateTxt += ' — ' + _lateNames.join(', ') + (bd.late.length > 5 ? ' e outros' : '');
+        attnParts.push(lateTxt);
+      }
+      analysisParagraphs.push('Pontos de atenção: ' + attnParts.join('; ') + '.');
+    }
+
+    // Parágrafo 5 — Falhas
+    if (bd.failed.length > 0) {
+      var failTxt = '<strong style="color:#ffb4ab">' + bd.failed.length + ' publicação' + (bd.failed.length > 1 ? 'ões' : '') + ' com falha técnica</strong>';
+      if (_failedNames.length) failTxt += ' (' + _failedNames.join(', ') + ')';
+      analysisParagraphs.push('Falhas técnicas: ' + failTxt + ' — verificar logs de erro e reagendar via painel de Publicações.');
+    } else {
+      analysisParagraphs.push('<strong style="color:#46eecd">Zero falhas técnicas</strong> registradas no período — todas as publicações foram executadas com sucesso.');
+    }
+
+    var analysisHtml = analysisParagraphs.map(function(p) {
+      return '<p style="margin-bottom:10px;line-height:1.7;color:#bacac4;font-size:0.82rem">' + p + '</p>';
+    }).join('');
+
     var trendRows = wkData.map(function(w) {
       var wChip = w.score === null ? 'chip-muted' : w.score >= 85 ? 'chip-ok' : w.score >= 70 ? 'chip-warn' : 'chip-danger';
       var barColor = w.score === null ? 'rgba(133,148,143,0.3)' : w.score >= 85 ? '#46eecd' : w.score >= 70 ? '#fbbf24' : '#ffb4ab';
@@ -9625,6 +9696,14 @@ async function dashExportPdf() {
       + '<section>'
       + '<h3>Cronogramas da Semana</h3>'
       + '<table class="data-table"><thead><tr><th>Cliente</th><th>Empresa</th><th style="text-align:right">Status</th></tr></thead><tbody>' + cronoRows + '</tbody></table>'
+      + '</section>'
+
+      // ── Análise executiva
+      + '<section>'
+      + '<h3>Análise Executiva</h3>'
+      + '<div style="background:#151c27;border:1px solid rgba(70,238,205,0.12);border-radius:12px;padding:18px 20px;border-left:3px solid rgba(70,238,205,0.50)">'
+      + analysisHtml
+      + '</div>'
       + '</section>'
 
       // ── Rodapé
