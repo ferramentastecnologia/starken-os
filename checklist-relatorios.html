@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Starken OS</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23D4A017'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='55' fill='%23523A00'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="https://cpwpxckmuecejtkcobre.supabase.co/storage/v1/object/public/client-hub-materials/system/favicon-starken.png">
@@ -8745,6 +8748,27 @@ if (typeof window !== 'undefined' && !window._dashAutoRefresh) {
     }
   }, 5 * 60 * 1000);
 }
+
+// Global cache cleaner — callable from browser console if UI is stuck
+// Usage: limparCache()
+window.limparCache = function() {
+  try {
+    _opScoreCache = {};
+    _dashWeekPostsCache = {};
+    _contentProgressCache = {};
+    _groupToClientCache = null;
+    _groupToClientPromise = null;
+    _cronogramaStatusCache = {};
+    if (window._dashAutoRefresh) { clearInterval(window._dashAutoRefresh); window._dashAutoRefresh = null; }
+    // Keep starkenSession (login) but clear caches
+    var keep = ['starkenSession', 'gpSpace', 'theme', STORAGE_KEY];
+    Object.keys(localStorage).forEach(function(k) {
+      if (keep.indexOf(k) === -1) localStorage.removeItem(k);
+    });
+    console.log('✅ Cache limpo. Recarregando...');
+    setTimeout(function() { location.reload(); }, 300);
+  } catch(e) { console.error('Erro ao limpar cache:', e); }
+};
 
 // Recent sends from Supabase cronograma_status cache
 function renderRecentSends() {
