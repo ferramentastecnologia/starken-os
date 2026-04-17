@@ -751,6 +751,40 @@ async function createRecurringWeek({ client_id, group_name, position, stories_pe
 }
 
 // =============================================================================
+// Dashboard Proxy Actions (service-role reads for dashboard sections)
+// =============================================================================
+
+const QUERY_ALLOWED_TABLES = new Set([
+  'content_tasks', 'content_groups', 'cronograma_status',
+  'publish_history', 'publish_queue',
+]);
+
+async function queryProxy({ table, select = '*', filters, order, limit }) {
+  if (!table || !QUERY_ALLOWED_TABLES.has(table)) return fail('Table not allowed: ' + table);
+  let qs = 'select=' + encodeURIComponent(select);
+  const filterArr = Array.isArray(filters) ? filters : [];
+  filterArr.forEach((f) => { qs += '&' + f; });
+  if (order) qs += '&order=' + order;
+  if (limit) qs += '&limit=' + limit;
+  const data = await supaSelect(table, qs);
+  return ok(data);
+}
+
+async function upsertCronograma({ payload }) {
+  if (!payload || !payload.id) return fail('payload.id required');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/cronograma_status?on_conflict=id`, {
+    method: 'POST',
+    headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`UPSERT cronograma_status failed: ${err}`);
+  }
+  return ok({ success: true });
+}
+
+// =============================================================================
 // Action Router
 // =============================================================================
 
@@ -785,6 +819,9 @@ const ACTIONS = {
   admin_update_user: adminUpdateUser,
   // Batch
   create_recurring_week: createRecurringWeek,
+  // Dashboard proxy (service-role reads + upserts)
+  query: queryProxy,
+  upsert_cronograma: upsertCronograma,
 };
 
 // =============================================================================
