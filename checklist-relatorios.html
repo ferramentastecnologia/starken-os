@@ -12049,7 +12049,7 @@ function asanaTaskCardHtml(t, isOverdue) {
     + '</div>'
     + (t.notes ? '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:6px;max-height:40px;overflow:hidden">' + esc(t.notes).substring(0, 100) + '</div>' : '')
     + '<div class="task-actions">'
-    + '<button class="btn-complete" onclick="asanaCompleteTask(\'' + t.gid + '\')">\u2705 Concluir</button>'
+    + '<button class="btn-complete" onclick="asanaCompleteTask(\'' + t.gid + '\')"><span class="mso mso-fill">check_circle</span> Concluir</button>'
     + '<a href="' + asanaUrl + '" target="_blank" style="padding:3px 10px;border-radius:5px;font-size:0.72rem;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--text-secondary)">Abrir no Asana</a>'
     + '</div></div>';
 }
@@ -12058,7 +12058,7 @@ function asanaTaskCardDoneHtml(t) {
   const doneDate = t.completed_at ? formatDateBR(t.completed_at.slice(0,10)) : '';
   return '<div class="asana-task-card" style="opacity:0.65">'
     + '<div class="task-name" style="text-decoration:line-through">' + esc(t.name) + '</div>'
-    + '<div class="task-meta"><span>\u2705 ' + doneDate + '</span></div>'
+    + '<div class="task-meta"><span><span class="mso mso-fill">check_circle</span> ' + doneDate + '</span></div>'
     + '</div>';
 }
 
@@ -12091,13 +12091,13 @@ async function asanaCompleteTask(taskGid) {
       body: JSON.stringify({ task_gid: taskGid, completed: true }),
     });
     if (!res.ok) throw new Error('Erro ao atualizar');
-    showToast('\u2705 Tarefa concluída!');
+    showToast('<span class="mso mso-fill">check_circle</span> Tarefa concluída!');
     // Update local state
     const t = _asanaTasks.find(x => x.gid === taskGid);
     if (t) { t.completed = true; t.completed_at = new Date().toISOString(); }
     asanaRenderTasks();
   } catch(e) {
-    showToast('\u274c Erro: ' + e.message);
+    showToast('<span class="mso">cancel</span> Erro: ' + e.message);
   }
 }
 
@@ -12140,7 +12140,7 @@ async function asanaSubmitCreateTask() {
       throw new Error(err.error || 'Erro ao criar');
     }
     const result = await res.json();
-    showToast('\u2705 Tarefa criada no Asana!');
+    showToast('<span class="mso mso-fill">check_circle</span> Tarefa criada no Asana!');
     document.getElementById('asanaCreateTaskModal').classList.remove('active');
 
     // Add to local cache and re-render
@@ -12149,7 +12149,7 @@ async function asanaSubmitCreateTask() {
       asanaRenderTasks();
     }
   } catch(e) {
-    showToast('\u274c ' + e.message);
+    showToast('<span class="mso">cancel</span> ' + e.message);
   }
 }
 
@@ -12163,9 +12163,9 @@ async function asanaOpenConfig() {
   html += '<div class="form-group">';
   html += '<label class="form-label">Status da Conexão</label>';
   if (_asanaConnected && _asanaUser) {
-    html += '<div style="padding:8px 12px;background:#ecfdf5;border-radius:6px;font-size:0.85rem">\u2705 Conectado como <strong>' + esc(_asanaUser.name) + '</strong></div>';
+    html += '<div style="padding:8px 12px;background:#ecfdf5;border-radius:6px;font-size:0.85rem"><span class="mso mso-fill">check_circle</span> Conectado como <strong>' + esc(_asanaUser.name) + '</strong></div>';
   } else {
-    html += '<div style="padding:8px 12px;background:#fef2f2;border-radius:6px;font-size:0.85rem">\u274c Não conectado. Configure ASANA_PAT nas variáveis de ambiente do Vercel.</div>';
+    html += '<div style="padding:8px 12px;background:#fef2f2;border-radius:6px;font-size:0.85rem"><span class="mso">cancel</span> Não conectado. Configure ASANA_PAT nas variáveis de ambiente do Vercel.</div>';
   }
   html += '</div>';
 
@@ -21725,7 +21725,7 @@ function ctOpenLightbox(url, isVideo) {
     // Format title
     var d = new Date(isoDate + 'T12:00:00');
     var dayName = DAY_NAMES_LONG[d.getDay()];
-    titleEl.textContent = '\uD83D\uDCC5 ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
+    titleEl.textContent = '<span class="mso">calendar_today</span> ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
 
     if (dayPosts.length === 0) {
       listEl.innerHTML = '<div class="cal-empty-day">Nenhum post neste dia.</div>';
@@ -21734,30 +21734,30 @@ function ctOpenLightbox(url, isVideo) {
         var status    = (p.status || 'UNKNOWN').toLowerCase();
         var platform  = (p.platform || '').toLowerCase();
         var platLabel = platform.indexOf('instagram') !== -1 ? 'Instagram' : platform.indexOf('facebook') !== -1 ? 'Facebook' : (p.platform || '');
-        var platIcon  = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
+        var platIcon  = platform.indexOf('instagram') !== -1 ? '<span class="mso">photo_camera</span>' : '<span class="mso">book</span>';
         var metaSource = p.source === 'meta_planner' ? '<span style="font-size:9px;font-weight:800;background:#1877f2;color:white;padding:2px 6px;border-radius:4px;margin-left:4px">META PLANNER</span>' : '';
         var timeStr   = calFormatTimeShort(p.scheduled_for || p.created_at);
         var caption   = (p.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var imageUrl  = p.image_url || '';
         var isVideo   = imageUrl && /\.(mp4|mov|avi|webm|mkv|m4v)(\?|$)/i.test(imageUrl);
         var borderColor = status === 'published' ? '#10b981' : status === 'scheduled' ? '#3b82f6' : status === 'failed' ? '#ef4444' : status === 'queued' ? '#f59e0b' : '#9ca3af';
-        var statusIcon = status === 'published' ? '\u2705' : status === 'scheduled' ? '\uD83D\uDCC5' : status === 'failed' ? '\u274C' : status === 'queued' ? '\u23F3' : '\uD83D\uDCCC';
+        var statusIcon = status === 'published' ? '<span class="mso mso-fill">check_circle</span>' : status === 'scheduled' ? '<span class="mso">calendar_today</span>' : status === 'failed' ? '<span class="mso">cancel</span>' : status === 'queued' ? '<span class="mso">hourglass_bottom</span>' : '<span class="mso">push_pin</span>';
 
         // Thumbnail
         var thumb = '';
         if (imageUrl && !isVideo) {
           thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#f3f4f6">'
-            + '<img src="' + imageUrl + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem>\uD83D\uDDBC\uFE0F</div>\'">'
+            + '<img src="' + imageUrl + '" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'<div style=display:flex;align-items:center;justify-content:center;height:100%;font-size:1.5rem><span class="mso">image</span>\uFE0F</div>\'">'
             + '</div>';
         } else if (isVideo) {
           thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;position:relative">'
             + '<div style="width:32px;height:32px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center">'
             + '<div style="width:0;height:0;border-left:12px solid #1a1a2e;border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:2px"></div>'
             + '</div>'
-            + '<div style="position:absolute;bottom:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.55rem;padding:1px 4px;border-radius:2px">\uD83C\uDFA5</div>'
+            + '<div style="position:absolute;bottom:3px;right:4px;background:rgba(0,0,0,0.6);color:#fff;font-size:0.55rem;padding:1px 4px;border-radius:2px"><span class="mso">videocam</span></div>'
             + '</div>';
         } else if (p.has_image) {
-          thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--hover,#f3f4f6);display:flex;align-items:center;justify-content:center;font-size:1.5rem">\uD83D\uDDBC\uFE0F</div>';
+          thumb = '<div style="width:72px;height:72px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--hover,#f3f4f6);display:flex;align-items:center;justify-content:center;font-size:1.5rem"><span class="mso">image</span>\uFE0F</div>';
         }
 
         // Cancel button for scheduled/queued posts
@@ -21767,7 +21767,7 @@ function ctOpenLightbox(url, isVideo) {
           var cancelLabel = status === 'scheduled' ? 'Cancelar agendamento' : 'Cancelar da fila';
           cancelBtn = '<div style="margin-top:8px">'
             + '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIdx + ')" style="padding:5px 12px;border-radius:6px;border:1px solid #ef4444;background:transparent;color:#dc2626;cursor:pointer;font-size:0.75rem;font-family:inherit;font-weight:600;transition:all 0.15s" onmouseenter="this.style.background=\'#fef2f2\'" onmouseleave="this.style.background=\'transparent\'">'
-            + '\u274C ' + cancelLabel + '</button></div>';
+            + '<span class="mso">cancel</span> ' + cancelLabel + '</button></div>';
         }
 
         return '<div style="display:flex;gap:14px;padding:14px 16px;border-left:4px solid ' + borderColor + ';background:var(--card,#fff);border-radius:0 12px 12px 0;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.06);transition:box-shadow 0.2s" onmouseover="this.style.boxShadow=\'0 3px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.boxShadow=\'0 1px 4px rgba(0,0,0,0.06)\'">'
@@ -21854,7 +21854,7 @@ function ctOpenLightbox(url, isVideo) {
   // ─── Data loading ─────────────────────────────────────────────
   function calLoadData() {
     var grid = document.getElementById('calGrid');
-    if (grid) grid.innerHTML = '<div class="cal-loading">\u23F3 Carregando posts...</div>';
+    if (grid) grid.innerHTML = '<div class="cal-loading"><span class="mso">hourglass_bottom</span> Carregando posts...</div>';
 
     // Helper: Validate and fix ISO date strings with strict format checking
     function _validateDate(dateStr) {
@@ -22110,7 +22110,7 @@ function ctOpenLightbox(url, isVideo) {
       }
     }).catch(function(err) {
       console.error('Calendar load error:', err);
-      if (grid) grid.innerHTML = '<div class="cal-loading" style="color:var(--danger)">\u26A0\uFE0F Erro ao carregar posts. Verifique a conexão.</div>';
+      if (grid) grid.innerHTML = '<div class="cal-loading" style="color:var(--danger)"><span class="mso">warning</span>\uFE0F Erro ao carregar posts. Verifique a conexão.</div>';
     });
   }
 
@@ -22374,7 +22374,7 @@ function ctOpenLightbox(url, isVideo) {
   function calRenderPostCard(p) {
     var status   = (p.status || 'UNKNOWN').toLowerCase();
     var platform = (p.platform || '').toLowerCase();
-    var icon     = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF7' : '\uD83D\uDCC4';
+    var icon     = platform.indexOf('instagram') !== -1 ? '<span class="mso">photo_camera</span>' : '<span class="mso">description</span>';
     var timeStr  = calFormatTimeShort(p.scheduled_for || p.created_at);
     var client   = (p.client_name || '').substring(0, 14);
     var isoDate  = calToIso(new Date((p.scheduled_for || p.created_at || '').replace(' ','T')));
@@ -22540,7 +22540,7 @@ function ctOpenLightbox(url, isVideo) {
       dayPosts.forEach(function(p, pi) {
         var status = (p.status || '').toLowerCase();
         var platform = (p.platform || '').toLowerCase();
-        var platIcon = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
+        var platIcon = platform.indexOf('instagram') !== -1 ? '<span class="mso">photo_camera</span>' : '<span class="mso">book</span>';
         var platLabel = platform.indexOf('instagram') !== -1 ? 'IG' : 'FB';
         var timeStr = calFormatTimeShort(p.scheduled_for || p.created_at);
         var caption = (p.caption || '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -22621,8 +22621,8 @@ function ctOpenLightbox(url, isVideo) {
     var status = (p.status || '').toLowerCase();
     var platform = (p.platform || '').toLowerCase();
     var platLabel = platform.indexOf('instagram') !== -1 ? 'Instagram' : 'Facebook';
-    var platIcon = platform.indexOf('instagram') !== -1 ? '\uD83D\uDCF8' : '\uD83D\uDCD8';
-    var statusIcon = status === 'published' ? '\u2705' : status === 'scheduled' ? '\uD83D\uDCC5' : status === 'failed' ? '\u274C' : '\u23F3';
+    var platIcon = platform.indexOf('instagram') !== -1 ? '<span class="mso">photo_camera</span>' : '<span class="mso">book</span>';
+    var statusIcon = status === 'published' ? '<span class="mso mso-fill">check_circle</span>' : status === 'scheduled' ? '<span class="mso">calendar_today</span>' : status === 'failed' ? '<span class="mso">cancel</span>' : '<span class="mso">hourglass_bottom</span>';
     var statusLabel = calStatusLabel(p.status);
     var statusColor = status === 'published' ? '#10b981' : status === 'scheduled' ? '#3b82f6' : status === 'failed' ? '#ef4444' : '#f59e0b';
     var timeStr = calFormatTime(p.scheduled_for || p.created_at);
@@ -22656,7 +22656,7 @@ function ctOpenLightbox(url, isVideo) {
       mediaEl.style.display = '';
       mediaEl.style.background = 'var(--bg-subtle,#f8fafc)';
       mediaEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary,#6b7280);font-size:0.85rem">'
-        + '<div style="font-size:2rem;margin-bottom:8px">\uD83D\uDDBC\uFE0F</div>'
+        + '<div style="font-size:2rem;margin-bottom:8px"><span class="mso">image</span>\uFE0F</div>'
         + 'Criativo publicado (preview indispon\u00edvel para posts antigos)'
         + '</div>';
     } else {
@@ -22671,7 +22671,7 @@ function ctOpenLightbox(url, isVideo) {
     // Add cancel button for scheduled/queued posts
     if (status === 'scheduled' || status === 'queued') {
       var cancelLabel = status === 'scheduled' ? 'Cancelar' : 'Cancelar da fila';
-      statusHtml += '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIndex + ');pwClosePreview()" style="margin-left:auto;padding:6px 14px;border-radius:8px;border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:700;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px" onmouseenter="this.style.background=\'#fee2e2\'" onmouseleave="this.style.background=\'#fef2f2\'">\u274C ' + cancelLabel + '</button>';
+      statusHtml += '<button onclick="event.stopPropagation();calCancelPost(\'' + isoDate + '\',' + postIndex + ');pwClosePreview()" style="margin-left:auto;padding:6px 14px;border-radius:8px;border:1.5px solid #ef4444;background:#fef2f2;color:#dc2626;cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:700;transition:all 0.15s;display:inline-flex;align-items:center;gap:4px" onmouseenter="this.style.background=\'#fee2e2\'" onmouseleave="this.style.background=\'#fef2f2\'"><span class="mso">cancel</span> ' + cancelLabel + '</button>';
     }
 
     document.getElementById('pwPreviewStatus').innerHTML = statusHtml;
