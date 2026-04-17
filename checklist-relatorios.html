@@ -18028,11 +18028,9 @@ async function ctLoadGroups() {
         });
       });
       if (_rsSubIds.length > 0) {
-        var _rsAtts = await _sbQuery('content_attachments', {
-          select: 'task_id,file_url,file_type,category,created_at',
-          filters: ['task_id=in.(' + _rsSubIds.join(',') + ')', 'category=eq.recurring_story'],
-          order: 'created_at.asc'
-        }) || [];
+        // Use ctApi (service role key) — anon key has RLS on content_attachments
+        var _rsAtts = await ctApi('list_recurring_attachments', { task_ids: _rsSubIds }) || [];
+        if (!Array.isArray(_rsAtts)) _rsAtts = [];
         // Map: task_id → [file_url, ...] (array for multiple images)
         var _rsAttMap = {};
         _rsAtts.forEach(function(a) {

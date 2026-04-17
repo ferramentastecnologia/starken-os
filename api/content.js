@@ -566,6 +566,17 @@ async function listAttachments({ task_id }) {
   return ok(data);
 }
 
+async function listRecurringAttachments({ task_ids }) {
+  if (!task_ids || !task_ids.length) return ok([]);
+  const ids = (Array.isArray(task_ids) ? task_ids : task_ids.split(',')).map(id => id.trim()).filter(Boolean);
+  if (!ids.length) return ok([]);
+  const data = await supaSelect(
+    'content_attachments',
+    `select=task_id,file_url,file_type,category,created_at&task_id=in.(${ids.join(',')})&category=eq.recurring_story&order=created_at.asc`
+  );
+  return ok(data);
+}
+
 // =============================================================================
 // Client Info Actions
 // =============================================================================
@@ -822,6 +833,7 @@ const ACTIONS = {
   add_attachment: addAttachment,
   delete_attachment: deleteAttachment,
   list_attachments: listAttachments,
+  list_recurring_attachments: listRecurringAttachments,
   // Activity
   list_activity: listActivity,
   // Client Info
