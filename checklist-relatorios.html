@@ -5652,7 +5652,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <div id="pubHistSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px"></div>
           <!-- Cards por cliente -->
           <div id="pubHistList">
-            <div style="text-align:center;padding:60px;color:var(--text-secondary)">⏳ Carregando...</div>
+            <div style="text-align:center;padding:60px;color:var(--text-secondary)"><span class="mso">hourglass_empty</span> Carregando...</div>
           </div>
         </div>
       </div><!-- end #tab-pub-history -->
@@ -7339,24 +7339,41 @@ function sysLogCard(label, count, color, bg, border) {
 var _pubHistExpanded = {};
 var _pubHistLoaded = false;
 var _pubHistPostData = {}; // histId → { clientKey, platform, caption } para retry
+var _phTasks = [];          // content_tasks cache
+var _phGroupToClient = {};  // group_id → client_id
 
 async function pubHistoryRefresh() {
   _pubHistLoaded = false;
   var listEl = document.getElementById('pubHistList');
-  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">⏳ Carregando...</div>';
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><span class="mso">hourglass_empty</span> Carregando...</div>';
   var btn = document.getElementById('pubHistRefreshBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Carregando...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="mso">sync</span> Carregando...'; }
 
   try {
-    var res = await fetch(metaApiBase() + '/api/meta/publish?limit=500');
-    var payload = await res.json();
-    _sysLogs = payload.history || [];
+    // 1. Fetch publish_history (Meta API — para retry/error details)
+    try {
+      var res = await fetch(metaApiBase() + '/api/meta/publish?limit=500');
+      var payload = await res.json();
+      _sysLogs = payload.history || [];
+    } catch(e) { console.warn('publish_history fetch err', e); _sysLogs = []; }
+
+    // 2. Fetch content_tasks dos últimos 30 dias (filtro mais fino no render)
+    if (typeof _supabase !== 'undefined' && _supabase) {
+      var start30 = new Date(); start30.setDate(start30.getDate() - 30);
+      var tRes = await _supabase.from('content_tasks')
+        .select('id,name,group_id,status,due_date,publish_config,assignee')
+        .gte('due_date', start30.toISOString().slice(0, 10))
+        .not('status', 'in', '("cancelado","arquivado","nao-publicado","standby","nao-utilizado")');
+      _phTasks = tRes.data || [];
+      _phGroupToClient = await _ensureGroupToClient();
+    }
+
     _pubHistLoaded = true;
   } catch(e) {
     console.warn('pubHistoryRefresh error', e);
   }
 
-  if (btn) { btn.disabled = false; btn.textContent = '<span class="mso">sync</span> Atualizar'; }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">sync</span> Atualizar'; }
   pubHistoryRender();
 }
 
@@ -7367,30 +7384,120 @@ function pubHistoryRender() {
 
   var now = new Date();
   var cutoff = daysVal !== 'all' ? new Date(now - parseInt(daysVal) * 24 * 60 * 60 * 1000) : null;
+  var cutoffStr = cutoff ? cutoff.toISOString().slice(0, 10) : null;
 
-  var filtered = (_sysLogs || []).filter(function(h) {
-    if (statusVal !== 'all' && h.status !== statusVal) return false;
-    if (platformVal && h.platform !== platformVal) return false;
-    if (cutoff) {
-      var ref = h.published_at || h.scheduled_for || h.created_at;
-      if (!ref || new Date(ref) < cutoff) return false;
-    }
-    return true;
+  // ── Build sorted client list (tasks primary, publish_history fallback)
+  var totalPub = 0, totalSch = 0, totalFail = 0;
+  var sorted = [];
+
+  // Build histByTask for error detail lookup
+  var histByTask = {};
+  (_sysLogs || []).forEach(function(h) {
+    if (h.task_id) (histByTask[h.task_id] = histByTask[h.task_id] || []).push(h);
   });
 
-  // Resumo
-  var published = filtered.filter(function(h) { return h.status === 'PUBLISHED'; }).length;
-  var scheduled = filtered.filter(function(h) { return h.status === 'SCHEDULED'; }).length;
-  var failed    = filtered.filter(function(h) { return h.status === 'FAILED'; }).length;
+  if (_phTasks.length > 0) {
+    var clientById = {};
+    (data.clients || []).forEach(function(c) { clientById[c.id] = c; });
+    var gc = _phGroupToClient || {};
+    var clientMap = {};
 
-  // Emerald override — renders premium UI and returns
+    _phTasks.forEach(function(t) {
+      var pc = t.publish_config || {};
+      var taskDate = (pc.post_date || t.due_date || '').slice(0, 10);
+      if (cutoffStr && taskDate && taskDate < cutoffStr) return;
+
+      // Map task status to publish-style status
+      var hasError = !!pc.error || t.status === 'failed';
+      var taskStatus = t.status === 'publicado' ? 'PUBLISHED'
+        : t.status === 'agendado' ? 'SCHEDULED'
+        : hasError ? 'FAILED' : null;
+      if (!taskStatus) return;
+      if (statusVal !== 'all' && taskStatus !== statusVal) return;
+
+      // Platform detection from publish_config
+      var taskPlatforms = [];
+      if (pc.entries) pc.entries.forEach(function(e) { if (e.platform && taskPlatforms.indexOf(e.platform) < 0) taskPlatforms.push(e.platform); });
+      if (!taskPlatforms.length) { if (pc.ig) taskPlatforms.push('ig'); if (pc.fb || pc.feed || pc.reels || pc.story || pc.carrossel) taskPlatforms.push('fb'); }
+      if (!taskPlatforms.length) taskPlatforms = ['fb'];
+      if (platformVal && taskPlatforms.indexOf(platformVal) < 0) return;
+
+      // Format detection
+      var formats = [];
+      ['feed','reels','story','carrossel'].forEach(function(f) { if (pc[f]) formats.push(f); });
+      if (!formats.length && pc.format) formats.push(pc.format);
+
+      var clientId = gc[t.group_id];
+      var client = clientById[clientId] || null;
+      var cName = client ? client.name : 'Grupo ' + (t.group_id || '?');
+      var cKey = client ? String(client.id) : ('g_' + (t.group_id || 'x'));
+
+      if (!clientMap[cKey]) {
+        clientMap[cKey] = {
+          key: cKey, name: cName, company: client ? (client.company || '') : '',
+          tasks: [], published: 0, scheduled: 0, failed: 0, lastAt: null
+        };
+      }
+      var cm = clientMap[cKey];
+      cm.tasks.push({ id: t.id, name: t.name || '', status: taskStatus,
+        date: taskDate, platforms: taskPlatforms, formats: formats,
+        assignee: t.assignee, error: pc.error || null,
+        histEntries: histByTask[t.id] || [] });
+      if (taskStatus === 'PUBLISHED') { cm.published++; totalPub++; }
+      else if (taskStatus === 'SCHEDULED') { cm.scheduled++; totalSch++; }
+      else if (taskStatus === 'FAILED') { cm.failed++; totalFail++; }
+      var d = new Date(taskDate || 0);
+      if (!cm.lastAt || d > cm.lastAt) cm.lastAt = d;
+    });
+
+    sorted = Object.values(clientMap).sort(function(a, b) {
+      if (a.failed > 0 && b.failed === 0) return -1;
+      if (b.failed > 0 && a.failed === 0) return 1;
+      return (b.lastAt || 0) - (a.lastAt || 0);
+    });
+  } else {
+    // Fallback: publish_history
+    var filtered = (_sysLogs || []).filter(function(h) {
+      if (statusVal !== 'all' && h.status !== statusVal) return false;
+      if (platformVal && h.platform !== platformVal) return false;
+      if (cutoff) { var ref = h.published_at || h.scheduled_for || h.created_at; if (!ref || new Date(ref) < cutoff) return false; }
+      return true;
+    });
+    totalPub = filtered.filter(function(h) { return h.status === 'PUBLISHED'; }).length;
+    totalSch = filtered.filter(function(h) { return h.status === 'SCHEDULED'; }).length;
+    totalFail = filtered.filter(function(h) { return h.status === 'FAILED'; }).length;
+    var fbClientMap = {};
+    filtered.forEach(function(h) {
+      var key = h.client_key || h.client_name || 'desconhecido';
+      if (!fbClientMap[key]) fbClientMap[key] = { key: key, name: h.client_name || key, company: '', tasks: [], published: 0, scheduled: 0, failed: 0, lastAt: null };
+      var cm = fbClientMap[key];
+      var d = new Date(h.published_at || h.scheduled_for || h.created_at || 0);
+      cm.tasks.push({ id: h.id, name: h.caption || '', status: h.status,
+        date: (h.published_at || h.scheduled_for || h.created_at || '').slice(0,10),
+        platforms: [h.platform || 'fb'], formats: [], assignee: h.user_name || '',
+        error: h.error_message || null, histEntries: [h] });
+      if (h.status === 'PUBLISHED') cm.published++;
+      else if (h.status === 'SCHEDULED') cm.scheduled++;
+      else if (h.status === 'FAILED') cm.failed++;
+      if (!cm.lastAt || d > cm.lastAt) cm.lastAt = d;
+    });
+    sorted = Object.values(fbClientMap).sort(function(a, b) {
+      if (a.failed > 0 && b.failed === 0) return -1;
+      if (b.failed > 0 && a.failed === 0) return 1;
+      return (b.lastAt || 0) - (a.lastAt || 0);
+    });
+  }
+
+  var totalAll = totalPub + totalSch + totalFail;
+
+  // ── Emerald override (sorted now always defined)
   if (emIsActive()) {
-    // Hide legacy summary grid (emerald builds its own inside emPubHistRender)
     var legSummary = document.getElementById('pubHistSummary');
     if (legSummary) legSummary.style.display = 'none';
-    emPubHistRender(published, scheduled, failed, filtered.length, sorted, filtered);
+    emPubHistRender(totalPub, totalSch, totalFail, totalAll, sorted);
     return;
   }
+
   // Reset emerald hero when switching themes
   var emHero = document.getElementById('emPhHero');
   if (emHero) { emHero.innerHTML = ''; emHero._rendered = false; }
@@ -7398,127 +7505,62 @@ function pubHistoryRender() {
   var summaryEl = document.getElementById('pubHistSummary');
   if (summaryEl) {
     summaryEl.innerHTML =
-      sysLogCard('<span class="mso mso-fill">check_circle</span> Publicados', published, '#059669', '#ecfdf5', '#a7f3d0') +
-      sysLogCard('<span class="mso">calendar_today</span> Agendados',  scheduled, '#1d4ed8', '#eff6ff', '#bfdbfe') +
-      sysLogCard('<span class="mso">cancel</span> Falhas',     failed,    '#dc2626', '#fef2f2', '#fecaca') +
-      sysLogCard('<span class="mso">bar_chart</span> Total',      filtered.length, '#6b7280', '#f3f4f6', '#d1d5db');
+      sysLogCard('<span class="mso mso-fill">check_circle</span> Publicados', totalPub, '#059669', '#ecfdf5', '#a7f3d0') +
+      sysLogCard('<span class="mso">calendar_today</span> Agendados', totalSch, '#1d4ed8', '#eff6ff', '#bfdbfe') +
+      sysLogCard('<span class="mso">cancel</span> Falhas', totalFail, '#dc2626', '#fef2f2', '#fecaca') +
+      sysLogCard('<span class="mso">bar_chart</span> Total', totalAll, '#6b7280', '#f3f4f6', '#d1d5db');
   }
-
-  // Agrupar por cliente
-  var clientMap = {};
-  filtered.forEach(function(h) {
-    var key = h.client_key || h.client_name || 'desconhecido';
-    if (!clientMap[key]) {
-      clientMap[key] = { key: key, name: h.client_name || key, posts: [], published: 0, scheduled: 0, failed: 0, lastAt: null };
-    }
-    var c = clientMap[key];
-    c.posts.push(h);
-    if (h.status === 'PUBLISHED') c.published++;
-    else if (h.status === 'SCHEDULED') c.scheduled++;
-    else if (h.status === 'FAILED') c.failed++;
-    var d = new Date(h.published_at || h.scheduled_for || h.created_at || 0);
-    if (!c.lastAt || d > c.lastAt) c.lastAt = d;
-  });
-
-  // Ordenar: clientes com falhas primeiro, depois por atividade mais recente
-  var sorted = Object.values(clientMap).sort(function(a, b) {
-    if (a.failed > 0 && b.failed === 0) return -1;
-    if (b.failed > 0 && a.failed === 0) return 1;
-    return (b.lastAt || 0) - (a.lastAt || 0);
-  });
 
   var listEl = document.getElementById('pubHistList');
   if (!listEl) return;
 
-  if (sorted.length === 0) {
-    listEl.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary)"><div style="font-size:2.5rem;margin-bottom:10px"><span class="mso">outgoing_mail</span></div><p style="font-weight:600;margin:0">Nenhuma publicação encontrada</p><p style="font-size:0.82rem;margin:4px 0 0">Ajuste os filtros ou clique em Atualizar</p></div>';
+  if (!sorted.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-secondary)"><div style="margin-bottom:10px"><span class="mso" style="font-size:2.5rem">outgoing_mail</span></div><p style="font-weight:600;margin:0">Nenhuma publicação encontrada</p><p style="font-size:0.82rem;margin:4px 0 0">Ajuste os filtros ou clique em Atualizar</p></div>';
     return;
   }
 
+  // Legacy light-theme list
   var html = '';
-
   sorted.forEach(function(client) {
     var safeId = pubHistSafeId(client.key);
     var isExpanded = !!_pubHistExpanded[safeId];
     var hasFailed = client.failed > 0;
-
-    client.posts.sort(function(a, b) {
-      return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-    });
-
+    client.tasks.sort(function(a, b) { return b.date.localeCompare(a.date); });
     html += '<div style="border:1px solid ' + (hasFailed ? '#fecaca' : 'var(--border)') + ';border-radius:12px;overflow:hidden;margin-bottom:10px">';
-
-    // Header clicável
     html += '<div onclick="pubHistToggle(\'' + safeId.replace(/'/g, "\\'") + '\')" style="display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:' + (hasFailed ? '#fef2f2' : 'var(--card)') + ';user-select:none">';
-    html += '<div style="flex:1">';
-    html += '<div style="font-weight:700;font-size:0.88rem;color:var(--text)">' + esc(client.name) + '</div>';
+    html += '<div style="flex:1"><div style="font-weight:700;font-size:0.88rem;color:var(--text)">' + esc(client.name) + '</div>';
     html += '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">';
     if (client.published > 0) html += '<span style="font-size:0.68rem;padding:1px 8px;border-radius:20px;background:#ecfdf5;color:#059669;font-weight:700"><span class="mso mso-fill">check_circle</span> ' + client.published + ' publicado' + (client.published !== 1 ? 's' : '') + '</span>';
     if (client.scheduled > 0) html += '<span style="font-size:0.68rem;padding:1px 8px;border-radius:20px;background:#eff6ff;color:#1d4ed8;font-weight:700"><span class="mso">calendar_today</span> ' + client.scheduled + ' agendado' + (client.scheduled !== 1 ? 's' : '') + '</span>';
     if (client.failed > 0)    html += '<span style="font-size:0.68rem;padding:1px 8px;border-radius:20px;background:#fef2f2;color:#dc2626;font-weight:700"><span class="mso">cancel</span> ' + client.failed + ' falha' + (client.failed !== 1 ? 's' : '') + '</span>';
     html += '</div></div>';
-    html += '<span data-arrow="' + safeId + '" style="color:var(--text-secondary);font-size:0.75rem;display:inline-block;transform:rotate(' + (isExpanded ? '0' : '180') + 'deg);transition:transform 0.2s">▲</span>';
+    html += '<span data-arrow="' + safeId + '" style="color:var(--text-secondary);font-size:0.75rem;display:inline-block;transform:rotate(' + (isExpanded ? '0' : '180') + 'deg);transition:transform 0.2s"><span class="mso">expand_less</span></span>';
     html += '</div>';
-
-    // Lista de posts
     html += '<div id="pubHistClient_' + safeId + '" style="display:' + (isExpanded ? 'block' : 'none') + '">';
-
-    client.posts.forEach(function(h) {
-      var stMap = {
-        'PUBLISHED': { bg: 'var(--card)', color: '#059669', icon: '<span class="mso mso-fill">check_circle</span>', label: 'Publicado' },
-        'SCHEDULED': { bg: 'var(--card)', color: '#1d4ed8', icon: '<span class="mso">calendar_today</span>', label: 'Agendado' },
-        'FAILED':    { bg: '#fef2f2',    color: '#dc2626', icon: '<span class="mso">cancel</span>', label: 'Falhou' },
-        'DELETED':   { bg: 'var(--card)', color: '#6b7280', icon: '<span class="mso">block</span>', label: 'Cancelado' }
-      };
-      var st = stMap[h.status] || { bg: 'var(--card)', color: '#6b7280', icon: '<span class="mso">help</span>', label: h.status };
-      var platIcon = h.platform === 'ig' ? '<span class="mso">photo_camera</span>' : '<span class="mso">book</span>';
-      var platName = h.platform === 'ig' ? 'Instagram' : 'Facebook';
-
-      var dateStr  = h.created_at    ? new Date(h.created_at).toLocaleString('pt-BR',    { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      var schedStr = h.scheduled_for ? new Date(h.scheduled_for).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-      var pubStr   = h.published_at  ? new Date(h.published_at).toLocaleString('pt-BR',  { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-
-      html += '<div style="display:flex;gap:10px;padding:9px 16px;border-top:1px solid var(--border);background:' + st.bg + '">';
-      html += '<div style="font-size:0.95rem;padding-top:1px">' + st.icon + '</div>';
+    client.tasks.forEach(function(item) {
+      var stConf = { PUBLISHED: { color:'#059669', icon:'<span class="mso mso-fill">check_circle</span>', label:'Publicado' }, SCHEDULED: { color:'#1d4ed8', icon:'<span class="mso">calendar_today</span>', label:'Agendado' }, FAILED: { color:'#dc2626', icon:'<span class="mso">cancel</span>', label:'Falhou' } };
+      var st = stConf[item.status] || { color:'#6b7280', icon:'<span class="mso">help</span>', label:item.status };
+      var platIcons = item.platforms.map(function(p){ return p==='ig'?'<span class="mso">photo_camera</span> IG':'<span class="mso">book</span> FB'; }).join(' ');
+      html += '<div style="display:flex;gap:10px;padding:9px 16px;border-top:1px solid var(--border)">';
+      html += '<div>' + st.icon + '</div>';
       html += '<div style="flex:1;min-width:0">';
-      html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
-      html += '<span style="font-size:0.72rem;color:var(--text-secondary)">' + platIcon + ' ' + platName + '</span>';
-      html += '<span style="font-size:0.68rem;padding:1px 7px;border-radius:4px;background:' + st.color + '20;color:' + st.color + ';font-weight:700">' + st.label + '</span>';
-      html += '</div>';
-
-      if (h.caption) {
-        html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc((h.caption || '').substring(0, 140)) + '</div>';
-      }
-      if (h.error_message) {
-        html += '<div style="font-size:0.71rem;color:#dc2626;margin-top:4px;padding:4px 8px;border-radius:5px;border:1px solid #fecaca;word-break:break-word"><span class="mso">bug_report</span> ' + esc(h.error_message) + '</div>';
-      }
-
-      html += '<div style="display:flex;gap:10px;margin-top:3px;font-size:0.67rem;color:var(--text-secondary);flex-wrap:wrap">';
-      if (dateStr)  html += '<span><span class="mso">schedule</span> ' + dateStr + '</span>';
-      if (schedStr) html += '<span><span class="mso">calendar_today</span> Ag: ' + schedStr + '</span>';
-      if (pubStr)   html += '<span style="color:#059669;font-weight:600"><span class="mso mso-fill">check_circle</span> Pub: ' + pubStr + '</span>';
-      if (h.user_name) html += '<span><span class="mso">person</span> ' + esc(sysLogParseUser(h.user_name)) + '</span>';
-      html += '</div>';
-
-      // Botões de ação para FAILED
-      if (h.status === 'FAILED' && h.id) {
+      html += '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:0.72rem;color:var(--text-secondary)">' + platIcons + '</span><span style="font-size:0.68rem;padding:1px 7px;border-radius:4px;background:' + st.color + '20;color:' + st.color + ';font-weight:700">' + st.label + '</span></div>';
+      if (item.name) html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(item.name.substring(0,140)) + '</div>';
+      if (item.date) html += '<div style="font-size:0.67rem;color:var(--text-secondary);margin-top:2px"><span class="mso">event</span> ' + item.date + '</div>';
+      if (item.error) html += '<div style="font-size:0.71rem;color:#dc2626;margin-top:4px;padding:4px 8px;border-radius:5px;border:1px solid #fecaca"><span class="mso">bug_report</span> ' + esc(item.error) + '</div>';
+      // Retry buttons from histEntries
+      item.histEntries.filter(function(h){ return h.status==='FAILED' && h.id; }).forEach(function(h) {
         var parsedUrls = pubHistParseImageUrls(h.image_url);
-        _pubHistPostData[h.id] = { clientKey: h.client_key || '', platform: h.platform || '', caption: h.caption || '', imageUrl: h.image_url || null, imageUrls: parsedUrls, taskId: h.task_id || null };
-        var mediaInfo = parsedUrls.length > 1 ? ' · <span class="mso">image</span> ' + parsedUrls.length + ' imgs' : (parsedUrls.length === 1 ? ' · <span class="mso">image</span> 1 img' : '');
-        html += '<div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap">'
-          + '<button id="pubHistRetryBtn_' + h.id + '" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit">↺ Tentar agora</button>'
+        _pubHistPostData[h.id] = { clientKey:h.client_key||'', platform:h.platform||'fb', caption:h.caption||'', imageUrl:h.image_url||null, imageUrls:parsedUrls, taskId:h.task_id||null };
+        html += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
+          + '<button id="pubHistRetryBtn_' + h.id + '" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')" style="padding:3px 10px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit"><span class="mso">refresh</span> Tentar agora</button>'
           + '<button onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #1d4ed8;border-radius:6px;background:transparent;color:#1d4ed8;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit"><span class="mso">calendar_today</span> Reagendar</button>'
-          + '<button id="pubHistMarkPubBtn_' + h.id + '" onclick="event.stopPropagation();pubHistMarkPublished(\'' + h.id + '\')" style="padding:3px 10px;border:1px solid #059669;border-radius:6px;background:transparent;color:#059669;font-size:0.68rem;font-weight:700;cursor:pointer;font-family:inherit"><span class="mso mso-fill">check_circle</span> Publicado manualmente</button>'
-          + (mediaInfo ? '<span style="font-size:0.65rem;color:var(--text-secondary)">' + mediaInfo + '</span>' : '')
           + '</div>';
-      }
-
+      });
       html += '</div></div>';
     });
-
     html += '</div></div>';
   });
-
   listEl.innerHTML = html;
 }
 
@@ -7559,7 +7601,7 @@ function emPhTimeStr(iso) {
   return day + '/' + mon + ' · ' + hr + ':' + mn;
 }
 
-function emPubHistRender(pub, sch, fail, total, sorted, filtered) {
+function emPubHistRender(pub, sch, fail, total, sorted) {
   if (!emIsActive()) return;
 
   // ── Hero (renderiza uma vez)
@@ -7576,7 +7618,6 @@ function emPubHistRender(pub, sch, fail, total, sorted, filtered) {
       + '<button class="em-btn-primary" onclick="pubHistoryRefresh()">' + iconSvg('refresh',{size:14}) + ' Atualizar</button>'
       + '</div>'
       + '</div>'
-      // sub-nav
       + '<div class="em-ph-subnav">'
       + '<span class="em-ph-subnav-label">Publisher Hub</span>'
       + '<button class="em-ph-tab active" id="emPhTabAll"    onclick="emPhSetTab(\'all\')"    >Todos os Clientes</button>'
@@ -7587,8 +7628,7 @@ function emPubHistRender(pub, sch, fail, total, sorted, filtered) {
       + '<span class="em-ph-search-icon">' + iconSvg('search',{size:13}) + '</span>'
       + '<input id="emPhSearchInput" type="text" placeholder="Buscar cliente..." oninput="emPhOnSearch(this.value)">'
       + '</div>'
-      // date filter
-      + '<select id="pubHistDateFilter" onchange="pubHistoryRender()" style="background:#19202c;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#bacac4;font-family:inherit;cursor:pointer">'
+      + '<select id="pubHistDateFilter" onchange="pubHistoryRefresh()" style="background:#19202c;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#bacac4;font-family:inherit;cursor:pointer">'
       + '<option value="1">Hoje</option><option value="7">7 dias</option><option value="30" selected>30 dias</option><option value="all">Todos</option>'
       + '</select>'
       + '<select id="pubHistPlatformFilter" onchange="pubHistoryRender()" style="background:#19202c;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px 10px;font-size:0.75rem;color:#bacac4;font-family:inherit;cursor:pointer">'
@@ -7602,23 +7642,23 @@ function emPubHistRender(pub, sch, fail, total, sorted, filtered) {
   var summaryEl = document.getElementById('pubHistSummary');
   if (summaryEl) {
     summaryEl.style.display = '';
+    summaryEl.className = 'em-ph-stats';
     summaryEl.innerHTML =
-      emPhStatCard('check','Publicados', pub,  '#46eecd', pub > 0 ? '+' + pub : '—') +
-      emPhStatCard('bell', 'Agendados',  sch,  '#5febd8', 'ATIVOS') +
-      emPhStatCard('click','Falhas',     fail, '#ffb4ab', fail > 0 ? 'FALHA' : 'OK') +
-      emPhStatCard('chart','Total Mês',  total,'#b9c7e4', 'MÊS');
+      emPhStatCard('check', 'Publicados', pub,  '#46eecd', pub > 0 ? '+' + pub : '—') +
+      emPhStatCard('bell',  'Agendados',  sch,  '#5febd8', sch > 0 ? 'ATIVOS' : '—') +
+      emPhStatCard('click', 'Falhas',     fail, '#ffb4ab', fail > 0 ? 'FALHA' : 'OK') +
+      emPhStatCard('chart', 'Total',      total,'#b9c7e4', 'PERÍODO');
   }
 
   // ── Client table
   var listEl = document.getElementById('pubHistList');
   if (!listEl) return;
 
-  // Apply tab + search filter
-  var display = sorted;
-  if (_emPhActiveTab === 'failed') display = sorted.filter(function(c){ return c.failed > 0; });
+  var display = (sorted || []).slice();
+  if (_emPhActiveTab === 'failed') display = display.filter(function(c){ return c.failed > 0; });
   if (_emPhActiveTab === 'recent') {
     var cutoff7 = Date.now() - 7*86400000;
-    display = sorted.filter(function(c){ return c.lastAt && c.lastAt >= cutoff7; });
+    display = display.filter(function(c){ return c.lastAt && new Date(c.lastAt) >= cutoff7; });
   }
   var q = (_emPhSearch||'').toLowerCase().trim();
   if (q) display = display.filter(function(c){ return (c.name||'').toLowerCase().indexOf(q) >= 0; });
@@ -7644,71 +7684,77 @@ function emPubHistRender(pub, sch, fail, total, sorted, filtered) {
     var initials = emPhInitials(client.name);
 
     html += '<div class="em-ph-client">'
-      // Row header
       + '<div class="em-ph-client-row' + (hasFail ? ' has-fail' : '') + '" onclick="pubHistToggle(\'' + safeId.replace(/'/g,"\\'") + '\')">'
       + '<div class="em-ph-client-info">'
       + '<div class="em-ph-avatar" style="background:' + avatarColor + '">' + initials + '</div>'
-      + '<div><div class="em-ph-client-name">' + emEsc(client.name) + '</div></div>'
+      + '<div>'
+      + '<div class="em-ph-client-name">' + emEsc(client.name) + '</div>'
+      + (client.company ? '<div class="em-ph-client-sub">' + emEsc(client.company) + '</div>' : '')
+      + '</div>'
       + '</div>'
       + '<div class="em-ph-count"><span class="em-ph-count-pill ' + (client.published > 0 ? 'pub' : 'zero') + '">' + client.published + '</span></div>'
       + '<div class="em-ph-count"><span class="em-ph-count-pill ' + (client.scheduled > 0 ? 'sch' : 'zero') + '">' + client.scheduled + '</span></div>'
       + '<div class="em-ph-count"><span class="em-ph-count-pill ' + (client.failed > 0 ? 'fail' : 'zero') + '">' + client.failed + '</span></div>'
       + '<div class="em-ph-chevron ' + (isExpanded ? 'open' : '') + '" data-arrow="' + safeId + '">' + iconSvg('download',{size:14}) + '</div>'
       + '</div>'
-      // Posts expandidos
       + '<div id="pubHistClient_' + safeId + '" style="display:' + (isExpanded ? 'block' : 'none') + '">'
       + '<div class="em-ph-posts">'
-      + '<div class="em-ph-posts-label">Publicações Recentes</div>';
+      + '<div class="em-ph-posts-label">Tasks do período</div>';
 
-    client.posts.forEach(function(h) {
+    (client.tasks || []).sort(function(a,b){ return b.date.localeCompare(a.date); }).forEach(function(item) {
       var stConf = {
-        'PUBLISHED': { cls:'pub',  label:'Publicado',  icon: iconSvg('check',{size:10}) },
-        'SCHEDULED': { cls:'sch',  label:'Agendado',   icon: iconSvg('bell',{size:10}) },
-        'FAILED':    { cls:'fail', label:'Falhou',     icon: iconSvg('click',{size:10}) },
-        'DELETED':   { cls:'del',  label:'Cancelado',  icon: iconSvg('refresh',{size:10}) }
+        PUBLISHED: { cls:'pub',  label:'Publicado', icon: iconSvg('check',{size:10}) },
+        SCHEDULED: { cls:'sch',  label:'Agendado',  icon: iconSvg('bell',{size:10}) },
+        FAILED:    { cls:'fail', label:'Falhou',    icon: iconSvg('click',{size:10}) }
       };
-      var st = stConf[h.status] || { cls:'del', label: h.status, icon: '' };
-      var platLabel = h.platform === 'ig' ? 'IG' : 'FB';
-      var platBg    = h.platform === 'ig' ? 'rgba(193,53,132,0.18)' : 'rgba(59,89,152,0.18)';
-      var platColor = h.platform === 'ig' ? '#e1306c' : '#4267B2';
-      var refTime   = h.published_at || h.scheduled_for || h.created_at;
-      var timeLabel = h.status === 'PUBLISHED' && h.published_at ? emPhTimeStr(h.published_at)
-                    : h.status === 'SCHEDULED' && h.scheduled_for ? emPhTimeStr(h.scheduled_for)
-                    : emPhTimeStr(h.created_at);
+      var st = stConf[item.status] || { cls:'del', label: item.status, icon: '' };
+
+      // Platform badges
+      var platBadges = item.platforms.map(function(p) {
+        var bg = p === 'ig' ? 'rgba(193,53,132,0.18)' : 'rgba(59,89,152,0.18)';
+        var col = p === 'ig' ? '#e1306c' : '#4267B2';
+        return '<span style="background:' + bg + ';color:' + col + ';padding:2px 7px;border-radius:5px;font-size:0.65rem;font-weight:700">' + (p === 'ig' ? 'IG' : 'FB') + '</span>';
+      }).join('');
+
+      // Format badge
+      var fmtMap = { feed:'Feed', reels:'Reels', story:'Story', carrossel:'Carrossel' };
+      var fmtBadge = item.formats.length ? '<span style="background:rgba(70,238,205,0.08);color:#46eecd;padding:2px 7px;border-radius:5px;font-size:0.65rem;font-weight:700">' + (fmtMap[item.formats[0]] || item.formats[0]) + '</span>' : '';
+
+      // Thumb from histEntries (Meta publish)
       var thumbHtml = '';
-      if (h.image_url) {
-        var url = h.image_url;
-        if (url && url[0] === '[') { try { url = JSON.parse(url)[0]; } catch(e){} }
-        if (url) thumbHtml = '<img src="' + emEsc(url) + '" loading="lazy" onerror="this.style.display=\'none\'">';
-      }
+      item.histEntries.forEach(function(h) {
+        if (!thumbHtml && h.image_url) {
+          var url = h.image_url;
+          if (url && url[0] === '[') { try { url = JSON.parse(url)[0]; } catch(e){} }
+          if (url) thumbHtml = '<img src="' + emEsc(url) + '" loading="lazy" onerror="this.style.display=\'none\'">';
+        }
+      });
       if (!thumbHtml) thumbHtml = iconSvg('palette',{size:18});
-      var caption = (h.caption||'').slice(0,90) + (h.caption && h.caption.length > 90 ? '…' : '');
 
       html += '<div class="em-ph-post-row">'
         + '<div class="em-ph-thumb">' + thumbHtml + '</div>'
         + '<div class="em-ph-post-body">'
-        + '<div class="em-ph-post-title">' + emEsc(caption || platLabel + ' Post') + '</div>'
+        + '<div class="em-ph-post-title">' + emEsc(item.name || '—') + '</div>'
         + '<div class="em-ph-post-meta">'
-        + '<span style="background:' + platBg + ';color:' + platColor + ';padding:2px 7px;border-radius:5px;font-size:0.65rem;font-weight:700">' + platLabel + '</span>'
-        + (timeLabel ? '<span>' + iconSvg('bell',{size:10}) + ' ' + timeLabel + '</span>' : '')
-        + (h.user_name ? '<span>' + iconSvg('users',{size:10}) + ' ' + emEsc(sysLogParseUser(h.user_name)) + '</span>' : '')
+        + platBadges + fmtBadge
+        + (item.date ? '<span>' + iconSvg('bell',{size:10}) + ' ' + item.date + '</span>' : '')
+        + (item.assignee ? '<span>' + iconSvg('users',{size:10}) + ' ' + emEsc(item.assignee) + '</span>' : '')
         + '</div>'
-        + (h.error_message ? '<div class="em-ph-post-error">' + emEsc(h.error_message) + '</div>' : '');
+        + (item.error ? '<div class="em-ph-post-error">' + emEsc(item.error) + '</div>' : '');
 
-      if (h.status === 'FAILED' && h.id) {
+      // Retry buttons from histEntries
+      item.histEntries.filter(function(h){ return h.status === 'FAILED' && h.id; }).forEach(function(h) {
         var parsedUrls = pubHistParseImageUrls(h.image_url);
-        _pubHistPostData[h.id] = { clientKey:h.client_key||'', platform:h.platform||'', caption:h.caption||'', imageUrl:h.image_url||null, imageUrls:parsedUrls, taskId:h.task_id||null };
+        _pubHistPostData[h.id] = { clientKey:h.client_key||'', platform:h.platform||'fb', caption:h.caption||'', imageUrl:h.image_url||null, imageUrls:parsedUrls, taskId:h.task_id||null };
         html += '<div class="em-ph-post-actions">'
-          + '<button id="pubHistRetryBtn_' + h.id + '" class="em-ph-action-btn retry" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')">↺ Tentar agora</button>'
+          + '<button id="pubHistRetryBtn_' + h.id + '" class="em-ph-action-btn retry" onclick="event.stopPropagation();pubHistRetryDirect(\'' + h.id + '\')">' + iconSvg('refresh',{size:11}) + ' Tentar agora</button>'
           + '<button class="em-ph-action-btn reschedule" onclick="event.stopPropagation();pubHistShowReschedule(\'' + h.id + '\')">' + iconSvg('bell',{size:11}) + ' Reagendar</button>'
           + '<button id="pubHistMarkPubBtn_' + h.id + '" class="em-ph-action-btn manual" onclick="event.stopPropagation();pubHistMarkPublished(\'' + h.id + '\')">' + iconSvg('check',{size:11}) + ' Publicado manualmente</button>'
           + '</div>';
-      }
+      });
 
       html += '</div>'
-        + '<div class="em-ph-post-right">'
-        + '<span class="em-ph-status-chip ' + st.cls + '">' + st.icon + ' ' + st.label + '</span>'
-        + '</div>'
+        + '<div class="em-ph-post-right"><span class="em-ph-status-chip ' + st.cls + '">' + st.icon + ' ' + st.label + '</span></div>'
         + '</div>';
     });
 
