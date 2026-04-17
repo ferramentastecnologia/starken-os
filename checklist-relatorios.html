@@ -8123,18 +8123,26 @@ function _dashGetCurrentWeekKey() {
   if (!mInfo) return mk + '-S1';
   var weeks = getMonthWeeks(mInfo.year, mInfo.month);
   if (!weeks.length) return mk + '-S1';
-  var todayStr = new Date().toISOString().slice(0, 10);
-  // Prioridade: semana cujo PERÍODO contém hoje
-  for (var i = 0; i < weeks.length; i++) {
-    if (todayStr >= weeks[i].periodStartISO && todayStr <= weeks[i].periodEndISO) {
-      return mk + '-S' + weeks[i].week;
-    }
-  }
-  // Fallback: semana cujo período mais recente já passou
+  var today = new Date();
+  var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
+  var autoWeek = null;
   for (var i = weeks.length - 1; i >= 0; i--) {
-    if (todayStr > weeks[i].periodEndISO) { return mk + '-S' + weeks[i].week; }
+    if (todayStr >= weeks[i].sendDateISO) { autoWeek = weeks[i]; break; }
   }
-  return mk + '-S' + weeks[0].week;
+  if (!autoWeek) autoWeek = weeks[0];
+  return mk + '-S' + (autoWeek ? autoWeek.week : 1);
+}
+
+// Retorna {startISO, endISO} da semana calendário atual (seg-dom)
+// Usado em renderDashWeekPosts — independente do ciclo de cronogramas
+function _dashGetCalendarWeekRange() {
+  var today = new Date();
+  var dow = today.getDay(); // 0=dom,1=seg...6=sab
+  var daysFromMon = dow === 0 ? 6 : dow - 1;
+  var mon = new Date(today); mon.setDate(today.getDate() - daysFromMon);
+  var sun = new Date(mon);   sun.setDate(mon.getDate() + 6);
+  function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+  return { startISO: iso(mon), endISO: iso(sun) };
 }
 
 function renderDashboard() {
@@ -9033,29 +9041,17 @@ async function renderDashWeekPosts(weekKey) {
   var el = document.getElementById('dashWeekPostsList');
   if (!el) return;
 
-  // Show loading on first load
-  if (!_dashWeekPostsCache[weekKey]) {
+  // Usa semana calendário real (seg-dom) independente do ciclo de cronogramas
+  var calRange = _dashGetCalendarWeekRange();
+  var startDate = calRange.startISO;
+  var endDate   = calRange.endISO;
+  var cacheKey  = 'cal_' + startDate;
+
+  if (!_dashWeekPostsCache[cacheKey]) {
     el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem">⏳ Carregando agendamentos...</div>';
   }
-
-  // Parse week range from weekKey
-  var parts = weekKey.split('-S');
-  if (parts.length !== 2) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Período inválido</p>'; return; }
-  var monthKey = parts[0];
-  var weekNum = parseInt(parts[1]);
-  var mParts = monthKey.split('-');
-  var year = parseInt(mParts[0]);
-  var month = parseInt(mParts[1]) - 1;
-  var weeks = getMonthWeeks(year, month);
-  var wk = weeks.find(function(w) { return w.week === weekNum; });
-  if (!wk) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Semana não encontrada</p>'; return; }
-
-  var startDate = wk.periodStartISO;
-  var endDate = wk.periodEndISO;
-
-  // Use cache if available
-  if (_dashWeekPostsCache[weekKey]) {
-    _renderDashWeekPostsUI(el, _dashWeekPostsCache[weekKey], startDate, endDate);
+  if (_dashWeekPostsCache[cacheKey]) {
+    _renderDashWeekPostsUI(el, _dashWeekPostsCache[cacheKey], startDate, endDate);
     return;
   }
 
@@ -9135,7 +9131,7 @@ async function renderDashWeekPosts(weekKey) {
     });
 
     var cacheData = { dayData: dayData, totalSched: totalSched, totalPub: totalPub, totalPosts: totalPosts };
-    _dashWeekPostsCache[weekKey] = cacheData;
+    _dashWeekPostsCache[cacheKey] = cacheData;
     _renderDashWeekPostsUI(el, cacheData, startDate, endDate);
 
   } catch(e) {
