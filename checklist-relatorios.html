@@ -8599,10 +8599,21 @@ function renderDashWeekCronoList(weekKey, active) {
     if (item.metaKey && statusLabel === 'Pendente') {
       onclick = 'cronogramaFromSchedule(\'' + item.metaKey + '\',\'' + item.id + '\',\'sched-weekly\',\'' + weekKey + '\')';
     }
+    // Quick action buttons (manual status change)
+    var btns = '';
+    var stopEvt = 'event.stopPropagation();';
+    if (statusLabel === 'Pendente') {
+      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',1,this)" title="Marcar como Gerado" style="padding:2px 7px;border-radius:4px;border:1px solid #3b82f6;background:#dbeafe;color:#1e40af;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">📄 Gerar</button>';
+      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',2,this)" title="Marcar como Enviado" style="padding:2px 7px;border-radius:4px;border:1px solid #22c55e;background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">📤 Enviar</button>';
+    } else if (statusLabel === 'Gerado') {
+      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',2,this)" title="Marcar como Enviado" style="padding:2px 7px;border-radius:4px;border:1px solid #22c55e;background:#dcfce7;color:#166534;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">📤 Enviar</button>';
+      btns += '<button onclick="' + stopEvt + 'dashMarkCronoStatus(\'' + item.id + '\',\'' + weekKey + '\',0,this)" title="Voltar para Pendente" style="padding:2px 7px;border-radius:4px;border:1px solid #f59e0b;background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">↩</button>';
+    }
     return '<div onclick="' + onclick + '" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">'
       + '<div class="client-avatar ' + css + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(item.name) + '</div>'
-      + '<span style="font-size:0.8rem;flex:1">' + esc(item.name) + '</span>'
-      + '<span style="font-size:0.68rem;color:' + statusColor + ';font-weight:600">' + statusLabel + '</span>'
+      + '<span style="font-size:0.8rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(item.name) + '</span>'
+      + (btns ? '<div style="display:flex;gap:4px">' + btns + '</div>' : '')
+      + '<span style="font-size:0.68rem;color:' + statusColor + ';font-weight:600;min-width:52px;text-align:right">' + statusLabel + '</span>'
       + '</div>';
   }
 
@@ -8627,8 +8638,9 @@ function renderDashWeekCronoList(weekKey, active) {
       var css2 = enviados[k].company === 'Starken' ? 'starken' : 'alpha';
       h += '<div onclick="switchTab(\'sched-weekly\')" style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border-light);cursor:pointer;border-radius:4px;transition:background 0.15s" onmouseover="this.style.background=\'var(--bg-hover,rgba(0,0,0,0.04))\'" onmouseout="this.style.background=\'transparent\'">';
       h += '<div class="client-avatar ' + css2 + '" style="width:24px;height:24px;font-size:0.55rem">' + getInitials(enviados[k].name) + '</div>';
-      h += '<span style="font-size:0.8rem;flex:1">' + esc(enviados[k].name) + '</span>';
+      h += '<span style="font-size:0.8rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(enviados[k].name) + '</span>';
       h += '<span style="font-size:0.65rem;color:var(--text-muted)">' + sentDate + '</span>';
+      h += '<button onclick="event.stopPropagation();dashMarkCronoStatus(\'' + enviados[k].id + '\',\'' + weekKey + '\',0,this)" title="Voltar para Pendente" style="padding:2px 7px;border-radius:4px;border:1px solid #f59e0b;background:#fef3c7;color:#92400e;font-size:0.65rem;font-weight:700;cursor:pointer;font-family:inherit">↩</button>';
       h += '<span style="font-size:0.68rem;color:#22c55e;font-weight:600">Enviado</span>';
       h += '</div>';
     }
@@ -8648,6 +8660,66 @@ function renderDashWeekCronoList(weekKey, active) {
   h += '<div style="text-align:right;margin-top:8px;border-top:1px solid var(--border-light);padding-top:8px"><a href="#" onclick="switchTab(\'sched-weekly\');return false" style="font-size:0.75rem;color:var(--primary);font-weight:600;text-decoration:none">Ver completo &rarr;</a></div>';
 
   el.innerHTML = h;
+}
+
+// Quick status change for cronograma rows in dashboard
+async function dashMarkCronoStatus(clientId, periodKey, newStatus, btn) {
+  if (btn) { btn.disabled = true; var orig = btn.innerHTML; btn.innerHTML = '⏳'; }
+  var csId = clientId + '_' + periodKey;
+  var now = new Date().toISOString();
+  var payload = {
+    id: csId,
+    client_id: clientId,
+    period_key: periodKey,
+    status: newStatus,
+    updated_at: now
+  };
+  if (newStatus === 2) { payload.sent = true; payload.sent_date = now; }
+  else if (newStatus === 1) { payload.sent = false; payload.generated_at = now; }
+  else { payload.sent = false; payload.sent_date = null; payload.generated_at = null; payload.pdf_url = null; payload.pdf_name = null; }
+
+  try {
+    if (_supabase) {
+      var { error } = await _supabase.from('cronograma_status').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+    } else {
+      // Direct REST upsert
+      var url = SUPABASE_URL + '/rest/v1/cronograma_status?on_conflict=id';
+      var hdrs = Object.assign({}, _SB_REST_HDRS, { 'Prefer': 'resolution=merge-duplicates,return=minimal' });
+      var res = await fetch(url, { method: 'POST', headers: hdrs, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0,120));
+    }
+
+    // Update local cache
+    _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, payload);
+    _cronogramaStatusCache[clientId + '_' + periodKey] = _cronogramaStatusCache[csId];
+
+    // Invalidate dependent caches so score + recent sends recalculate
+    _opScoreCache = {};
+    _dashWeekPostsCache = {};
+
+    if (typeof showToast === 'function') {
+      var lbl = newStatus === 2 ? '📤 Enviado' : newStatus === 1 ? '📄 Gerado' : '↩ Pendente';
+      showToast(lbl, 'success');
+    }
+    if (typeof renderDashboard === 'function') renderDashboard();
+  } catch(e) {
+    console.warn('dashMarkCronoStatus error:', e);
+    alert('Erro ao atualizar status: ' + e.message);
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
+}
+
+// Auto-refresh dashboard data every 5 min (keeps "Atrasado" fresh without full page reload)
+if (typeof window !== 'undefined' && !window._dashAutoRefresh) {
+  window._dashAutoRefresh = setInterval(function() {
+    if (document.getElementById('tab-dashboard') && document.getElementById('tab-dashboard').classList.contains('active')) {
+      _opScoreCache = {};
+      _dashWeekPostsCache = {};
+      _contentProgressCache = {};
+      if (typeof renderDashboard === 'function') renderDashboard();
+    }
+  }, 5 * 60 * 1000);
 }
 
 // Recent sends from Supabase cronograma_status cache
