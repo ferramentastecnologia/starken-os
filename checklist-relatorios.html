@@ -3448,7 +3448,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
   </div>
 </div>
 
-<button class="menu-toggle hidden" id="menuToggleBtn" onclick="toggleSidebar()">&#9776;</button>
+<button class="menu-toggle hidden" id="menuToggleBtn" onclick="toggleSidebar()"><span class="mso">menu</span></button>
 
 <div class="app hidden" id="mainApp">
   <aside class="sidebar" id="sidebar">
@@ -3701,8 +3701,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <span class="asana-status-dot disconnected" id="asanaStatusDot"></span>
             <span id="asanaStatusText">Verificando conexão...</span>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="asanaRefreshTasks()" id="asanaRefreshBtn" disabled>&#128260; Atualizar</button>
-          <button class="btn btn-outline btn-sm" onclick="asanaOpenConfig()">&#9881; Configurar</button>
+          <button class="btn btn-outline btn-sm" onclick="asanaRefreshTasks()" id="asanaRefreshBtn" disabled><span class="mso">sync</span> Atualizar</button>
+          <button class="btn btn-outline btn-sm" onclick="asanaOpenConfig()"><span class="mso">settings</span> Configurar</button>
         </div>
         <div class="card-header" style="margin-bottom:16px">
           <div class="card-title"><span class="mso">assignment</span> Tarefas da Equipe</div>
@@ -3754,7 +3754,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             </table>
           </div>
           <div id="historyEmpty" class="empty-state" style="display:none">
-            <div class="empty-icon">&#128203;</div>
+            <div class="empty-icon"><span class="mso">assignment</span></div>
             <p><strong>Nenhum registro</strong></p>
           </div>
         </div>
@@ -3783,8 +3783,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <div style="padding:20px">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">&#9881; Configuração Meta Ads</div>
-              <button class="btn-new-task" onclick="metaConfigDiscover()" style="font-size:0.78rem;padding:6px 14px" id="metaConfigDiscoverBtn">&#128269; Descobrir Ativos</button>
+              <div class="card-title"><span class="mso">settings</span> Configuração Meta Ads</div>
+              <button class="btn-new-task" onclick="metaConfigDiscover()" style="font-size:0.78rem;padding:6px 14px" id="metaConfigDiscoverBtn"><span class="mso">search</span> Descobrir Ativos</button>
             </div>
             <!-- Status do Token -->
             <div id="metaConfigTokenStatus" style="margin-bottom:16px;padding:12px;border-radius:8px;background:var(--bg-secondary);font-size:0.85rem;color:var(--text-secondary)">
@@ -3811,7 +3811,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
               <!-- Botão Criar Cliente (aparece após descobrir ativos) -->
               <div id="metaConfigAddClientRow" style="display:none;margin-bottom:16px">
-                <button class="btn-new-task" onclick="metaConfigAddClient()" style="font-size:0.82rem;padding:7px 16px">&#10133; Criar Cliente</button>
+                <button class="btn-new-task" onclick="metaConfigAddClient()" style="font-size:0.82rem;padding:7px 16px"><span class="mso">add</span> Criar Cliente</button>
               </div>
               <!-- Busca de clientes -->
               <div style="margin-bottom:12px">
@@ -3821,7 +3821,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div id="metaConfigClientList" style="margin-bottom:16px"></div>
               <!-- Botão Salvar -->
               <div id="metaConfigSaveRow" style="display:none">
-                <button class="btn-new-task" onclick="metaConfigSave()" style="width:100%;padding:10px;font-size:0.88rem" id="metaConfigSaveBtn">&#128190; Salvar Configuração</button>
+                <button class="btn-new-task" onclick="metaConfigSave()" style="width:100%;padding:10px;font-size:0.88rem" id="metaConfigSaveBtn"><span class="mso">save</span> Salvar Configuração</button>
                 <div id="metaConfigStatus" style="margin-top:10px;font-size:0.82rem;display:none"></div>
               </div>
             </div>
@@ -3834,12 +3834,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <div style="padding:20px">
           <div class="card">
             <div class="card-header">
-              <div class="card-title">&#128176; Saldo das Contas de Anúncios</div>
-              <button class="btn-new-task" onclick="metaBalanceFetch()" style="font-size:0.78rem;padding:6px 14px">&#128260; Atualizar</button>
+              <div class="card-title"><span class="mso">payments</span> Saldo das Contas de Anúncios</div>
+              <button class="btn-new-task" onclick="metaBalanceFetch()" style="font-size:0.78rem;padding:6px 14px"><span class="mso">sync</span> Atualizar</button>
             </div>
             <div id="metaBalanceAlertBanner" style="display:none;background:var(--danger-bg,#fef2f2);border:1px solid var(--danger,#ef4444);border-radius:8px;padding:12px 16px;margin-bottom:16px;color:var(--danger,#ef4444);font-size:0.85rem;font-weight:600"></div>
             <div id="metaBalanceGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
-              <div class="stat-card" style="opacity:0.5;text-align:center;padding:40px"><span style="font-size:2rem">&#128176;</span><br><span style="font-size:0.85rem;color:var(--text-secondary)">Clique em Atualizar para carregar os saldos</span></div>
+              <div class="stat-card" style="opacity:0.5;text-align:center;padding:40px"><span style="font-size:2rem"><span class="mso">payments</span></span><br><span style="font-size:0.85rem;color:var(--text-secondary)">Clique em Atualizar para carregar os saldos</span></div>
             </div>
             <div style="margin-top:16px;display:flex;align-items:center;gap:12px">
               <label style="font-size:0.78rem;color:var(--text-secondary);font-weight:600">Alerta de saldo baixo (R$):</label>
@@ -4033,12 +4033,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div>
               <div class="card">
                 <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-                  <div class="card-title">&#128228; Publicar Post</div>
+                  <div class="card-title"><span class="mso">upload</span> Publicar Post</div>
                   <div id="metaPubStepIndicator" style="display:flex;gap:6px;align-items:center">
                     <span class="meta-pub-step active" id="metaPubStep1">1</span>
-                    <span style="color:var(--text-secondary);font-size:0.7rem">&#8594;</span>
+                    <span style="color:var(--text-secondary);font-size:0.7rem"><span class="mso">arrow_forward</span></span>
                     <span class="meta-pub-step" id="metaPubStep2">2</span>
-                    <span style="color:var(--text-secondary);font-size:0.7rem">&#8594;</span>
+                    <span style="color:var(--text-secondary);font-size:0.7rem"><span class="mso">arrow_forward</span></span>
                     <span class="meta-pub-step" id="metaPubStep3">3</span>
                   </div>
                 </div>
@@ -4046,20 +4046,20 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <!-- Linha 1: Cliente + Plataforma -->
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
                   <div class="form-group">
-                    <label class="form-label">&#128100; Cliente</label>
+                    <label class="form-label"><span class="mso">person</span> Cliente</label>
                     <select class="form-input" id="metaPubClient" data-searchable onchange="metaPublishClientChange()" style="font-weight:600">
                       <option value="">Selecione um cliente...</option>
                     </select>
                     <div id="metaPubClientInfo" style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px"></div>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">&#127760; Plataforma</label>
+                    <label class="form-label"><span class="mso">language</span> Plataforma</label>
                     <div id="metaPubPlatformBtns" style="display:flex;gap:8px;margin-top:4px">
                       <button class="meta-pub-plat-btn" id="metaPubPlatFb" onclick="metaPublishSelectPlatform('fb')" disabled title="Facebook">
-                        <span style="font-size:1.3rem">&#128308;</span><br><span style="font-size:0.72rem">Facebook</span>
+                        <span style="font-size:1.3rem"><span class="mso" style="color:#ef4444;font-size:10px">fiber_manual_record</span></span><br><span style="font-size:0.72rem">Facebook</span>
                       </button>
                       <button class="meta-pub-plat-btn" id="metaPubPlatIg" onclick="metaPublishSelectPlatform('ig')" disabled title="Instagram">
-                        <span style="font-size:1.3rem">&#128247;</span><br><span style="font-size:0.72rem">Instagram</span>
+                        <span style="font-size:1.3rem"><span class="mso">photo_camera</span></span><br><span style="font-size:0.72rem">Instagram</span>
                       </button>
                     </div>
                     <input type="hidden" id="metaPubPlatform" value="">
@@ -4069,16 +4069,16 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <!-- Linha 2: Tipo + Formato + Agendamento -->
                 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
                   <div class="form-group">
-                    <label class="form-label">&#128196; Tipo de Post</label>
+                    <label class="form-label"><span class="mso">description</span> Tipo de Post</label>
                     <select class="form-input" id="metaPubType" onchange="metaPublishTypeChange()">
-                      <option value="feed">&#128248; Feed</option>
-                      <option value="stories">&#128247; Stories</option>
-                      <option value="reels">&#127916; Reels</option>
-                      <option value="carousel">&#127922; Carrossel</option>
+                      <option value="feed"><span class="mso">photo_camera</span> Feed</option>
+                      <option value="stories"><span class="mso">photo_camera</span> Stories</option>
+                      <option value="reels"><span class="mso">movie</span> Reels</option>
+                      <option value="carousel"><span class="mso">casino</span> Carrossel</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label class="form-label">&#128208; Formato</label>
+                    <label class="form-label"><span class="mso">design_services</span> Formato</label>
                     <div id="metaPubAspectBtns" style="display:flex;gap:6px;margin-top:4px">
                       <button class="meta-pub-aspect-btn" onclick="metaPublishSelectAspect('1:1',this)" title="Quadrado 1:1">
                         <div style="width:20px;height:20px;border:2px solid currentColor;border-radius:2px"></div>
@@ -4100,26 +4100,26 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                     <input type="hidden" id="metaPubAspect" value="4:5">
                   </div>
                   <div class="form-group">
-                    <label class="form-label">&#128338; Quando Publicar</label>
+                    <label class="form-label"><span class="mso">schedule</span> Quando Publicar</label>
                     <select class="form-input" id="metaPubScheduleMode" onchange="metaPublishScheduleChange()">
-                      <option value="now">&#9889; Publicar Agora</option>
-                      <option value="schedule">&#128197; Agendar</option>
+                      <option value="now"><span class="mso">bolt</span> Publicar Agora</option>
+                      <option value="schedule"><span class="mso">calendar_today</span> Agendar</option>
                     </select>
                   </div>
                 </div>
                 <div class="form-group" id="metaPubDatetimeWrap" style="display:none;margin-bottom:16px">
-                  <label class="form-label">&#128197; Data e Hora do Agendamento</label>
+                  <label class="form-label"><span class="mso">calendar_today</span> Data e Hora do Agendamento</label>
                   <div style="display:flex;gap:8px;align-items:center">
                     <input type="date" class="form-input" id="metaPubDate" style="font-weight:600;flex:1;cursor:pointer" onclick="this.showPicker?this.showPicker():null">
                     <input type="time" class="form-input" id="metaPubTime" style="font-weight:600;width:120px" value="10:00">
                   </div>
                   <input type="hidden" class="form-input" id="metaPubDatetime" style="font-weight:600">
-                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">&#9888;&#65039; Meta exige no mínimo 10 minutos no futuro e máximo 75 dias</div>
+                  <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span class="mso">warning</span> Meta exige no mínimo 10 minutos no futuro e máximo 75 dias</div>
                 </div>
 
                 <!-- Legenda com contador visual -->
                 <div class="form-group" style="margin-bottom:16px">
-                  <label class="form-label">&#9999;&#65039; Legenda</label>
+                  <label class="form-label"><span class="mso">edit</span> Legenda</label>
                   <textarea class="form-input" id="metaPubCaption" rows="5" placeholder="Escreva a legenda do post...&#10;&#10;Dicas:&#10;- Use hashtags no final&#10;- Emojis aumentam engajamento&#10;- Primeira linha chama atenção no feed" oninput="metaPublishCaptionInput()" maxlength="2200" style="resize:vertical;line-height:1.6"></textarea>
                   <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:0.75rem">
                     <div id="metaPubCaptionTips" style="color:var(--text-secondary)"></div>
@@ -4132,12 +4132,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
                 <!-- Mídia com upload visual aprimorado -->
                 <div class="form-group" style="margin-bottom:16px">
-                  <label class="form-label">&#128206; Mídia <span id="metaPubMediaCount" style="font-weight:400;color:var(--text-secondary)"></span></label>
+                  <label class="form-label"><span class="mso">attach_file</span> Mídia <span id="metaPubMediaCount" style="font-weight:400;color:var(--text-secondary)"></span></label>
                   <div id="metaPubDropZone" class="meta-pub-dropzone" onclick="document.getElementById('metaPubFileInput').click()" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="event.preventDefault();this.classList.remove('dragover');metaPublishHandleDrop(event)">
-                    <div style="font-size:2.5rem;margin-bottom:8px">&#128206;</div>
+                    <div style="font-size:2.5rem;margin-bottom:8px"><span class="mso">attach_file</span></div>
                     <div style="font-weight:600;margin-bottom:4px">Arraste imagens ou vídeos aqui</div>
                     <div style="font-size:0.78rem;color:var(--text-secondary)">ou clique para selecionar &middot; JPG, PNG, MP4 &middot; Máx 10MB</div>
-                    <div style="font-size:0.7rem;color:#10b981;margin-top:6px;font-weight:600">&#9889; Upload direto — arquivo enviado automaticamente para a Meta</div>
+                    <div style="font-size:0.7rem;color:#10b981;margin-top:6px;font-weight:600"><span class="mso">bolt</span> Upload direto — arquivo enviado automaticamente para a Meta</div>
                     <input type="file" id="metaPubFileInput" accept="image/*,video/*" multiple style="display:none" onchange="metaPublishHandleFiles(this.files)">
                   </div>
                   <div id="metaPubPreviews" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"></div>
@@ -4148,7 +4148,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
                 <!-- Botão de publicação -->
                 <button class="btn-new-task meta-pub-submit-btn" onclick="metaPublishSubmit()" id="metaPubSubmitBtn" disabled>
-                  <span id="metaPubSubmitIcon">&#128228;</span>
+                  <span id="metaPubSubmitIcon"><span class="mso">upload</span></span>
                   <span id="metaPubSubmitText">Selecione cliente e plataforma</span>
                 </button>
                 <div id="metaPubStatus" style="margin-top:12px;font-size:0.85rem;display:none;padding:10px;border-radius:8px"></div>
@@ -4159,7 +4159,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div style="position:sticky;top:20px">
               <div class="card" id="metaPubPreviewCard">
                 <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-                  <div class="card-title">&#128065; Preview</div>
+                  <div class="card-title"><span class="mso">visibility</span> Preview</div>
                   <div id="metaPubPreviewPlatLabel" style="font-size:0.72rem;padding:3px 10px;border-radius:12px;background:var(--bg-secondary);color:var(--text-secondary);font-weight:600">—</div>
                 </div>
                 <div id="metaPubPreview" style="padding:16px">
@@ -4178,10 +4178,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                   </div>
                   <!-- Ações fake -->
                   <div style="display:flex;gap:16px;padding:8px 0;margin-bottom:8px;border-bottom:1px solid var(--border)">
-                    <span style="font-size:1.1rem;cursor:default" title="Curtir">&#10084;&#65039;</span>
-                    <span style="font-size:1.1rem;cursor:default" title="Comentar">&#128172;</span>
-                    <span style="font-size:1.1rem;cursor:default" title="Compartilhar">&#128228;</span>
-                    <span style="font-size:1.1rem;cursor:default;margin-left:auto" title="Salvar">&#128278;</span>
+                    <span style="font-size:1.1rem;cursor:default" title="Curtir"><span class="mso mso-fill" style="color:#ef4444">favorite</span></span>
+                    <span style="font-size:1.1rem;cursor:default" title="Comentar"><span class="mso">chat_bubble</span></span>
+                    <span style="font-size:1.1rem;cursor:default" title="Compartilhar"><span class="mso">upload</span></span>
+                    <span style="font-size:1.1rem;cursor:default;margin-left:auto" title="Salvar"><span class="mso">bookmark</span></span>
                   </div>
                   <!-- Legenda preview -->
                   <div id="metaPubPreviewCaption" style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;line-height:1.5;max-height:200px;overflow-y:auto">A legenda aparecerá aqui...</div>
@@ -4190,12 +4190,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
               <!-- Card de Validação -->
               <div class="card" style="margin-top:12px" id="metaPubValidationCard">
-                <div class="card-header"><div class="card-title" style="font-size:0.85rem">&#9989; Checklist de Publicação</div></div>
+                <div class="card-header"><div class="card-title" style="font-size:0.85rem"><span class="mso mso-fill">check_circle</span> Checklist de Publicação</div></div>
                 <div id="metaPubChecklist" style="padding:12px;font-size:0.82rem">
-                  <div class="meta-pub-check" id="metaPubChkClient">&#9744; Cliente selecionado</div>
-                  <div class="meta-pub-check" id="metaPubChkPlatform">&#9744; Plataforma escolhida</div>
-                  <div class="meta-pub-check" id="metaPubChkContent">&#9744; Legenda ou mídia adicionada</div>
-                  <div class="meta-pub-check" id="metaPubChkMedia" style="display:none">&#9744; Mídia obrigatória (Instagram)</div>
+                  <div class="meta-pub-check" id="metaPubChkClient"><span class="mso">check_box_outline_blank</span> Cliente selecionado</div>
+                  <div class="meta-pub-check" id="metaPubChkPlatform"><span class="mso">check_box_outline_blank</span> Plataforma escolhida</div>
+                  <div class="meta-pub-check" id="metaPubChkContent"><span class="mso">check_box_outline_blank</span> Legenda ou mídia adicionada</div>
+                  <div class="meta-pub-check" id="metaPubChkMedia" style="display:none"><span class="mso">check_box_outline_blank</span> Mídia obrigatória (Instagram)</div>
                 </div>
               </div>
             </div>
@@ -4204,7 +4204,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           <!-- Histórico Aprimorado -->
           <div class="card" style="margin-top:20px">
             <div class="card-header" style="display:flex;justify-content:space-between;align-items:center">
-              <div class="card-title">&#128197; Histórico de Publicações</div>
+              <div class="card-title"><span class="mso">calendar_today</span> Histórico de Publicações</div>
               <div style="display:flex;gap:8px">
                 <button class="meta-pub-filter-btn active" onclick="metaPublishFilterHistory('all',this)">Todos</button>
                 <button class="meta-pub-filter-btn" onclick="metaPublishFilterHistory('PUBLISHED',this)">Publicados</button>
@@ -4804,9 +4804,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <button class="pc-today-btn" onclick="calGoToday()">Hoje</button>
               <button id="calSyncMetaBtn" onclick="calRefreshMetaPlanner && calRefreshMetaPlanner()" title="Sincronizar posts do Meta Planner" style="padding:6px 12px;border:1px solid #1877f2;border-radius:8px;background:transparent;color:#1877f2;cursor:pointer;font-size:0.75rem;font-weight:700;font-family:inherit;transition:all 0.15s;white-space:nowrap" onmouseenter="this.style.background='#1877f2';this.style.color='#fff'" onmouseleave="this.style.background='transparent';this.style.color='#1877f2'"><span class="mso">sync</span> Meta</button>
               <div class="pc-nav">
-                <button class="pc-nav-btn" onclick="calNavigate(-1)">&#8249;</button>
+                <button class="pc-nav-btn" onclick="calNavigate(-1)"><span class="mso">chevron_left</span></button>
                 <span class="pc-nav-month" id="calNavMonth">—</span>
-                <button class="pc-nav-btn" onclick="calNavigate(1)">&#8250;</button>
+                <button class="pc-nav-btn" onclick="calNavigate(1)"><span class="mso">chevron_right</span></button>
               </div>
             </div>
           </div>
@@ -5735,7 +5735,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 <!-- Modal Data de Envio -->
 <div class="modal-overlay" id="sentDateModal">
   <div class="modal" style="max-width:380px">
-    <h3>&#9993; Data de Envio</h3>
+    <h3><span class="mso">mail</span> Data de Envio</h3>
     <div id="sentDateModalClient" style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:16px;font-weight:600;padding:8px 12px;background:var(--bg-subtle);border-radius:var(--radius-sm)"></div>
     <input type="hidden" id="sentDateClientId">
     <input type="hidden" id="sentDateType">
@@ -5750,7 +5750,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
     </div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeSentDateModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveSentDate()">&#10003; Confirmar Envio</button>
+      <button class="btn btn-primary" onclick="saveSentDate()"><span class="mso">check</span> Confirmar Envio</button>
     </div>
   </div>
 </div>
@@ -5787,7 +5787,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 <!-- Modal Sincronizar Relatórios -->
 <div class="modal-overlay" id="syncModal">
   <div class="modal" style="max-width:620px">
-    <h3>&#128260; Relatórios Detectados</h3>
+    <h3><span class="mso">sync</span> Relatórios Detectados</h3>
     <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:14px">
       PDFs encontrados nas pastas de clientes. Selecione os que deseja registrar no checklist.
     </p>
@@ -5805,7 +5805,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
     <h3 id="clientReportsTitle">Relatórios Gerados</h3>
     <div id="clientReportsList"></div>
     <div class="modal-actions">
-      <button class="btn btn-outline" id="clientReportsClearBtn" onclick="clearAllClientReports()" style="color:var(--danger);border-color:var(--danger)">&#128465; Limpar tudo</button>
+      <button class="btn btn-outline" id="clientReportsClearBtn" onclick="clearAllClientReports()" style="color:var(--danger);border-color:var(--danger)"><span class="mso">delete</span> Limpar tudo</button>
       <button class="btn btn-outline" onclick="document.getElementById('clientReportsModal').classList.remove('active')">Fechar</button>
     </div>
   </div>
@@ -6690,7 +6690,7 @@ function getCurrentMonthKey() {
 
 // ============ SIDEBAR MENU DATA & RENDER ============
 let SIDEBAR_MENU = [
-  { type: 'item', id: 'dashboard', label: 'Dashboard', icon: '&#9632;', tab: 'dashboard' },
+  { type: 'item', id: 'dashboard', label: 'Dashboard', icon: '<span class="mso">square</span>', tab: 'dashboard' },
   { type: 'item', id: 'minhas-tasks', label: 'Minhas Tasks', icon: '<span class="mso">gps_fixed</span>', tab: 'minhas-tasks' },
   { type: 'item', id: 'pub-history', label: 'Publicações', icon: '<span class="mso">assignment</span>', tab: 'pub-history' },
   { type: 'item', id: 'calendario', label: 'Calendário', icon: '<span class="mso">calendar_today</span>', tab: 'calendario' },
@@ -6719,7 +6719,7 @@ let SIDEBAR_MENU = [
     { type: 'item', id: 'google-ads', label: 'Mortadella', icon: '<span class="mso">trending_up</span>', tab: 'google-ads' },
   ]},
   { type: 'category', id: 'cat-geral', label: 'Geral', items: [
-    { type: 'item', id: 'clients', label: 'Clientes', icon: '&#128101;', tab: 'clients' },
+    { type: 'item', id: 'clients', label: 'Clientes', icon: '<span class="mso">group</span>', tab: 'clients' },
     { type: 'item', id: 'history', label: 'Histórico', icon: '<span class="mso">assignment</span>', tab: 'history' },
     { type: 'item', id: 'system-logs', label: 'Logs do Sistema', icon: '<span class="mso">build</span>', tab: 'system-logs' },
   ]},
@@ -6780,8 +6780,8 @@ function renderSidebarFolder(folderId) {
   if (folderId === 'folder-starken') {
     return '<div class="sidebar-folder" id="sidebarStarken">' +
       '<button class="sidebar-folder-header" onclick="toggleSidebarFolder(\'starken\')">' +
-        '<span class="sidebar-folder-chevron" id="chevronStarken">&#9658;</span>' +
-        '<span style="color:#3b82f6">&#11088;</span> Starken Performance' +
+        '<span class="sidebar-folder-chevron" id="chevronStarken"><span class="mso">play_arrow</span></span>' +
+        '<span style="color:#3b82f6"><span class="mso">star</span></span> Starken Performance' +
         '<span class="sidebar-folder-count" id="countStarken">25</span>' +
       '</button>' +
       '<input type="text" id="searchStarken" placeholder="Buscar..." style="display:none;width:100%;padding:6px 12px;margin:6px 0;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:0.75rem" oninput="sidebarFilterClients(\'starken\')">' +
@@ -6791,8 +6791,8 @@ function renderSidebarFolder(folderId) {
   if (folderId === 'folder-alpha') {
     return '<div class="sidebar-folder" id="sidebarAlpha">' +
       '<button class="sidebar-folder-header" onclick="toggleSidebarFolder(\'alpha\')">' +
-        '<span class="sidebar-folder-chevron" id="chevronAlpha">&#9658;</span>' +
-        '<span style="color:#f59e0b">&#128310;</span> Alpha Assessoria' +
+        '<span class="sidebar-folder-chevron" id="chevronAlpha"><span class="mso">play_arrow</span></span>' +
+        '<span style="color:#f59e0b"><span class="mso" style="color:#f97316">square</span></span> Alpha Assessoria' +
         '<span class="sidebar-folder-count" id="countAlpha">10</span>' +
       '</button>' +
       '<input type="text" id="searchAlpha" placeholder="Buscar..." style="display:none;width:100%;padding:6px 12px;margin:6px 0;border:1px solid rgba(255,255,255,0.2);border-radius:4px;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.9);font-size:0.75rem" oninput="sidebarFilterClients(\'alpha\')">' +
@@ -6802,8 +6802,8 @@ function renderSidebarFolder(folderId) {
   if (folderId === 'folder-processo') {
     return '<div class="sidebar-folder sidebar-folder-processo" id="sidebarProcesso" style="display:none">' +
       '<button class="sidebar-folder-header sidebar-folder-header-processo" onclick="toggleSidebarFolder(\'processo\')">' +
-        '<span class="sidebar-folder-chevron" id="chevronProcesso">&#9658;</span>' +
-        '&#9200; Em Processo' +
+        '<span class="sidebar-folder-chevron" id="chevronProcesso"><span class="mso">play_arrow</span></span>' +
+        '<span class="mso">alarm</span> Em Processo' +
         '<span class="sidebar-folder-count" id="countProcesso">0</span>' +
       '</button>' +
       '<div class="sidebar-folder-items" id="itemsProcesso" style="display:none"></div>' +
@@ -6854,7 +6854,7 @@ function renderSidebarMenu() {
       html += '<button onclick="switchTab(\'' + entry.tab + '\')"' +
         ' data-sidebar-id="' + entry.id + '"' +
         ' draggable="true">' +
-        '<span class="sidebar-drag-handle" title="Arrastar">&#8942;&#8942;</span>' +
+        '<span class="sidebar-drag-handle" title="Arrastar"><span class="mso">more_vert</span><span class="mso">more_vert</span></span>' +
         '<span class="icon">' + renderIcon(entry.id, entry.icon) + '</span> ' + entry.label +
       '</button>';
     } else if (entry.type === 'category') {
@@ -6863,7 +6863,7 @@ function renderSidebarMenu() {
       html += '<div class="nav-category' +
         (entry.items && entry.items.length > 0 ? ' nav-category-wrap' : '') +
         '" data-sidebar-cat-id="' + entry.id + '" draggable="true"' + extraStyle + '>' +
-        '<span class="sidebar-drag-handle" title="Arrastar categoria">&#8942;&#8942;</span>' +
+        '<span class="sidebar-drag-handle" title="Arrastar categoria"><span class="mso">more_vert</span><span class="mso">more_vert</span></span>' +
         entry.label +
       '</div>';
       if (entry.items) {
@@ -6875,7 +6875,7 @@ function renderSidebarMenu() {
               ' data-sidebar-id="' + item.id + '"' +
               ' data-sidebar-cat="' + entry.id + '"' +
               ' draggable="true">' +
-              '<span class="sidebar-drag-handle" title="Arrastar">&#8942;&#8942;</span>' +
+              '<span class="sidebar-drag-handle" title="Arrastar"><span class="mso">more_vert</span><span class="mso">more_vert</span></span>' +
               '<span class="icon">' + renderIcon(item.id, item.icon) + '</span> ' + item.label +
             '</button>';
           }
@@ -8093,8 +8093,8 @@ function populateSidebarClients() {
   function buildProcessoBtn(c) {
     var cmAttr = contextMenuAttr.replace('__KEY__', c.key);
     var badge = c.status === 'onboarding'
-      ? '<span class="sidebar-processo-badge sidebar-processo-badge-onboarding">&#9201; onboarding</span>'
-      : '<span class="sidebar-processo-badge sidebar-processo-badge-standby">&#9208; standby</span>';
+      ? '<span class="sidebar-processo-badge sidebar-processo-badge-onboarding"><span class="mso">timer</span> onboarding</span>'
+      : '<span class="sidebar-processo-badge sidebar-processo-badge-standby"><span class="mso">pause</span> standby</span>';
     return '<button class="sidebar-client-btn sidebar-client-btn-processo" data-client="' + c.key + '" onclick="sidebarSelectClient(\'' + c.key + '\')"' + cmAttr + '>' + c.name + badge + '</button>';
   }
 
@@ -8645,7 +8645,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
 
         const pdfCount = data.reports.filter(rep => rep.clientId === c.id && rep.pdfFilename).length;
         if (pdfCount > 0) {
-          html += '<button class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:4px 8px" onclick="openClientReports(\'' + c.id + '\')" title="Ver relatórios gerados">&#128196; ' + pdfCount + '</button>';
+          html += '<button class="btn btn-sm" style="background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;padding:4px 8px" onclick="openClientReports(\'' + c.id + '\')" title="Ver relatórios gerados"><span class="mso">description</span> ' + pdfCount + '</button>';
         }
       }
 
@@ -8673,7 +8673,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
       if (_zHasGroup) {
         html += '<button class="btn btn-sm" style="background:#dcfce7;color:#166534;border:1px solid #86efac;padding:4px 8px;font-weight:600" onclick="zappfySendReport(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar relatório no grupo WhatsApp via Zappfy"><span class="mso">smartphone</span> Enviar</button>';
       } else if (c.phone) {
-        html += '<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar WhatsApp">&#9993; Zap</button>';
+        html += '<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp(\'' + c.id + '\',\'' + type + '\',\'' + periodKey + '\')" title="Enviar WhatsApp"><span class="mso">mail</span> Zap</button>';
       }
 
       // Manual "Enviado" button for cronograma (when not yet sent)
@@ -8714,7 +8714,7 @@ function renderWeeklyChecklist() {
   const display = document.getElementById('weekDatesDisplay');
   if (wk) {
     display.innerHTML =
-      '<span style="color:#1e40af;font-weight:700">&#128197; Envio: ' + wk.sendLabel + '</span>' +
+      '<span style="color:#1e40af;font-weight:700"><span class="mso">calendar_today</span> Envio: ' + wk.sendLabel + '</span>' +
       ' &nbsp;|&nbsp; ' +
       '<span style="color:var(--text-secondary)">Período: ' + wk.periodStartLabel + ' a ' + wk.periodEndLabel + '</span>';
   } else {
@@ -8836,7 +8836,7 @@ async function renderSchedWeekly() {
   const display = document.getElementById('schedWeekDatesDisplay');
   if (wk) {
     display.innerHTML =
-      '<span style="color:#1e40af;font-weight:700">&#128197; Envio: ' + wk.sendLabel + '</span>' +
+      '<span style="color:#1e40af;font-weight:700"><span class="mso">calendar_today</span> Envio: ' + wk.sendLabel + '</span>' +
       ' &nbsp;|&nbsp; ' +
       '<span style="color:var(--text-secondary)">Período: ' + wk.periodStartLabel + ' a ' + wk.periodEndLabel + '</span>';
   }
@@ -8859,7 +8859,7 @@ function renderMonthlyChecklist() {
     const span = document.createElement('div');
     span.className = 'monthly-send-info';
     span.style.cssText = 'font-size:0.82rem;color:#1e40af;font-weight:700;margin-left:8px';
-    span.innerHTML = '&#128197; Envio: ' + sendInfo.sendLabel + ' &nbsp;|&nbsp; <span style="color:var(--text-secondary);font-weight:600">Período: mês completo</span>';
+    span.innerHTML = '<span class="mso">calendar_today</span> Envio: ' + sendInfo.sendLabel + ' &nbsp;|&nbsp; <span style="color:var(--text-secondary);font-weight:600">Período: mês completo</span>';
     bar.appendChild(span);
   }
   renderTwoColumnChecklist('monthlyColumns', 'monthly', periodKey);
@@ -8951,7 +8951,7 @@ function renderDashboard() {
     '<div class="stat-card starken"><div class="stat-icon starken">S</div><div class="stat-label">Clientes Starken</div><div class="stat-value">' + starken.length + '</div></div>' +
     '<div class="stat-card alpha"><div class="stat-icon alpha">A</div><div class="stat-label">Clientes Alpha</div><div class="stat-value">' + alpha.length + '</div></div>' +
     '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes de envio"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Cronogramas Pendentes</div><div class="stat-value">' + wPending + '</div></div>' +
-    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Cronogramas Enviados</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
+    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)"><span class="mso">check</span></div><div class="stat-label">Cronogramas Enviados</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
 
   renderContentProgress('weeklyProgress', wk, active, 'weekly');
   renderContentProgress('monthlyProgress', mk, active, 'monthly');
@@ -10742,7 +10742,7 @@ function renderClients() {
       html += '<div style="flex:1">';
       html += '<div class="client-name">' + esc(c.name) + '</div>';
       html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">' + segBadge;
-      html += (c.phone ? '&#128172; ' + esc(c.phone) : 'Sem telefone');
+      html += (c.phone ? '<span class="mso">chat_bubble</span> ' + esc(c.phone) : 'Sem telefone');
       if (c.customPeriod) html += ' &middot; ' + esc(c.customPeriod);
       html += '</div>';
       html += '</div>';
@@ -11020,7 +11020,7 @@ function renderSyncModal(syncData) {
   const reports = syncData.reports;
 
   if (!reports.length) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128196;</div><p>Nenhum PDF encontrado nas pastas.</p></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon"><span class="mso">description</span></div><p>Nenhum PDF encontrado nas pastas.</p></div>';
     document.getElementById('syncModal').classList.add('active');
     return;
   }
@@ -11045,8 +11045,8 @@ function renderSyncModal(syncData) {
 
     const badgeCls = r.company === 'Starken' ? 'badge-starken' : 'badge-alpha';
     const statusTag = alreadyExists
-      ? '<span style="color:var(--alpha-dark);font-size:0.72rem;font-weight:600">&#10003; Já registrado</span>'
-      : (!matched ? '<span style="color:var(--danger);font-size:0.72rem;font-weight:600">&#9888; Cliente não encontrado</span>' : '');
+      ? '<span style="color:var(--alpha-dark);font-size:0.72rem;font-weight:600"><span class="mso">check</span> Já registrado</span>'
+      : (!matched ? '<span style="color:var(--danger);font-size:0.72rem;font-weight:600"><span class="mso">warning</span> Cliente não encontrado</span>' : '');
 
     const fileDate = r.fileDate ? new Date(r.fileDate).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
     const fileSizeKB = r.fileSize ? Math.round(r.fileSize / 1024) + ' KB' : '';
@@ -11065,11 +11065,11 @@ function renderSyncModal(syncData) {
     html += statusTag;
     html += '</div>';
     html += '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:3px">';
-    html += '&#128197; ' + esc(period);
+    html += '<span class="mso">calendar_today</span> ' + esc(period);
     if (fileSizeKB) html += ' &middot; ' + fileSizeKB;
     if (fileDate) html += ' &middot; Gerado: ' + fileDate;
     html += '</div>';
-    html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">&#128196; ' + esc(r.filename) + '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px"><span class="mso">description</span> ' + esc(r.filename) + '</div>';
     if (!alreadyExists && matched) {
       // Linha 1: tipo + semana
       html += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">';
@@ -11084,7 +11084,7 @@ function renderSyncModal(syncData) {
       // Data de geração manual
       const defaultDate = r.fileDate ? r.fileDate.slice(0,10) : new Date().toISOString().slice(0,10);
       html += '<div style="display:flex;align-items:center;gap:4px">';
-      html += '<label style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap">&#128197; Geração:</label>';
+      html += '<label style="font-size:0.72rem;color:var(--text-secondary);white-space:nowrap"><span class="mso">calendar_today</span> Geração:</label>';
       html += '<input type="date" data-sync-gendate="' + idx + '" value="' + defaultDate + '" style="font-size:0.78rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:white">';
       html += '</div>';
       html += '</div>';
@@ -11215,7 +11215,7 @@ function renderClientReportsList(clientId) {
 
   let html = '';
   if (!reports.length) {
-    html = '<div class="empty-state" style="padding:20px"><div class="empty-icon">&#128196;</div><p>Nenhum relatório sincronizado.</p><p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">Execute o sync_relatorios.ps1 e importe o JSON.</p></div>';
+    html = '<div class="empty-state" style="padding:20px"><div class="empty-icon"><span class="mso">description</span></div><p>Nenhum relatório sincronizado.</p><p style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">Execute o sync_relatorios.ps1 e importe o JSON.</p></div>';
   } else {
     reports.forEach(r => {
       const statusLabel = STATUS_LABELS_SHORT[r.status] || 'Pendente';
@@ -11228,14 +11228,14 @@ function renderClientReportsList(clientId) {
       html += '<div style="padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px">';
       html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">';
       html += '<div style="flex:1">';
-      html += '<div style="font-weight:600;font-size:0.85rem">&#128197; ' + esc(period) + '</div>';
-      html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">&#128196; ' + esc(filename) + '</div>';
+      html += '<div style="font-weight:600;font-size:0.85rem"><span class="mso">calendar_today</span> ' + esc(period) + '</div>';
+      html += '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px"><span class="mso">description</span> ' + esc(filename) + '</div>';
       html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px">' + typeLabel + ' &middot; ' + date + '</div>';
       html += '</div>';
       html += '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0">';
       // Botão de status clicável
       html += '<button onclick="cycleSyncReportStatus(\'' + r.id + '\')" class="status-badge ' + statusCls + '" style="border:none;cursor:pointer;font-size:0.72rem;font-weight:600;padding:3px 8px" title="Clique para alterar status"><span class="dot"></span>' + statusLabel + '</button>';
-      html += '<button onclick="deleteSyncReport(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:1rem;padding:2px 6px;border-radius:4px;line-height:1" title="Remover">&#128465;</button>';
+      html += '<button onclick="deleteSyncReport(\'' + r.id + '\')" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:1rem;padding:2px 6px;border-radius:4px;line-height:1" title="Remover"><span class="mso">delete</span></button>';
       html += '</div>';
       html += '</div></div>';
     });
@@ -13322,7 +13322,7 @@ function metaConfigIgToggle(key, mode) {
     // Troca para input manual
     wrapper.innerHTML = '<input class="mc-ig-input" type="text" value="' + (c.igUsername || c.igUserId || '') + '" placeholder="@usuario ou ID do IG"'
       + ' oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
-      + (igAccounts.length > 0 ? '<a href="#" class="mc-ig-toggle" onclick="metaConfigIgToggle(\'' + key + '\',\'select\');return false" title="Escolher da lista">&#128203;</a>' : '');
+      + (igAccounts.length > 0 ? '<a href="#" class="mc-ig-toggle" onclick="metaConfigIgToggle(\'' + key + '\',\'select\');return false" title="Escolher da lista"><span class="mso">assignment</span></a>' : '');
     // Foca no input
     var inp = wrapper.querySelector('input');
     if (inp) inp.focus();
@@ -13334,7 +13334,7 @@ function metaConfigIgToggle(key, mode) {
       var label = '@' + ig.username + (ig.linked_page ? '' : ' (sem página)');
       igOpts += '<option value="' + ig.id + '"' + sel + '>' + label + '</option>';
     });
-    igOpts += '<option value="__manual__">&#9998; Digitar manualmente...</option>';
+    igOpts += '<option value="__manual__"><span class="mso">edit</span> Digitar manualmente...</option>';
     wrapper.innerHTML = '<select class="mc-ig-input" onchange="metaConfigClientIgChange(\'' + key + '\',this)">' + igOpts + '</select>';
   }
 }
@@ -13417,8 +13417,8 @@ function metaConfigRenderClientList() {
   }
 
   const tenantSections = [
-    { key: 'starken', label: '&#11088; Starken Performance', badge: 'Starken' },
-    { key: 'alpha',   label: '&#127807; Alpha Assessoria',   badge: 'Alpha'   },
+    { key: 'starken', label: '<span class="mso">star</span> Starken Performance', badge: 'Starken' },
+    { key: 'alpha',   label: '<span class="mso">eco</span> Alpha Assessoria',   badge: 'Alpha'   },
   ];
 
   // Função auxiliar que gera o HTML de um card individual
@@ -13444,7 +13444,7 @@ function metaConfigRenderClientList() {
       + '<div class="meta-client-header">'
       + '<span class="mc-client-name" title="' + clientNameSafe + '">' + (c.name ? c.name.replace(/</g,'&lt;') : '<em style="opacity:.5">Novo Cliente</em>') + '</span>'
       + '<span class="mc-grupo-badge">' + badgeLabel + '</span>'
-      + '<button class="mc-remove-btn" title="Remover cliente" onclick="metaConfigRemoveClient(\'' + key + '\')">&#10005;</button>'
+      + '<button class="mc-remove-btn" title="Remover cliente" onclick="metaConfigRemoveClient(\'' + key + '\')"><span class="mso">close</span></button>'
       + '</div>'
       // Corpo com campos compactos
       + '<div class="meta-client-body">'
@@ -13476,7 +13476,7 @@ function metaConfigRenderClientList() {
           if (isManualIg || igAccounts.length === 0) {
             return '<input class="mc-ig-input" type="text" value="' + (c.igUsername || c.igUserId || '') + '" placeholder="@usuario ou ID do IG"'
               + ' oninput="metaConfigClientIgManual(\'' + key + '\',this.value)">'
-              + (igAccounts.length > 0 ? '<a href="#" class="mc-ig-toggle" onclick="metaConfigIgToggle(\'' + key + '\',\'select\');return false" title="Escolher da lista">&#128203;</a>' : '');
+              + (igAccounts.length > 0 ? '<a href="#" class="mc-ig-toggle" onclick="metaConfigIgToggle(\'' + key + '\',\'select\');return false" title="Escolher da lista"><span class="mso">assignment</span></a>' : '');
           }
           var igOpts = '<option value="">— Automático (via FB) —</option>';
           igAccounts.forEach(function(ig) {
@@ -13484,7 +13484,7 @@ function metaConfigRenderClientList() {
             var label = '@' + ig.username + (ig.linked_page ? '' : ' (sem página)');
             igOpts += '<option value="' + ig.id + '"' + sel + '>' + label + '</option>';
           });
-          igOpts += '<option value="__manual__">&#9998; Digitar manualmente...</option>';
+          igOpts += '<option value="__manual__"><span class="mso">edit</span> Digitar manualmente...</option>';
           return '<select class="mc-ig-input" onchange="metaConfigClientIgChange(\'' + key + '\',this)">' + igOpts + '</select>';
         })()
       + '</div>'
@@ -14800,7 +14800,7 @@ function metaBalanceRender(results) {
   const banner = document.getElementById('metaBalanceAlertBanner');
   if (alerts.length > 0) {
     banner.style.display = 'block';
-    banner.innerHTML = '&#9888; Saldo baixo: ' + alerts.join(' | ');
+    banner.innerHTML = '<span class="mso">warning</span> Saldo baixo: ' + alerts.join(' | ');
   } else {
     banner.style.display = 'none';
   }
@@ -16040,8 +16040,8 @@ function metaPublishValidateForm() {
   const isValid = clientKey && platform && hasContent && !igNeedsMedia;
 
   btn.disabled = !isValid;
-  if (!clientKey) { text.textContent = 'Selecione cliente e plataforma'; icon.innerHTML = '&#128228;'; }
-  else if (!platform) { text.textContent = 'Escolha a plataforma'; icon.innerHTML = '&#127760;'; }
+  if (!clientKey) { text.textContent = 'Selecione cliente e plataforma'; icon.innerHTML = '<span class="mso">upload</span>'; }
+  else if (!platform) { text.textContent = 'Escolha a plataforma'; icon.innerHTML = '<span class="mso">language</span>'; }
   else if (!hasContent) { text.textContent = 'Adicione legenda ou mídia'; icon.innerHTML = '<span class="mso">edit</span>'; }
   else if (igNeedsMedia) { text.textContent = 'Instagram exige mídia'; icon.innerHTML = '<span class="mso">photo_camera</span>'; }
   else if (mode === 'schedule') { text.textContent = 'Agendar Publicação'; icon.innerHTML = '<span class="mso">calendar_today</span>'; }
