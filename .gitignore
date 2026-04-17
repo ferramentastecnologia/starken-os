@@ -23,6 +23,10 @@ env*.json
 
 # Node
 node_modules/
+.next/
+escritorio/.next/
+escritorio/node_modules/
+escritorio/logs/
 
 # Docker
 .dockerignore
