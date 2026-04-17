@@ -1792,8 +1792,8 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .rs-plat.fb { background:#dbeafe;color:#1e40af; }
 .rs-del-btn { background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:2px 4px;border-radius:4px;flex-shrink:0;transition:all 0.12s; }
 .rs-del-btn:hover { background:#fee2e2;color:#dc2626; }
-.rs-pub-btn { background:none;border:none;color:#3b82f6;cursor:pointer;font-size:0.72rem;padding:2px 4px;border-radius:4px;flex-shrink:0;transition:all 0.12s; }
-.rs-pub-btn:hover { background:#dbeafe;color:#1e40af; }
+.rs-pub-btn-row { display:block;width:100%;padding:5px 6px;border:none;border-top:1px solid var(--border);background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1d4ed8;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;text-align:center; }
+.rs-pub-btn-row:hover { background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff; }
 .rs-add-btn { width:100%;margin-top:6px;padding:8px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:1.1rem;font-weight:700;transition:all 0.15s;font-family:inherit; }
 .rs-add-btn:hover { border-color:var(--brand,#3b82f6);color:var(--brand,#3b82f6);background:rgba(59,130,246,0.05); }
 .rs-plat-btn { flex:1;padding:9px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text-secondary);cursor:pointer;font-size:0.82rem;font-weight:600;transition:all 0.15s;font-family:inherit; }
@@ -16244,9 +16244,9 @@ function ctRenderStoriesView(groups) {
         html += '<div class="rs-story-footer">'
           + '<input type="time" class="rs-time-input" value="' + schedTime + '" onchange="ctRsUpdateTime(\'' + story.id + '\',this.value)" title="Horário de publicação">'
           + '<div class="rs-plats">' + igBadge + fbBadge + '</div>'
-          + '<button class="rs-pub-btn" onclick="ctRsOpenPublishModal(\'' + story.id + '\')" title="Publicar / Agendar">🚀</button>'
           + '<button class="rs-del-btn" onclick="ctRsDeleteStory(\'' + story.id + '\')" title="Remover story">✕</button>'
-          + '</div>';
+          + '</div>'
+          + '<button class="rs-pub-btn-row" onclick="ctRsOpenPublishModal(\'' + story.id + '\')" title="Publicar / Agendar">🚀 Publicar</button>';
         html += '</div>';
       });
 
