@@ -3556,6 +3556,17 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
       </div>
 
       <!-- DASHBOARD -->
+      <!-- ===== ESCRITÓRIO VIRTUAL ===== -->
+      <div id="tab-escritorio-virtual" class="tab-content" style="padding:0!important;height:calc(100vh - 56px)">
+        <iframe
+          id="escritorioFrame"
+          src="about:blank"
+          style="width:100%;height:100%;border:none;display:block"
+          allow="clipboard-read; clipboard-write"
+        ></iframe>
+      </div>
+      <!-- ===== /ESCRITÓRIO VIRTUAL ===== -->
+
       <div id="tab-dashboard" class="tab-content active">
         <div id="emHero"></div>
         <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px" id="dashActionBar">
@@ -6691,6 +6702,7 @@ function getCurrentMonthKey() {
 // ============ SIDEBAR MENU DATA & RENDER ============
 let SIDEBAR_MENU = [
   { type: 'item', id: 'dashboard', label: 'Dashboard', icon: '<span class="mso">square</span>', tab: 'dashboard' },
+  { type: 'item', id: 'escritorio-virtual', label: 'Escritório Virtual', icon: '<span class="mso">hub</span>', tab: 'escritorio-virtual' },
   { type: 'item', id: 'minhas-tasks', label: 'Minhas Tasks', icon: '<span class="mso">gps_fixed</span>', tab: 'minhas-tasks' },
   { type: 'item', id: 'pub-history', label: 'Publicações', icon: '<span class="mso">assignment</span>', tab: 'pub-history' },
   { type: 'item', id: 'calendario', label: 'Calendário', icon: '<span class="mso">calendar_today</span>', tab: 'calendario' },
@@ -8032,6 +8044,7 @@ async function pubHistRetryInMetaPub(clientKey, platform, caption, mode, schedul
 const TAB_TITLES = {
   gestao:        'Gestão de Projetos',
   dashboard:     'Dashboard',
+  'escritorio-virtual': 'Escritório Virtual',
   weekly:        'Relatórios — Semanal',
   monthly:       'Relatórios — Mensal',
   'sched-weekly':      'Cronogramas — Semanal',
@@ -8075,7 +8088,11 @@ function switchTab(tabName) {
     if (navBar) navBar.style.display = 'none';
     if (navBarCal) navBarCal.style.display = 'none';
   }
-  if (tabName === 'minhas-tasks') { if (typeof mtInit === 'function') mtInit(); else setTimeout(function(){ if (typeof mtInit === 'function') mtInit(); }, 500); }
+  if (tabName === 'escritorio-virtual') {
+    var frame = document.getElementById('escritorioFrame');
+    if (frame && frame.src === 'about:blank') frame.src = 'http://localhost:3000';
+  }
+  else if (tabName === 'minhas-tasks') { if (typeof mtInit === 'function') mtInit(); else setTimeout(function(){ if (typeof mtInit === 'function') mtInit(); }, 500); }
   else if (tabName === 'content-approval') caInitTab();
   else if (tabName === 'asana-tasks') asanaInitTab();
   else if (tabName === 'gestao') { if (typeof Gestao !== 'undefined') { Gestao.populateClientFilter(); Gestao.renderCurrentView(); } }
