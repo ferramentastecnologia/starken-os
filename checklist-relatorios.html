@@ -16377,12 +16377,27 @@ async function ctRsUpdateTime(taskId, time) {
 
 function ctRsPreview(url) {
   var ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
-  ov.onclick = function(){ ov.remove(); };
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;cursor:zoom-out';
+  ov.onclick = function(e){ if (e.target === ov) ov.remove(); };
+
   var img = document.createElement('img');
   img.src = url;
-  img.style.cssText = 'max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.5)';
+  img.style.cssText = 'max-width:90vw;max-height:82vh;border-radius:8px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.5);cursor:default';
+  img.onclick = function(e){ e.stopPropagation(); };
+
+  var fileName = url.split('/').pop().split('?')[0] || 'story';
+  var dlBtn = document.createElement('a');
+  dlBtn.href = url;
+  dlBtn.download = fileName;
+  dlBtn.target = '_blank';
+  dlBtn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:9px 22px;background:#fff;color:#1f2937;border-radius:8px;font-size:0.85rem;font-weight:600;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:pointer;transition:opacity 0.15s';
+  dlBtn.onmouseover = function(){ dlBtn.style.opacity = '0.85'; };
+  dlBtn.onmouseout  = function(){ dlBtn.style.opacity = '1'; };
+  dlBtn.onclick = function(e){ e.stopPropagation(); };
+  dlBtn.innerHTML = '⬇️ Baixar arquivo';
+
   ov.appendChild(img);
+  ov.appendChild(dlBtn);
   document.body.appendChild(ov);
 }
 
