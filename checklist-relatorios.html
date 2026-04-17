@@ -8123,14 +8123,18 @@ function _dashGetCurrentWeekKey() {
   if (!mInfo) return mk + '-S1';
   var weeks = getMonthWeeks(mInfo.year, mInfo.month);
   if (!weeks.length) return mk + '-S1';
-  var today = new Date();
-  var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
-  var autoWeek = null;
-  for (var i = weeks.length - 1; i >= 0; i--) {
-    if (todayStr >= weeks[i].sendDateISO) { autoWeek = weeks[i]; break; }
+  var todayStr = new Date().toISOString().slice(0, 10);
+  // Prioridade: semana cujo PERÍODO contém hoje
+  for (var i = 0; i < weeks.length; i++) {
+    if (todayStr >= weeks[i].periodStartISO && todayStr <= weeks[i].periodEndISO) {
+      return mk + '-S' + weeks[i].week;
+    }
   }
-  if (!autoWeek) autoWeek = weeks[0];
-  return mk + '-S' + (autoWeek ? autoWeek.week : 1);
+  // Fallback: semana cujo período mais recente já passou
+  for (var i = weeks.length - 1; i >= 0; i--) {
+    if (todayStr > weeks[i].periodEndISO) { return mk + '-S' + weeks[i].week; }
+  }
+  return mk + '-S' + weeks[0].week;
 }
 
 function renderDashboard() {
@@ -8157,8 +8161,8 @@ function renderDashboard() {
   document.getElementById('dashboardStats').innerHTML =
     '<div class="stat-card starken"><div class="stat-icon starken">S</div><div class="stat-label">Clientes Starken</div><div class="stat-value">' + starken.length + '</div></div>' +
     '<div class="stat-card alpha"><div class="stat-icon alpha">A</div><div class="stat-label">Clientes Alpha</div><div class="stat-value">' + alpha.length + '</div></div>' +
-    '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Pendentes Semana</div><div class="stat-value">' + wPending + '</div></div>' +
-    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Enviados Semana</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
+    '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes de envio"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Cronogramas Pendentes</div><div class="stat-value">' + wPending + '</div></div>' +
+    '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)">&#10004;</div><div class="stat-label">Cronogramas Enviados</div><div class="stat-value">' + wSent + '/' + wGen + '</div></div>';
 
   renderContentProgress('weeklyProgress', wk, active, 'weekly');
   renderContentProgress('monthlyProgress', mk, active, 'monthly');
