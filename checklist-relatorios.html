@@ -8162,11 +8162,6 @@ function renderDashboard() {
   renderDashWeekCronoList(wk, active);
   renderDashWeekPosts(wk);
   renderOperationalScore(mk, active);
-
-  // Async: load week tasks data if not yet available, then re-render cards
-  if (typeof weekTaskClients === 'undefined' && typeof ensureClientsWithWeekTasks === 'function' && _supabase) {
-    ensureClientsWithWeekTasks(wk).then(function() { renderDashboard(); });
-  }
   renderRecentSends();
 }
 
@@ -8734,7 +8729,7 @@ async function dashMarkCronoStatus(clientId, periodKey, newStatus, btn) {
     if (typeof renderDashboard === 'function') renderDashboard();
   } catch(e) {
     console.warn('dashMarkCronoStatus error:', e);
-    alert('Erro ao atualizar status: ' + e.message);
+    if (typeof showToast === 'function') showToast('Erro: ' + e.message, 'error'); else console.error('dashMarkCronoStatus error:', e);
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
   }
 }
