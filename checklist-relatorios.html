@@ -6323,7 +6323,7 @@ function initSupabase() {
 // Supabase query proxy — routes through /api/content (service role key, no CORS issues)
 async function _sbQuery(table, { select='*', filters=[], order=null, limit=null } = {}) {
   const ctrl = new AbortController();
-  const timer = setTimeout(function() { ctrl.abort(); }, 20000);
+  const timer = setTimeout(function() { ctrl.abort(); }, 12000);
   try {
     const res = await fetch('/api/content', {
       method: 'POST',
@@ -12645,6 +12645,10 @@ function activateSession(user) {
   try { localStorage.setItem('starkenSession', JSON.stringify({ name: user.name, role: user.role, color: user.color })); } catch(e) {}
   // Pré-carrega meta clients para todas as abas
   metaClientsPreload();
+  // Prewarm /api/content para evitar cold start no primeiro render do dashboard
+  fetch('/api/content', { method: 'OPTIONS' }).catch(function() {});
+  // Pré-carrega group→client mapping enquanto user ainda está na tela de login/dashboard
+  setTimeout(function() { _ensureGroupToClient().catch(function() {}); }, 1500);
 
   // ─── ROLE-BASED RESTRICTIONS ───
   if (user.role === 'designer') {
@@ -16909,12 +16913,26 @@ let ctExpandedTasks = {};
 function ctApiBase() { return metaApiBase(); }
 
 async function ctApi(action, params = {}) {
-  const res = await fetch(ctApiBase() + '/api/content', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...params }),
-  });
-  return res.json();
+  const ctrl = new AbortController();
+  const timer = setTimeout(function() { ctrl.abort(); }, 25000);
+  try {
+    const res = await fetch(ctApiBase() + '/api/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...params }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error('API ' + res.status + ': ' + err.slice(0, 200));
+    }
+    return res.json();
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('Timeout (25s): ' + action);
+    throw e;
+  }
 }
 
 function ctGetUser() {
@@ -25629,23 +25647,13 @@ async function mtInit() {
     var sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     var sinceDate = sevenDaysAgo.toISOString().slice(0, 10);
-    var recentRaw;
-    if (_supabase) {
-      var recentRes = await _supabase.from('content_tasks')
-        .select('*,content_groups!inner(id,name,client_id)')
-        .in('status', ['agendado', 'publicado'])
-        .gte('due_date', sinceDate)
-        .order('due_date', { ascending: false })
-        .limit(50);
-      recentRaw = recentRes.data || [];
-    } else {
-      recentRaw = await _sbQuery('content_tasks', {
-        select: '*,content_groups!inner(id,name,client_id)',
-        filters: ['status=in.(agendado,publicado)', 'due_date=gte.' + sinceDate],
-        order: 'due_date.desc',
-        limit: 50
-      });
-    }
+    // Sempre via /api/content (service role) — anon key trava em content_tasks com RLS
+    var recentRaw = await _sbQuery('content_tasks', {
+      select: 'id,name,group_id,status,due_date,publish_config,assignee,content_groups!inner(id,name,client_id)',
+      filters: ['status=in.(agendado,publicado)', 'due_date=gte.' + sinceDate],
+      order: 'due_date.desc',
+      limit: 50
+    }) || [];
     mtRecentTasks = recentRaw.map(function(t) {
       return {
         ...t,
