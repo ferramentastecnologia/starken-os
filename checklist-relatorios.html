@@ -623,6 +623,34 @@
 [data-theme="emerald"] .sb-item.active .sb-icon,
 [data-theme="emerald"] .sb-item.active .sb-text { color: #46eecd !important; }
 
+/* Active nav button — emerald override */
+[data-theme="emerald"] .sidebar-nav button.active {
+  background: rgba(70,238,205,0.10) !important;
+  color: #46eecd !important;
+  border-left: 2px solid #46eecd !important;
+  font-weight: 700 !important;
+}
+/* Hover state emerald */
+[data-theme="emerald"] .sidebar-nav button:hover { background: rgba(70,238,205,0.05) !important; color: rgba(220,227,243,0.85) !important; }
+
+/* SVG icons in sidebar buttons */
+[data-theme="emerald"] .sidebar-nav button .icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 0; }
+[data-theme="emerald"] .sidebar-nav button .icon svg { width: 15px; height: 15px; color: rgba(186,202,196,0.65); stroke: currentColor; }
+[data-theme="emerald"] .sidebar-nav button.active .icon svg,
+[data-theme="emerald"] .sidebar-nav button:hover .icon svg { color: #46eecd; }
+
+/* STARKEN | ALPHA badge — emerald */
+[data-theme="emerald"] .sb-space-starken { color: #46eecd !important; }
+[data-theme="emerald"] .sb-space-alpha   { color: #5febd8 !important; }
+[data-theme="emerald"] .sb-space-divider { color: rgba(70,238,205,0.30) !important; }
+
+/* EM PROCESSO section — remove amarelo em emerald */
+[data-theme="emerald"] .sidebar-folder-processo .sidebar-folder-header { color: #85948f !important; background: rgba(255,255,255,0.03) !important; }
+[data-theme="emerald"] .sidebar-folder-processo .sidebar-folder-header:hover { background: rgba(255,255,255,0.06) !important; color: #bacac4 !important; }
+[data-theme="emerald"] .sidebar-folder-processo .sidebar-folder-count { background: rgba(255,255,255,0.06) !important; color: #85948f !important; }
+[data-theme="emerald"] .sidebar-processo-badge-onboarding { background: rgba(70,238,205,0.10) !important; color: #46eecd !important; }
+[data-theme="emerald"] .sidebar-processo-badge-standby    { background: rgba(133,148,143,0.12) !important; color: #85948f !important; }
+
 /* Login (caso seja exibido com emerald) */
 [data-theme="emerald"] .gp-btn { background: rgba(70,238,205,0.10); color: #46eecd; border: 1px solid rgba(70,238,205,0.25); }
 [data-theme="emerald"] .gp-btn:hover { background: rgba(70,238,205,0.18); }
@@ -3390,7 +3418,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <div id="emBento"></div>
         <div class="card" id="dashOpScoreCard" style="margin-top:16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-            <div class="card-title" style="margin:0">📊 Score Operacional do Mês</div>
+            <div class="card-title" style="margin:0" id="dashOpScoreTitle">📊 Score Operacional do Mês</div>
             <div id="dashOpProjection" style="font-size:0.75rem;color:var(--text-muted)"></div>
           </div>
           <div id="dashOpScore"></div>
@@ -5831,7 +5859,8 @@ function setTheme(theme) {
   var btnMap = { dark: 'themeDark', warm: 'themeWarm', emerald: 'themeEmerald', light: 'themeLight' };
   const el = document.getElementById(btnMap[theme] || 'themeLight');
   if (el) { el.style.borderColor = theme === 'emerald' ? '#46eecd' : '#3b82f6'; el.style.transform = 'scale(1.15)'; }
-  // Re-render dashboard to apply/remove emerald enhancements
+  // Re-render sidebar icons and dashboard on theme change
+  try { if (typeof renderSidebarMenu === 'function') renderSidebarMenu(); } catch(e) {}
   try { if (typeof renderDashboard === 'function' && document.getElementById('tab-dashboard') && document.getElementById('tab-dashboard').classList.contains('active')) renderDashboard(); } catch(e) {}
 }
 // ─── STARKEN ICON STORYBOOK ───
@@ -6601,10 +6630,39 @@ function renderSidebarFolder(folderId) {
   return '';
 }
 
+// Mapeamento emoji → ícone SVG autoral (usado no tema Emerald)
+var SIDEBAR_ICON_EM = {
+  'dashboard':    'dashboard',
+  'minhas-tasks': 'target',
+  'pub-history':  'mail',
+  'calendario':   'grid',
+  'meta-publish': 'download',
+  'sched-weekly': 'folder',
+  'weekly':       'chart',
+  'monthly':      'chart',
+  'meta-config':  'settings',
+  'meta-balance': 'dollar',
+  'meta-bi':      'chart',
+  'traffic':      'campaign',
+  'google-ads':   'trending-up',
+  'clients':      'users',
+  'history':      'folder',
+  'system-logs':  'settings',
+  'ai-squads':    'grid',
+};
+
 function renderSidebarMenu() {
   sidebarLoadOrder();
   const nav = document.getElementById('sidebarNav');
   if (!nav) return;
+  const isEm = document.documentElement.getAttribute('data-theme') === 'emerald';
+
+  function renderIcon(id, fallback) {
+    if (isEm && SIDEBAR_ICON_EM[id] && typeof iconSvg === 'function') {
+      return iconSvg(SIDEBAR_ICON_EM[id], { size: 15 });
+    }
+    return fallback;
+  }
 
   let html = '';
   let isFirstCategory = true;
@@ -6615,7 +6673,7 @@ function renderSidebarMenu() {
         ' data-sidebar-id="' + entry.id + '"' +
         ' draggable="true">' +
         '<span class="sidebar-drag-handle" title="Arrastar">&#8942;&#8942;</span>' +
-        '<span class="icon">' + entry.icon + '</span> ' + entry.label +
+        '<span class="icon">' + renderIcon(entry.id, entry.icon) + '</span> ' + entry.label +
       '</button>';
     } else if (entry.type === 'category') {
       const extraStyle = isFirstCategory ? ' style="border-top:none;padding-top:4px"' : '';
@@ -6636,7 +6694,7 @@ function renderSidebarMenu() {
               ' data-sidebar-cat="' + entry.id + '"' +
               ' draggable="true">' +
               '<span class="sidebar-drag-handle" title="Arrastar">&#8942;&#8942;</span>' +
-              '<span class="icon">' + item.icon + '</span> ' + item.label +
+              '<span class="icon">' + renderIcon(item.id, item.icon) + '</span> ' + item.label +
             '</button>';
           }
         });
@@ -8677,10 +8735,20 @@ function emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, wk) {
   var impl = document.getElementById('emImplementations');
   var actionBar = document.getElementById('dashActionBar');
   if (!hero || !bento || !impl) return;
-  if (!emIsActive()) { hero.innerHTML = ''; bento.innerHTML = ''; impl.innerHTML = ''; if (actionBar) actionBar.style.display = ''; return; }
+  if (!emIsActive()) {
+    hero.innerHTML = ''; bento.innerHTML = ''; impl.innerHTML = '';
+    if (actionBar) actionBar.style.display = '';
+    var st = document.getElementById('dashOpScoreTitle');
+    if (st) st.innerHTML = '📊 Score Operacional do Mês';
+    return;
+  }
 
   // Esconde action bar antiga — botões vão pro hero
   if (actionBar) actionBar.style.display = 'none';
+
+  // Substitui emoji do score title por ícone autoral
+  var scoreTitle = document.getElementById('dashOpScoreTitle');
+  if (scoreTitle) scoreTitle.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px;vertical-align:middle">' + iconSvg('chart',{size:18}) + '</span> Score Operacional do Mês';
 
   // ── Hero
   var now = new Date();
@@ -8980,54 +9048,80 @@ async function emRenderPerformanceChart() {
   }
 }
 
-// Milestones — próximos posts agendados
+// Milestones — próximas publicações previstas (content_tasks com publish_config, due_date futura)
 async function emRenderMilestones() {
   var el = document.getElementById('emMilestones');
   if (!el) return;
-  var items = [];
+  var tasks = [];
   try {
     if (typeof _supabase !== 'undefined' && _supabase) {
-      var nowIso = new Date().toISOString();
-      var res = await _supabase.from('publish_queue')
-        .select('id,client_id,scheduled_for,platform,caption,status')
-        .gte('scheduled_for', nowIso)
-        .in('status', ['QUEUED','PROCESSING'])
-        .order('scheduled_for', { ascending: true })
-        .limit(3);
-      items = res.data || [];
+      var todayStr = new Date().toISOString().slice(0,10);
+      var futureStr = new Date(Date.now() + 45 * 86400000).toISOString().slice(0,10);
+      var res = await _supabase.from('content_tasks')
+        .select('id,name,group_id,status,due_date,publish_config,assignee')
+        .gte('due_date', todayStr)
+        .lte('due_date', futureStr)
+        .not('publish_config', 'is', null)
+        .not('status', 'in', '("cancelado","arquivado","nao-publicado","publicado","standby")')
+        .order('due_date', { ascending: true })
+        .limit(4);
+      tasks = (res.data || []).filter(function(t) {
+        // Garante que publish_config tem algum conteúdo real
+        var pc = t.publish_config;
+        return pc && (pc.post_date || pc.entries || pc.feed || pc.story || pc.reels || pc.carrossel);
+      }).slice(0, 3);
     }
   } catch(e) { console.warn('milestones err', e); }
 
-  if (!items.length) {
-    el.innerHTML = '<div style="color:#85948f;font-size:0.8rem;padding:14px 0">Sem marcos agendados. Quando agendar posts em Publicações, eles aparecem aqui.</div>'
-      + '<button class="em-btn-primary" style="margin-top:10px;width:100%;justify-content:center" onclick="switchTab(\'pub-history\')">' + iconSvg('rocket',{size:14}) + ' Ver Publicações</button>';
+  if (!tasks.length) {
+    el.innerHTML = '<div style="color:#85948f;font-size:0.8rem;padding:14px 0;line-height:1.5">Sem publicações previstas para os próximos 45 dias. Atribua uma data e configure o publish_config nas tasks de conteúdo.</div>'
+      + '<button class="em-btn-primary" style="margin-top:10px;width:100%;justify-content:center" onclick="switchTab(\'content-approval\')">' + iconSvg('folder',{size:14}) + ' Ver Conteúdo</button>';
     return;
   }
 
+  var groupToClient = {};
+  try { groupToClient = await _ensureGroupToClient(); } catch(e) {}
+
   var today = new Date();
-  function labelFor(dtStr) {
-    var d = new Date(dtStr);
-    var diffDays = Math.floor((d - today) / 86400000);
+  function labelFor(dateStr) {
+    if (!dateStr) return 'SEM DATA';
+    var d = new Date(dateStr + 'T12:00:00');
+    var diffDays = Math.round((d - today) / 86400000);
     if (diffDays <= 0) return 'HOJE';
     if (diffDays === 1) return 'AMANHÃ';
     if (diffDays <= 6) return 'EM ' + diffDays + ' DIAS';
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase().replace('.','');
+    return d.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' }).toUpperCase().replace('.','');
+  }
+  function platformLabel(pc) {
+    if (!pc) return '';
+    var plats = [];
+    if (pc.feed)      plats.push('FEED');
+    if (pc.story)     plats.push('STORY');
+    if (pc.reels)     plats.push('REELS');
+    if (pc.carrossel) plats.push('CARROSSEL');
+    if (pc.platform)  plats.push(String(pc.platform).toUpperCase());
+    return plats.length ? plats.join(' · ') : 'POST';
+  }
+  function assigneeInitials(assignee) {
+    if (!assignee) return '';
+    return (assignee || '').split(',').map(function(n){ return n.trim().charAt(0).toUpperCase(); }).join('');
   }
 
   var html = '';
-  items.forEach(function(it, idx) {
-    var client = (data.clients || []).find(function(c){ return c.id === it.client_id; });
+  tasks.forEach(function(t, idx) {
+    var clientId = groupToClient[t.group_id];
+    var client = (data.clients || []).find(function(c){ return c.id === clientId; });
     var cname = client ? client.name : 'Cliente';
-    var plat = (it.platform || '').toUpperCase();
-    var cap = (it.caption || '').slice(0, 80);
+    var plat = platformLabel(t.publish_config);
+    var postDate = (t.publish_config && t.publish_config.post_date) || t.due_date;
     html += '<div class="em-ms-item ' + (idx === 0 ? 'active' : '') + '">'
       + '<div class="em-ms-dot"></div>'
-      + '<div class="em-ms-label">' + labelFor(it.scheduled_for) + ' · ' + emEsc(plat) + '</div>'
-      + '<div class="em-ms-title">' + emEsc(cname) + '</div>'
-      + '<div class="em-ms-desc">' + emEsc(cap || 'Post agendado na fila de publicação.') + '</div>'
+      + '<div class="em-ms-label">' + labelFor(postDate) + (plat ? ' · ' + plat : '') + '</div>'
+      + '<div class="em-ms-title">' + emEsc(t.name || cname) + '</div>'
+      + '<div class="em-ms-desc">' + emEsc(cname) + (t.assignee ? ' · ' + assigneeInitials(t.assignee) : '') + '</div>'
       + '</div>';
   });
-  html += '<button class="em-btn-primary" style="margin-top:10px;width:100%;justify-content:center" onclick="switchTab(\'pub-history\')">' + iconSvg('chart',{size:14}) + ' Ver Roadmap Completo</button>';
+  html += '<button class="em-btn-primary" style="margin-top:12px;width:100%;justify-content:center" onclick="switchTab(\'content-approval\')">' + iconSvg('chart',{size:14}) + ' Ver todas as previsões</button>';
   el.innerHTML = html;
 }
 
