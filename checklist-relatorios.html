@@ -533,9 +533,10 @@
 .em-chart-footer-item .lbl { font-size: 0.7rem; color: #85948f; text-transform: uppercase; letter-spacing: 0.5px; }
 .em-chart-footer-item .val { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin-top: 3px; }
 
-/* Milestones */
-.em-ms-item { position: relative; padding-left: 22px; padding-bottom: 16px; border-left: 1px solid rgba(255,255,255,0.10); margin-left: 5px; }
-.em-ms-item:last-child { border-left: 1px solid transparent; padding-bottom: 0; }
+/* Milestones / Próximos Posts Agendados */
+.em-ms-item { position: relative; padding-left: 22px; padding-bottom: 12px; border-left: 1px solid rgba(255,255,255,0.10); margin-left: 5px; }
+.em-ms-item:last-child { border-left: 1px solid transparent; padding-bottom: 4px; }
+#emMilestones { -webkit-overflow-scrolling: touch; }
 .em-ms-dot { position: absolute; left: -5px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #85948f; }
 .em-ms-item.active .em-ms-dot { background: #46eecd; box-shadow: 0 0 10px #46eecd; }
 .em-ms-label { font-size: 0.68rem; font-weight: 700; color: #85948f; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -3587,7 +3588,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
           <div class="card">
-            <div class="card-title" style="margin-bottom:14px">Cronogramas da Semana</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+              <div class="card-title" style="margin:0">Cronogramas</div>
+              <div id="dashCronoWeekNav" style="display:flex;align-items:center;gap:4px"></div>
+            </div>
             <div id="dashWeekCronoList"></div>
           </div>
           <div class="card">
@@ -8974,6 +8978,52 @@ function _dashGetCalendarWeekRange() {
   return { startISO: iso(mon), endISO: iso(sun) };
 }
 
+// Retorna lista plana de todos os weekKeys ordenados cronologicamente
+function _dashAllWeekKeys() {
+  var keys = [];
+  MONTHS_2026.forEach(function(m) {
+    getMonthWeeks(m.year, m.month).forEach(function(w) {
+      keys.push(m.key + '-S' + w.week);
+    });
+  });
+  return keys;
+}
+
+// Label legível de um weekKey: "Abr S2 (07/04 – 13/04)"
+function _dashWeekLabel(weekKey) {
+  var parts = weekKey.split('-S');
+  if (parts.length !== 2) return weekKey;
+  var monthKey = parts[0];
+  var weekNum  = parseInt(parts[1]);
+  var mInfo = MONTHS_2026.find(function(m) { return m.key === monthKey; });
+  if (!mInfo) return weekKey;
+  var wks = getMonthWeeks(mInfo.year, mInfo.month);
+  var w = wks.find(function(x) { return x.week === weekNum; });
+  if (!w) return weekKey;
+  var mon = mInfo.label.split(' ')[0].substring(0, 3);
+  return mon + ' S' + weekNum + ' · ' + w.periodStartLabel.slice(0,5) + ' – ' + w.periodEndLabel.slice(0,5);
+}
+
+// Navega cronograma ±1 semana
+function dashCronoNavWeek(delta) {
+  var currentKey = _dashCronoWeek || _dashGetCurrentWeekKey();
+  var all = _dashAllWeekKeys();
+  var idx = all.indexOf(currentKey);
+  if (idx === -1) return;
+  var newIdx = idx + delta;
+  if (newIdx < 0 || newIdx >= all.length) return;
+  _dashCronoWeek = all[newIdx];
+  var active = data.clients.filter(function(c) { return c.active; });
+  renderDashWeekCronoList(_dashCronoWeek, active);
+}
+
+// Volta para semana atual
+function dashCronoResetWeek() {
+  _dashCronoWeek = null;
+  var active = data.clients.filter(function(c) { return c.active; });
+  renderDashWeekCronoList(_dashGetCurrentWeekKey(), active);
+}
+
 function renderDashboard() {
   var active = data.clients.filter(function(c) { return c.active; });
   var starken = active.filter(function(c) { return c.company === 'Starken'; });
@@ -9003,7 +9053,8 @@ function renderDashboard() {
 
   renderContentProgress('weeklyProgress', wk, active, 'weekly');
   renderContentProgress('monthlyProgress', mk, active, 'monthly');
-  renderDashWeekCronoList(wk, active);
+  var cronoWk = _dashCronoWeek || wk;
+  renderDashWeekCronoList(cronoWk, active);
   renderDashWeekPosts(wk);
   renderOperationalScore(mk, active);
   renderRecentSends();
@@ -9399,9 +9450,9 @@ async function emRenderBento() {
     + '</div>'
     + '<div class="em-bento-card em-bento-milestones">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
-    + '<h4 class="em-chart-title">Próximos Marcos</h4>' + '<span style="color:#46eecd">' + iconSvg('trophy',{size:18}) + '</span>'
+    + '<h4 class="em-chart-title">Próximos Posts Agendados</h4>' + '<span style="color:#46eecd">' + iconSvg('trophy',{size:18}) + '</span>'
     + '</div>'
-    + '<div id="emMilestones"><div style="color:#85948f;font-size:0.8rem;padding:12px 0">Carregando...</div></div>'
+    + '<div id="emMilestones" style="overflow-y:auto;max-height:280px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(70,238,205,0.3) transparent"><div style="color:#85948f;font-size:0.8rem;padding:12px 0">Carregando...</div></div>'
     + '</div>'
     + '</div>';
 
@@ -9527,17 +9578,17 @@ async function emRenderMilestones() {
         'status=not.in.(cancelado,arquivado,nao-publicado,publicado,standby)'
       ],
       order: 'due_date.asc',
-      limit: 4
+      limit: 20
     }) || [];
     tasks = rows.filter(function(t) {
       // Garante que publish_config tem algum conteúdo real
       var pc = t.publish_config;
       return pc && (pc.post_date || pc.entries || pc.feed || pc.story || pc.reels || pc.carrossel);
-    }).slice(0, 3);
+    }).slice(0, 15);
   } catch(e) { console.warn('milestones err', e); }
 
   if (!tasks.length) {
-    el.innerHTML = '<div style="color:#85948f;font-size:0.8rem;padding:14px 0;line-height:1.5">Sem publicações previstas para os próximos 45 dias. Atribua uma data e configure o publish_config nas tasks de conteúdo.</div>'
+    el.innerHTML = '<div style="color:#85948f;font-size:0.8rem;padding:14px 0;line-height:1.5">Sem posts agendados nos próximos 45 dias. Atribua uma data e configure o publish_config nas tasks de conteúdo.</div>'
       + '<button class="em-btn-primary" style="margin-top:10px;width:100%;justify-content:center" onclick="switchTab(\'content-approval\')">' + iconSvg('folder',{size:14}) + ' Ver Conteúdo</button>';
     return;
   }
@@ -9680,6 +9731,7 @@ function _dashGetWeekKeyFromDate(d) {
 
 // ═══ SCORE OPERACIONAL ═══
 var _opScoreCache = {}; // { monthKey: { score, breakdown, weekly, tasks } }
+var _dashCronoWeek = null; // null = auto (semana atual), string = semana navegada pelo user
 
 async function renderOperationalScore(monthKey, active) {
   var el = document.getElementById('dashOpScore');
@@ -10252,6 +10304,23 @@ function _renderContentProgressUI(el, clientStats, active) {
 function renderDashWeekCronoList(weekKey, active) {
   var el = document.getElementById('dashWeekCronoList');
   if (!el) return;
+
+  // ── Renderiza nav de semana
+  var navEl = document.getElementById('dashCronoWeekNav');
+  if (navEl) {
+    var all = _dashAllWeekKeys();
+    var idx = all.indexOf(weekKey);
+    var currentAutoKey = _dashGetCurrentWeekKey();
+    var isCurrentWeek = (weekKey === currentAutoKey);
+    var btnStyle = 'padding:2px 7px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:0.75rem;cursor:pointer;font-family:inherit;font-weight:700;line-height:1.4';
+    var navH = '<button onclick="dashCronoNavWeek(-1)" title="Semana anterior" style="' + btnStyle + '"' + (idx <= 0 ? ' disabled' : '') + '>‹</button>';
+    navH += '<span style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);padding:0 4px;white-space:nowrap">' + _dashWeekLabel(weekKey) + '</span>';
+    navH += '<button onclick="dashCronoNavWeek(1)" title="Próxima semana" style="' + btnStyle + '"' + (idx >= all.length - 1 ? ' disabled' : '') + '>›</button>';
+    if (!isCurrentWeek) {
+      navH += '<button onclick="dashCronoResetWeek()" title="Ir para semana atual" style="' + btnStyle + ';background:#dbeafe;color:#1e40af;border-color:#93c5fd;font-size:0.65rem">Atual</button>';
+    }
+    navEl.innerHTML = navH;
+  }
 
   var pendentes = [], gerados = [], enviados = [];
   active.forEach(function(c) {
