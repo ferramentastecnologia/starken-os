@@ -18014,6 +18014,45 @@ async function ctLoadGroups() {
     g.tasks = Array.isArray(taskData) ? taskData : (taskData.tasks || []);
   }));
 
+  // For stories tab: fetch content_attachments (category=recurring_story) and inject thumbnails
+  // This is the source of truth since publish_config.thumbnail_url can diverge
+  var _isStoriesTab = (document.getElementById('ctTabStories') || {}).classList && document.getElementById('ctTabStories').classList.contains('active');
+  var _rsGroups = groups.filter(function(g){ return g.name && g.name.toUpperCase().includes('STORIES RECORRENTES'); });
+  if (_rsGroups.length > 0) {
+    try {
+      // Collect all story subtask IDs
+      var _rsSubIds = [];
+      _rsGroups.forEach(function(g) {
+        (g.tasks || []).forEach(function(dayTask) {
+          (dayTask.subtasks || []).forEach(function(s) { if (s.id) _rsSubIds.push(s.id); });
+        });
+      });
+      if (_rsSubIds.length > 0) {
+        var _rsAtts = await _sbQuery('content_attachments', {
+          select: 'task_id,file_url,file_type,category,created_at',
+          filters: ['task_id=in.(' + _rsSubIds.join(',') + ')', 'category=eq.recurring_story'],
+          order: 'created_at.asc'
+        }) || [];
+        // Map: task_id → [file_url, ...] (array for multiple images)
+        var _rsAttMap = {};
+        _rsAtts.forEach(function(a) {
+          if (!_rsAttMap[a.task_id]) _rsAttMap[a.task_id] = [];
+          _rsAttMap[a.task_id].push({ url: a.file_url, type: a.file_type });
+        });
+        // Inject into subtasks
+        _rsGroups.forEach(function(g) {
+          (g.tasks || []).forEach(function(dayTask) {
+            (dayTask.subtasks || []).forEach(function(s) {
+              var atts = _rsAttMap[s.id] || [];
+              if (atts.length > 0) s._rsThumb = atts[0].url;  // first attachment = thumbnail
+              if (atts.length > 1) s._rsExtra = atts.slice(1).map(function(a){ return a.url; }); // extras
+            });
+          });
+        });
+      }
+    } catch(e) { console.warn('rs attachments fetch err', e); }
+  }
+
   ctGroups = groups;
   ctLoadGroupsState(); // restore collapse state from localStorage (sync)
   ctRenderList();
@@ -18587,11 +18626,12 @@ function ctRenderStoriesView(groups) {
       var dayLabel = dayTask.name || '';
       var dayShort = RS_DAYS_SHORT[RS_DAYS.findIndex(function(d){ return dayLabel.toUpperCase().includes(d.toUpperCase().substring(0,3)); })] || dayLabel.substring(0,3).toUpperCase();
 
-      // Story subtasks for this day (API returns nested .subtasks, not flat)
-      // Only show stories that have a thumbnail (uploaded by user via +)
+      // Story subtasks for this day — show any that have a thumbnail (from attachment OR publish_config)
       var allSubtasks = (dayTask.subtasks || []);
       allSubtasks.sort(function(a,b){ return (a.position||0)-(b.position||0); });
-      var stories = allSubtasks.filter(function(s){ return s.publish_config && s.publish_config.thumbnail_url; });
+      var stories = allSubtasks.filter(function(s) {
+        return s._rsThumb || (s.publish_config && s.publish_config.thumbnail_url);
+      });
 
       html += '<div class="rs-day-col">';
       html += '<div class="rs-day-header"><span class="rs-day-name">' + dayShort + '</span><span class="rs-day-count">' + stories.length + '</span></div>';
@@ -18599,14 +18639,19 @@ function ctRenderStoriesView(groups) {
 
       stories.forEach(function(story) {
         var pc = story.publish_config || {};
-        var thumbUrl = pc.thumbnail_url || '';
+        // Priority: attachment file (confirmed in storage) → publish_config.thumbnail_url
+        var thumbUrl = story._rsThumb || pc.thumbnail_url || '';
         var schedTime = pc.scheduled_time || '';
         var platforms = pc.platforms || ['ig','fb'];
         var igBadge = platforms.includes('ig') ? '<span class="rs-plat ig">IG</span>' : '';
         var fbBadge = platforms.includes('fb') ? '<span class="rs-plat fb">FB</span>' : '';
 
         html += '<div class="rs-story-card" data-task-id="' + story.id + '">';
-        html += '<img class="rs-thumb" src="' + thumbUrl + '" loading="lazy" onclick="ctRsPreview(\'' + thumbUrl.replace(/'/g,"\\'") + '\')" title="Ver em tamanho real">';
+        if (thumbUrl) {
+          html += '<img class="rs-thumb" src="' + thumbUrl + '" loading="lazy" onclick="ctRsPreview(\'' + thumbUrl.replace(/'/g,"\\'") + '\')" title="Ver em tamanho real" onerror="this.style.opacity=0.2;this.title=\'Imagem não encontrada\'">';
+        } else {
+          html += '<div class="rs-thumb-empty"><span class="mso" style="font-size:1.5rem">image</span></div>';
+        }
         html += '<div class="rs-story-footer">'
           + '<input type="time" class="rs-time-input" value="' + schedTime + '" onchange="ctRsUpdateTime(\'' + story.id + '\',this.value)" title="Horário de publicação">'
           + '<div class="rs-plats">' + igBadge + fbBadge + '</div>'
