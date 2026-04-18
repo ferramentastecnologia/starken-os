@@ -2388,6 +2388,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 [data-theme="emerald"] .ct-publish-section.scheduling { background:rgba(251,191,36,0.06);border-color:rgba(251,191,36,0.20); }
 [data-theme="emerald"] .ct-pub-badge.scheduled { background:rgba(251,191,36,0.10);color:#fbbf24;border-color:rgba(251,191,36,0.25); }
 [data-theme="emerald"] .ct-pub-pill.scheduled  { background:rgba(251,191,36,0.08);color:#fbbf24;border-color:rgba(251,191,36,0.20); }
+[data-theme="emerald"] .ct-pub-pill.scheduled-past { background:rgba(239,68,68,0.10);color:#f87171;border-color:rgba(239,68,68,0.25); }
 [data-theme="emerald"] .ct-ph-entry.scheduled  { background:rgba(251,191,36,0.04); }
 [data-theme="emerald"] .ct-ngm-tpl-btn:hover   { border-color:rgba(70,238,205,0.30);background:rgba(70,238,205,0.06); }
 
@@ -2432,6 +2433,7 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-pub-col { display:flex;flex-direction:column;gap:3px;align-items:flex-start;justify-content:center; }
 .ct-pub-pill { display:inline-flex;align-items:center;gap:3px;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;line-height:1.4;white-space:nowrap;letter-spacing:0.01em; }
 .ct-pub-pill.scheduled { background:#fffbeb;color:#92400e;border:1px solid #fde68a; }
+.ct-pub-pill.scheduled-past { background:#fff1f2;color:#b91c1c;border:1px solid #fecaca; }
 .ct-pub-pill.published { background:#ecfdf5;color:#047857;border:1px solid #a7f3d0; }
 .ct-pub-pill.failed { background:#fef2f2;color:#991b1b;border:1px solid #fecaca; }
 .ct-pub-pill.queued { background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe; }
@@ -2512,8 +2514,11 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-row:hover .ct-drag-handle { opacity:1; }
 .ct-row .ct-drag-handle { opacity:0.3;transition:opacity 0.15s; }
 .ct-move-btn { opacity:0 !important; transition:opacity 0.15s; }
-.ct-row:hover .ct-move-btn { opacity:0.5 !important; }
+.ct-row:hover .ct-move-btn { opacity:0.6 !important; }
 .ct-move-btn:hover { opacity:1 !important; color:var(--brand,#3b82f6) !important; }
+.ct-grp-btn { background:none;border:none;cursor:pointer;font-size:0.9rem;color:var(--text-secondary);padding:4px 7px;border-radius:6px;transition:all 0.15s;opacity:0.55;font-family:inherit;line-height:1; }
+.ct-grp-btn:hover { opacity:1;background:rgba(99,102,241,0.12);color:var(--text-primary); }
+.ct-grp-btn.del:hover { background:rgba(239,68,68,0.12);color:#f87171; }
 .ct-row.drag-over-top { border-top:2px solid var(--accent,#3b82f6) !important;margin-top:-2px; }
 .ct-row.drag-over-center { background:rgba(59,130,246,0.08) !important;outline:2px dashed var(--accent,#3b82f6);outline-offset:-2px;border-radius:6px; }
 .ct-row.dragging { opacity:0.4;background:var(--starken-bg); }
@@ -18584,9 +18589,11 @@ function ctRenderPublishColumn(publishConfig) {
         label = 'Publicado';
       }
     } else if (st === 'scheduled' && e.scheduled_for) {
-      icon = '<span class="mso">calendar_today</span>';
       var d = new Date(e.scheduled_for);
+      var isPast = d < new Date();
+      icon = isPast ? '<span class="mso">schedule</span>' : '<span class="mso">calendar_today</span>';
       label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      if (isPast) st = 'scheduled-past';
     } else if (st === 'scheduled') {
       icon = '<span class="mso">calendar_today</span>';
       label = 'Agendado';
@@ -18940,7 +18947,7 @@ function ctRenderList() {
     var safeGroupName = group.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     // Cálculo de progresso do grupo (excluindo subtasks, apenas tasks raiz)
     var rootTasks = tasks.filter(function(t){ return !t.parent_id; });
-    var doneStatuses = ['publicado','publicado-st','aprovado','cancelado'];
+    var doneStatuses = ['publicado','publicado-st','aprovado','cancelado','agendado','nao-utilizado'];
     var doneTasks = rootTasks.filter(function(t){ return doneStatuses.indexOf(t.status) >= 0; }).length;
     var totalRoot = rootTasks.length;
     var pct = totalRoot > 0 ? Math.round((doneTasks / totalRoot) * 100) : 0;
@@ -18957,11 +18964,11 @@ function ctRenderList() {
       + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span><span class="mso">folder</span> ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span>' + progressHtml + '</span></div>'
       + '<div></div><div></div><div></div><div></div>'
       + '<div style="text-align:center;display:flex;gap:2px;justify-content:center;align-items:center">'
-      + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'up\')" title="Mover grupo para cima" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▲</button>'
-      + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'down\')" title="Mover grupo para baixo" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▼</button>'
-      + '<button onclick="event.stopPropagation();ctRenameGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Renomear grupo" style="background:none;border:none;cursor:pointer;font-size:0.95rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fef9c3\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'"><span class="mso">edit</span></button>'
-      + '<button onclick="event.stopPropagation();ctShowDuplicateGroupModal(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Duplicar grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#dbeafe\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'"><span class="mso">assignment</span></button>'
-      + '<button onclick="event.stopPropagation();ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" style="background:none;border:none;cursor:pointer;font-size:1rem;opacity:0.5;padding:4px 8px;border-radius:6px" onmouseover="this.style.opacity=1;this.style.background=\'#fee2e2\'" onmouseout="this.style.opacity=0.5;this.style.background=\'none\'"><span class="mso">delete</span></button>'
+      + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'up\')" title="Mover grupo para cima" class="ct-grp-btn">▲</button>'
+      + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'down\')" title="Mover grupo para baixo" class="ct-grp-btn">▼</button>'
+      + '<button onclick="event.stopPropagation();ctRenameGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Renomear grupo" class="ct-grp-btn"><span class="mso">edit</span></button>'
+      + '<button onclick="event.stopPropagation();ctShowDuplicateGroupModal(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Duplicar grupo" class="ct-grp-btn"><span class="mso">assignment</span></button>'
+      + '<button onclick="event.stopPropagation();ctDeleteGroup(\'' + group.id + '\',\'' + safeGroupName + '\')" title="Excluir grupo" class="ct-grp-btn del"><span class="mso">delete</span></button>'
       + '</div>'
       + '</div>';
 
