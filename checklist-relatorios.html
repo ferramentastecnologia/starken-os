@@ -6644,9 +6644,12 @@ document.addEventListener('DOMContentLoaded', function() {
   let _alertsShown = (function() {
     try {
       const raw = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
-      // Limpa entradas com mais de 7 dias para não crescer indefinidamente
+      // Limpa entradas numéricas com mais de 7 dias; preserva 'dismissed' indefinidamente
       const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      Object.keys(raw).forEach(k => { if (raw[k] < cutoff) delete raw[k]; });
+      Object.keys(raw).forEach(function(k) {
+        var v = raw[k];
+        if (typeof v === 'number' && v < cutoff) delete raw[k];
+      });
       return raw;
     } catch(e) { return {}; }
   })();
@@ -6684,27 +6687,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const TWO_HOURS = 2 * 60 * 60 * 1000;
       items.forEach(h => {
-        const key = h.id || h.post_id;
-        const shownAt = _alertsShown[key]; // timestamp (ms) or true (legacy)
+        // Chave por cliente+plataforma — não por ID de post.
+        // Assim, fechar o alerta do WorldBurguer IG dispensa TODAS as falhas desse par, não só uma.
+        const clientSlug = (h.client_key || h.client_name || 'unknown').toLowerCase().replace(/\W+/g, '-');
+        const alertKey = 'fail_' + clientSlug + '_' + (h.platform || 'unknown');
+        const postId = h.id || h.post_id; // usado só para retry
+        const shownAt = _alertsShown[alertKey];
 
-        // FAILED posts: re-alerta a cada 2h enquanto ainda estiver FAILED
+        // FAILED posts
         if (h.status === 'FAILED') {
-          if (shownAt === 'dismissed') return; // usuário dispensou — não incomoda mais
+          if (shownAt === 'dismissed') return; // usuário dispensou este par — não incomoda mais
           const alreadyShownRecently = shownAt && (now - shownAt) < TWO_HOURS;
           if (alreadyShownRecently) return;
+          if (alerts.some(function(a) { return a.key === alertKey; })) return; // dedup no batch
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
-          const errMsg = h.error_message ? ' · ' + h.error_message : ''; // mensagem completa
-          // Garante que _pubHistPostData está populado para retry direto do toast
+          const errMsg = h.error_message ? ' · ' + h.error_message : '';
           if (typeof pubHistParseImageUrls === 'function' && typeof _pubHistPostData !== 'undefined') {
-            _pubHistPostData[key] = { clientKey: h.client_key||'', platform: h.platform||'fb', caption: h.caption||'', imageUrl: h.image_url||null, imageUrls: pubHistParseImageUrls(h.image_url), taskId: h.task_id||null };
+            _pubHistPostData[alertKey] = { clientKey: h.client_key||'', platform: h.platform||'fb', caption: h.caption||'', imageUrl: h.image_url||null, imageUrls: pubHistParseImageUrls(h.image_url), taskId: h.task_id||null };
           }
           alerts.push({
             type: 'error',
             icon: '<span class="mso">cancel</span>',
             title: 'Publicação falhou · ' + platLabel,
             message: (h.client_name || 'Cliente') + errMsg,
-            key: key,
-            histId: key, // para retry direto
+            key: alertKey,
+            histId: postId,
           });
           return;
         }
@@ -6727,9 +6734,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
 
-      // Mostra alertas
+      // Mostra alertas — máximo 3 simultâneos para não poluir a tela
       if (alerts.length > 0) {
-        showAlertNotifications(alerts);
+        showAlertNotifications(alerts.slice(0, 3));
       }
 
       // Atualiza badge
