@@ -18560,7 +18560,7 @@ function ctRenderPublishBadges(publishConfig) {
 }
 
 // ─── PUBLISH PROGRESS COLUMN (enhanced visual) ───
-function ctRenderPublishColumn(publishConfig) {
+function ctRenderPublishColumn(publishConfig, taskStatus) {
   if (!publishConfig || !publishConfig.entries || publishConfig.entries.length === 0) {
     return '<div class="ct-pub-col"><span class="ct-pub-pill none">— Sem agenda</span></div>';
   }
@@ -18591,9 +18591,17 @@ function ctRenderPublishColumn(publishConfig) {
     } else if (st === 'scheduled' && e.scheduled_for) {
       var d = new Date(e.scheduled_for);
       var isPast = d < new Date();
-      icon = isPast ? '<span class="mso">schedule</span>' : '<span class="mso">calendar_today</span>';
       label = d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-      if (isPast) st = 'scheduled-past';
+      // If task is published and date passed → treat as published (FB native scheduling)
+      if (isPast && (taskStatus === 'publicado' || taskStatus === 'publicado-st')) {
+        st = 'published';
+        icon = '<span class="mso mso-fill">check_circle</span>';
+      } else if (isPast) {
+        st = 'scheduled-past';
+        icon = '<span class="mso">schedule</span>';
+      } else {
+        icon = '<span class="mso">calendar_today</span>';
+      }
     } else if (st === 'scheduled') {
       icon = '<span class="mso">calendar_today</span>';
       label = 'Agendado';
@@ -19012,7 +19020,7 @@ function ctRenderList() {
           + ctRenderAssigneeCell(task.assignee, task.id)
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (task.due_date||'') + '\',\'due\')">' + dueStr + '</div>'
           + '<div style="font-size:0.82rem;color:var(--text-secondary);cursor:pointer" onclick="event.stopPropagation();ctShowDatePickerList(event,\'' + task.id + '\',\'' + (_postDate||'') + '\',\'post\')">' + postStr + '</div>'
-          + ctRenderPublishColumn(task.publish_config)
+          + ctRenderPublishColumn(task.publish_config, task.status)
           + '<div class="ct-priority" onclick="event.stopPropagation();ctShowPriorityDropdown(event,\'' + task.id + '\')" style="display:flex;align-items:center;justify-content:center">' + priorityBadgeHtml + '</div>'
           + '</div>';
 
