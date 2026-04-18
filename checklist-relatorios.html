@@ -6645,10 +6645,10 @@ document.addEventListener('DOMContentLoaded', function() {
       var items = histData.history || [];
       // Também verifica publish_queue diretamente (FAILED recentes não gravados em history)
       try {
-        var queueRes = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'query', table: 'publish_queue', select: '*', filters: ['status=eq.FAILED'], order: 'created_at.desc', limit: 20 }) });
-        if (queueRes.ok) {
-          var queueData = await queueRes.json();
-          (queueData.data || []).forEach(function(q) {
+        // _sbQuery returns raw array (queryProxy format)
+        var queueRows = await _sbQuery('publish_queue', { select: '*', filters: ['status=eq.FAILED'], order: 'created_at.desc', limit: 20 });
+        if (Array.isArray(queueRows)) {
+          queueRows.forEach(function(q) {
             if (!items.find(function(h) { return h.task_id && h.task_id === q.task_id && h.platform === q.platform && h.status === 'FAILED'; })) {
               items.push({ id: q.id, post_id: q.id, status: 'FAILED', platform: q.platform, client_key: q.client_key, client_name: q.client_name, error_message: q.error_message, scheduled_for: q.scheduled_for, task_id: q.task_id, created_at: q.created_at });
             }
@@ -11797,24 +11797,11 @@ async function renderDashPublishErrors() {
   }
 
   try {
-    // Fetch FAILED from publish_history (last 30 days) + publish_queue FAILED
     var cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
-    var res = await fetch('/api/content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'query', table: 'publish_history', select: '*', filters: ['status=eq.FAILED', 'created_at=gte.' + cutoff], order: 'created_at.desc', limit: 30 })
-    });
-    var json = await res.json();
-    var histItems = (json.data || []);
-
-    // Also check publish_queue FAILED
-    var qRes = await fetch('/api/content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'query', table: 'publish_queue', select: '*', filters: ['status=eq.FAILED', 'created_at=gte.' + cutoff], order: 'created_at.desc', limit: 20 })
-    });
-    var qJson = await qRes.json();
-    var qItems = (qJson.data || []).map(function(q) {
+    // Use _sbQuery which returns raw array (queryProxy response format)
+    var histItems = await _sbQuery('publish_history', { select: '*', filters: ['status=eq.FAILED', 'created_at=gte.' + cutoff], order: 'created_at.desc', limit: 30 }) || [];
+    var rawQueue = await _sbQuery('publish_queue', { select: '*', filters: ['status=eq.FAILED', 'created_at=gte.' + cutoff], order: 'created_at.desc', limit: 20 }) || [];
+    var qItems = rawQueue.map(function(q) {
       return { id: q.id, client_name: q.client_name, client_key: q.client_key, platform: q.platform, error_message: q.error_message, scheduled_for: q.scheduled_for, created_at: q.created_at, status: 'FAILED', from_queue: true, task_id: q.task_id };
     });
 
