@@ -2569,7 +2569,9 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .rs-plat.fb { background:#dbeafe;color:#1e40af; }
 .rs-del-btn { background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.7rem;padding:2px 4px;border-radius:4px;flex-shrink:0;transition:all 0.12s; }
 .rs-del-btn:hover { background:#fee2e2;color:#dc2626; }
-.rs-pub-btn-row { display:block;width:100%;padding:5px 6px;border:none;border-top:1px solid var(--border);background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1d4ed8;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;text-align:center; }
+.rs-pub-btn-row { display:block;width:100%;padding:5px 6px;border:none;border-top:1px solid var(--border);background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.72rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.15s;text-align:center;display:flex;align-items:center;justify-content:center;gap:4px; }
+.rs-pub-btn-row:hover { opacity:0.88; }
+.rs-pub-btn-row.scheduled { background:linear-gradient(135deg,#059669,#047857); }
 .rs-pub-btn-row:hover { background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff; }
 .rs-add-btn { width:100%;margin-top:6px;padding:8px;background:transparent;border:1.5px dashed var(--border);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:1.1rem;font-weight:700;transition:all 0.15s;font-family:inherit; }
 .rs-add-btn:hover { border-color:var(--brand,#3b82f6);color:var(--brand,#3b82f6);background:rgba(59,130,246,0.05); }
@@ -19166,10 +19168,12 @@ function ctRenderStoriesView(groups) {
         var pc = story.publish_config || {};
         // Priority: attachment file (confirmed in storage) → publish_config.thumbnail_url
         var thumbUrl = story._rsThumb || pc.thumbnail_url || '';
+        var schedDate = pc.scheduled_date || '';
         var schedTime = pc.scheduled_time || '';
         var platforms = pc.platforms || ['ig','fb'];
         var igBadge = platforms.includes('ig') ? '<span class="rs-plat ig">IG</span>' : '';
         var fbBadge = platforms.includes('fb') ? '<span class="rs-plat fb">FB</span>' : '';
+        var hasScheduled = pc.entries && pc.entries.some(function(e){ return e.status === 'scheduled' || e.status === 'published'; });
 
         html += '<div class="rs-story-card" data-task-id="' + story.id + '">';
         if (thumbUrl) {
@@ -19178,11 +19182,13 @@ function ctRenderStoriesView(groups) {
           html += '<div class="rs-thumb-empty"><span class="mso" style="font-size:1.5rem">image</span></div>';
         }
         html += '<div class="rs-story-footer">'
+          + '<input type="date" class="rs-date-input" value="' + schedDate + '" onchange="ctRsUpdateDate(\'' + story.id + '\',this.value)" title="Data de publicação" style="width:90px;padding:3px 5px;border:1px solid var(--border);border-radius:5px;font-size:9px;font-family:inherit;background:var(--card,#fff);color:var(--text);cursor:pointer">'
           + '<input type="time" class="rs-time-input" value="' + schedTime + '" onchange="ctRsUpdateTime(\'' + story.id + '\',this.value)" title="Horário de publicação">'
           + '<div class="rs-plats">' + igBadge + fbBadge + '</div>'
           + '<button class="rs-del-btn" onclick="ctRsDeleteStory(\'' + story.id + '\')" title="Remover story"><span class="mso">close</span></button>'
           + '</div>'
-          + '<button class="rs-pub-btn-row" onclick="ctRsOpenPublishModal(\'' + story.id + '\')" title="Publicar / Agendar"><span class="mso">rocket_launch</span> Publicar</button>';
+          + '<button class="rs-pub-btn-row' + (hasScheduled ? ' scheduled' : '') + '" onclick="ctRsQuickPublish(\'' + story.id + '\')" title="Agendar story (IG + FB)">'
+          + '<span class="mso">rocket_launch</span> ' + (hasScheduled ? 'Reagendar' : 'Publicar') + '</button>';
         html += '</div>';
       });
 
@@ -19298,17 +19304,96 @@ async function ctRsOpenPublishModal(storyId) {
 }
 
 async function ctRsUpdateTime(taskId, time) {
-  // Find the task and update publish_config.scheduled_time
-  var task = null;
-  for (var g of ctGroups) {
-    task = (g.tasks||[]).find(function(t){ return t.id === taskId; });
-    if (task) break;
-  }
+  var task = ctRsFindTask(taskId);
   var pc = (task && task.publish_config) ? Object.assign({}, task.publish_config) : {};
   pc.scheduled_time = time;
   await ctApi('upsert_task', { id: taskId, publish_config: pc, user: ctGetUser() });
-  // Update in-memory silently (no full reload needed)
   if (task) task.publish_config = pc;
+}
+
+async function ctRsUpdateDate(taskId, date) {
+  var task = ctRsFindTask(taskId);
+  var pc = (task && task.publish_config) ? Object.assign({}, task.publish_config) : {};
+  pc.scheduled_date = date;
+  await ctApi('upsert_task', { id: taskId, publish_config: pc, user: ctGetUser() });
+  if (task) task.publish_config = pc;
+}
+
+function ctRsFindTask(taskId) {
+  for (var g of ctGroups) {
+    for (var t of (g.tasks || [])) {
+      if (t.id === taskId) return t;
+      for (var s of (t.subtasks || [])) { if (s.id === taskId) return s; }
+    }
+  }
+  return null;
+}
+
+async function ctRsQuickPublish(storyId) {
+  var task = ctRsFindTask(storyId);
+  if (!task) return showToast('Tarefa não encontrada', 'error');
+
+  var pc = task.publish_config || {};
+  var dateStr = pc.scheduled_date || '';
+  var timeStr = pc.scheduled_time || '09:00';
+  var thumbUrl = task._rsThumb || pc.thumbnail_url || '';
+
+  if (!dateStr) return showToast('Selecione a data antes de publicar', 'error');
+  if (!thumbUrl) return showToast('Nenhuma imagem para publicar', 'error');
+
+  var scheduledFor = new Date(dateStr + 'T' + timeStr + ':00').toISOString();
+  var platforms = pc.platforms || ['ig', 'fb'];
+  var clientName = (_metaClients && _metaClients[ctCurrentClient]) ? (_metaClients[ctCurrentClient].pageName || _metaClients[ctCurrentClient].name || ctCurrentClient) : ctCurrentClient;
+
+  var btn = document.querySelector('.rs-story-card[data-task-id="' + storyId + '"] .rs-pub-btn-row');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Agendando...'; }
+
+  var errors = [];
+  for (var i = 0; i < platforms.length; i++) {
+    try {
+      var qBody = {
+        action: 'queue',
+        client_key: ctCurrentClient,
+        client_name: clientName,
+        platform: platforms[i],
+        caption: '',
+        scheduled_for: scheduledFor,
+        task_id: storyId,
+        post_type: 'story',
+        media_type: 'STORIES',
+        image_urls: [thumbUrl],
+        user_name: ctGetUser(),
+      };
+      var res = await fetch(ctApiBase() + '/api/meta/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(qBody)
+      });
+      var data = await res.json();
+      if (data.error) errors.push(platforms[i].toUpperCase() + ': ' + (data.message || 'Erro'));
+    } catch(e) {
+      errors.push(platforms[i].toUpperCase() + ': ' + e.message);
+    }
+  }
+
+  if (errors.length === 0) {
+    var newPc = Object.assign({}, pc);
+    if (!newPc.entries) newPc.entries = [];
+    // Remove old entries for same platforms to avoid duplicates
+    newPc.entries = newPc.entries.filter(function(e) {
+      return !platforms.includes(e.platform === 'facebook' ? 'fb' : 'ig');
+    });
+    platforms.forEach(function(p) {
+      newPc.entries.push({ platform: p === 'fb' ? 'facebook' : 'instagram', status: 'scheduled', scheduled_for: scheduledFor });
+    });
+    await ctApi('upsert_task', { id: storyId, publish_config: newPc, status: 'agendado', user: ctGetUser() });
+    if (task) task.publish_config = newPc;
+    showToast('Story agendado: ' + dateStr.split('-').reverse().join('/') + ' às ' + timeStr, 'success');
+    ctLoadGroups();
+  } else {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">rocket_launch</span> Publicar'; }
+    showToast('Erro: ' + errors.join(' | '), 'error');
+  }
 }
 
 function ctRsPreview(url) {
