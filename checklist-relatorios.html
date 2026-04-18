@@ -6478,6 +6478,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let _queueInterval = null;
   let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
   let _queueProcessing = false; // lock to prevent concurrent cron calls
+  let _queueLastErrorAt = 0;    // timestamp of last system-level error shown (throttle alerts)
 
   async function processQueueAndCheckAlerts() {
     if (_queueProcessing) return; // already running, skip
@@ -6485,6 +6486,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       // 1. Processa fila (backup for pg_cron — atomic claim on backend prevents duplicate publishing)
       const cronRes = await fetch(metaApiBase() + '/api/meta/publish?cron=process');
+      if (!cronRes.ok) throw new Error('Cron endpoint retornou HTTP ' + cronRes.status);
       const cronData = await cronRes.json();
 
       // 2. Verifica alertas — busca FAILED e QUEUED atrasados
@@ -6541,7 +6543,24 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof metaPublishLoadHistory === 'function') metaPublishLoadHistory();
         ctRefreshAgendadoStatuses();
       }
-    } catch (e) { /* silently fail */ } finally {
+    } catch (e) {
+      console.error('[processQueueAndCheckAlerts] Falha no processador de fila:', e);
+      // Mostra alerta sistêmico — throttle: máximo 1 alerta a cada 10 min
+      const now = Date.now();
+      if (now - _queueLastErrorAt > 10 * 60 * 1000) {
+        _queueLastErrorAt = now;
+        const sysToast = document.createElement('div');
+        sysToast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.18);max-width:380px;font-family:inherit;animation:alertSlideIn 0.3s ease;cursor:pointer';
+        sysToast.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:4px"><span class="mso">cloud_off</span> Falha no sistema de publicação</div><div style="font-size:0.78rem;color:#6b7280">O processador de agendamentos encontrou um erro e pode estar offline. Verifique sua conexão ou contate o suporte.</div>';
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;line-height:1';
+        closeBtn.onclick = function(ev) { ev.stopPropagation(); sysToast.remove(); };
+        sysToast.appendChild(closeBtn);
+        document.body.appendChild(sysToast);
+        // Não remove automaticamente — erro sistêmico requer atenção
+      }
+    } finally {
       _queueProcessing = false; // release lock
     }
   }
