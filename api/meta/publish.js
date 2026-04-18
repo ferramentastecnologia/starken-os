@@ -233,9 +233,10 @@ async function processPublishQueue() {
       });
 
       // Auto-update task status to 'publicado' if task_id is present
+      let taskStatusUpdateFailed = false;
       if (item.task_id) {
         try {
-          await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}`, {
+          const patchRes = await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}`, {
             method: 'PATCH',
             headers: supabaseHeaders(),
             body: JSON.stringify({
@@ -243,6 +244,8 @@ async function processPublishQueue() {
               updated_at: publishedAt,
             }),
           });
+          if (!patchRes.ok) throw new Error('HTTP ' + patchRes.status);
+
           // Update publish_config entries in the task
           const taskRes = await fetch(`${url}/rest/v1/content_tasks?id=eq.${item.task_id}&select=publish_config`, {
             headers: { 'apikey': SUPABASE_KEY(), 'Authorization': `Bearer ${SUPABASE_KEY()}` },
@@ -279,11 +282,19 @@ async function processPublishQueue() {
             }
           }
         } catch (e) {
-          console.warn('[publish_queue] Failed to update task status:', e.message);
+          console.error('[publish_queue] Failed to update task status for task', item.task_id, ':', e.message);
+          taskStatusUpdateFailed = true;
         }
       }
 
-      results.push({ id: item.id, status: 'PUBLISHED', post_id: publishedId });
+      results.push({
+        id: item.id,
+        status: 'PUBLISHED',
+        post_id: publishedId,
+        task_id: item.task_id || null,
+        task_status_update_failed: taskStatusUpdateFailed,
+        client_name: item.client_name || null,
+      });
     } catch (err) {
       // Build detailed error message
       let errorDetail = err.message || 'Erro desconhecido';
@@ -373,6 +384,12 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Validate required environment variables
+  if (!SUPABASE_URL() || !SUPABASE_KEY()) {
+    console.error('[publish] FATAL: SUPABASE_URL or SUPABASE_SERVICE_KEY env var is missing');
+    return res.status(500).json({ error: 'Configuração do servidor incompleta. Variáveis de ambiente SUPABASE_URL e/ou SUPABASE_SERVICE_KEY não definidas.' });
+  }
 
   // ─── GET: Histórico ou Cron de publicação ───
   if (req.method === 'GET') {

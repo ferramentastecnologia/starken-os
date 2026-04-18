@@ -430,23 +430,31 @@ async function deleteTask({ id, user }) {
   if (!id) return fail('id is required');
   if (!user) return fail('user is required');
 
-  // Delete subtasks recursively first (up to 5 levels)
+  // Delete subtasks recursively first (up to 5 levels), cleaning related data for each
   async function deleteChildren(parentId) {
     const children = await supaSelect('content_tasks', `select=id&parent_id=eq.${parentId}`);
     for (const child of children) {
       await deleteChildren(child.id);
+      await deleteRelatedData(child.id);
       await supaDelete('content_tasks', child.id);
     }
   }
+
+  async function deleteRelatedData(taskId) {
+    const results = await Promise.allSettled([
+      fetch(`${SUPABASE_URL}/rest/v1/content_comments?task_id=eq.${taskId}`, { method: 'DELETE', headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/content_attachments?task_id=eq.${taskId}`, { method: 'DELETE', headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/content_activity?task_id=eq.${taskId}`, { method: 'DELETE', headers: HEADERS }),
+    ]);
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        console.error(`[deleteTask] Failed to delete related data[${i}] for task ${taskId}:`, r.reason);
+      }
+    });
+  }
+
   await deleteChildren(id);
-
-  // Delete related data
-  await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/content_comments?task_id=eq.${id}`, { method: 'DELETE', headers: HEADERS }),
-    fetch(`${SUPABASE_URL}/rest/v1/content_attachments?task_id=eq.${id}`, { method: 'DELETE', headers: HEADERS }),
-    fetch(`${SUPABASE_URL}/rest/v1/content_activity?task_id=eq.${id}`, { method: 'DELETE', headers: HEADERS }),
-  ]).catch(() => {});
-
+  await deleteRelatedData(id);
   await supaDelete('content_tasks', id);
   return ok({ deleted: true });
 }
@@ -460,10 +468,16 @@ async function changeStatus({ id, status, user }) {
 
   const oldStatus = existing[0].status;
 
-  const data = await supaUpdate('content_tasks', id, {
-    status,
-    updated_at: new Date().toISOString(),
-  });
+  const now = new Date().toISOString();
+  const doneStatuses = ['publicado', 'publicado-st', 'aprovado', 'cancelado'];
+  const patch = { status, updated_at: now };
+  if (doneStatuses.includes(status) && !doneStatuses.includes(oldStatus)) {
+    patch.completed_at = now; // marca conclusão na primeira transição para estado final
+  } else if (!doneStatuses.includes(status)) {
+    patch.completed_at = null; // limpa se status voltar para aberto
+  }
+
+  const data = await supaUpdate('content_tasks', id, patch);
 
   await logActivity(id, user, 'status_changed', {
     old_status: oldStatus,
@@ -860,6 +874,12 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
+
+  // Validate required environment variables at boot
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('[content] FATAL: SUPABASE_URL or SUPABASE_SERVICE_KEY env var is missing');
+    return res.status(500).json({ error: 'Configuração do servidor incompleta. Variáveis de ambiente SUPABASE_URL e/ou SUPABASE_SERVICE_KEY não definidas.' });
+  }
 
   let action, params;
 

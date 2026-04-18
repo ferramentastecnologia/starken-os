@@ -2291,6 +2291,111 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-datepicker-grid .dp-day.other-month { color:#d1d5db; }
 .ct-datepicker-time { display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border); }
 .ct-datepicker-time input { width:50px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;text-align:center; }
+[data-theme="emerald"] .ct-datepicker { background:#151c27;border:1px solid rgba(70,238,205,0.10);box-shadow:0 10px 40px rgba(0,0,0,0.6);color:var(--text-primary); }
+[data-theme="emerald"] .ct-datepicker-shortcuts { background:#0c141f; }
+[data-theme="emerald"] .ct-datepicker-cal-header { color:var(--text-primary); }
+[data-theme="emerald"] .ct-datepicker-cal-header button { color:var(--text-secondary); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day-head { color:var(--text-tertiary,#64748b); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day { color:var(--text-primary); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day:hover { background:rgba(70,238,205,0.08); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day.today { color:#46eecd; }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day.selected { background:rgba(70,238,205,0.18);color:#46eecd; }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day.other-month { color:var(--text-disabled,#374151); }
+[data-theme="emerald"] .ct-datepicker-time input { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+
+/* ═══════════════════════════════════════════════════
+   EMERALD — Overrides abrangentes para componentes legados
+   ═══════════════════════════════════════════════════ */
+
+/* Fundacionais */
+[data-theme="emerald"] .card { background:var(--bg-surface,#151c27); }
+[data-theme="emerald"] .stat-card { background:var(--bg-surface,#151c27); }
+[data-theme="emerald"] .modal { background:var(--bg-surface,#151c27); }
+
+/* Inputs & Formulários */
+[data-theme="emerald"] .form-input { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+[data-theme="emerald"] .form-input:focus { background:var(--bg-elevated,#19202c);border-color:rgba(70,238,205,0.35); }
+[data-theme="emerald"] .gp-field { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+[data-theme="emerald"] .status-select option { background:var(--bg-surface,#151c27);color:var(--text-primary); }
+[data-theme="emerald"] .period-bar select,[data-theme="emerald"] .period-bar input { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+[data-theme="emerald"] .ca-filters select { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+[data-theme="emerald"] .ca-input { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+[data-theme="emerald"] .ca-input:focus { background:var(--bg-elevated,#19202c);border-color:rgba(70,238,205,0.35); }
+[data-theme="emerald"] .gp-filter-select { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
+
+/* Botões */
+[data-theme="emerald"] .btn-outline { background:var(--bg-elevated,#19202c);color:var(--text-secondary);border-color:var(--border); }
+[data-theme="emerald"] .btn-outline:hover { background:rgba(70,238,205,0.06);border-color:rgba(70,238,205,0.25); }
+
+/* Barras / Cabeçalhos de lista */
+[data-theme="emerald"] .gp-topbar { background:var(--bg-surface,#151c27);border-color:var(--border); }
+[data-theme="emerald"] .list-header { background:var(--bg-surface,#151c27);border-color:var(--border); }
+[data-theme="emerald"] .status-group-header { background:var(--bg-surface,#151c27);border-color:var(--border); }
+
+/* Kanban */
+[data-theme="emerald"] .kanban-card { background:var(--bg-elevated,#19202c);border-color:var(--border); }
+[data-theme="emerald"] .kanban-col-count { background:var(--bg-elevated,#19202c);color:var(--text-secondary); }
+
+/* Calendário GP */
+[data-theme="emerald"] .cal-day { background:var(--bg-elevated,#19202c);border-color:var(--border); }
+
+/* Modal GP */
+[data-theme="emerald"] .gp-modal { background:var(--bg-surface,#151c27); }
+
+/* CA — Post cards & detail panel */
+[data-theme="emerald"] .ca-post-card { background:var(--bg-elevated,#19202c);border-color:var(--border); }
+[data-theme="emerald"] .ca-detail-panel { background:var(--bg-surface,#151c27);border-color:var(--border); }
+[data-theme="emerald"] .ca-post-card-actions .ca-btn-del:hover { background:rgba(248,113,113,0.10); }
+[data-theme="emerald"] .ca-image-area:hover { border-color:rgba(70,238,205,0.35);background:rgba(70,238,205,0.04); }
+
+/* CA — Type badges */
+[data-theme="emerald"] .ca-type-feed    { background:rgba(147,197,253,0.10);color:#93c5fd; }
+[data-theme="emerald"] .ca-type-stories { background:rgba(251,191,36,0.10);color:#fbbf24; }
+[data-theme="emerald"] .ca-type-reels   { background:rgba(192,132,252,0.10);color:#c084fc; }
+
+/* CA — Status badges */
+[data-theme="emerald"] .ca-status-pronto  { background:rgba(70,238,205,0.10);color:#46eecd; }
+[data-theme="emerald"] .ca-status-enviado { background:rgba(251,191,36,0.10);color:#fbbf24; }
+[data-theme="emerald"] .ca-status-revisao { background:rgba(248,113,113,0.10);color:#f87171; }
+
+/* Priority badges (GP module) */
+[data-theme="emerald"] .priority-normal { background:rgba(70,238,205,0.08);color:#46eecd; }
+[data-theme="emerald"] .priority-alta   { background:rgba(251,191,36,0.10);color:#fbbf24; }
+
+/* Status badges (GP module) */
+[data-theme="emerald"] .status-pending { background:rgba(251,191,36,0.10);color:#fbbf24; }
+
+/* Meta client cards */
+[data-theme="emerald"] .meta-client-section-header.alpha { background:rgba(251,191,36,0.08);color:#fbbf24;border-color:rgba(251,191,36,0.20); }
+[data-theme="emerald"] .meta-client-card.alpha .meta-client-header { background:rgba(251,191,36,0.06);color:#fbbf24;border-color:rgba(251,191,36,0.15); }
+[data-theme="emerald"] .meta-client-card.alpha .mc-grupo-badge { background:rgba(251,191,36,0.10);color:#fbbf24; }
+[data-theme="emerald"] .meta-client-card.starken .meta-client-header { background:rgba(70,238,205,0.06);color:#46eecd;border-color:rgba(70,238,205,0.15); }
+[data-theme="emerald"] .meta-client-card.starken .mc-grupo-badge { background:rgba(70,238,205,0.10);color:#46eecd; }
+[data-theme="emerald"] .login-card { background:var(--bg-surface,#151c27); }
+
+/* CT — Publicação sections */
+[data-theme="emerald"] .ct-publish-section { background:var(--bg-elevated,#19202c); }
+[data-theme="emerald"] .ct-publish-section.scheduling { background:rgba(251,191,36,0.06);border-color:rgba(251,191,36,0.20); }
+[data-theme="emerald"] .ct-pub-badge.scheduled { background:rgba(251,191,36,0.10);color:#fbbf24;border-color:rgba(251,191,36,0.25); }
+[data-theme="emerald"] .ct-pub-pill.scheduled  { background:rgba(251,191,36,0.08);color:#fbbf24;border-color:rgba(251,191,36,0.20); }
+[data-theme="emerald"] .ct-ph-entry.scheduled  { background:rgba(251,191,36,0.04); }
+[data-theme="emerald"] .ct-ngm-tpl-btn:hover   { border-color:rgba(70,238,205,0.30);background:rgba(70,238,205,0.06); }
+
+/* Post calendar */
+[data-theme="emerald"] .pc-post.queued      { background:rgba(251,191,36,0.10);color:#fbbf24; }
+[data-theme="emerald"] .pc-detail-badge.queued { background:rgba(251,191,36,0.10);color:#fbbf24; }
+
+/* CH (Histórico) status */
+[data-theme="emerald"] .ch-status-standby { background:rgba(251,191,36,0.10);color:#fbbf24; }
+
+/* Delete hover */
+[data-theme="emerald"] .ca-post-card-actions .ca-btn-del:hover,
+[data-theme="emerald"] .btn-danger:hover { background:rgba(248,113,113,0.10);color:#f87171; }
+
+/* ═══════════════════════════════════════════════════
+   FIM overrides Emerald
+   ═══════════════════════════════════════════════════ */
+
 .ct-publish-section { background:var(--surface-container-low,#f2f4f7);border:none;border-radius:8px;padding:16px;margin-top:16px; }
 .ct-publish-section.scheduling { background:#fffbeb;border:1px solid #fde68a; }
 .ct-publish-btn { background:var(--brand);color:#fff;padding:8px 24px;font-size:11px;text-transform:uppercase;font-weight:700;border-radius:4px;border:none;cursor:pointer;transition:filter 0.15s; }
@@ -4557,6 +4662,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
             </select>
+            <select id="ctPriorityFilter" onchange="ctRenderList()" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.82rem;font-family:inherit;color:var(--text);background:var(--card,#fff);cursor:pointer">
+              <option value="">Todas prioridades</option>
+              <option value="urgente">🔴 Urgente</option>
+              <option value="alta">🟠 Alta</option>
+              <option value="normal">🔵 Normal</option>
+              <option value="baixa">⚪ Baixa</option>
+            </select>
             <select id="ctAssigneeFilter" onchange="ctRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
@@ -4691,7 +4803,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
               <div class="ct-modal-meta-item" style="position:relative">
                 <label><span class="mso">design_services</span> Entrega Design</label>
-                <button id="ctModalDueDateBtn" onclick="ctShowDatePicker(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;min-width:120px">
+                <button id="ctModalDueDateBtn" onclick="ctShowDatePicker(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;background:var(--card,#fff);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;min-width:120px">
                   <span class="mso">calendar_today</span> <span id="ctModalDueDateLabel">Sem data</span>
                 </button>
                 <input type="hidden" id="ctModalDueDate">
@@ -5954,6 +6066,15 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="ig"><span class="mso">photo_camera</span> Instagram</option>
             </select>
           </div>
+          <!-- Mini dashboard de saúde 24h -->
+          <div id="sysHealthBar" style="display:none;margin-bottom:12px;border-radius:10px;padding:10px 14px;background:var(--bg-elevated,#19202c);border:1px solid var(--border);font-size:0.78rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <span style="font-weight:700;color:var(--text-secondary);white-space:nowrap"><span class="mso" style="font-size:14px;vertical-align:-3px">monitor_heart</span> Últimas 24h:</span>
+            <span id="sysHealthPub"  style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthSch"  style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthFail" style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthQueue" style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthUpdated" style="margin-left:auto;font-size:0.7rem;color:var(--text-tertiary,#64748b)"></span>
+          </div>
           <!-- Resumo -->
           <div id="pubHistSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px"></div>
           <!-- Cards por cliente -->
@@ -6465,8 +6586,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
-  let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
+  let _alertsShown = (function() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
+      // Limpa entradas com mais de 7 dias para não crescer indefinidamente
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      Object.keys(raw).forEach(k => { if (raw[k] < cutoff) delete raw[k]; });
+      return raw;
+    } catch(e) { return {}; }
+  })();
   let _queueProcessing = false; // lock to prevent concurrent cron calls
+  let _queueLastErrorAt = 0;    // timestamp of last system-level error shown (throttle alerts)
 
   async function processQueueAndCheckAlerts() {
     if (_queueProcessing) return; // already running, skip
@@ -6474,6 +6604,7 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       // 1. Processa fila (backup for pg_cron — atomic claim on backend prevents duplicate publishing)
       const cronRes = await fetch(metaApiBase() + '/api/meta/publish?cron=process');
+      if (!cronRes.ok) throw new Error('Cron endpoint retornou HTTP ' + cronRes.status);
       const cronData = await cronRes.json();
 
       // 2. Verifica alertas — busca FAILED e QUEUED atrasados
@@ -6484,22 +6615,33 @@ document.addEventListener('DOMContentLoaded', function() {
       const alerts = [];
       const now = new Date();
 
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
       items.forEach(h => {
         const key = h.id || h.post_id;
-        if (_alertsShown[key]) return; // Já mostrou
+        const shownAt = _alertsShown[key]; // timestamp (ms) or true (legacy)
 
-        // FAILED posts
+        // FAILED posts: re-alerta a cada 2h enquanto ainda estiver FAILED
         if (h.status === 'FAILED') {
+          const alreadyShownRecently = shownAt && (now - shownAt) < TWO_HOURS;
+          if (alreadyShownRecently) return;
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
-          const errMsg = h.error_message ? ' · ' + h.error_message.substring(0, 80) : '';
+          const errMsg = h.error_message ? ' · ' + h.error_message : ''; // mensagem completa
+          // Garante que _pubHistPostData está populado para retry direto do toast
+          if (typeof pubHistParseImageUrls === 'function' && typeof _pubHistPostData !== 'undefined') {
+            _pubHistPostData[key] = { clientKey: h.client_key||'', platform: h.platform||'fb', caption: h.caption||'', imageUrl: h.image_url||null, imageUrls: pubHistParseImageUrls(h.image_url), taskId: h.task_id||null };
+          }
           alerts.push({
             type: 'error',
             icon: '<span class="mso">cancel</span>',
             title: 'Publicação falhou · ' + platLabel,
             message: (h.client_name || 'Cliente') + errMsg,
             key: key,
+            histId: key, // para retry direto
           });
+          return;
         }
+
+        if (shownAt) return; // posts não-FAILED: mostra só uma vez
 
         // QUEUED posts que passaram da hora (atrasados > 5 min)
         if (h.status === 'SCHEDULED' && h.scheduled_for) {
@@ -6529,38 +6671,158 @@ document.addEventListener('DOMContentLoaded', function() {
       if (cronData.processed > 0) {
         if (typeof metaPublishLoadHistory === 'function') metaPublishLoadHistory();
         ctRefreshAgendadoStatuses();
+
+        // Avisar se alguma task publicada não teve seu status atualizado
+        const failedUpdates = (cronData.results || []).filter(r => r.task_status_update_failed && r.task_id);
+        failedUpdates.forEach((r, idx) => {
+          const clientLabel = r.client_name ? r.client_name : 'Cliente';
+          const w = document.createElement('div');
+          w.style.cssText = 'position:fixed;top:' + (20 + idx * 85) + 'px;right:20px;z-index:99999;background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:380px;font-family:inherit;animation:alertSlideIn 0.3s ease';
+          w.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:3px"><span class="mso">sync_problem</span> Status não atualizado — ' + esc(clientLabel) + '</div><div style="font-size:0.78rem;color:#6b7280">Post publicado com sucesso, mas o status da tarefa não foi atualizado. Atualize manualmente na aba de Conteúdo.</div>';
+          const cb = document.createElement('button');
+          cb.innerHTML = '×';
+          cb.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;line-height:1';
+          cb.onclick = function(ev) { ev.stopPropagation(); w.remove(); };
+          w.appendChild(cb);
+          document.body.appendChild(w);
+          setTimeout(() => { if (w.parentElement) w.remove(); }, 20000);
+        });
       }
-    } catch (e) { /* silently fail */ } finally {
+    } catch (e) {
+      console.error('[processQueueAndCheckAlerts] Falha no processador de fila:', e);
+      // Mostra alerta sistêmico — throttle: máximo 1 alerta a cada 10 min
+      const now = Date.now();
+      if (now - _queueLastErrorAt > 10 * 60 * 1000) {
+        _queueLastErrorAt = now;
+        const sysToast = document.createElement('div');
+        sysToast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.18);max-width:380px;font-family:inherit;animation:alertSlideIn 0.3s ease;cursor:pointer';
+        sysToast.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:4px"><span class="mso">cloud_off</span> Falha no sistema de publicação</div><div style="font-size:0.78rem;color:#6b7280">O processador de agendamentos encontrou um erro e pode estar offline. Verifique sua conexão ou contate o suporte.</div>';
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;line-height:1';
+        closeBtn.onclick = function(ev) { ev.stopPropagation(); sysToast.remove(); };
+        sysToast.appendChild(closeBtn);
+        document.body.appendChild(sysToast);
+        // Não remove automaticamente — erro sistêmico requer atenção
+      }
+    } finally {
       _queueProcessing = false; // release lock
     }
   }
 
+  // ── Alerta sonoro via Web Audio API (sem arquivo externo) ──
+  function playAlertSound(type) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const beeps = type === 'error'
+        ? [{ freq: 880, start: 0, dur: 0.18 }, { freq: 660, start: 0.22, dur: 0.18 }, { freq: 440, start: 0.44, dur: 0.3 }]
+        : [{ freq: 660, start: 0, dur: 0.12 }, { freq: 880, start: 0.16, dur: 0.12 }];
+      beeps.forEach(b => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = b.freq;
+        gain.gain.setValueAtTime(0, ctx.currentTime + b.start);
+        gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + b.start + 0.02);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + b.start + b.dur);
+        osc.start(ctx.currentTime + b.start);
+        osc.stop(ctx.currentTime + b.start + b.dur + 0.05);
+      });
+    } catch(e) { /* navegador sem suporte a AudioContext */ }
+  }
+
+  // ── Pede permissão para Web Notifications ──
+  function initNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
   function showAlertNotifications(alerts) {
+    const hasErrors = alerts.some(a => a.type === 'error');
+    const hasWarnings = alerts.some(a => a.type === 'warning');
+
+    // Toca som de acordo com a severidade
+    if (hasErrors) playAlertSound('error');
+    else if (hasWarnings) playAlertSound('warning');
+
     alerts.forEach((alert, i) => {
       // Marca como mostrado
-      _alertsShown[alert.key] = true;
+      _alertsShown[alert.key] = Date.now(); // timestamp — permite re-alertar FAILEDs após 2h
+
+      const isError = alert.type === 'error';
+      const bgColor    = isError ? '#fef2f2' : '#fffbeb';
+      const borderColor= isError ? '#fecaca' : '#fde68a';
+      const accentColor= isError ? '#ef4444' : '#f59e0b';
 
       // Cria toast notification
       const toast = document.createElement('div');
-      toast.style.cssText = 'position:fixed;top:' + (20 + i * 80) + 'px;right:20px;z-index:99999;background:' + (alert.type === 'error' ? '#fef2f2' : '#fffbeb') + ';border:1px solid ' + (alert.type === 'error' ? '#fecaca' : '#fde68a') + ';border-left:4px solid ' + (alert.type === 'error' ? '#ef4444' : '#f59e0b') + ';border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:360px;font-family:inherit;animation:alertSlideIn 0.3s ease;cursor:pointer';
-      toast.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:2px">' + alert.icon + ' ' + alert.title + '</div><div style="font-size:0.78rem;color:var(--text-secondary)">' + alert.message + '</div>';
+      toast.style.cssText = 'position:fixed;top:' + (20 + i * 90) + 'px;right:20px;z-index:99999;background:' + bgColor + ';border:1px solid ' + borderColor + ';border-left:4px solid ' + accentColor + ';border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:380px;font-family:inherit;animation:alertSlideIn 0.3s ease;cursor:pointer';
+      toast.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:2px">' + alert.icon + ' ' + alert.title + '</div>'
+        + '<div style="font-size:0.78rem;color:#6b7280;margin-bottom:' + (isError ? '8' : '0') + 'px">' + alert.message + '</div>';
+
+      // Botão retry direto para erros (sem precisar navegar para outra aba)
+      if (isError && alert.histId) {
+        const retryBtn = document.createElement('button');
+        retryBtn.id = 'alertRetryBtn_' + alert.histId;
+        retryBtn.innerHTML = '<span class="mso">refresh</span> Tentar agora';
+        retryBtn.style.cssText = 'padding:4px 12px;border:none;border-radius:6px;background:#dc2626;color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;margin-right:6px';
+        retryBtn.onclick = function(e) {
+          e.stopPropagation();
+          retryBtn.disabled = true;
+          retryBtn.innerHTML = '⏳ Publicando...';
+          retryBtn.style.background = '#6b7280';
+          if (typeof pubHistRetryDirect === 'function') {
+            pubHistRetryDirect(alert.histId).then(() => toast.remove()).catch(() => {
+              retryBtn.disabled = false;
+              retryBtn.innerHTML = '<span class="mso">refresh</span> Tentar agora';
+              retryBtn.style.background = '#dc2626';
+            });
+          }
+        };
+        const detailBtn = document.createElement('button');
+        detailBtn.innerHTML = '<span class="mso">open_in_new</span> Ver detalhes';
+        detailBtn.style.cssText = 'padding:4px 12px;border:1px solid ' + accentColor + ';border-radius:6px;background:transparent;color:' + accentColor + ';font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit';
+        detailBtn.onclick = function(e) { e.stopPropagation(); if (typeof switchTab === 'function') switchTab('meta-publish'); toast.remove(); };
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
+        btnRow.appendChild(retryBtn);
+        btnRow.appendChild(detailBtn);
+        toast.appendChild(btnRow);
+      }
 
       const closeBtn = document.createElement('button');
-      closeBtn.textContent = '<span class="mso">close</span>';
-      closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1rem;cursor:pointer;color:var(--text-muted)';
+      closeBtn.innerHTML = '×';
+      closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;line-height:1';
       closeBtn.onclick = function(e) { e.stopPropagation(); toast.remove(); };
       toast.appendChild(closeBtn);
 
-      toast.onclick = function() {
-        // Navega para agendamento
-        if (typeof switchTab === 'function') switchTab('meta-publish');
-        toast.remove();
+      // Click no corpo navega para detalhes (apenas se não clicou nos botões)
+      toast.onclick = function(e) {
+        if (e.target === toast || e.target.parentElement === toast) {
+          if (typeof switchTab === 'function') switchTab('meta-publish');
+          toast.remove();
+        }
       };
 
       document.body.appendChild(toast);
 
-      // Auto-remove após 15s
-      setTimeout(() => { if (toast.parentElement) toast.remove(); }, 15000);
+      // Erros são persistentes (usuário precisa fechar); avisos somem em 20s
+      if (!isError) {
+        setTimeout(() => { if (toast.parentElement) toast.remove(); }, 20000);
+      }
+
+      // Web Notification (visível mesmo com aba minimizada)
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const n = new Notification('Starken OS — ' + alert.title, {
+          body: alert.message,
+          icon: '/favicon.ico',
+          tag: 'starken-alert-' + alert.key,
+          requireInteraction: isError,
+        });
+        n.onclick = function() { window.focus(); if (typeof switchTab === 'function') switchTab('meta-publish'); n.close(); };
+      }
     });
 
     // Salva alertas mostrados
@@ -6595,6 +6857,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const checkLogin = setInterval(() => {
     if (typeof gpState !== 'undefined' && gpState.user) {
       clearInterval(checkLogin);
+      initNotificationPermission();
       startQueueProcessor();
     }
   }, 2000);
@@ -7496,6 +7759,50 @@ function sysLogsLoadUsers() {
   sel.innerHTML = html;
 }
 
+// ── Mini dashboard de saúde — últimas 24h ──
+async function sysHealthBarRefresh() {
+  var bar = document.getElementById('sysHealthBar');
+  if (!bar) return;
+  bar.style.display = 'flex';
+
+  try {
+    var res = await fetch(metaApiBase() + '/api/meta/publish?limit=200');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var items = data.history || [];
+
+    var cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+    var last24 = items.filter(function(h) {
+      var ts = h.published_at || h.scheduled_for || h.created_at;
+      return ts && new Date(ts).getTime() >= cutoff24h;
+    });
+
+    var pub  = last24.filter(function(h){ return h.status === 'PUBLISHED'; }).length;
+    var sch  = last24.filter(function(h){ return h.status === 'SCHEDULED'; }).length;
+    var fail = last24.filter(function(h){ return h.status === 'FAILED'; }).length;
+    var queue = items.filter(function(h){ return h.status === 'QUEUED' || h.status === 'PROCESSING'; }).length;
+
+    function chip(icon, label, val, color, bg) {
+      return '<span style="background:' + bg + ';color:' + color + ';border-radius:6px;padding:3px 9px;font-weight:700;font-size:0.75rem;display:inline-flex;align-items:center;gap:4px">'
+        + '<span class="mso" style="font-size:12px">' + icon + '</span>' + val + ' ' + label + '</span>';
+    }
+
+    var pubEl  = document.getElementById('sysHealthPub');
+    var schEl  = document.getElementById('sysHealthSch');
+    var failEl = document.getElementById('sysHealthFail');
+    var queueEl= document.getElementById('sysHealthQueue');
+    var updEl  = document.getElementById('sysHealthUpdated');
+
+    if (pubEl)   pubEl.innerHTML   = chip('check_circle', 'publicados', pub,  '#46eecd', 'rgba(70,238,205,0.10)');
+    if (schEl)   schEl.innerHTML   = chip('calendar_today', 'agendados', sch, '#93c5fd', 'rgba(147,197,253,0.10)');
+    if (failEl)  failEl.innerHTML  = chip(fail > 0 ? 'cancel' : 'check', fail > 0 ? 'falhas' : 'sem falhas', fail, fail > 0 ? '#f87171' : '#46eecd', fail > 0 ? 'rgba(248,113,113,0.10)' : 'rgba(70,238,205,0.08)');
+    if (queueEl) queueEl.innerHTML = queue > 0 ? chip('pending', 'na fila', queue, '#fbbf24', 'rgba(251,191,36,0.10)') : '';
+    if (updEl)   updEl.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    bar.innerHTML = '<span style="color:#f87171;font-size:0.78rem"><span class="mso">cloud_off</span> Não foi possível carregar dados de saúde do sistema</span>';
+  }
+}
+
 async function sysLogsRefresh() {
   var listEl = document.getElementById('sysLogsList');
   if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">⏳ Carregando...</div>';
@@ -7658,6 +7965,8 @@ async function pubHistoryRefresh() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="mso">sync</span> Carregando...'; }
 
   try {
+    sysHealthBarRefresh(); // atualiza mini dashboard 24h em paralelo
+
     // 1. Fetch publish_history (Meta API — para retry/error details)
     try {
       var res = await fetch(metaApiBase() + '/api/meta/publish?limit=500');
@@ -16926,10 +17235,16 @@ function metaPublishValidateForm() {
   const clientKey = document.getElementById('metaPubClient').value;
   const platform = document.getElementById('metaPubPlatform').value;
   const caption = document.getElementById('metaPubCaption').value;
+  const type = document.getElementById('metaPubType') ? document.getElementById('metaPubType').value : '';
   const hasMedia = _metaPubFiles.length > 0 || _metaPubPreloadedUrls.length > 0 || (document.getElementById('metaPubMediaUrl') && document.getElementById('metaPubMediaUrl').value);
   const hasContent = !!caption || hasMedia;
   const plats = platform.split(',').filter(Boolean);
   const igNeedsMedia = plats.includes('ig') && !hasMedia;
+
+  // Carrossel exige mínimo 2 imagens
+  const totalImages = _metaPubFiles.length || _metaPubPreloadedUrls.length;
+  const isCarousel = type === 'carousel';
+  const carouselNeedsMoreImages = isCarousel && totalImages < 2;
 
   // Checklist visual
   const chkClient = document.getElementById('metaPubChkClient');
@@ -16954,18 +17269,34 @@ function metaPublishValidateForm() {
     chkMedia.innerHTML = (!igNeedsMedia ? '<span class="mso mso-fill">check_box</span>' : '<span class="mso">check_box_outline_blank</span>') + ' Mídia obrigatória (Instagram)';
   }
 
+  // Checklist visual: carrossel mínimo 2 imagens
+  let chkCarousel = document.getElementById('metaPubChkCarousel');
+  if (isCarousel) {
+    if (!chkCarousel) {
+      chkCarousel = document.createElement('div');
+      chkCarousel.id = 'metaPubChkCarousel';
+      const chkList = document.querySelector('.meta-pub-checklist');
+      if (chkList) chkList.appendChild(chkCarousel);
+    }
+    chkCarousel.className = 'meta-pub-check' + (!carouselNeedsMoreImages ? ' ok' : '');
+    chkCarousel.innerHTML = (!carouselNeedsMoreImages ? '<span class="mso mso-fill">check_box</span>' : '<span class="mso">check_box_outline_blank</span>') + ' Carrossel: mínimo 2 imagens (' + totalImages + ' selecionada' + (totalImages === 1 ? '' : 's') + ')';
+  } else if (chkCarousel) {
+    chkCarousel.remove();
+  }
+
   // Botão submit
   const btn = document.getElementById('metaPubSubmitBtn');
   const icon = document.getElementById('metaPubSubmitIcon');
   const text = document.getElementById('metaPubSubmitText');
   const mode = document.getElementById('metaPubScheduleMode').value;
-  const isValid = clientKey && platform && hasContent && !igNeedsMedia;
+  const isValid = clientKey && platform && hasContent && !igNeedsMedia && !carouselNeedsMoreImages;
 
   btn.disabled = !isValid;
   if (!clientKey) { text.textContent = 'Selecione cliente e plataforma'; icon.innerHTML = '<span class="mso">upload</span>'; }
   else if (!platform) { text.textContent = 'Escolha a plataforma'; icon.innerHTML = '<span class="mso">language</span>'; }
   else if (!hasContent) { text.textContent = 'Adicione legenda ou mídia'; icon.innerHTML = '<span class="mso">edit</span>'; }
   else if (igNeedsMedia) { text.textContent = 'Instagram exige mídia'; icon.innerHTML = '<span class="mso">photo_camera</span>'; }
+  else if (carouselNeedsMoreImages) { text.textContent = 'Carrossel exige mínimo 2 imagens'; icon.innerHTML = '<span class="mso">image</span>'; }
   else if (mode === 'schedule') { text.textContent = 'Agendar Publicação'; icon.innerHTML = '<span class="mso">calendar_today</span>'; }
   else { text.textContent = 'Publicar Agora'; icon.innerHTML = '<span class="mso">rocket_launch</span>'; }
 }
@@ -17297,6 +17628,13 @@ async function metaPublishSubmit() {
     alert('Instagram exige mídia. Adicione imagem/vídeo ou URL de mídia.');
     return;
   }
+  if (type === 'carousel') {
+    const totalImgs = _metaPubFiles.length || _metaPubPreloadedUrls.length;
+    if (totalImgs < 2) {
+      alert('Carrossel exige no mínimo 2 imagens. Você tem ' + totalImgs + ' imagem(ns) selecionada(s).\n\nAdicione mais imagens ou mude o tipo de post para Feed.');
+      return;
+    }
+  }
   if (mode === 'schedule' && datetime) {
     const schedTime = new Date(datetime);
     const minFuture = new Date(Date.now() + 10 * 60 * 1000);
@@ -17310,10 +17648,44 @@ async function metaPublishSubmit() {
   submitBtn.disabled = true;
   submitIcon.innerHTML = '⏳';
   submitText.textContent = 'Publicando em ' + clientName + '...';
-  statusDiv.style.display = 'block';
-  statusDiv.style.background = '#eff6ff';
-  statusDiv.style.color = '#1d4ed8';
-  statusDiv.innerHTML = '⏳ Enviando para Meta Graph API...';
+
+  // ── Progresso visual com etapas e timer ──
+  const _pubStartTime = Date.now();
+  let _pubTimerInterval = null;
+  function _pubSetStep(stepIndex, msg, isError) {
+    const elapsed = Math.round((Date.now() - _pubStartTime) / 1000);
+    const elapsedStr = elapsed >= 60 ? Math.floor(elapsed/60) + 'min ' + (elapsed%60) + 's' : elapsed + 's';
+    const steps = ['Upload', 'Processando', 'Publicando'];
+    const stepsHtml = steps.map((s, i) => {
+      const done = i < stepIndex;
+      const active = i === stepIndex;
+      const col = isError && active ? '#dc2626' : active ? '#1d4ed8' : done ? '#16a34a' : '#9ca3af';
+      const icon = done ? '✓' : active ? (isError ? '✗' : '●') : '○';
+      return '<span style="color:' + col + ';font-weight:' + (active||done?'700':'400') + ';font-size:0.78rem">' + icon + ' ' + s + '</span>';
+    }).join('<span style="color:#d1d5db;margin:0 6px">›</span>');
+    const barPct = isError ? 100 : Math.min(100, Math.round((stepIndex / (steps.length - 1)) * 100));
+    const barColor = isError ? '#ef4444' : '#3b82f6';
+    statusDiv.style.display = 'block';
+    statusDiv.style.background = isError ? '#fef2f2' : '#eff6ff';
+    statusDiv.style.color = isError ? '#dc2626' : '#1d4ed8';
+    statusDiv.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      + '<div style="display:flex;gap:8px;align-items:center">' + stepsHtml + '</div>'
+      + '<span style="font-size:0.72rem;color:#6b7280;font-weight:600">⏱ ' + elapsedStr + '</span>'
+      + '</div>'
+      + '<div style="background:#e2e8f0;border-radius:4px;height:4px;margin-bottom:8px;overflow:hidden">'
+      +   '<div style="height:100%;background:' + barColor + ';width:' + barPct + '%;transition:width 0.4s;border-radius:4px"></div>'
+      + '</div>'
+      + '<div style="font-size:0.82rem">' + msg + '</div>';
+  }
+
+  // Timer que atualiza o tempo decorrido a cada segundo
+  _pubTimerInterval = setInterval(() => { if (statusDiv.style.display !== 'none') _pubSetStep(_pubCurrentStep || 0, _pubCurrentMsg || '...'); }, 1000);
+  let _pubCurrentStep = 0, _pubCurrentMsg = '⏳ Enviando para Meta Graph API...';
+
+  // Helper para atualizar etapa + msg
+  function _pubStep(step, msg) { _pubCurrentStep = step; _pubCurrentMsg = msg; _pubSetStep(step, msg, false); }
+  _pubStep(0, '⏳ Iniciando...');
 
   try {
     const imageUrl = mediaUrl.trim();
@@ -17334,12 +17706,10 @@ async function metaPublishSubmit() {
     if (hasLocalFile) {
       const totalFiles = _metaPubFiles.length;
       const isCarousel = totalFiles > 1;
-      statusDiv.style.background = '#fffbeb';
-      statusDiv.style.color = '#b45309';
 
       for (let fi = 0; fi < totalFiles; fi++) {
         const file = _metaPubFiles[fi];
-        statusDiv.innerHTML = '<span class="mso">upload</span> <b>Etapa 1/2:</b> Enviando ' + (fi + 1) + '/' + totalFiles + ' · ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)...';
+        _pubStep(0, '<span class="mso">upload</span> Enviando arquivo ' + (fi + 1) + '/' + totalFiles + ' · ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)...');
 
         // Converte para base64
         const base64 = await new Promise((resolve, reject) => {
@@ -17370,8 +17740,8 @@ async function metaPublishSubmit() {
 
         if (uploadData.error) {
           statusDiv.style.background = '#fef2f2';
-          statusDiv.style.color = '#dc2626';
-          statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro no upload ' + (fi + 1) + ':</b> ' + uploadData.message;
+          clearInterval(_pubTimerInterval);
+          _pubSetStep(0, '<span class="mso">cancel</span> <b>Erro no upload ' + (fi + 1) + ':</b> ' + uploadData.message, true);
           return;
         }
 
@@ -17379,22 +17749,20 @@ async function metaPublishSubmit() {
         const pubUrl = uploadData.upload ? uploadData.upload.publicUrl : null;
         if (pubUrl) resolvedImageUrls.push(pubUrl);
 
-        statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> Upload ' + (fi + 1) + '/' + totalFiles + ' concluído';
+        _pubStep(0, '<span class="mso mso-fill">check_circle</span> Upload ' + (fi + 1) + '/' + totalFiles + ' concluído');
       }
 
       // Set single image vars for backwards compatibility
       if (resolvedImageUrls.length > 0) resolvedImageUrl = resolvedImageUrls[0];
       if (containerIds.length > 0) containerId = containerIds[0];
 
-      statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> ' + totalFiles + ' arquivo(s) enviados → preparando publicação...';
+      _pubStep(1, '<span class="mso mso-fill">check_circle</span> ' + totalFiles + ' arquivo(s) enviados → preparando publicação...');
       await new Promise(r => setTimeout(r, 300));
 
     }
     // URL pública direta (sem upload local) para IG precisa do media endpoint
     else if (imageUrl && platforms.includes('ig')) {
-      statusDiv.innerHTML = '<span class="mso">upload</span> <b>Etapa 1/2:</b> Criando container Instagram...';
-      statusDiv.style.background = '#fffbeb';
-      statusDiv.style.color = '#b45309';
+      _pubStep(1, '<span class="mso">upload</span> Criando container Instagram...');
 
       const mediaBody = {
         destination: 'ig',
@@ -17412,14 +17780,13 @@ async function metaPublishSubmit() {
       const mediaData = await mediaRes.json();
 
       if (mediaData.error) {
-        statusDiv.style.background = '#fef2f2';
-        statusDiv.style.color = '#dc2626';
-        statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro IG container:</b> ' + mediaData.message;
+        clearInterval(_pubTimerInterval);
+        _pubSetStep(1, '<span class="mso">cancel</span> <b>Erro IG container:</b> ' + mediaData.message, true);
         return;
       }
 
       containerId = mediaData.container_id;
-      statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> Container IG criado: ' + containerId;
+      _pubStep(1, '<span class="mso mso-fill">check_circle</span> Container IG criado: ' + containerId);
       await new Promise(r => setTimeout(r, 500));
     }
 
@@ -17472,9 +17839,7 @@ async function metaPublishSubmit() {
         continue; // Skip direct publish for IG scheduled
       }
 
-      statusDiv.innerHTML = (hasMedia ? '<span class="mso">upload</span> <b>Etapa 2/2:</b> ' : '<span class="mso">upload</span> ') + 'Publicando em ' + platLabel + (totalPlats > 1 ? ' (' + platIdx + '/' + totalPlats + ')' : '') + '...';
-      statusDiv.style.background = '#eff6ff';
-      statusDiv.style.color = '#1d4ed8';
+      _pubStep(2, '<span class="mso">rocket_launch</span> Publicando em ' + platLabel + (totalPlats > 1 ? ' (' + platIdx + '/' + totalPlats + ')' : '') + '...');
 
       const body = {
         destination: plat,
@@ -17536,11 +17901,15 @@ async function metaPublishSubmit() {
       statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro:</b> ' + failures.map(f => f.platLabel + ': ' + f.data.message).join(' | ');
     } else {
       const isScheduled = mode === 'schedule';
+      clearInterval(_pubTimerInterval);
+      const elapsed = Math.round((Date.now() - _pubStartTime) / 1000);
+      const elapsedStr = elapsed >= 60 ? Math.floor(elapsed/60) + 'min ' + (elapsed%60) + 's' : elapsed + 's';
       statusDiv.style.background = '#ecfdf5';
       statusDiv.style.color = '#059669';
       const platNames = successes.map(s => s.platLabel).join(' + ');
       statusDiv.innerHTML = (isScheduled ? '<span class="mso">calendar_today</span>' : '<span class="mso mso-fill">check_circle</span>') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> '
         + clientName + ' · ' + platNames + (hasMedia ? ' · <span class="mso">image</span> Com imagem' : '')
+        + ' <span style="font-size:0.75rem;color:#6b7280">· ⏱ ' + elapsedStr + '</span>'
         + (failures.length > 0 ? '<br><span class="mso">warning</span> Falhou em: ' + failures.map(f => f.platLabel).join(', ') : '');
 
       try { localStorage.setItem('metaPubHistory', JSON.stringify(_metaPubHistory.slice(0, 50))); } catch(e) {}
@@ -17560,9 +17929,8 @@ async function metaPublishSubmit() {
       metaPublishUpdatePreview();
     }
   } catch (e) {
-    statusDiv.style.background = '#fef2f2';
-    statusDiv.style.color = '#dc2626';
-    statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro de conexão:</b> ' + e.message;
+    clearInterval(_pubTimerInterval);
+    _pubSetStep(_pubCurrentStep || 0, '<span class="mso">cancel</span> <b>Erro de conexão:</b> ' + e.message, true);
   } finally {
     submitBtn.disabled = false;
     metaPublishValidateForm();
@@ -17853,6 +18221,8 @@ function ctInit() {
   fetch(ctApiBase() + '/api/content', { method: 'OPTIONS' }).catch(() => {});
   // Auto-promote agendado → publicado for past dates
   ctAutoPromotePublished();
+  // Verificar posts esquecidos (agendado + data passada) — roda depois do promote
+  setTimeout(ctCheckForgottenPosts, 5000);
 }
 
 // Auto-promote tasks with status 'agendado' to 'publicado' if post date has passed
@@ -17926,6 +18296,83 @@ async function ctAutoPromotePublished() {
     }
   } catch(e) {
     console.warn('ctAutoPromotePublished error:', e);
+  }
+}
+
+// Verifica posts esquecidos: status 'agendado' com data de entrega no passado
+async function ctCheckForgottenPosts() {
+  if (!_supabase) return;
+  // Throttle: uma vez por sessão (evita spam a cada navegação)
+  var sessionKey = 'starken_forgotten_checked_' + new Date().toISOString().slice(0, 10);
+  if (sessionStorage.getItem(sessionKey)) return;
+
+  try {
+    var today = new Date();
+    var todayISO = today.getFullYear() + '-' + ('0'+(today.getMonth()+1)).slice(-2) + '-' + ('0'+today.getDate()).slice(-2);
+
+    var res = await _supabase
+      .from('content_tasks')
+      .select('id,name,due_date,client_key,publish_config,parent_id')
+      .eq('status', 'agendado')
+      .not('due_date', 'is', null)
+      .lt('due_date', todayISO);
+
+    var tasks = (res.data || []).filter(function(t) { return !t.parent_id; }); // só tasks raiz
+    if (!tasks.length) {
+      sessionStorage.setItem(sessionKey, '1');
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, '1');
+
+    // Toca som de aviso
+    if (typeof playAlertSound === 'function') playAlertSound('warning');
+
+    // Monta banner fixo no topo
+    var existing = document.getElementById('forgottenPostsBanner');
+    if (existing) existing.remove();
+
+    var clientMap = {};
+    tasks.forEach(function(t) {
+      var ck = t.client_key || 'outros';
+      if (!clientMap[ck]) clientMap[ck] = [];
+      clientMap[ck].push(t);
+    });
+
+    var clientLines = Object.keys(clientMap).map(function(ck) {
+      var cl = (_metaClients && _metaClients[ck]) ? _metaClients[ck].name : ck;
+      var count = clientMap[ck].length;
+      return '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,0.08);border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:700">' + esc(cl) + ' <span style="opacity:.7">(' + count + ')</span></span>';
+    }).join(' ');
+
+    var banner = document.createElement('div');
+    banner.id = 'forgottenPostsBanner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:#b45309;color:#fff;padding:10px 50px 10px 20px;font-family:inherit;font-size:0.82rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+    banner.innerHTML = '<span class="mso" style="font-size:1.2rem;flex-shrink:0">warning</span>'
+      + '<strong>⚠ ' + tasks.length + ' post' + (tasks.length > 1 ? 's' : '') + ' esquecido' + (tasks.length > 1 ? 's' : '') + '</strong>'
+      + '<span style="opacity:.85">— deveriam ter sido publicados mas ainda estão como Agendado:</span>'
+      + '<span style="display:flex;flex-wrap:wrap;gap:4px">' + clientLines + '</span>'
+      + '<button onclick="if(typeof switchTab===\'function\')switchTab(\'content\')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:4px 12px;font-family:inherit;font-size:0.78rem;cursor:pointer;font-weight:700;margin-left:auto;white-space:nowrap">Ver Tarefas →</button>';
+
+    var closeX = document.createElement('button');
+    closeX.innerHTML = '×';
+    closeX.style.cssText = 'position:absolute;top:8px;right:14px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;line-height:1;opacity:.8';
+    closeX.onclick = function() { banner.remove(); };
+    banner.appendChild(closeX);
+
+    document.body.prepend(banner);
+
+    // Web Notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      var n = new Notification('Starken OS — Posts não publicados', {
+        body: tasks.length + ' post(s) estavam agendados mas não foram publicados. Clique para ver.',
+        icon: '/favicon.ico',
+        requireInteraction: true,
+      });
+      n.onclick = function() { window.focus(); if (typeof switchTab === 'function') switchTab('content'); n.close(); };
+    }
+  } catch(e) {
+    console.warn('ctCheckForgottenPosts error:', e);
   }
 }
 
@@ -18424,6 +18871,7 @@ function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
   const assigneeFilter = document.getElementById('ctAssigneeFilter').value;
+  const priorityFilter = document.getElementById('ctPriorityFilter') ? document.getElementById('ctPriorityFilter').value : '';
 
   if (ctGroups.length === 0) {
     body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px"><span class="mso">outgoing_mail</span></div>Nenhum grupo criado. Clique em "+ Novo Grupo" para começar.</div>';
@@ -18452,8 +18900,23 @@ function ctRenderList() {
 
     // Group row
     var safeGroupName = group.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    // Cálculo de progresso do grupo (excluindo subtasks, apenas tasks raiz)
+    var rootTasks = tasks.filter(function(t){ return !t.parent_id; });
+    var doneStatuses = ['publicado','publicado-st','aprovado','cancelado'];
+    var doneTasks = rootTasks.filter(function(t){ return doneStatuses.indexOf(t.status) >= 0; }).length;
+    var totalRoot = rootTasks.length;
+    var pct = totalRoot > 0 ? Math.round((doneTasks / totalRoot) * 100) : 0;
+    var pctColor = pct === 100 ? '#46eecd' : pct >= 60 ? '#93c5fd' : pct >= 30 ? '#fbbf24' : 'var(--text-secondary)';
+    var progressHtml = totalRoot > 0
+      ? '<span style="display:inline-flex;align-items:center;gap:5px;margin-left:8px">'
+        + '<span style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block">'
+        + '<span style="display:block;height:100%;width:' + pct + '%;background:' + pctColor + ';border-radius:3px;transition:width 0.3s"></span>'
+        + '</span>'
+        + '<span style="font-size:0.7rem;font-weight:700;color:' + pctColor + '">' + pct + '%</span>'
+        + '</span>'
+      : '';
     html += '<div class="ct-row group" onclick="ctToggleGroup(\'' + group.id + '\')">'
-      + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span><span class="mso">folder</span> ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span></span></div>'
+      + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span><span class="mso">folder</span> ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span>' + progressHtml + '</span></div>'
       + '<div></div><div></div><div></div><div></div>'
       + '<div style="text-align:center;display:flex;gap:2px;justify-content:center;align-items:center">'
       + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'up\')" title="Mover grupo para cima" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▲</button>'
@@ -18468,6 +18931,7 @@ function ctRenderList() {
       // Recursive function to render tasks at any depth
       function renderTaskRow(task, depth, groupId) {
         if (statusFilter && task.status !== statusFilter) return '';
+        if (priorityFilter && task.priority !== priorityFilter) return '';
         if (assigneeFilter) {
           var _ctAssignees = (task.assignee || '').split(',').map(function(a){ return a.trim(); });
           if (_ctAssignees.indexOf(assigneeFilter) === -1) return '';
