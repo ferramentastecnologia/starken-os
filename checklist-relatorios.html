@@ -1301,6 +1301,9 @@ body {
 .sw-stat.sw-stat-green .sw-stat-icon, .sw-stat.sw-stat-green .sw-stat-val { color:#22c55e; }
 .sw-stat.sw-stat-elite { background:linear-gradient(135deg,#0cd9ad 0%,#0891b2 100%); border-color:transparent; }
 .sw-stat.sw-stat-elite .sw-stat-icon, .sw-stat.sw-stat-elite .sw-stat-val, .sw-stat.sw-stat-elite .sw-stat-lbl { color:#fff; }
+.sw-mark-all-btn { display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:0.78rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:opacity 0.15s; }
+.sw-mark-all-btn:hover { opacity:0.88; }
+.sw-mark-all-btn:disabled { opacity:0.5;cursor:not-allowed; }
 
 /* ===== CLIENT ROW ===== */
 .client-row {
@@ -6629,10 +6632,22 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!cronRes.ok) throw new Error('Cron endpoint retornou HTTP ' + cronRes.status);
       const cronData = await cronRes.json();
 
-      // 2. Verifica alertas — busca FAILED e QUEUED atrasados
+      // 2. Verifica alertas — busca FAILED e QUEUED atrasados (history + queue direta)
       const histRes = await fetch(metaApiBase() + '/api/meta/publish?limit=20');
       const histData = await histRes.json();
-      const items = histData.history || [];
+      var items = histData.history || [];
+      // Também verifica publish_queue diretamente (FAILED recentes não gravados em history)
+      try {
+        var queueRes = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'query', table: 'publish_queue', select: '*', filters: ['status=eq.FAILED'], order: 'created_at.desc', limit: 20 }) });
+        if (queueRes.ok) {
+          var queueData = await queueRes.json();
+          (queueData.data || []).forEach(function(q) {
+            if (!items.find(function(h) { return h.task_id && h.task_id === q.task_id && h.platform === q.platform && h.status === 'FAILED'; })) {
+              items.push({ id: q.id, post_id: q.id, status: 'FAILED', platform: q.platform, client_key: q.client_key, client_name: q.client_name, error_message: q.error_message, scheduled_for: q.scheduled_for, task_id: q.task_id, created_at: q.created_at });
+            }
+          });
+        }
+      } catch(e) { /* silently ignore — queue check is supplementary */ }
 
       const alerts = [];
       const now = new Date();
@@ -9247,13 +9262,14 @@ function markCronoSentNow(clientId, type, periodKey) {
     var csPayload = { id: csId, client_id: clientId, period_key: periodKey, status: 2, sent: true, sent_date: sentDate, updated_at: new Date().toISOString() };
     // Update local cache immediately
     _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, csPayload);
+    // Sync dashboard week so stat cards reflect same week being marked
+    if (typeof _dashCronoWeek !== 'undefined') _dashCronoWeek = periodKey;
     // Persist via proxy (fire-and-forget)
     fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert_cronograma', payload: csPayload }) })
       .then(function(r) { return r.json(); })
       .catch(function(e) { console.warn('markCronoSentNow sync error:', e); });
   }
   renderAll();
-  // Atualiza contadores do dashboard (Pendentes/Gerados/Enviados) — renderAll() não os atualiza
   if (typeof renderDashboard === 'function') renderDashboard();
 }
 
@@ -9841,11 +9857,13 @@ function _renderSwPremium(periodKey) {
   if (statsEl) {
     var eficiencia = totalClients > 0 ? Math.round(totalEnviados / totalClients * 100) : 0;
     var tier = eficiencia >= 80 ? 'Elite' : eficiencia >= 60 ? 'Advanced' : eficiencia >= 40 ? 'Growing' : 'Iniciante';
+    var pendingCount = totalClients - totalEnviados;
     statsEl.innerHTML = ''
       + '<div class="sw-stat"><div class="sw-stat-icon"><span class="mso">auto_awesome</span></div><div class="sw-stat-val">' + totalGerados + '</div><div class="sw-stat-lbl">Cronogramas Gerados</div></div>'
       + '<div class="sw-stat sw-stat-orange"><div class="sw-stat-icon"><span class="mso">schedule</span></div><div class="sw-stat-val">' + totalAguardando + '</div><div class="sw-stat-lbl">Aguardando Envio</div></div>'
       + '<div class="sw-stat sw-stat-green"><div class="sw-stat-icon"><span class="mso mso-fill">check_circle</span></div><div class="sw-stat-val">' + eficiencia + '%</div><div class="sw-stat-lbl">Efici\xEAncia Semanal</div></div>'
-      + '<div class="sw-stat sw-stat-elite"><div class="sw-stat-icon"><span class="mso">rocket_launch</span></div><div class="sw-stat-val">' + tier + '</div><div class="sw-stat-lbl">Performance Matrix</div></div>';
+      + '<div class="sw-stat sw-stat-elite"><div class="sw-stat-icon"><span class="mso">rocket_launch</span></div><div class="sw-stat-val">' + tier + '</div><div class="sw-stat-lbl">Performance Matrix</div></div>'
+      + (pendingCount > 0 ? '<button class="sw-mark-all-btn" onclick="_swMarkAllSent(' + JSON.stringify(periodKey) + ')" title="Marcar todos os clientes desta semana como Enviado"><span class="mso mso-fill">check_circle</span> Marcar todos como enviado (' + pendingCount + ')</button>' : '');
   }
 }
 
@@ -9874,6 +9892,37 @@ async function _swClearPeriod() {
   } catch(e) {
     if (typeof showToast === 'function') showToast('Erro ao zerar: ' + e.message, 'error');
   }
+}
+
+async function _swMarkAllSent(periodKey) {
+  var active = (data.clients || []).filter(function(c) { return c.active; });
+  var toMark = active.filter(function(c) {
+    var cs = (typeof getCronogramaStatus === 'function') ? getCronogramaStatus(c.id, periodKey) : null;
+    return !cs || cs.status < 2;
+  });
+  if (!toMark.length) return showToast('Todos já estão marcados como Enviado', 'success');
+  if (!confirm('Marcar ' + toMark.length + ' cliente(s) como Enviado para a semana ' + periodKey + '?')) return;
+  var sentDate = new Date().toISOString();
+  var errors = 0;
+  for (var i = 0; i < toMark.length; i++) {
+    var c = toMark[i];
+    var csId = c.id + '_' + periodKey;
+    var csPayload = { id: csId, client_id: c.id, period_key: periodKey, status: 2, sent: true, sent_date: sentDate, updated_at: sentDate };
+    _cronogramaStatusCache[csId] = Object.assign(_cronogramaStatusCache[csId] || {}, csPayload);
+    // Also update data.reports
+    var r = data.reports.find(function(x) { return x.clientId === c.id && x.type === 'sched-weekly' && x.period === periodKey; });
+    if (!r) { r = { id: gid(), clientId: c.id, type: 'sched-weekly', period: periodKey, status: 2, sent: true, sentDate: sentDate, notes: '', createdAt: sentDate }; data.reports.push(r); }
+    else { r.status = 2; r.sent = true; r.sentDate = sentDate; }
+    try {
+      var res = await fetch('/api/content', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'upsert_cronograma', payload: csPayload }) });
+      if (!res.ok) errors++;
+    } catch(e) { errors++; }
+  }
+  saveData(data);
+  _opScoreCache = {};
+  renderSchedWeekly();
+  if (typeof renderDashboard === 'function') renderDashboard();
+  showToast('<span class="mso mso-fill">check_circle</span> ' + toMark.length + ' clientes marcados como Enviado' + (errors ? ' (' + errors + ' erros de sync)' : ''), errors ? 'warning' : 'success');
 }
 
 // ============ MONTHLY ============
@@ -9926,7 +9975,7 @@ function _dashGetStatus(clientId, type, periodKey) {
   return rpt ? { status: rpt.status || 0, sent_date: rpt.sentDate } : { status: 0 };
 }
 
-// Get current week periodKey using the same logic as renderSchedWeekly
+// Get current week periodKey — mirrors renderSchedWeekly auto-select logic exactly
 function _dashGetCurrentWeekKey() {
   var mk = getCurrentMonthKey();
   var mInfo = MONTHS_2026.find(function(m) { return m.key === mk; });
@@ -9935,21 +9984,14 @@ function _dashGetCurrentWeekKey() {
   if (!weeks.length) return mk + '-S1';
   var today = new Date();
   var todayStr = today.getFullYear() + '-' + pad(today.getMonth()+1) + '-' + pad(today.getDate());
-
-  // Encontra a semana cujo PERÍODO contém hoje (não a data de envio)
-  for (var i = 0; i < weeks.length; i++) {
-    if (todayStr >= weeks[i].periodStartISO && todayStr <= weeks[i].periodEndISO) {
+  // Mesma lógica do renderSchedWeekly: semana mais recente cujo sendDate já passou ou é hoje
+  for (var i = weeks.length - 1; i >= 0; i--) {
+    if (todayStr >= weeks[i].sendDateISO) {
       return mk + '-S' + weeks[i].week;
     }
   }
-  // Se hoje está antes do início do 1º período, retorna S1
-  if (todayStr < weeks[0].periodStartISO) return mk + '-S1';
-  // Se hoje está depois do fim do último período (ex: dias entre um mês e outro),
-  // usa sendDateISO como fallback para não perder a semana ainda não encerrada
-  for (var j = weeks.length - 1; j >= 0; j--) {
-    if (todayStr >= weeks[j].sendDateISO) return mk + '-S' + weeks[j].week;
-  }
-  return mk + '-S1';
+  // Se ainda não chegou ao 1º sendDate, mostra S1
+  return mk + '-S' + (weeks[0] ? weeks[0].week : 1);
 }
 
 // Retorna {startISO, endISO} da semana calendário atual (seg-dom)
@@ -19392,7 +19434,8 @@ async function ctRsQuickPublish(storyId) {
     ctLoadGroups();
   } else {
     if (btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">rocket_launch</span> Publicar'; }
-    showToast('Erro: ' + errors.join(' | '), 'error');
+    if (typeof playAlertSound === 'function') playAlertSound('error');
+    showToast('Erro no agendamento: ' + errors.join(' | '), 'error');
   }
 }
 
