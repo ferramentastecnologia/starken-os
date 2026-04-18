@@ -2291,6 +2291,17 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-datepicker-grid .dp-day.other-month { color:#d1d5db; }
 .ct-datepicker-time { display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border); }
 .ct-datepicker-time input { width:50px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;text-align:center; }
+[data-theme="emerald"] .ct-datepicker { background:#151c27;border:1px solid rgba(70,238,205,0.10);box-shadow:0 10px 40px rgba(0,0,0,0.6);color:var(--text-primary); }
+[data-theme="emerald"] .ct-datepicker-shortcuts { background:#0c141f; }
+[data-theme="emerald"] .ct-datepicker-cal-header { color:var(--text-primary); }
+[data-theme="emerald"] .ct-datepicker-cal-header button { color:var(--text-secondary); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day-head { color:var(--text-tertiary,#64748b); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day { color:var(--text-primary); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day:hover { background:rgba(70,238,205,0.08); }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day.today { color:#46eecd; }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day.selected { background:rgba(70,238,205,0.18);color:#46eecd; }
+[data-theme="emerald"] .ct-datepicker-grid .dp-day.other-month { color:var(--text-disabled,#374151); }
+[data-theme="emerald"] .ct-datepicker-time input { background:var(--bg-elevated,#19202c);color:var(--text-primary);border-color:var(--border); }
 .ct-publish-section { background:var(--surface-container-low,#f2f4f7);border:none;border-radius:8px;padding:16px;margin-top:16px; }
 .ct-publish-section.scheduling { background:#fffbeb;border:1px solid #fde68a; }
 .ct-publish-btn { background:var(--brand);color:#fff;padding:8px 24px;font-size:11px;text-transform:uppercase;font-weight:700;border-radius:4px;border:none;cursor:pointer;transition:filter 0.15s; }
@@ -4691,7 +4702,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
               <div class="ct-modal-meta-item" style="position:relative">
                 <label><span class="mso">design_services</span> Entrega Design</label>
-                <button id="ctModalDueDateBtn" onclick="ctShowDatePicker(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;background:#fff;cursor:pointer;display:flex;align-items:center;gap:4px;min-width:120px">
+                <button id="ctModalDueDateBtn" onclick="ctShowDatePicker(event)" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:0.82rem;background:var(--card,#fff);color:var(--text);cursor:pointer;display:flex;align-items:center;gap:4px;min-width:120px">
                   <span class="mso">calendar_today</span> <span id="ctModalDueDateLabel">Sem data</span>
                 </button>
                 <input type="hidden" id="ctModalDueDate">
