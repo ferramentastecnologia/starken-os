@@ -446,6 +446,8 @@
   --border: var(--border-default);
   --text: var(--text-primary);
   --text-muted: var(--text-tertiary);
+  --bg-secondary: #151c27;
+  --bg: #0c141f;
 
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
@@ -19832,19 +19834,19 @@ function ctBuildAttCard(a, badge, badgeColor) {
   var sizeTxt = a.file_size ? (a.file_size > 1048576 ? (a.file_size/1048576).toFixed(1) + ' MB' : Math.round(a.file_size/1024) + ' KB') : '';
 
   var frameBtn = '';
-  var downloadBtn = '<button onclick="event.stopPropagation();ctForceDownload(\'' + a.file_url + '\',\'' + (a.file_name || 'download').replace(/'/g,'') + '\')" style="display:block;width:100%;padding:4px;border:none;background:var(--color-success,#16a34a);color:#fff;font-size:0.68rem;font-weight:600;cursor:pointer;font-family:inherit;text-align:center">⬇ Baixar arquivo</button>';
+  var downloadBtn = '<button onclick="event.stopPropagation();ctForceDownload(\'' + a.file_url + '\',\'' + (a.file_name || 'download').replace(/'/g,'') + '\')" style="display:block;width:100%;padding:5px;border:none;border-top:1px solid var(--border);background:var(--bg-elevated,#1e293b);color:var(--text-secondary,#94a3b8);font-size:0.68rem;font-weight:600;cursor:pointer;font-family:inherit;text-align:center">⬇ Baixar arquivo</button>';
   if (isVid) {
-    frameBtn = '<button onclick="event.stopPropagation();ctOpenFrameSelector(\'' + a.file_url + '\',\'' + a.id + '\')" style="width:100%;padding:4px;border:none;background:var(--starken,#3b82f6);color:#fff;font-size:0.68rem;font-weight:600;cursor:pointer;font-family:inherit"><span class="mso">movie_filter</span> Escolher thumbnail</button>';
+    frameBtn = '<button onclick="event.stopPropagation();ctOpenFrameSelector(\'' + a.file_url + '\',\'' + a.id + '\')" style="width:100%;padding:5px;border:none;border-top:1px solid var(--border);background:rgba(70,238,205,0.08);color:var(--brand,#3b82f6);font-size:0.68rem;font-weight:600;cursor:pointer;font-family:inherit"><span class="mso">movie_filter</span> Escolher thumbnail</button>';
   }
 
-  return '<div class="ct-attachment-card" style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border)">'
+  return '<div class="ct-attachment-card" style="position:relative;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:var(--bg-elevated,#1e293b)">'
     + delBtn
     + '<div onclick="ctOpenLightbox(\'' + a.file_url + '\',' + isVid + ')">'
     + '<span class="ct-att-category" style="background:' + badgeColor + '">' + badge + '</span>'
     + preview
     + '</div>'
-    + '<div style="padding:6px 8px;background:var(--bg-secondary)">'
-    + '<div style="font-size:0.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">' + a.file_name + '</div>'
+    + '<div style="padding:5px 8px;background:var(--bg-elevated,#1e293b);border-top:1px solid var(--border)">'
+    + '<div style="font-size:0.72rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">' + (a.file_name || '') + '</div>'
     + (sizeTxt ? '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:1px">' + sizeTxt + '</div>' : '')
     + '</div>'
     + frameBtn
@@ -27282,12 +27284,12 @@ function ctRenderFormatTabs() {
       + '<div style="text-align:right;font-size:0.72rem;color:var(--text-secondary);margin-top:4px"><span id="ctFormatCopyCount">0</span> / 2.200 caracteres</div>'
       + '</div>'
       + '<div class="ct-modal-section" style="margin-bottom:0;display:none" id="ctFormatPublishSection">'
-      + '<div style="background:var(--card,#fff);border-radius:12px;border:1.5px solid var(--border);padding:14px">'
+      + '<div style="background:var(--card);border-radius:12px;border:1.5px solid var(--border);padding:14px">'
       + '<div class="ct-modal-section-title" style="margin-bottom:10px"><span class="mso">rocket_launch</span> Publicar <span id="ctFormatPublishLabel" style="font-weight:400;color:var(--text-secondary)"></span></div>'
       + '<div style="margin-bottom:10px"><div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Plataforma</div>'
       + '<div style="display:flex;gap:8px">'
-      + '<button class="meta-pub-plat-btn" id="ctFmtPubFb" onclick="ctFmtSelectPlatform(\'fb\')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s"><span class="mso">description</span> Facebook</button>'
-      + '<button class="meta-pub-plat-btn" id="ctFmtPubIg" onclick="ctFmtSelectPlatform(\'ig\')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--card,#fff);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s"><span class="mso">photo_camera</span> Instagram</button>'
+      + '<button class="meta-pub-plat-btn" id="ctFmtPubFb" onclick="ctFmtSelectPlatform(\'fb\')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-elevated,#1e293b);color:var(--text);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s"><span class="mso">description</span> Facebook</button>'
+      + '<button class="meta-pub-plat-btn" id="ctFmtPubIg" onclick="ctFmtSelectPlatform(\'ig\')" style="flex:1;padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg-elevated,#1e293b);color:var(--text);cursor:pointer;font-size:0.8rem;font-family:inherit;transition:all 0.15s"><span class="mso">photo_camera</span> Instagram</button>'
       + '</div></div>'
       + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><div>'
       + '<div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Quando</div>'
@@ -27467,8 +27469,8 @@ function ctRenderFormatContent() {
   // Update labels
   var creativeLabel = document.getElementById('ctFormatCreativeLabel');
   var copyLabel = document.getElementById('ctFormatCopyLabel');
-  if (creativeLabel) creativeLabel.textContent = '— ' + info.label;
-  if (copyLabel) copyLabel.textContent = '— ' + info.label;
+  if (creativeLabel) creativeLabel.innerHTML = '— ' + info.label;
+  if (copyLabel) copyLabel.innerHTML = '— ' + info.label;
 
   // Render creatives filtered by format_type
   var allAtts = ctModalTask.attachments || [];
