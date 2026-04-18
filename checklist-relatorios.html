@@ -2441,6 +2441,12 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-pub-pill.failed { background:#fef2f2;color:#991b1b;border:1px solid #fecaca; }
 .ct-pub-pill.queued { background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe; }
 .ct-pub-pill.none { background:var(--surface-container);color:var(--text-muted);border:1px solid var(--border-default);opacity:0.6;font-weight:500; }
+.ct-lane-chip { display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg-card,#fff);color:var(--text-secondary);font-size:0.78rem;font-weight:600;font-family:inherit;cursor:pointer;transition:all 0.15s; }
+.ct-lane-chip:hover { background:var(--bg-hover,rgba(0,0,0,0.05)); }
+.ct-lane-chip.active { background:var(--accent,#3b82f6);color:#fff;border-color:var(--accent,#3b82f6); }
+.ct-lane-chip[data-lane="producao"].active { background:#8b5cf6;border-color:#8b5cf6; }
+.ct-lane-chip[data-lane="aprovacao"].active { background:#f59e0b;border-color:#f59e0b;color:#fff; }
+.ct-lane-chip[data-lane="publicacao"].active { background:#10b981;border-color:#10b981; }
 
 /* Searchable Select Component */
 .ss-wrap { position:relative;display:inline-block;min-width:180px; }
@@ -4013,6 +4019,15 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div id="dashWeekPostsList"></div>
           </div>
         </div>
+        <!-- FILA EM TEMPO REAL -->
+        <div class="card" id="dashLiveQueueCard" style="margin-top:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="card-title" style="margin:0"><span class="mso">schedule_send</span> Próximas Publicações &amp; Fila</div>
+            <button onclick="renderDashLiveQueue(true)" id="dashLiveQueueRefresh" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer;color:var(--text-secondary);font-family:inherit;display:flex;align-items:center;gap:4px"><span class="mso" style="font-size:14px">sync</span> Atualizar</button>
+          </div>
+          <div id="dashLiveQueue"><div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem">⏳ Carregando fila...</div></div>
+        </div>
+
         <div class="card" id="dashPubFailCard" style="margin-top:16px;display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div class="card-title" style="margin:0"><span class="mso" style="color:#ef4444">cancel</span> Falhas de Publicação</div>
@@ -4707,6 +4722,14 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="Henrique">Henrique</option>
               <option value="Emily">Emily</option>
             </select>
+          </div>
+
+          <!-- Lane filter chips -->
+          <div id="ctLaneFilterBar" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px;margin-top:4px">
+            <button class="ct-lane-chip active" onclick="ctSetLaneFilter('')" data-lane="">Todos</button>
+            <button class="ct-lane-chip" onclick="ctSetLaneFilter('producao')" data-lane="producao"><span class="mso" style="font-size:13px">brush</span> Produção</button>
+            <button class="ct-lane-chip" onclick="ctSetLaneFilter('aprovacao')" data-lane="aprovacao"><span class="mso" style="font-size:13px">rate_review</span> Aprovação</button>
+            <button class="ct-lane-chip" onclick="ctSetLaneFilter('publicacao')" data-lane="publicacao"><span class="mso" style="font-size:13px">schedule_send</span> Publicação</button>
           </div>
 
           <!-- Task List -->
@@ -10094,6 +10117,7 @@ function renderDashboard() {
   renderOperationalScore(mk, active);
   renderRecentSends();
   renderDashPublishErrors();
+  renderDashLiveQueue();
 
   // Emerald-only enhancements (hero, bento grid, implementations table)
   try { emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, cronoWk); } catch(e) { console.warn('emerald dash error', e); }
@@ -11778,6 +11802,132 @@ function renderRecentSends() {
     rh += '</div>';
   }
   el.innerHTML = rh;
+}
+
+// ── Live Queue Widget ────────────────────────────────────────────────────────
+var _dashLiveQueueCache = null; // { ts, items }
+var _dashLiveQueueTTL = 60 * 1000; // 1 min
+
+async function renderDashLiveQueue(force) {
+  var el = document.getElementById('dashLiveQueue');
+  if (!el) return;
+  var now = Date.now();
+  if (!force && _dashLiveQueueCache && (now - _dashLiveQueueCache.ts) < _dashLiveQueueTTL) {
+    _renderLiveQueueUI(el, _dashLiveQueueCache.items);
+    return;
+  }
+  el.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text-muted);font-size:0.85rem">⏳ Carregando...</div>';
+  try {
+    var cutoff48h = new Date(now + 48 * 3600 * 1000).toISOString();
+    var cutoffPast = new Date(now - 5 * 60 * 1000).toISOString(); // 5 min atrás
+
+    // QUEUED/PROCESSING from publish_queue
+    var queued = await _sbQuery('publish_queue', {
+      select: 'id,status,client_name,client_key,platform,scheduled_for,error_message,task_id,caption',
+      filters: ['status=in.(QUEUED,PROCESSING,FAILED)', 'scheduled_for=gte.' + cutoffPast],
+      order: 'scheduled_for.asc',
+      limit: 50
+    }) || [];
+
+    // SCHEDULED from publish_history (próximas 48h)
+    var scheduled = await _sbQuery('publish_history', {
+      select: 'id,status,client_name,client_key,platform,scheduled_for,error_message,task_id',
+      filters: ['status=eq.SCHEDULED', 'scheduled_for=gte.' + cutoffPast, 'scheduled_for=lte.' + cutoff48h],
+      order: 'scheduled_for.asc',
+      limit: 50
+    }) || [];
+
+    // Merge, deduplicate by task_id+platform+scheduled_for
+    var seen = new Set();
+    var merged = [];
+    queued.forEach(function(q) {
+      var key = (q.task_id || q.id) + '_' + q.platform + '_' + (q.scheduled_for || '').slice(0,16);
+      if (!seen.has(key)) { seen.add(key); merged.push({ source: 'queue', ...q }); }
+    });
+    scheduled.forEach(function(s) {
+      var key = (s.task_id || s.id) + '_' + s.platform + '_' + (s.scheduled_for || '').slice(0,16);
+      if (!seen.has(key)) { seen.add(key); merged.push({ source: 'history', ...s }); }
+    });
+    merged.sort(function(a, b) { return new Date(a.scheduled_for) - new Date(b.scheduled_for); });
+
+    _dashLiveQueueCache = { ts: Date.now(), items: merged };
+    _renderLiveQueueUI(el, merged);
+  } catch(e) {
+    el.innerHTML = '<p style="color:#ef4444;font-size:0.82rem;padding:8px">Erro ao carregar fila: ' + e.message + '</p>';
+    console.warn('renderDashLiveQueue error:', e);
+  }
+}
+
+function _renderLiveQueueUI(el, items) {
+  if (!items || !items.length) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem"><span class="mso" style="font-size:2rem;display:block;margin-bottom:6px">done_all</span>Nenhum agendamento nas próximas 48h</div>';
+    return;
+  }
+
+  var now = new Date();
+  var todayISO = now.toISOString().slice(0,10);
+  var tomorrowISO = new Date(now.getTime() + 86400000).toISOString().slice(0,10);
+
+  var byDay = {};
+  items.forEach(function(p) {
+    var day = (p.scheduled_for || '').slice(0,10) || 'sem-data';
+    if (!byDay[day]) byDay[day] = [];
+    byDay[day].push(p);
+  });
+
+  var h = '';
+  var statusMeta = {
+    QUEUED: { icon: 'pending', color: '#f59e0b', label: 'Na fila' },
+    PROCESSING: { icon: 'autorenew', color: '#3b82f6', label: 'Processando' },
+    SCHEDULED: { icon: 'calendar_today', color: '#6366f1', label: 'Agendado' },
+    FAILED: { icon: 'cancel', color: '#ef4444', label: 'Falhou' }
+  };
+
+  Object.keys(byDay).sort().forEach(function(day) {
+    var dayLabel = day === todayISO ? 'Hoje' : day === tomorrowISO ? 'Amanhã' : day === 'sem-data' ? 'Sem data' : new Date(day + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    var dayPosts = byDay[day];
+    var hasFailed = dayPosts.some(function(p) { return (p.status || '').toUpperCase() === 'FAILED'; });
+    var hasDelayed = dayPosts.some(function(p) { return (p.status || '').toUpperCase() !== 'FAILED' && p.scheduled_for && new Date(p.scheduled_for) < now; });
+
+    h += '<div style="margin-bottom:14px">';
+    h += '<div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:6px">' + dayLabel;
+    if (hasFailed) h += ' <span style="background:#fef2f2;color:#ef4444;border-radius:4px;padding:1px 6px;font-size:0.65rem">⚠ FALHOU</span>';
+    if (hasDelayed) h += ' <span style="background:#fffbeb;color:#b45309;border-radius:4px;padding:1px 6px;font-size:0.65rem">⏰ ATRASADO</span>';
+    h += '</div>';
+
+    dayPosts.forEach(function(p) {
+      var st = (p.status || 'QUEUED').toUpperCase();
+      var meta = statusMeta[st] || { icon: 'schedule', color: '#6b7280', label: st };
+      var platLabel = (p.platform === 'ig' || p.platform === 'instagram') ? 'IG' : 'FB';
+      var platColor = (p.platform === 'ig' || p.platform === 'instagram') ? '#e1306c' : '#1877f2';
+      var timeStr = p.scheduled_for ? new Date(p.scheduled_for).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '??:??';
+      var isLate = st !== 'FAILED' && p.scheduled_for && new Date(p.scheduled_for) < now;
+      var errMsg = st === 'FAILED' && p.error_message ? p.error_message.slice(0, 60) : '';
+
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;background:var(--bg-hover,rgba(0,0,0,0.03));margin-bottom:3px' + (isLate ? ';border-left:3px solid #f59e0b' : '') + '">';
+      h += '<span style="font-size:0.78rem;font-weight:700;color:var(--text-muted);min-width:38px">' + timeStr + '</span>';
+      h += '<span class="mso" style="color:' + meta.color + ';font-size:1rem">' + meta.icon + '</span>';
+      h += '<span style="font-size:0.8rem;font-weight:600;color:' + platColor + ';min-width:22px">' + platLabel + '</span>';
+      h += '<div style="flex:1;min-width:0">';
+      h += '<div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.client_name || p.client_key || '?') + '</div>';
+      if (errMsg) h += '<div style="font-size:0.7rem;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(errMsg) + '</div>';
+      h += '</div>';
+      h += '<span style="font-size:0.68rem;padding:2px 6px;border-radius:4px;background:' + (st === 'FAILED' ? '#fef2f2;color:#ef4444' : st === 'PROCESSING' ? '#eff6ff;color:#3b82f6' : st === 'QUEUED' ? '#fffbeb;color:#b45309' : '#f0fdf4;color:#059669') + ';white-space:nowrap">' + meta.label + '</span>';
+      h += '</div>';
+    });
+    h += '</div>';
+  });
+
+  // Summary line
+  var totalQueued = items.filter(function(p) { return (p.status||'').toUpperCase() === 'QUEUED'; }).length;
+  var totalFailed = items.filter(function(p) { return (p.status||'').toUpperCase() === 'FAILED'; }).length;
+  h = '<div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">'
+    + '<span style="font-size:0.75rem;color:var(--text-muted)">' + items.length + ' publicação' + (items.length !== 1 ? 'ões' : '') + ' nas próximas 48h</span>'
+    + (totalQueued ? '<span style="font-size:0.75rem;font-weight:600;color:#b45309"><span class="mso" style="font-size:12px">pending</span> ' + totalQueued + ' na fila</span>' : '')
+    + (totalFailed ? '<span style="font-size:0.75rem;font-weight:600;color:#ef4444"><span class="mso" style="font-size:12px">cancel</span> ' + totalFailed + ' falharam</span>' : '')
+    + '</div>' + h;
+
+  el.innerHTML = h;
 }
 
 // ── Publish Failures Widget ──────────────────────────────────────────────────
@@ -18471,6 +18621,11 @@ async function ctAutoPromotePublished() {
       return ctApi('change_status', { id: taskId, status: 'publicado', user: 'Sistema (auto)' });
     }));
 
+    // Notify user
+    if (typeof showToast === 'function') {
+      showToast('<span class="mso mso-fill" style="color:#10b981">check_circle</span> ' + toPromote.length + ' post' + (toPromote.length > 1 ? 's foram marcados' : ' foi marcado') + ' como publicado automaticamente', 'success');
+    }
+
     // Reload groups if content tab is active
     if (document.getElementById('tab-content') && document.getElementById('tab-content').classList.contains('active')) {
       ctLoadGroups();
@@ -18631,11 +18786,13 @@ async function ctLoadGroups() {
   if (!clientId) {
     addBtn.style.display = 'none';
     if (wizBtn) wizBtn.style.display = 'none';
+    if (typeof ctShowLaneFilter === 'function') ctShowLaneFilter(false);
     document.getElementById('ctListBody').innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px"><span class="mso">assignment</span></div>Selecione um cliente para ver as tarefas</div>';
     return;
   }
   addBtn.style.display = '';
   if (wizBtn) wizBtn.style.display = '';
+  if (typeof ctShowLaneFilter === 'function') ctShowLaneFilter(true);
 
   // Show loading only on first load (not on refreshes)
   if (ctGroups.length === 0) {
@@ -18761,7 +18918,8 @@ function ctRenderPublishColumn(publishConfig, taskStatus) {
         icon = '<span class="mso mso-fill">check_circle</span>';
       } else if (isPast) {
         st = 'scheduled-past';
-        icon = '<span class="mso">schedule</span>';
+        icon = '<span class="mso" style="color:#f59e0b">warning</span>';
+        label += ' ⚠ atrasado';
       } else {
         icon = '<span class="mso">calendar_today</span>';
       }
@@ -18770,15 +18928,18 @@ function ctRenderPublishColumn(publishConfig, taskStatus) {
       label = 'Agendado';
     } else if (st === 'failed') {
       icon = '<span class="mso">cancel</span>';
-      label = 'Erro';
+      var errSnippet = (e.error_message || '').slice(0, 40);
+      label = 'Falhou' + (errSnippet ? ': ' + errSnippet : '');
     } else if (st === 'queued') {
-      icon = '⏳';
-      label = 'Na fila';
+      icon = '<span class="mso">pending</span>';
+      var qTime = e.scheduled_for ? (function() { var d = new Date(e.scheduled_for); return d.getDate() + '/' + String(d.getMonth()+1).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); })() : '';
+      label = 'Na fila' + (qTime ? ' · ' + qTime : '');
     } else {
       icon = '<span class="mso">push_pin</span>';
       label = st;
     }
-    html += '<span class="ct-pub-pill ' + st + '" title="' + plat + ': ' + label + '">' + icon + ' ' + platIcon + plat + ' ' + label + '</span>';
+    var titleText = plat + ': ' + label + (e.scheduled_for ? ' · ' + new Date(e.scheduled_for).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '');
+    html += '<span class="ct-pub-pill ' + st + '" title="' + titleText + '">' + icon + ' ' + platIcon + plat + ' ' + label + '</span>';
   });
   html += '</div>';
   return html;
@@ -19083,6 +19244,30 @@ async function ctRefreshAgendadoStatuses() {
   }, 30000);
 })();
 
+var _ctLaneFilter = '';
+var _ctLaneStatuses = {
+  producao: ['a-fazer','em-andamento','criacao-conteudo','design'],
+  aprovacao: ['em-revisao','revisao','aprovacao-design','alteracao-design','aprovacao','alteracao','aguardando','standby','aprovado'],
+  publicacao: ['agendar','agendado','publicado','nao-publicado','nao-utilizado','cancelado']
+};
+
+function ctSetLaneFilter(lane) {
+  _ctLaneFilter = lane;
+  // Update chip active state
+  document.querySelectorAll('.ct-lane-chip').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.lane === lane);
+  });
+  // Sync with status dropdown (clear it when using lane)
+  var stFilter = document.getElementById('ctStatusFilter');
+  if (stFilter && lane) stFilter.value = '';
+  ctRenderList();
+}
+
+function ctShowLaneFilter(show) {
+  var bar = document.getElementById('ctLaneFilterBar');
+  if (bar) bar.style.display = show ? 'flex' : 'none';
+}
+
 function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
@@ -19147,6 +19332,7 @@ function ctRenderList() {
       // Recursive function to render tasks at any depth
       function renderTaskRow(task, depth, groupId) {
         if (statusFilter && task.status !== statusFilter) return '';
+        if (_ctLaneFilter && _ctLaneStatuses[_ctLaneFilter] && _ctLaneStatuses[_ctLaneFilter].indexOf(task.status || 'a-fazer') === -1) return '';
         if (priorityFilter && task.priority !== priorityFilter) return '';
         if (assigneeFilter) {
           var _ctAssignees = (task.assignee || '').split(',').map(function(a){ return a.trim(); });
@@ -23552,6 +23738,34 @@ function ctOpenLightbox(url, isVideo) {
   };
 
   // ─── Cancel scheduled/queued post from calendar ───
+  // Sync cancellation back to content_tasks.publish_config.entries
+  async function syncCancelToTask(taskId, platform, scheduledFor) {
+    if (!taskId || !_supabase) return;
+    try {
+      var res = await _supabase.from('content_tasks').select('id,publish_config,status').eq('id', taskId).maybeSingle();
+      if (!res || !res.data) return;
+      var task = res.data;
+      var pc = task.publish_config || {};
+      var entries = pc.entries || [];
+      var changed = false;
+      entries.forEach(function(e) {
+        if (e.status === 'cancelled') return;
+        if (e.platform === platform && e.scheduled_for === scheduledFor) {
+          e.status = 'cancelled';
+          changed = true;
+        }
+      });
+      if (!changed) return;
+      pc.entries = entries;
+      var hasActive = entries.some(function(e) { return e.status !== 'cancelled'; });
+      var newTaskStatus = hasActive ? task.status : 'agendar';
+      await _supabase.from('content_tasks').update({ publish_config: pc, status: newTaskStatus }).eq('id', taskId);
+      console.log('[syncCancelToTask] task ' + taskId + ' synced → status=' + newTaskStatus);
+    } catch(e) {
+      console.warn('[syncCancelToTask]', e);
+    }
+  }
+
   window.calCancelPost = async function(isoDate, postIdx) {
     var dayPosts = calPostsForDay(isoDate);
     var p = dayPosts[postIdx];
@@ -23569,6 +23783,8 @@ function ctOpenLightbox(url, isVideo) {
         if (error) throw error;
         // Also remove from local cache
         _calAllPosts = _calAllPosts.filter(function(x) { return x.id !== p.id; });
+        // Sync cancellation back to content_tasks
+        await syncCancelToTask(p.task_id, p.platform, p.scheduled_for);
       } else if (status === 'SCHEDULED') {
         // Cancel via API (same as metaPublishDeletePost)
         var res = await fetch(metaApiBase() + '/api/meta/publish', {
@@ -23586,6 +23802,8 @@ function ctOpenLightbox(url, isVideo) {
         // Update local cache
         var found = _calAllPosts.find(function(x) { return x.id === p.id; });
         if (found) found.status = 'DELETED';
+        // Sync cancellation back to content_tasks
+        await syncCancelToTask(p.task_id, p.platform, p.scheduled_for);
       } else {
         return alert('Este post não pode ser cancelado');
       }
