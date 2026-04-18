@@ -19855,15 +19855,26 @@ function ctShowStatusDropdown(event, taskId) {
     item.innerHTML = '<span style="width:10px;height:10px;border-radius:50%;background:' + s.color + ';flex-shrink:0"></span>' + s.label;
     item.onclick = async (e) => {
       e.stopPropagation();
+      const prevText = triggerBtn.textContent;
+      const prevBg = triggerBtn.style.background;
+      const prevColor = triggerBtn.style.color;
       // Optimistic: update button instantly
       triggerBtn.textContent = s.label;
       triggerBtn.style.background = s.bg || '';
       triggerBtn.style.color = s.color || '';
       ctCloseDropdowns();
-      if (taskId === 'modal') {
-        await ctChangeModalStatus(s.key);
-      } else {
-        ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() }).then(() => ctLoadGroups());
+      try {
+        if (taskId === 'modal') {
+          await ctChangeModalStatus(s.key);
+        } else {
+          await ctApi('change_status', { id: taskId, status: s.key, user: ctGetUser() });
+          ctLoadGroups();
+        }
+      } catch(err) {
+        triggerBtn.textContent = prevText;
+        triggerBtn.style.background = prevBg;
+        triggerBtn.style.color = prevColor;
+        showToast('Erro ao alterar status: ' + (err.message || err), 'error');
       }
     };
     dropdown.appendChild(item);
@@ -20237,7 +20248,8 @@ async function ctSaveTaskField(field, value) {
 
 async function ctChangeModalStatus(newStatus) {
   if (!ctModalTask) return;
-  await ctApi('change_status', { id: ctModalTask.id, status: newStatus, user: ctGetUser() });
+  const data = await ctApi('change_status', { id: ctModalTask.id, status: newStatus, user: ctGetUser() });
+  if (data && data.error) throw new Error(data.error);
   ctModalTask.status = newStatus;
 
   const status = CT_STATUSES.find(s => s.key === newStatus) || CT_STATUSES[0];
