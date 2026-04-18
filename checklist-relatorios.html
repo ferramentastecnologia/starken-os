@@ -9231,6 +9231,8 @@ function markCronoSentNow(clientId, type, periodKey) {
       .catch(function(e) { console.warn('markCronoSentNow sync error:', e); });
   }
   renderAll();
+  // Atualiza contadores do dashboard (Pendentes/Gerados/Enviados) — renderAll() não os atualiza
+  if (typeof renderDashboard === 'function') renderDashboard();
 }
 
 // ============ INITIALS ============
