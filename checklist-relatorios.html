@@ -20299,6 +20299,9 @@ function ctIsVideo(att) {
   return ['mp4','mov','avi','webm','mkv','m4v'].includes(ext);
 }
 
+function ctAttImgError(img) {
+  img.outerHTML = '<div style="width:100%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--bg-elevated,#1e293b);color:var(--text-secondary);font-size:1.5rem">📄</div>';
+}
 function ctBuildAttCard(a, badge, badgeColor) {
   var isVid = ctIsVideo(a);
   var delBtn = '<button onclick="event.stopPropagation();ctDeleteAttachment(\'' + a.id + '\')" style="position:absolute;top:4px;right:4px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:0.72rem;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,0.3)" title="Remover"><span class="mso">close</span></button>';
@@ -20314,7 +20317,7 @@ function ctBuildAttCard(a, badge, badgeColor) {
       + '</div>';
   } else {
     // Image thumbnail
-    preview = '<img src="' + a.file_url + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" onerror="this.outerHTML=\'<div style=\\\"width:100%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--bg-elevated,#1e293b);color:var(--text-secondary);font-size:0.72rem\\\">📄<span>Arquivo</span></div>\'">';
+    preview = '<img src="' + a.file_url + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" onerror="ctAttImgError(this)">';
   }
 
   var sizeTxt = a.file_size ? (a.file_size > 1048576 ? (a.file_size/1048576).toFixed(1) + ' MB' : Math.round(a.file_size/1024) + ' KB') : '';
@@ -27862,15 +27865,15 @@ function ctRenderTwoColumnContent() {
         pubEl.innerHTML = '<div style="margin-top:10px;background:var(--card,#fff);border-radius:10px;border:1px solid var(--border);padding:10px">'
           + '<div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Plataforma</div>'
           + '<div style="display:flex;gap:6px;margin-bottom:8px">'
-          + '<button id="ctColPubFb_' + fmt + '" onclick="ctColTogglePlat(\'' + fmt + '\',\'fb\')" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--card,#fff);cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all 0.15s"><span class="mso">description</span> Facebook</button>'
-          + '<button id="ctColPubIg_' + fmt + '" onclick="ctColTogglePlat(\'' + fmt + '\',\'ig\')" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:6px;background:var(--card,#fff);cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all 0.15s"><span class="mso">photo_camera</span> Instagram</button>'
+          + '<button id="ctColPubFb_' + fmt + '" onclick="ctColTogglePlat(\'' + fmt + '\',\'fb\')" style="flex:1;padding:7px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg-elevated,#1e293b);color:var(--text-secondary);cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:4px"><span class="mso">description</span> Facebook</button>'
+          + '<button id="ctColPubIg_' + fmt + '" onclick="ctColTogglePlat(\'' + fmt + '\',\'ig\')" style="flex:1;padding:7px;border:1.5px solid var(--border);border-radius:6px;background:var(--bg-elevated,#1e293b);color:var(--text-secondary);cursor:pointer;font-size:0.72rem;font-family:inherit;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:4px"><span class="mso">photo_camera</span> Instagram</button>'
           + '</div>'
           + '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">'
           + '<select id="ctColPubMode_' + fmt + '" onchange="document.getElementById(\'ctColPubDate_' + fmt + '\').style.display=this.value===\'schedule\'?\'block\':\'none\'" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;background:var(--card);color:var(--text)">'
-          + '<option value="now"><span class="mso">bolt</span> Agora</option><option value="schedule"><span class="mso">calendar_today</span> Agendar</option></select>'
+          + '<option value="now">⚡ Agora</option><option value="schedule">📅 Agendar</option></select>'
           + '<input type="datetime-local" id="ctColPubDate_' + fmt + '" style="display:none;flex:1;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:0.72rem;font-family:inherit;background:var(--card);color:var(--text)">'
           + '</div>'
-          + '<button onclick="ctColPublish(\'' + fmt + '\')" style="width:100%;padding:8px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit"><span class="mso">rocket_launch</span> Publicar</button>'
+          + '<button id="ctColPublishBtn_' + fmt + '" onclick="ctColPublish(\'' + fmt + '\')" style="width:100%;padding:9px;border:none;border-radius:8px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px"><span class="mso">rocket_launch</span> Publicar</button>'
           + '<div style="margin-top:6px">' + histHtml + '</div>'
           + '</div>';
       }
@@ -27887,10 +27890,10 @@ function ctColTogglePlat(fmt, plat) {
   var btn = document.getElementById(btnId);
   if (idx >= 0) {
     _ctColPlats[fmt].splice(idx, 1);
-    if (btn) { btn.style.background = 'var(--card,#fff)'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text)'; btn.style.fontWeight = '400'; }
+    if (btn) { btn.style.background = 'var(--bg-elevated,#1e293b)'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text-secondary)'; btn.style.fontWeight = '400'; btn.style.boxShadow = 'none'; }
   } else {
     _ctColPlats[fmt].push(plat);
-    if (btn) { btn.style.background = '#dbeafe'; btn.style.borderColor = '#3b82f6'; btn.style.color = '#1d4ed8'; btn.style.fontWeight = '700'; }
+    if (btn) { btn.style.background = 'rgba(59,130,246,0.15)'; btn.style.borderColor = '#3b82f6'; btn.style.color = '#60a5fa'; btn.style.fontWeight = '700'; btn.style.boxShadow = '0 0 0 2px rgba(59,130,246,0.3)'; }
   }
 }
 
@@ -28465,14 +28468,19 @@ async function ctPublishFormat() {
   var isSchedule = mode === 'schedule';
   if (isSchedule && !datetime) return alert('Selecione data e hora para agendamento');
 
-  // Show loading
+  // Show loading (btn/statusEl may not exist in two-column view)
   var btn = document.getElementById('ctFmtPubBtn');
   var statusEl = document.getElementById('ctFmtPubStatus');
-  btn.disabled = true; btn.style.opacity = '0.5';
-  statusEl.style.display = '';
-  statusEl.style.background = '#dbeafe';
-  statusEl.style.color = '#1d4ed8';
-  statusEl.textContent = '⏳ Publicando...';
+  // Also track the column-level button that may have triggered this
+  var colBtn = document.getElementById('ctColPublishBtn_' + fmt);
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+  if (colBtn) { colBtn.disabled = true; colBtn.style.opacity = '0.6'; colBtn.textContent = '⏳ Publicando...'; }
+  if (statusEl) {
+    statusEl.style.display = '';
+    statusEl.style.background = '#dbeafe';
+    statusEl.style.color = '#1d4ed8';
+    statusEl.textContent = '⏳ Publicando...';
+  }
 
   var results = [];
 
@@ -28618,11 +28626,21 @@ async function ctPublishFormat() {
     if (r.ok && r.crossPost) return '<span class="mso mso-fill">check_circle</span> Facebook (via cross-post IG) ' + (isSchedule ? 'agendado' : 'publicado');
     return (r.ok ? '<span class="mso mso-fill">check_circle</span>' : '<span class="mso">cancel</span>') + ' ' + r.plat + (r.ok ? (isSchedule ? ' agendado' : ' publicado') : ': ' + (r.error || 'erro'));
   });
-  statusEl.style.background = allOk ? '#d1fae5' : '#fef2f2';
-  statusEl.style.color = allOk ? '#059669' : '#dc2626';
-  statusEl.innerHTML = msgs.join('<br>');
-
-  btn.disabled = false; btn.style.opacity = '1';
+  if (statusEl) {
+    statusEl.style.background = allOk ? '#d1fae5' : '#fef2f2';
+    statusEl.style.color = allOk ? '#059669' : '#dc2626';
+    statusEl.innerHTML = msgs.join('<br>');
+  }
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
+  // Re-enable column button and show result via toast
+  if (colBtn) {
+    colBtn.disabled = false; colBtn.style.opacity = '1';
+    colBtn.innerHTML = '<span class="mso">rocket_launch</span> Publicar';
+  }
+  if (!statusEl) {
+    var summary = msgs.map(function(m) { return m.replace(/<[^>]+>/g, ''); }).join(' | ');
+    showToast(summary, allOk ? 'success' : 'error');
+  }
 
   // Auto-update task status to agendado/publicado
   if (allOk || results.some(function(r) { return r.ok; })) {
