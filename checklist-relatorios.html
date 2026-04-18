@@ -16972,10 +16972,16 @@ function metaPublishValidateForm() {
   const clientKey = document.getElementById('metaPubClient').value;
   const platform = document.getElementById('metaPubPlatform').value;
   const caption = document.getElementById('metaPubCaption').value;
+  const type = document.getElementById('metaPubType') ? document.getElementById('metaPubType').value : '';
   const hasMedia = _metaPubFiles.length > 0 || _metaPubPreloadedUrls.length > 0 || (document.getElementById('metaPubMediaUrl') && document.getElementById('metaPubMediaUrl').value);
   const hasContent = !!caption || hasMedia;
   const plats = platform.split(',').filter(Boolean);
   const igNeedsMedia = plats.includes('ig') && !hasMedia;
+
+  // Carrossel exige mínimo 2 imagens
+  const totalImages = _metaPubFiles.length || _metaPubPreloadedUrls.length;
+  const isCarousel = type === 'carousel';
+  const carouselNeedsMoreImages = isCarousel && totalImages < 2;
 
   // Checklist visual
   const chkClient = document.getElementById('metaPubChkClient');
@@ -17000,18 +17006,34 @@ function metaPublishValidateForm() {
     chkMedia.innerHTML = (!igNeedsMedia ? '<span class="mso mso-fill">check_box</span>' : '<span class="mso">check_box_outline_blank</span>') + ' Mídia obrigatória (Instagram)';
   }
 
+  // Checklist visual: carrossel mínimo 2 imagens
+  let chkCarousel = document.getElementById('metaPubChkCarousel');
+  if (isCarousel) {
+    if (!chkCarousel) {
+      chkCarousel = document.createElement('div');
+      chkCarousel.id = 'metaPubChkCarousel';
+      const chkList = document.querySelector('.meta-pub-checklist');
+      if (chkList) chkList.appendChild(chkCarousel);
+    }
+    chkCarousel.className = 'meta-pub-check' + (!carouselNeedsMoreImages ? ' ok' : '');
+    chkCarousel.innerHTML = (!carouselNeedsMoreImages ? '<span class="mso mso-fill">check_box</span>' : '<span class="mso">check_box_outline_blank</span>') + ' Carrossel: mínimo 2 imagens (' + totalImages + ' selecionada' + (totalImages === 1 ? '' : 's') + ')';
+  } else if (chkCarousel) {
+    chkCarousel.remove();
+  }
+
   // Botão submit
   const btn = document.getElementById('metaPubSubmitBtn');
   const icon = document.getElementById('metaPubSubmitIcon');
   const text = document.getElementById('metaPubSubmitText');
   const mode = document.getElementById('metaPubScheduleMode').value;
-  const isValid = clientKey && platform && hasContent && !igNeedsMedia;
+  const isValid = clientKey && platform && hasContent && !igNeedsMedia && !carouselNeedsMoreImages;
 
   btn.disabled = !isValid;
   if (!clientKey) { text.textContent = 'Selecione cliente e plataforma'; icon.innerHTML = '<span class="mso">upload</span>'; }
   else if (!platform) { text.textContent = 'Escolha a plataforma'; icon.innerHTML = '<span class="mso">language</span>'; }
   else if (!hasContent) { text.textContent = 'Adicione legenda ou mídia'; icon.innerHTML = '<span class="mso">edit</span>'; }
   else if (igNeedsMedia) { text.textContent = 'Instagram exige mídia'; icon.innerHTML = '<span class="mso">photo_camera</span>'; }
+  else if (carouselNeedsMoreImages) { text.textContent = 'Carrossel exige mínimo 2 imagens'; icon.innerHTML = '<span class="mso">image</span>'; }
   else if (mode === 'schedule') { text.textContent = 'Agendar Publicação'; icon.innerHTML = '<span class="mso">calendar_today</span>'; }
   else { text.textContent = 'Publicar Agora'; icon.innerHTML = '<span class="mso">rocket_launch</span>'; }
 }
@@ -17342,6 +17364,13 @@ async function metaPublishSubmit() {
   if (platforms.includes('ig') && _metaPubFiles.length === 0 && !mediaUrl) {
     alert('Instagram exige mídia. Adicione imagem/vídeo ou URL de mídia.');
     return;
+  }
+  if (type === 'carousel') {
+    const totalImgs = _metaPubFiles.length || _metaPubPreloadedUrls.length;
+    if (totalImgs < 2) {
+      alert('Carrossel exige no mínimo 2 imagens. Você tem ' + totalImgs + ' imagem(ns) selecionada(s).\n\nAdicione mais imagens ou mude o tipo de post para Feed.');
+      return;
+    }
   }
   if (mode === 'schedule' && datetime) {
     const schedTime = new Date(datetime);
