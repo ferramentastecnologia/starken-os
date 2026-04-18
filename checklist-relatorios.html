@@ -6689,6 +6689,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // FAILED posts: re-alerta a cada 2h enquanto ainda estiver FAILED
         if (h.status === 'FAILED') {
+          if (shownAt === 'dismissed') return; // usuário dispensou — não incomoda mais
           const alreadyShownRecently = shownAt && (now - shownAt) < TWO_HOURS;
           if (alreadyShownRecently) return;
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
@@ -6862,7 +6863,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const closeBtn = document.createElement('button');
       closeBtn.innerHTML = '×';
       closeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;line-height:1';
-      closeBtn.onclick = function(e) { e.stopPropagation(); toast.remove(); };
+      closeBtn.onclick = function(e) {
+        e.stopPropagation();
+        // Marca como dispensado permanentemente — não reaparece mais para este erro
+        _alertsShown[alert.key] = 'dismissed';
+        try { localStorage.setItem('starken_alerts_shown', JSON.stringify(_alertsShown)); } catch(ex) {}
+        toast.remove();
+      };
       toast.appendChild(closeBtn);
 
       // Click no corpo navega para detalhes (apenas se não clicou nos botões)
