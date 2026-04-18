@@ -28318,27 +28318,22 @@ function ctFmtSelectPlatform(plat) {
 function ctRenderFormatPublish() {
   if (!_ctActiveFormatTab || !ctModalTask) return;
   var fmt = _ctActiveFormatTab;
-  var info = CT_FORMATS[fmt] || { label: fmt };
 
-  // Update publish label
-  var label = document.getElementById('ctFormatPublishLabel');
-  if (label) label.innerHTML = '— ' + info.label;
+  // Plain text labels (no HTML — these go into elements that may have text-transform CSS)
+  var fmtPlainLabel = { feed: 'Feed', story: 'Story', reels: 'Reels', carrossel: 'Carrossel' }[fmt] || fmt;
+  var fmtIcons = { feed: 'rocket_launch', story: 'smartphone', reels: 'movie', carrossel: 'image' };
+  var icon = fmtIcons[fmt] || 'rocket_launch';
 
-  // Update publish button text
-  var btn = document.getElementById('ctFmtPubBtn');
-  if (btn) {
-    if (fmt === 'story') {
-      btn.innerHTML = '<span class="mso">smartphone</span> Publicar Story';
-      btn.disabled = false;
-      btn.style.opacity = '1';
-    } else if (fmt === 'reels') {
-      btn.innerHTML = '<span class="mso">movie</span> Publicar Reels';
-    } else if (fmt === 'carrossel') {
-      btn.innerHTML = '<span class="mso">image</span> Publicar Carrossel';
-    } else {
-      btn.innerHTML = '<span class="mso">rocket_launch</span> Publicar Feed';
-    }
-  }
+  // Update ALL instances of ctFormatPublishLabel (static + dynamic may both be in DOM)
+  document.querySelectorAll('#ctFormatPublishLabel').forEach(function(el) {
+    el.textContent = '— ' + fmtPlainLabel;
+  });
+
+  // Update ALL instances of ctFmtPubBtn
+  document.querySelectorAll('#ctFmtPubBtn').forEach(function(btn) {
+    btn.innerHTML = '<span class="mso">' + icon + '</span> Publicar ' + fmtPlainLabel;
+    if (fmt === 'story') { btn.disabled = false; btn.style.opacity = '1'; }
+  });
 
   // Reset platform selection
   _ctFmtPlatforms = [];
