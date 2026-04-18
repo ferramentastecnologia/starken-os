@@ -869,6 +869,12 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(204).end();
 
+  // Validate required environment variables at boot
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error('[content] FATAL: SUPABASE_URL or SUPABASE_SERVICE_KEY env var is missing');
+    return res.status(500).json({ error: 'Configuração do servidor incompleta. Variáveis de ambiente SUPABASE_URL e/ou SUPABASE_SERVICE_KEY não definidas.' });
+  }
+
   let action, params;
 
   if (req.method === 'GET') {

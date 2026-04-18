@@ -385,6 +385,12 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Validate required environment variables
+  if (!SUPABASE_URL() || !SUPABASE_KEY()) {
+    console.error('[publish] FATAL: SUPABASE_URL or SUPABASE_SERVICE_KEY env var is missing');
+    return res.status(500).json({ error: 'Configuração do servidor incompleta. Variáveis de ambiente SUPABASE_URL e/ou SUPABASE_SERVICE_KEY não definidas.' });
+  }
+
   // ─── GET: Histórico ou Cron de publicação ───
   if (req.method === 'GET') {
     // CRON: processar fila de agendamentos

@@ -5965,6 +5965,15 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="ig"><span class="mso">photo_camera</span> Instagram</option>
             </select>
           </div>
+          <!-- Mini dashboard de saúde 24h -->
+          <div id="sysHealthBar" style="display:none;margin-bottom:12px;border-radius:10px;padding:10px 14px;background:var(--bg-elevated,#19202c);border:1px solid var(--border);font-size:0.78rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <span style="font-weight:700;color:var(--text-secondary);white-space:nowrap"><span class="mso" style="font-size:14px;vertical-align:-3px">monitor_heart</span> Últimas 24h:</span>
+            <span id="sysHealthPub"  style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthSch"  style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthFail" style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthQueue" style="display:inline-flex;align-items:center;gap:4px"></span>
+            <span id="sysHealthUpdated" style="margin-left:auto;font-size:0.7rem;color:var(--text-tertiary,#64748b)"></span>
+          </div>
           <!-- Resumo -->
           <div id="pubHistSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px"></div>
           <!-- Cards por cliente -->
@@ -7649,6 +7658,50 @@ function sysLogsLoadUsers() {
   sel.innerHTML = html;
 }
 
+// ── Mini dashboard de saúde — últimas 24h ──
+async function sysHealthBarRefresh() {
+  var bar = document.getElementById('sysHealthBar');
+  if (!bar) return;
+  bar.style.display = 'flex';
+
+  try {
+    var res = await fetch(metaApiBase() + '/api/meta/publish?limit=200');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var items = data.history || [];
+
+    var cutoff24h = Date.now() - 24 * 60 * 60 * 1000;
+    var last24 = items.filter(function(h) {
+      var ts = h.published_at || h.scheduled_for || h.created_at;
+      return ts && new Date(ts).getTime() >= cutoff24h;
+    });
+
+    var pub  = last24.filter(function(h){ return h.status === 'PUBLISHED'; }).length;
+    var sch  = last24.filter(function(h){ return h.status === 'SCHEDULED'; }).length;
+    var fail = last24.filter(function(h){ return h.status === 'FAILED'; }).length;
+    var queue = items.filter(function(h){ return h.status === 'QUEUED' || h.status === 'PROCESSING'; }).length;
+
+    function chip(icon, label, val, color, bg) {
+      return '<span style="background:' + bg + ';color:' + color + ';border-radius:6px;padding:3px 9px;font-weight:700;font-size:0.75rem;display:inline-flex;align-items:center;gap:4px">'
+        + '<span class="mso" style="font-size:12px">' + icon + '</span>' + val + ' ' + label + '</span>';
+    }
+
+    var pubEl  = document.getElementById('sysHealthPub');
+    var schEl  = document.getElementById('sysHealthSch');
+    var failEl = document.getElementById('sysHealthFail');
+    var queueEl= document.getElementById('sysHealthQueue');
+    var updEl  = document.getElementById('sysHealthUpdated');
+
+    if (pubEl)   pubEl.innerHTML   = chip('check_circle', 'publicados', pub,  '#46eecd', 'rgba(70,238,205,0.10)');
+    if (schEl)   schEl.innerHTML   = chip('calendar_today', 'agendados', sch, '#93c5fd', 'rgba(147,197,253,0.10)');
+    if (failEl)  failEl.innerHTML  = chip(fail > 0 ? 'cancel' : 'check', fail > 0 ? 'falhas' : 'sem falhas', fail, fail > 0 ? '#f87171' : '#46eecd', fail > 0 ? 'rgba(248,113,113,0.10)' : 'rgba(70,238,205,0.08)');
+    if (queueEl) queueEl.innerHTML = queue > 0 ? chip('pending', 'na fila', queue, '#fbbf24', 'rgba(251,191,36,0.10)') : '';
+    if (updEl)   updEl.textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    bar.innerHTML = '<span style="color:#f87171;font-size:0.78rem"><span class="mso">cloud_off</span> Não foi possível carregar dados de saúde do sistema</span>';
+  }
+}
+
 async function sysLogsRefresh() {
   var listEl = document.getElementById('sysLogsList');
   if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">⏳ Carregando...</div>';
@@ -7811,6 +7864,8 @@ async function pubHistoryRefresh() {
   if (btn) { btn.disabled = true; btn.innerHTML = '<span class="mso">sync</span> Carregando...'; }
 
   try {
+    sysHealthBarRefresh(); // atualiza mini dashboard 24h em paralelo
+
     // 1. Fetch publish_history (Meta API — para retry/error details)
     try {
       var res = await fetch(metaApiBase() + '/api/meta/publish?limit=500');
