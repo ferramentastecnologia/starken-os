@@ -17983,6 +17983,8 @@ function ctInit() {
   fetch(ctApiBase() + '/api/content', { method: 'OPTIONS' }).catch(() => {});
   // Auto-promote agendado → publicado for past dates
   ctAutoPromotePublished();
+  // Verificar posts esquecidos (agendado + data passada) — roda depois do promote
+  setTimeout(ctCheckForgottenPosts, 5000);
 }
 
 // Auto-promote tasks with status 'agendado' to 'publicado' if post date has passed
@@ -18056,6 +18058,83 @@ async function ctAutoPromotePublished() {
     }
   } catch(e) {
     console.warn('ctAutoPromotePublished error:', e);
+  }
+}
+
+// Verifica posts esquecidos: status 'agendado' com data de entrega no passado
+async function ctCheckForgottenPosts() {
+  if (!_supabase) return;
+  // Throttle: uma vez por sessão (evita spam a cada navegação)
+  var sessionKey = 'starken_forgotten_checked_' + new Date().toISOString().slice(0, 10);
+  if (sessionStorage.getItem(sessionKey)) return;
+
+  try {
+    var today = new Date();
+    var todayISO = today.getFullYear() + '-' + ('0'+(today.getMonth()+1)).slice(-2) + '-' + ('0'+today.getDate()).slice(-2);
+
+    var res = await _supabase
+      .from('content_tasks')
+      .select('id,name,due_date,client_key,publish_config,parent_id')
+      .eq('status', 'agendado')
+      .not('due_date', 'is', null)
+      .lt('due_date', todayISO);
+
+    var tasks = (res.data || []).filter(function(t) { return !t.parent_id; }); // só tasks raiz
+    if (!tasks.length) {
+      sessionStorage.setItem(sessionKey, '1');
+      return;
+    }
+
+    sessionStorage.setItem(sessionKey, '1');
+
+    // Toca som de aviso
+    if (typeof playAlertSound === 'function') playAlertSound('warning');
+
+    // Monta banner fixo no topo
+    var existing = document.getElementById('forgottenPostsBanner');
+    if (existing) existing.remove();
+
+    var clientMap = {};
+    tasks.forEach(function(t) {
+      var ck = t.client_key || 'outros';
+      if (!clientMap[ck]) clientMap[ck] = [];
+      clientMap[ck].push(t);
+    });
+
+    var clientLines = Object.keys(clientMap).map(function(ck) {
+      var cl = (_metaClients && _metaClients[ck]) ? _metaClients[ck].name : ck;
+      var count = clientMap[ck].length;
+      return '<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(0,0,0,0.08);border-radius:4px;padding:2px 8px;font-size:0.75rem;font-weight:700">' + esc(cl) + ' <span style="opacity:.7">(' + count + ')</span></span>';
+    }).join(' ');
+
+    var banner = document.createElement('div');
+    banner.id = 'forgottenPostsBanner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:#b45309;color:#fff;padding:10px 50px 10px 20px;font-family:inherit;font-size:0.82rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 4px 20px rgba(0,0,0,0.3)';
+    banner.innerHTML = '<span class="mso" style="font-size:1.2rem;flex-shrink:0">warning</span>'
+      + '<strong>⚠ ' + tasks.length + ' post' + (tasks.length > 1 ? 's' : '') + ' esquecido' + (tasks.length > 1 ? 's' : '') + '</strong>'
+      + '<span style="opacity:.85">— deveriam ter sido publicados mas ainda estão como Agendado:</span>'
+      + '<span style="display:flex;flex-wrap:wrap;gap:4px">' + clientLines + '</span>'
+      + '<button onclick="if(typeof switchTab===\'function\')switchTab(\'content\')" style="background:rgba(255,255,255,0.2);color:#fff;border:1px solid rgba(255,255,255,0.4);border-radius:6px;padding:4px 12px;font-family:inherit;font-size:0.78rem;cursor:pointer;font-weight:700;margin-left:auto;white-space:nowrap">Ver Tarefas →</button>';
+
+    var closeX = document.createElement('button');
+    closeX.innerHTML = '×';
+    closeX.style.cssText = 'position:absolute;top:8px;right:14px;background:none;border:none;color:#fff;font-size:1.3rem;cursor:pointer;line-height:1;opacity:.8';
+    closeX.onclick = function() { banner.remove(); };
+    banner.appendChild(closeX);
+
+    document.body.prepend(banner);
+
+    // Web Notification
+    if ('Notification' in window && Notification.permission === 'granted') {
+      var n = new Notification('Starken OS — Posts não publicados', {
+        body: tasks.length + ' post(s) estavam agendados mas não foram publicados. Clique para ver.',
+        icon: '/favicon.ico',
+        requireInteraction: true,
+      });
+      n.onclick = function() { window.focus(); if (typeof switchTab === 'function') switchTab('content'); n.close(); };
+    }
+  } catch(e) {
+    console.warn('ctCheckForgottenPosts error:', e);
   }
 }
 
