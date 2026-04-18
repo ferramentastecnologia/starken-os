@@ -17454,10 +17454,44 @@ async function metaPublishSubmit() {
   submitBtn.disabled = true;
   submitIcon.innerHTML = '⏳';
   submitText.textContent = 'Publicando em ' + clientName + '...';
-  statusDiv.style.display = 'block';
-  statusDiv.style.background = '#eff6ff';
-  statusDiv.style.color = '#1d4ed8';
-  statusDiv.innerHTML = '⏳ Enviando para Meta Graph API...';
+
+  // ── Progresso visual com etapas e timer ──
+  const _pubStartTime = Date.now();
+  let _pubTimerInterval = null;
+  function _pubSetStep(stepIndex, msg, isError) {
+    const elapsed = Math.round((Date.now() - _pubStartTime) / 1000);
+    const elapsedStr = elapsed >= 60 ? Math.floor(elapsed/60) + 'min ' + (elapsed%60) + 's' : elapsed + 's';
+    const steps = ['Upload', 'Processando', 'Publicando'];
+    const stepsHtml = steps.map((s, i) => {
+      const done = i < stepIndex;
+      const active = i === stepIndex;
+      const col = isError && active ? '#dc2626' : active ? '#1d4ed8' : done ? '#16a34a' : '#9ca3af';
+      const icon = done ? '✓' : active ? (isError ? '✗' : '●') : '○';
+      return '<span style="color:' + col + ';font-weight:' + (active||done?'700':'400') + ';font-size:0.78rem">' + icon + ' ' + s + '</span>';
+    }).join('<span style="color:#d1d5db;margin:0 6px">›</span>');
+    const barPct = isError ? 100 : Math.min(100, Math.round((stepIndex / (steps.length - 1)) * 100));
+    const barColor = isError ? '#ef4444' : '#3b82f6';
+    statusDiv.style.display = 'block';
+    statusDiv.style.background = isError ? '#fef2f2' : '#eff6ff';
+    statusDiv.style.color = isError ? '#dc2626' : '#1d4ed8';
+    statusDiv.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      + '<div style="display:flex;gap:8px;align-items:center">' + stepsHtml + '</div>'
+      + '<span style="font-size:0.72rem;color:#6b7280;font-weight:600">⏱ ' + elapsedStr + '</span>'
+      + '</div>'
+      + '<div style="background:#e2e8f0;border-radius:4px;height:4px;margin-bottom:8px;overflow:hidden">'
+      +   '<div style="height:100%;background:' + barColor + ';width:' + barPct + '%;transition:width 0.4s;border-radius:4px"></div>'
+      + '</div>'
+      + '<div style="font-size:0.82rem">' + msg + '</div>';
+  }
+
+  // Timer que atualiza o tempo decorrido a cada segundo
+  _pubTimerInterval = setInterval(() => { if (statusDiv.style.display !== 'none') _pubSetStep(_pubCurrentStep || 0, _pubCurrentMsg || '...'); }, 1000);
+  let _pubCurrentStep = 0, _pubCurrentMsg = '⏳ Enviando para Meta Graph API...';
+
+  // Helper para atualizar etapa + msg
+  function _pubStep(step, msg) { _pubCurrentStep = step; _pubCurrentMsg = msg; _pubSetStep(step, msg, false); }
+  _pubStep(0, '⏳ Iniciando...');
 
   try {
     const imageUrl = mediaUrl.trim();
@@ -17478,12 +17512,10 @@ async function metaPublishSubmit() {
     if (hasLocalFile) {
       const totalFiles = _metaPubFiles.length;
       const isCarousel = totalFiles > 1;
-      statusDiv.style.background = '#fffbeb';
-      statusDiv.style.color = '#b45309';
 
       for (let fi = 0; fi < totalFiles; fi++) {
         const file = _metaPubFiles[fi];
-        statusDiv.innerHTML = '<span class="mso">upload</span> <b>Etapa 1/2:</b> Enviando ' + (fi + 1) + '/' + totalFiles + ' · ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)...';
+        _pubStep(0, '<span class="mso">upload</span> Enviando arquivo ' + (fi + 1) + '/' + totalFiles + ' · ' + file.name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)...');
 
         // Converte para base64
         const base64 = await new Promise((resolve, reject) => {
@@ -17514,8 +17546,8 @@ async function metaPublishSubmit() {
 
         if (uploadData.error) {
           statusDiv.style.background = '#fef2f2';
-          statusDiv.style.color = '#dc2626';
-          statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro no upload ' + (fi + 1) + ':</b> ' + uploadData.message;
+          clearInterval(_pubTimerInterval);
+          _pubSetStep(0, '<span class="mso">cancel</span> <b>Erro no upload ' + (fi + 1) + ':</b> ' + uploadData.message, true);
           return;
         }
 
@@ -17523,22 +17555,20 @@ async function metaPublishSubmit() {
         const pubUrl = uploadData.upload ? uploadData.upload.publicUrl : null;
         if (pubUrl) resolvedImageUrls.push(pubUrl);
 
-        statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> Upload ' + (fi + 1) + '/' + totalFiles + ' concluído';
+        _pubStep(0, '<span class="mso mso-fill">check_circle</span> Upload ' + (fi + 1) + '/' + totalFiles + ' concluído');
       }
 
       // Set single image vars for backwards compatibility
       if (resolvedImageUrls.length > 0) resolvedImageUrl = resolvedImageUrls[0];
       if (containerIds.length > 0) containerId = containerIds[0];
 
-      statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> ' + totalFiles + ' arquivo(s) enviados → preparando publicação...';
+      _pubStep(1, '<span class="mso mso-fill">check_circle</span> ' + totalFiles + ' arquivo(s) enviados → preparando publicação...');
       await new Promise(r => setTimeout(r, 300));
 
     }
     // URL pública direta (sem upload local) para IG precisa do media endpoint
     else if (imageUrl && platforms.includes('ig')) {
-      statusDiv.innerHTML = '<span class="mso">upload</span> <b>Etapa 1/2:</b> Criando container Instagram...';
-      statusDiv.style.background = '#fffbeb';
-      statusDiv.style.color = '#b45309';
+      _pubStep(1, '<span class="mso">upload</span> Criando container Instagram...');
 
       const mediaBody = {
         destination: 'ig',
@@ -17556,14 +17586,13 @@ async function metaPublishSubmit() {
       const mediaData = await mediaRes.json();
 
       if (mediaData.error) {
-        statusDiv.style.background = '#fef2f2';
-        statusDiv.style.color = '#dc2626';
-        statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro IG container:</b> ' + mediaData.message;
+        clearInterval(_pubTimerInterval);
+        _pubSetStep(1, '<span class="mso">cancel</span> <b>Erro IG container:</b> ' + mediaData.message, true);
         return;
       }
 
       containerId = mediaData.container_id;
-      statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> Container IG criado: ' + containerId;
+      _pubStep(1, '<span class="mso mso-fill">check_circle</span> Container IG criado: ' + containerId);
       await new Promise(r => setTimeout(r, 500));
     }
 
@@ -17616,9 +17645,7 @@ async function metaPublishSubmit() {
         continue; // Skip direct publish for IG scheduled
       }
 
-      statusDiv.innerHTML = (hasMedia ? '<span class="mso">upload</span> <b>Etapa 2/2:</b> ' : '<span class="mso">upload</span> ') + 'Publicando em ' + platLabel + (totalPlats > 1 ? ' (' + platIdx + '/' + totalPlats + ')' : '') + '...';
-      statusDiv.style.background = '#eff6ff';
-      statusDiv.style.color = '#1d4ed8';
+      _pubStep(2, '<span class="mso">rocket_launch</span> Publicando em ' + platLabel + (totalPlats > 1 ? ' (' + platIdx + '/' + totalPlats + ')' : '') + '...');
 
       const body = {
         destination: plat,
@@ -17680,11 +17707,15 @@ async function metaPublishSubmit() {
       statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro:</b> ' + failures.map(f => f.platLabel + ': ' + f.data.message).join(' | ');
     } else {
       const isScheduled = mode === 'schedule';
+      clearInterval(_pubTimerInterval);
+      const elapsed = Math.round((Date.now() - _pubStartTime) / 1000);
+      const elapsedStr = elapsed >= 60 ? Math.floor(elapsed/60) + 'min ' + (elapsed%60) + 's' : elapsed + 's';
       statusDiv.style.background = '#ecfdf5';
       statusDiv.style.color = '#059669';
       const platNames = successes.map(s => s.platLabel).join(' + ');
       statusDiv.innerHTML = (isScheduled ? '<span class="mso">calendar_today</span>' : '<span class="mso mso-fill">check_circle</span>') + ' <b>Post ' + (isScheduled ? 'agendado' : 'publicado') + ' com sucesso!</b> '
         + clientName + ' · ' + platNames + (hasMedia ? ' · <span class="mso">image</span> Com imagem' : '')
+        + ' <span style="font-size:0.75rem;color:#6b7280">· ⏱ ' + elapsedStr + '</span>'
         + (failures.length > 0 ? '<br><span class="mso">warning</span> Falhou em: ' + failures.map(f => f.platLabel).join(', ') : '');
 
       try { localStorage.setItem('metaPubHistory', JSON.stringify(_metaPubHistory.slice(0, 50))); } catch(e) {}
@@ -17704,9 +17735,8 @@ async function metaPublishSubmit() {
       metaPublishUpdatePreview();
     }
   } catch (e) {
-    statusDiv.style.background = '#fef2f2';
-    statusDiv.style.color = '#dc2626';
-    statusDiv.innerHTML = '<span class="mso">cancel</span> <b>Erro de conexão:</b> ' + e.message;
+    clearInterval(_pubTimerInterval);
+    _pubSetStep(_pubCurrentStep || 0, '<span class="mso">cancel</span> <b>Erro de conexão:</b> ' + e.message, true);
   } finally {
     submitBtn.disabled = false;
     metaPublishValidateForm();
