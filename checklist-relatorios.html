@@ -20302,7 +20302,7 @@ function ctBuildAttCard(a, badge, badgeColor) {
       + '</div>';
   } else {
     // Image thumbnail
-    preview = '<img src="' + a.file_url + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" onerror="this.outerHTML=\'<div style=padding:30px;text-align:center;color:var(--text-secondary);font-size:0.75rem><span class="mso">description</span> Arquivo</div>\'">';
+    preview = '<img src="' + a.file_url + '" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover" onerror="this.outerHTML=\'<div style=\\\"width:100%;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:var(--bg-elevated,#1e293b);color:var(--text-secondary);font-size:0.72rem\\\">📄<span>Arquivo</span></div>\'">';
   }
 
   var sizeTxt = a.file_size ? (a.file_size > 1048576 ? (a.file_size/1048576).toFixed(1) + ' MB' : Math.round(a.file_size/1024) + ' KB') : '';
