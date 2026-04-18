@@ -430,23 +430,31 @@ async function deleteTask({ id, user }) {
   if (!id) return fail('id is required');
   if (!user) return fail('user is required');
 
-  // Delete subtasks recursively first (up to 5 levels)
+  // Delete subtasks recursively first (up to 5 levels), cleaning related data for each
   async function deleteChildren(parentId) {
     const children = await supaSelect('content_tasks', `select=id&parent_id=eq.${parentId}`);
     for (const child of children) {
       await deleteChildren(child.id);
+      await deleteRelatedData(child.id);
       await supaDelete('content_tasks', child.id);
     }
   }
+
+  async function deleteRelatedData(taskId) {
+    const results = await Promise.allSettled([
+      fetch(`${SUPABASE_URL}/rest/v1/content_comments?task_id=eq.${taskId}`, { method: 'DELETE', headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/content_attachments?task_id=eq.${taskId}`, { method: 'DELETE', headers: HEADERS }),
+      fetch(`${SUPABASE_URL}/rest/v1/content_activity?task_id=eq.${taskId}`, { method: 'DELETE', headers: HEADERS }),
+    ]);
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        console.error(`[deleteTask] Failed to delete related data[${i}] for task ${taskId}:`, r.reason);
+      }
+    });
+  }
+
   await deleteChildren(id);
-
-  // Delete related data
-  await Promise.all([
-    fetch(`${SUPABASE_URL}/rest/v1/content_comments?task_id=eq.${id}`, { method: 'DELETE', headers: HEADERS }),
-    fetch(`${SUPABASE_URL}/rest/v1/content_attachments?task_id=eq.${id}`, { method: 'DELETE', headers: HEADERS }),
-    fetch(`${SUPABASE_URL}/rest/v1/content_activity?task_id=eq.${id}`, { method: 'DELETE', headers: HEADERS }),
-  ]).catch(() => {});
-
+  await deleteRelatedData(id);
   await supaDelete('content_tasks', id);
   return ok({ deleted: true });
 }
