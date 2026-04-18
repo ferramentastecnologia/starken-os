@@ -468,10 +468,16 @@ async function changeStatus({ id, status, user }) {
 
   const oldStatus = existing[0].status;
 
-  const data = await supaUpdate('content_tasks', id, {
-    status,
-    updated_at: new Date().toISOString(),
-  });
+  const now = new Date().toISOString();
+  const doneStatuses = ['publicado', 'publicado-st', 'aprovado', 'cancelado'];
+  const patch = { status, updated_at: now };
+  if (doneStatuses.includes(status) && !doneStatuses.includes(oldStatus)) {
+    patch.completed_at = now; // marca conclusão na primeira transição para estado final
+  } else if (!doneStatuses.includes(status)) {
+    patch.completed_at = null; // limpa se status voltar para aberto
+  }
+
+  const data = await supaUpdate('content_tasks', id, patch);
 
   await logActivity(id, user, 'status_changed', {
     old_status: oldStatus,

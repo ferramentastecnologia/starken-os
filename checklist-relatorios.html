@@ -4662,6 +4662,13 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="ctStatusFilter" onchange="ctRenderList()">
               <option value="">Todos os status</option>
             </select>
+            <select id="ctPriorityFilter" onchange="ctRenderList()" style="padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:0.82rem;font-family:inherit;color:var(--text);background:var(--card,#fff);cursor:pointer">
+              <option value="">Todas prioridades</option>
+              <option value="urgente">🔴 Urgente</option>
+              <option value="alta">🟠 Alta</option>
+              <option value="normal">🔵 Normal</option>
+              <option value="baixa">⚪ Baixa</option>
+            </select>
             <select id="ctAssigneeFilter" onchange="ctRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
@@ -18864,6 +18871,7 @@ function ctRenderList() {
   const body = document.getElementById('ctListBody');
   const statusFilter = document.getElementById('ctStatusFilter').value;
   const assigneeFilter = document.getElementById('ctAssigneeFilter').value;
+  const priorityFilter = document.getElementById('ctPriorityFilter') ? document.getElementById('ctPriorityFilter').value : '';
 
   if (ctGroups.length === 0) {
     body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)"><div style="font-size:2rem;margin-bottom:8px"><span class="mso">outgoing_mail</span></div>Nenhum grupo criado. Clique em "+ Novo Grupo" para começar.</div>';
@@ -18892,8 +18900,23 @@ function ctRenderList() {
 
     // Group row
     var safeGroupName = group.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    // Cálculo de progresso do grupo (excluindo subtasks, apenas tasks raiz)
+    var rootTasks = tasks.filter(function(t){ return !t.parent_id; });
+    var doneStatuses = ['publicado','publicado-st','aprovado','cancelado'];
+    var doneTasks = rootTasks.filter(function(t){ return doneStatuses.indexOf(t.status) >= 0; }).length;
+    var totalRoot = rootTasks.length;
+    var pct = totalRoot > 0 ? Math.round((doneTasks / totalRoot) * 100) : 0;
+    var pctColor = pct === 100 ? '#46eecd' : pct >= 60 ? '#93c5fd' : pct >= 30 ? '#fbbf24' : 'var(--text-secondary)';
+    var progressHtml = totalRoot > 0
+      ? '<span style="display:inline-flex;align-items:center;gap:5px;margin-left:8px">'
+        + '<span style="width:60px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;display:inline-block">'
+        + '<span style="display:block;height:100%;width:' + pct + '%;background:' + pctColor + ';border-radius:3px;transition:width 0.3s"></span>'
+        + '</span>'
+        + '<span style="font-size:0.7rem;font-weight:700;color:' + pctColor + '">' + pct + '%</span>'
+        + '</span>'
+      : '';
     html += '<div class="ct-row group" onclick="ctToggleGroup(\'' + group.id + '\')">'
-      + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span><span class="mso">folder</span> ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span></span></div>'
+      + '<div class="ct-name"><span class="ct-chevron ' + (expanded ? 'open' : '') + '">▶</span><span><span class="mso">folder</span> ' + group.name + ' <span style="font-weight:400;color:var(--text-secondary);font-size:0.78rem">(' + taskCount + ')</span>' + progressHtml + '</span></div>'
       + '<div></div><div></div><div></div><div></div>'
       + '<div style="text-align:center;display:flex;gap:2px;justify-content:center;align-items:center">'
       + '<button onclick="event.stopPropagation();ctMoveGroup(\'' + group.id + '\',\'up\')" title="Mover grupo para cima" style="background:none;border:none;cursor:pointer;font-size:0.8rem;opacity:0.45;padding:3px 6px;border-radius:6px;line-height:1" onmouseover="this.style.opacity=1;this.style.background=\'#e0f2fe\'" onmouseout="this.style.opacity=0.45;this.style.background=\'none\'">▲</button>'
@@ -18908,6 +18931,7 @@ function ctRenderList() {
       // Recursive function to render tasks at any depth
       function renderTaskRow(task, depth, groupId) {
         if (statusFilter && task.status !== statusFilter) return '';
+        if (priorityFilter && task.priority !== priorityFilter) return '';
         if (assigneeFilter) {
           var _ctAssignees = (task.assignee || '').split(',').map(function(a){ return a.trim(); });
           if (_ctAssignees.indexOf(assigneeFilter) === -1) return '';
