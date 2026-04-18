@@ -6476,7 +6476,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ─── PUBLISH QUEUE PROCESSOR + ALERTAS (polling every 2 min) ───
   let _queueInterval = null;
-  let _alertsShown = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
+  let _alertsShown = (function() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('starken_alerts_shown') || '{}');
+      // Limpa entradas com mais de 7 dias para não crescer indefinidamente
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      Object.keys(raw).forEach(k => { if (raw[k] < cutoff) delete raw[k]; });
+      return raw;
+    } catch(e) { return {}; }
+  })();
   let _queueProcessing = false; // lock to prevent concurrent cron calls
   let _queueLastErrorAt = 0;    // timestamp of last system-level error shown (throttle alerts)
 
@@ -6497,14 +6505,17 @@ document.addEventListener('DOMContentLoaded', function() {
       const alerts = [];
       const now = new Date();
 
+      const TWO_HOURS = 2 * 60 * 60 * 1000;
       items.forEach(h => {
         const key = h.id || h.post_id;
-        if (_alertsShown[key]) return; // Já mostrou
+        const shownAt = _alertsShown[key]; // timestamp (ms) or true (legacy)
 
-        // FAILED posts
+        // FAILED posts: re-alerta a cada 2h enquanto ainda estiver FAILED
         if (h.status === 'FAILED') {
+          const alreadyShownRecently = shownAt && (now - shownAt) < TWO_HOURS;
+          if (alreadyShownRecently) return;
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
-          const errMsg = h.error_message ? ' · ' + h.error_message.substring(0, 80) : '';
+          const errMsg = h.error_message ? ' · ' + h.error_message : ''; // mensagem completa
           alerts.push({
             type: 'error',
             icon: '<span class="mso">cancel</span>',
@@ -6512,7 +6523,10 @@ document.addEventListener('DOMContentLoaded', function() {
             message: (h.client_name || 'Cliente') + errMsg,
             key: key,
           });
+          return;
         }
+
+        if (shownAt) return; // posts não-FAILED: mostra só uma vez
 
         // QUEUED posts que passaram da hora (atrasados > 5 min)
         if (h.status === 'SCHEDULED' && h.scheduled_for) {
@@ -6620,7 +6634,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     alerts.forEach((alert, i) => {
       // Marca como mostrado
-      _alertsShown[alert.key] = true;
+      _alertsShown[alert.key] = Date.now(); // timestamp — permite re-alertar FAILEDs após 2h
 
       const isError = alert.type === 'error';
       const bgColor    = isError ? '#fef2f2' : '#fffbeb';
