@@ -6542,6 +6542,22 @@ document.addEventListener('DOMContentLoaded', function() {
       if (cronData.processed > 0) {
         if (typeof metaPublishLoadHistory === 'function') metaPublishLoadHistory();
         ctRefreshAgendadoStatuses();
+
+        // Avisar se alguma task publicada não teve seu status atualizado
+        const failedUpdates = (cronData.results || []).filter(r => r.task_status_update_failed && r.task_id);
+        failedUpdates.forEach((r, idx) => {
+          const clientLabel = r.client_name ? r.client_name : 'Cliente';
+          const w = document.createElement('div');
+          w.style.cssText = 'position:fixed;top:' + (20 + idx * 85) + 'px;right:20px;z-index:99999;background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:10px;padding:14px 40px 14px 16px;box-shadow:0 8px 30px rgba(0,0,0,0.15);max-width:380px;font-family:inherit;animation:alertSlideIn 0.3s ease';
+          w.innerHTML = '<div style="font-weight:700;font-size:0.88rem;margin-bottom:3px"><span class="mso">sync_problem</span> Status não atualizado — ' + esc(clientLabel) + '</div><div style="font-size:0.78rem;color:#6b7280">Post publicado com sucesso, mas o status da tarefa não foi atualizado. Atualize manualmente na aba de Conteúdo.</div>';
+          const cb = document.createElement('button');
+          cb.innerHTML = '×';
+          cb.style.cssText = 'position:absolute;top:8px;right:10px;background:none;border:none;font-size:1.2rem;cursor:pointer;color:#9ca3af;line-height:1';
+          cb.onclick = function(ev) { ev.stopPropagation(); w.remove(); };
+          w.appendChild(cb);
+          document.body.appendChild(w);
+          setTimeout(() => { if (w.parentElement) w.remove(); }, 20000);
+        });
       }
     } catch (e) {
       console.error('[processQueueAndCheckAlerts] Falha no processador de fila:', e);
