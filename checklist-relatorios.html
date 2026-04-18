@@ -2127,16 +2127,22 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-add-btn:hover { background:var(--brand-dark); }
 
 /* List */
-.ct-list { border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.04); }
-.ct-header-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 150px 120px 84px 84px minmax(200px,auto) 116px;gap:0;background:var(--surface-container-low);padding:0 20px;height:38px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:1px;border-bottom:1px solid var(--outline-variant);align-items:center; }
-.ct-row { display:grid;grid-template-columns:minmax(200px,2fr) 90px 150px 120px 84px 84px minmax(200px,auto) 116px;gap:0;padding:0 20px;min-height:52px;height:auto;border-bottom:1px solid rgba(0,0,0,0.05);font-size:var(--text-base);align-items:center;padding-top:10px;padding-bottom:10px;transition:background 0.12s ease;cursor:pointer;position:relative; }
+.ct-list { border:1px solid var(--border);border-radius:12px;overflow-x:auto;overflow-y:visible;box-shadow:0 1px 4px rgba(0,0,0,0.04);scroll-behavior:smooth; }
+.ct-list::-webkit-scrollbar { height:5px; }
+.ct-list::-webkit-scrollbar-track { background:transparent; }
+.ct-list::-webkit-scrollbar-thumb { background:var(--border);border-radius:3px; }
+.ct-header-row { display:grid;grid-template-columns:minmax(260px,2fr) 110px 150px 130px 84px 84px minmax(200px,auto) 120px;gap:0;background:var(--surface-container-low);padding:0 0 0 20px;height:38px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);letter-spacing:1px;border-bottom:1px solid var(--outline-variant);align-items:center;min-width:980px; }
+.ct-row { display:grid;grid-template-columns:minmax(260px,2fr) 110px 150px 130px 84px 84px minmax(200px,auto) 120px;gap:0;padding:0 0 0 0;min-height:52px;height:auto;border-bottom:1px solid rgba(0,0,0,0.05);font-size:var(--text-base);align-items:center;padding-top:10px;padding-bottom:10px;transition:background 0.12s ease;cursor:pointer;position:relative;min-width:980px; }
 .ct-row .ct-name,.ct-row .ct-assignee { padding-top:0; }
 .ct-row:hover { background:rgba(59,130,246,0.03); }
-.ct-row:hover::before { content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand,#3b82f6);border-radius:0 2px 2px 0;opacity:0.6; }
+.ct-row:hover::before { content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--brand,#3b82f6);border-radius:0 2px 2px 0;opacity:0.6;z-index:4; }
 .ct-row.group { background:var(--surface-container-low);font-weight:700;font-size:var(--text-md);height:40px;border-bottom:1px solid var(--outline-variant); }
-.ct-row.subtask { padding-left:60px;font-size:var(--text-sm);color:var(--text-secondary); }
-.ct-row .ct-name { display:flex;align-items:center;gap:10px;min-width:0; }
-.ct-row .ct-name span { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;font-size:0.875rem;color:var(--text-primary); }
+.ct-row.subtask { font-size:var(--text-sm);color:var(--text-secondary); }
+.ct-row .ct-name { display:flex;align-items:center;gap:8px;min-width:0;position:sticky;left:0;z-index:2;padding-left:20px;padding-right:8px;background:var(--bg-app,#fff);transition:background 0.12s; }
+.ct-row:hover .ct-name { background:var(--surface-container-low,#f8fafc); }
+.ct-row.group .ct-name { background:var(--surface-container-low);padding-left:20px; }
+.ct-header-row > div:first-child { position:sticky;left:0;z-index:3;background:var(--surface-container-low);padding-left:20px;padding-right:8px; }
+.ct-row .ct-name span { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:0.9rem;color:var(--text-primary); }
 .ct-chevron { cursor:pointer;transition:transform 0.2s;font-size:0.7rem;flex-shrink:0;width:20px;text-align:center; }
 .ct-chevron.open { transform:rotate(90deg); }
 
@@ -2331,6 +2337,10 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 [data-theme="emerald"] .gp-topbar { background:var(--bg-surface,#151c27);border-color:var(--border); }
 [data-theme="emerald"] .list-header { background:var(--bg-surface,#151c27);border-color:var(--border); }
 [data-theme="emerald"] .status-group-header { background:var(--bg-surface,#151c27);border-color:var(--border); }
+[data-theme="emerald"] .ct-row .ct-name { background:var(--bg-app,#0c141f); }
+[data-theme="emerald"] .ct-row:hover .ct-name { background:var(--bg-elevated,#19202c); }
+[data-theme="emerald"] .ct-row.group .ct-name { background:var(--bg-surface,#151c27); }
+[data-theme="emerald"] .ct-header-row > div:first-child { background:var(--bg-surface,#151c27); }
 
 /* Kanban */
 [data-theme="emerald"] .kanban-card { background:var(--bg-elevated,#19202c);border-color:var(--border); }
@@ -2478,14 +2488,19 @@ textarea.ca-input { resize:vertical; min-height:90px; line-height:1.5; }
 .ct-ph-empty { padding:12px;text-align:center;color:var(--text-secondary);font-size:0.8rem; }
 
 /* Mini calendar strip */
-.ct-mini-day { padding:6px 2px;border-radius:8px;font-size:0.72rem; }
+.ct-mini-day { padding:6px 2px;border-radius:8px;font-size:0.72rem;cursor:pointer;transition:background 0.12s; }
+.ct-mini-day:hover { background:rgba(59,130,246,0.08); }
 .ct-mini-day .day-name { font-weight:600;color:var(--text-secondary);text-transform:uppercase;font-size:0.6rem;margin-bottom:2px; }
-.ct-mini-day .day-num { font-weight:700;font-size:0.85rem;margin-bottom:3px; }
+.ct-mini-day .day-num { font-weight:700;font-size:0.85rem;margin-bottom:3px;color:var(--text-primary); }
 .ct-mini-day.today { background:#eff6ff;border:1px solid #bfdbfe; }
 .ct-mini-day.current-task { background:#dbeafe;border:2px solid #3b82f6; }
 .ct-mini-dot { width:6px;height:6px;border-radius:50%;display:inline-block;margin:0 1px; }
 .ct-mini-dot.scheduled { background:#f59e0b; }
 .ct-mini-dot.published { background:#10b981; }
+[data-theme="emerald"] .ct-mini-day.today { background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.4); }
+[data-theme="emerald"] .ct-mini-day.current-task { background:rgba(70,238,205,0.12);border:2px solid #46eecd; }
+[data-theme="emerald"] .ct-mini-day:hover { background:rgba(70,238,205,0.08); }
+[data-theme="emerald"] .ct-mini-day .day-num { color:var(--text-primary,#e2e8f0); }
 
 /* Add task inline */
 .ct-add-inline { padding:6px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px; }
@@ -4513,8 +4528,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                   <div class="form-group">
                     <label class="form-label"><span class="mso">schedule</span> Quando Publicar</label>
                     <select class="form-input" id="metaPubScheduleMode" onchange="metaPublishScheduleChange()">
-                      <option value="now"><span class="mso">bolt</span> Publicar Agora</option>
-                      <option value="schedule"><span class="mso">calendar_today</span> Agendar</option>
+                      <option value="now">⚡ Publicar Agora</option>
+                      <option value="schedule">📅 Agendar</option>
                     </select>
                   </div>
                 </div>
@@ -5036,8 +5051,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                       <div>
                         <div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Quando</div>
                         <select id="ctFmtPubMode" onchange="document.getElementById('ctFmtPubDateWrap').style.display=this.value==='schedule'?'block':'none'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text)">
-                          <option value="now"><span class="mso">bolt</span> Publicar Agora</option>
-                          <option value="schedule"><span class="mso">calendar_today</span> Agendar</option>
+                          <option value="now">⚡ Publicar Agora</option>
+                          <option value="schedule">📅 Agendar</option>
                         </select>
                       </div>
                       <div id="ctFmtPubDateWrap" style="display:none;flex:1">
@@ -5142,8 +5157,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <div>
                   <label style="font-size:0.72rem;font-weight:700;display:block;margin-bottom:4px">Quando</label>
                   <select id="ctPubMode" class="form-input" style="font-size:0.85rem" onchange="document.getElementById('ctPubDateWrap').style.display=this.value==='schedule'?'block':'none'">
-                    <option value="now"><span class="mso">bolt</span> Publicar Agora</option>
-                    <option value="schedule"><span class="mso">calendar_today</span> Agendar</option>
+                    <option value="now">⚡ Publicar Agora</option>
+                    <option value="schedule">📅 Agendar</option>
                   </select>
                   <div id="ctPubDateWrap" style="display:none;margin-top:8px">
                     <div style="display:flex;gap:6px;align-items:center">
@@ -5173,8 +5188,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 
             <!-- Mini Calendar Strip -->
             <div id="ctMiniCalSection" style="display:none;margin-top:16px">
-              <div style="background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:14px">
-                <div style="font-size:0.78rem;font-weight:700;margin-bottom:10px"><span class="mso">calendar_today</span> Agenda da Semana</div>
+              <div style="background:var(--bg-elevated,#f8fafc);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="font-size:0.78rem;font-weight:700;margin-bottom:10px;color:var(--text-secondary)"><span class="mso">calendar_today</span> Agenda da Semana <span style="font-weight:400;font-size:0.7rem;opacity:0.7">(clique para definir data do post)</span></div>
                 <div id="ctMiniCalStrip" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center"></div>
               </div>
             </div>
@@ -6049,15 +6064,15 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <button id="pubHistRefreshBtn" onclick="pubHistoryRefresh()" style="padding:6px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;font-size:0.78rem;font-family:inherit;font-weight:600"><span class="mso">sync</span> Atualizar</button>
             <div style="flex:1"></div>
             <select id="pubHistDateFilter" onchange="pubHistoryRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
-              <option value="1"><span class="mso">calendar_today</span> Hoje</option>
-              <option value="7"><span class="mso">calendar_today</span> Últimos 7 dias</option>
-              <option value="30" selected><span class="mso">calendar_today</span> Últimos 30 dias</option>
+              <option value="1">Hoje</option>
+              <option value="7">Últimos 7 dias</option>
+              <option value="30" selected>Últimos 30 dias</option>
               <option value="all"><span class="mso">assignment</span> Todos</option>
             </select>
             <select id="pubHistStatusFilter" onchange="pubHistoryRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
               <option value="all"><span class="mso">assignment</span> Todos os status</option>
               <option value="PUBLISHED"><span class="mso mso-fill">check_circle</span> Publicados</option>
-              <option value="SCHEDULED"><span class="mso">calendar_today</span> Agendados</option>
+              <option value="SCHEDULED">📅 Agendados</option>
               <option value="FAILED"><span class="mso">cancel</span> Falhas</option>
             </select>
             <select id="pubHistPlatformFilter" onchange="pubHistoryRender()" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.78rem;font-family:inherit;background:var(--card);color:var(--text)">
@@ -18775,7 +18790,7 @@ function ctRenderMiniCalendar() {
     const isCurrentTask = dStr === taskDateStr;
     const posts = allScheduled[dStr] || [];
 
-    html += '<div class="ct-mini-day' + (isCurrentTask ? ' current-task' : isToday ? ' today' : '') + '">'
+    html += '<div class="ct-mini-day' + (isCurrentTask ? ' current-task' : isToday ? ' today' : '') + '" onclick="ctMiniCalSelectDay(\'' + dStr + '\')" title="Definir ' + dStr + ' como data do post">'
       + '<div class="day-name">' + dayNames[i] + '</div>'
       + '<div class="day-num">' + d.getDate() + '</div>';
     if (posts.length > 0) {
@@ -18790,6 +18805,27 @@ function ctRenderMiniCalendar() {
   }
   strip.innerHTML = html;
   section.style.display = 'block';
+}
+
+async function ctMiniCalSelectDay(dateStr) {
+  if (!ctModalTask) return;
+  // Update post_date in publish_config
+  const config = ctModalTask.publish_config || {};
+  config.post_date = dateStr;
+  ctModalTask.publish_config = config;
+  // Sync modal post date input
+  const postEl = document.getElementById('ctModalPostDate');
+  if (postEl) postEl.value = dateStr;
+  // Re-render mini calendar to show new selection
+  ctRenderMiniCalendar();
+  // Save to API
+  try {
+    await ctApi('upsert_task', { id: ctModalTask.id, publish_config: config, user: ctGetUser() });
+    ctRenderList();
+    showToast('Data do post: ' + dateStr.split('-').reverse().join('/'), 'success');
+  } catch(e) {
+    showToast('Erro ao salvar data: ' + e.message, 'error');
+  }
 }
 
 // ─── RENDER LIST ───
@@ -27782,7 +27818,7 @@ function ctRenderFormatTabs() {
       + '</div></div>'
       + '<div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><div>'
       + '<div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Quando</div>'
-      + '<select id="ctFmtPubMode" onchange="document.getElementById(\'ctFmtPubDateWrap\').style.display=this.value===\'schedule\'?\'block\':\'none\'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text)"><option value="now"><span class="mso">bolt</span> Publicar Agora</option><option value="schedule"><span class="mso">calendar_today</span> Agendar</option></select>'
+      + '<select id="ctFmtPubMode" onchange="document.getElementById(\'ctFmtPubDateWrap\').style.display=this.value===\'schedule\'?\'block\':\'none\'" style="padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text)"><option value="now">⚡ Publicar Agora</option><option value="schedule">📅 Agendar</option></select>'
       + '</div><div id="ctFmtPubDateWrap" style="display:none;flex:1"><div style="font-size:0.72rem;font-weight:600;color:var(--text-secondary);margin-bottom:4px">Data/Hora</div>'
       + '<div style="display:flex;gap:6px"><input type="date" id="ctFmtPubDate" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box;cursor:pointer" onclick="this.showPicker?this.showPicker():null"><input type="time" id="ctFmtPubTime" value="10:00" style="width:90px;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box"></div><input type="hidden" id="ctFmtPubDatetime"></div></div>'
       + '<button onclick="ctPublishFormat()" id="ctFmtPubBtn" style="width:100%;padding:10px;border:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.2s"><span class="mso">rocket_launch</span> Publicar</button>'
@@ -28286,21 +28322,21 @@ function ctRenderFormatPublish() {
 
   // Update publish label
   var label = document.getElementById('ctFormatPublishLabel');
-  if (label) label.textContent = '— ' + info.label;
+  if (label) label.innerHTML = '— ' + info.label;
 
   // Update publish button text
   var btn = document.getElementById('ctFmtPubBtn');
   if (btn) {
     if (fmt === 'story') {
-      btn.textContent = '<span class="mso">smartphone</span> Publicar Story';
+      btn.innerHTML = '<span class="mso">smartphone</span> Publicar Story';
       btn.disabled = false;
       btn.style.opacity = '1';
     } else if (fmt === 'reels') {
-      btn.textContent = '<span class="mso">movie</span> Publicar Reels';
+      btn.innerHTML = '<span class="mso">movie</span> Publicar Reels';
     } else if (fmt === 'carrossel') {
-      btn.textContent = '<span class="mso">image</span> Publicar Carrossel';
+      btn.innerHTML = '<span class="mso">image</span> Publicar Carrossel';
     } else {
-      btn.textContent = '<span class="mso">rocket_launch</span> Publicar Feed';
+      btn.innerHTML = '<span class="mso">rocket_launch</span> Publicar Feed';
     }
   }
 
