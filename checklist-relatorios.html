@@ -9785,6 +9785,7 @@ function _renderSwPremium(periodKey) {
       // Convert map to array and filter by active status
       var allActive = Object.values(allClientsMap).filter(function(c) { return c.active; });
       allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
+      console.log('[Cronograma] ' + co.key + ' — Clientes carregados:', allActive.length, '— MetaClients:', Object.keys(_metaClients || {}).length, '— DataClients:', (data && data.clients ? data.clients.length : 0));
       // Show ALL active clients — no content-group filter
       var clients = allActive.filter(function(c) {
         return !curSearch || (c.name || '').toLowerCase().includes(curSearch);
