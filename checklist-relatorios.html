@@ -9807,6 +9807,7 @@ function _renderSwPremium(periodKey) {
       function renderCard(item) {
         var c = item.c, cs = item.cs, st = item.st;
         var metaKey = findMetaClientKey(c.name, tenant);
+        if (!metaKey && co.key === 'Starken') console.warn('[renderCard] Starken client not found:', c.name, '— tenant:', tenant);
         var mc = (metaKey && _metaClients) ? _metaClients[metaKey] : null;
         var pdfUrl = cs && cs.pdf_url;
         var pdfName = cs && cs.pdf_name;
