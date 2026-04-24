@@ -6664,10 +6664,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const key = h.id || h.post_id;
         const shownAt = _alertsShown[key]; // timestamp (ms) or true (legacy)
 
-        // FAILED posts: re-alerta a cada 2h enquanto ainda estiver FAILED
+        // FAILED posts: alerta apenas uma vez (erros persistem no dashboard)
         if (h.status === 'FAILED') {
-          const alreadyShownRecently = shownAt && (now - shownAt) < TWO_HOURS;
-          if (alreadyShownRecently) return;
+          if (shownAt) return; // Já foi mostrado uma vez — não repete
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
           const errMsg = h.error_message ? ' · ' + h.error_message : ''; // mensagem completa
           // Garante que _pubHistPostData está populado para retry direto do toast
