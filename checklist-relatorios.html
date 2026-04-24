@@ -9748,36 +9748,33 @@ function _renderSwPremium(periodKey) {
       var curSearch = (searchFilters['sched-weekly'] && searchFilters['sched-weekly'][co.key]) || '';
       var tenant = co.key === 'Alpha' ? 'alpha' : 'starken';
 
-      // Combine data.clients (localStorage) with _metaClients (Supabase) to get all clients
+      // Build client list: data.clients (localStorage) is source of truth
+      // _metaClients adds new clients not yet in data.clients (by name match)
+      var knownNames = new Set();
       var allClientsMap = {};
-      // 1. Add from _metaClients (Supabase) — keys are client slugs, values are config objects
-      if (typeof _metaClients === 'object' && _metaClients) {
-        Object.keys(_metaClients).forEach(function(metaKey) {
-          var mc = _metaClients[metaKey];
-          if (mc && mc.name) {
-            // Simple mapping: Alpha if tenant === 'alpha', otherwise Starken
-            var companyName = (mc.tenant === 'alpha') ? 'Alpha' : 'Starken';
-            // Only add if company matches the current iteration
-            if (companyName === co.key) {
-              allClientsMap[mc.name.toLowerCase()] = {
-                id: metaKey,
-                name: mc.name,
-                company: companyName,
-                phone: mc.phone || '',
-                customPeriod: mc.customPeriod || '',
-                segment: mc.segment || '',
-                active: !mc.status || mc.status === 'ativo'
-              };
-            }
+      // 1. data.clients has priority (UUID-based IDs, correct company/active flags)
+      if (data && data.clients && Array.isArray(data.clients)) {
+        data.clients.forEach(function(c) {
+          if (c && c.name && c.company === co.key && c.active) {
+            allClientsMap[c.name.toLowerCase()] = c;
+            knownNames.add(c.name.toLowerCase());
           }
         });
       }
-      // 2. Add/override from data.clients (localStorage)
-      if (data && data.clients && Array.isArray(data.clients)) {
-        data.clients.forEach(function(c) {
-          if (c && c.name && c.company === co.key) {
-            allClientsMap[c.name.toLowerCase()] = c;
-          }
+      // 2. _metaClients: add only clients not already in data.clients
+      if (typeof _metaClients === 'object' && _metaClients) {
+        Object.keys(_metaClients).forEach(function(metaKey) {
+          var mc = _metaClients[metaKey];
+          if (!mc || !mc.name) return;
+          var companyName = (mc.tenant === 'alpha') ? 'Alpha' : 'Starken';
+          if (companyName !== co.key) return;
+          var nameLower = mc.name.toLowerCase();
+          if (knownNames.has(nameLower)) return; // already have this client
+          allClientsMap[nameLower] = {
+            id: metaKey, name: mc.name, company: companyName,
+            phone: mc.phone || '', customPeriod: '', segment: mc.segment || '',
+            active: !mc.status || mc.status === 'ativo'
+          };
         });
       }
 
