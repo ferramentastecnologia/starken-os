@@ -9750,19 +9750,21 @@ function _renderSwPremium(periodKey) {
 
       // Combine data.clients (localStorage) with _metaClients (Supabase) to get all clients
       var allClientsMap = {};
-      // 1. Add from _metaClients (Supabase)
+      // 1. Add from _metaClients (Supabase) — keys are client slugs, values are config objects
       if (typeof _metaClients === 'object' && _metaClients) {
-        Object.keys(_metaClients).forEach(function(key) {
-          var mc = _metaClients[key];
-          if (mc && mc.name) {
+        Object.keys(_metaClients).forEach(function(metaKey) {
+          var mc = _metaClients[metaKey];
+          if (mc && mc.name && (mc.tenant === tenant || !mc.tenant)) {
+            // Build company name from tenant value
+            var companyName = mc.tenant === 'alpha' ? 'Alpha' : (mc.tenant === 'starken' ? 'Starken' : co.key);
             allClientsMap[mc.name.toLowerCase()] = {
-              id: mc.client_id || mc.id || key,
+              id: metaKey,
               name: mc.name,
-              company: mc.company || co.key,
+              company: companyName,
               phone: mc.phone || '',
-              customPeriod: '',
+              customPeriod: mc.customPeriod || '',
               segment: mc.segment || '',
-              active: mc.status === 'ativo' || !mc.status
+              active: !mc.status || mc.status === 'ativo'
             };
           }
         });
@@ -9770,7 +9772,7 @@ function _renderSwPremium(periodKey) {
       // 2. Add/override from data.clients (localStorage)
       if (data && data.clients && Array.isArray(data.clients)) {
         data.clients.forEach(function(c) {
-          if (c && c.name) {
+          if (c && c.name && c.company === co.key) {
             allClientsMap[c.name.toLowerCase()] = c;
           }
         });
