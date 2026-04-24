@@ -9747,7 +9747,37 @@ function _renderSwPremium(periodKey) {
     try {
       var curSearch = (searchFilters['sched-weekly'] && searchFilters['sched-weekly'][co.key]) || '';
       var tenant = co.key === 'Alpha' ? 'alpha' : 'starken';
-      var allActive = (data.clients || []).filter(function(c) { return c.active && c.company === co.key; });
+
+      // Combine data.clients (localStorage) with _metaClients (Supabase) to get all clients
+      var allClientsMap = {};
+      // 1. Add from _metaClients (Supabase)
+      if (typeof _metaClients === 'object' && _metaClients) {
+        Object.keys(_metaClients).forEach(function(key) {
+          var mc = _metaClients[key];
+          if (mc && mc.name) {
+            allClientsMap[mc.name.toLowerCase()] = {
+              id: mc.client_id || mc.id || key,
+              name: mc.name,
+              company: mc.company || co.key,
+              phone: mc.phone || '',
+              customPeriod: '',
+              segment: mc.segment || '',
+              active: mc.status === 'ativo' || !mc.status
+            };
+          }
+        });
+      }
+      // 2. Add/override from data.clients (localStorage)
+      if (data && data.clients && Array.isArray(data.clients)) {
+        data.clients.forEach(function(c) {
+          if (c && c.name) {
+            allClientsMap[c.name.toLowerCase()] = c;
+          }
+        });
+      }
+
+      // Convert map to array and filter by company
+      var allActive = Object.values(allClientsMap).filter(function(c) { return c.active && c.company === co.key; });
       allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
       // Show ALL active clients — no content-group filter
       var clients = allActive.filter(function(c) {
