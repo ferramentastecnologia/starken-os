@@ -9868,7 +9868,13 @@ function _renderSwPremium(periodKey) {
       function renderSection(label, cls, icon, items) {
         var h = '<div class="sw-sec-label ' + cls + '"><span>' + icon + '\u00A0' + label + '</span><span class="sw-sec-cnt">' + items.length + '</span></div>';
         if (items.length === 0) return h + '<div class="sw-sec-empty">Nenhum cliente</div>';
-        items.forEach(function(item) { try { h += renderCard(item); } catch(e2) { console.error('renderCard err', e2); } });
+        items.forEach(function(item, idx) {
+          try {
+            var cardHtml = renderCard(item);
+            if (co.key === 'Starken' && idx < 2) console.log('[Card HTML] ' + item.c.name + ':', cardHtml.substring(0, 200));
+            h += cardHtml;
+          } catch(e2) { console.error('renderCard err', e2); }
+        });
         return h;
       }
 
