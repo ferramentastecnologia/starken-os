@@ -9754,18 +9754,22 @@ function _renderSwPremium(periodKey) {
       if (typeof _metaClients === 'object' && _metaClients) {
         Object.keys(_metaClients).forEach(function(metaKey) {
           var mc = _metaClients[metaKey];
-          if (mc && mc.name && (mc.tenant === tenant || !mc.tenant)) {
-            // Build company name from tenant value
-            var companyName = mc.tenant === 'alpha' ? 'Alpha' : (mc.tenant === 'starken' ? 'Starken' : co.key);
-            allClientsMap[mc.name.toLowerCase()] = {
-              id: metaKey,
-              name: mc.name,
-              company: companyName,
-              phone: mc.phone || '',
-              customPeriod: mc.customPeriod || '',
-              segment: mc.segment || '',
-              active: !mc.status || mc.status === 'ativo'
-            };
+          if (mc && mc.name) {
+            // Determine company: use meta tenant if available, otherwise use co.key
+            var metaTenant = mc.tenant || '';
+            var companyName = metaTenant === 'alpha' ? 'Alpha' : (metaTenant === 'starken' ? 'Starken' : (metaTenant ? null : co.key));
+            // Only add if company matches the current iteration (Starken or Alpha)
+            if (companyName === co.key) {
+              allClientsMap[mc.name.toLowerCase()] = {
+                id: metaKey,
+                name: mc.name,
+                company: companyName,
+                phone: mc.phone || '',
+                customPeriod: mc.customPeriod || '',
+                segment: mc.segment || '',
+                active: !mc.status || mc.status === 'ativo'
+              };
+            }
           }
         });
       }
@@ -9778,8 +9782,8 @@ function _renderSwPremium(periodKey) {
         });
       }
 
-      // Convert map to array and filter by company
-      var allActive = Object.values(allClientsMap).filter(function(c) { return c.active && c.company === co.key; });
+      // Convert map to array and filter by active status
+      var allActive = Object.values(allClientsMap).filter(function(c) { return c.active; });
       allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
       // Show ALL active clients — no content-group filter
       var clients = allActive.filter(function(c) {
