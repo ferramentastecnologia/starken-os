@@ -9755,10 +9755,9 @@ function _renderSwPremium(periodKey) {
         Object.keys(_metaClients).forEach(function(metaKey) {
           var mc = _metaClients[metaKey];
           if (mc && mc.name) {
-            // Determine company: use meta tenant if available, otherwise use co.key
-            var metaTenant = mc.tenant || '';
-            var companyName = metaTenant === 'alpha' ? 'Alpha' : (metaTenant === 'starken' ? 'Starken' : (metaTenant ? null : co.key));
-            // Only add if company matches the current iteration (Starken or Alpha)
+            // Simple mapping: Alpha if tenant === 'alpha', otherwise Starken
+            var companyName = (mc.tenant === 'alpha') ? 'Alpha' : 'Starken';
+            // Only add if company matches the current iteration
             if (companyName === co.key) {
               allClientsMap[mc.name.toLowerCase()] = {
                 id: metaKey,
