@@ -27393,11 +27393,9 @@ async function mtInit() {
   var avatarEl = document.getElementById('mtNxAvatar');
   if (avatarEl) avatarEl.textContent = gpState.user.initials || (gpState.user.name || '').substring(0, 2).toUpperCase();
 
-  // Executor role: hide status filter (only 'agendar' tasks shown)
+  // Show status filter for all roles
   var mtStatusFilterEl = document.getElementById('mtStatusFilter');
-  if (gpState.user.role === 'executor' && mtStatusFilterEl) {
-    mtStatusFilterEl.style.display = 'none';
-  }
+  if (mtStatusFilterEl) mtStatusFilterEl.style.display = '';
 
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
@@ -27505,19 +27503,16 @@ function mtRender() {
   if (listBtn) { listBtn.classList.toggle('active', mtView === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
   if (clientBtn) { clientBtn.classList.toggle('active', mtView === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
 
-  // Render pipeline (executor sees only 'agendar' tasks)
+  // Render pipeline (executor sees agendar + aprovacao tasks in pipeline)
   let pipelineTasks = mtTasks;
   if (gpState.user && gpState.user.role === 'executor') {
-    pipelineTasks = mtTasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao'; });
+    pipelineTasks = mtTasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao' || s === 'aprovacao-design'; });
   }
   mtRenderPipeline(pipelineTasks);
 
   let tasks = mtTasks;
 
-  // Executor role (Dante): only show tasks with status 'agendar' or 'aprovacao'
-  if (gpState.user && gpState.user.role === 'executor') {
-    tasks = tasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao'; });
-  }
+  // Executor role: show all assigned tasks (no status restriction)
 
   if (statusFilter) {
     tasks = tasks.filter(t => (t.status || 'a-fazer') === statusFilter);
