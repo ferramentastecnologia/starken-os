@@ -9712,6 +9712,7 @@ async function renderSchedWeekly() {
   const periodKey = monthKey + '-S' + (wk ? wk.week : 1);
   await ensureCtClientsWithContent();
   await ensureClientsWithWeekTasks(periodKey);
+  await loadCronogramaStatus();
   _renderSwPremium(periodKey);
 }
 
