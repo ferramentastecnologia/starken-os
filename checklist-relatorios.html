@@ -30474,4 +30474,51 @@ function _doRenderTable() {
 </div>
 
 </body>
+<script>
+async function gerarRelatorioPostagens(clientNames = ['Fratellis', 'Saporito']) {
+  try {
+    console.log('🔄 Buscando postagens para:', clientNames.join(', '));
+    const res = await fetch('/api/meta/publish?limit=500');
+    const data = await res.json();
+    if (!data.history) throw new Error('Sem dados de histórico');
+
+    const filtered = data.history.filter(h =>
+      clientNames.some(name => h.client_name?.toLowerCase().includes(name.toLowerCase()))
+    );
+
+    // Agrupar por cliente e tipo
+    const byClient = {};
+    filtered.forEach(post => {
+      if (!byClient[post.client_name]) byClient[post.client_name] = {};
+      const type = post.post_type || 'post';
+      if (!byClient[post.client_name][type]) byClient[post.client_name][type] = [];
+      byClient[post.client_name][type].push(post);
+    });
+
+    // Gerar relatório
+    let relatorio = '📊 RELATÓRIO DE POSTAGENS\n' + '='.repeat(80) + '\n\n';
+    Object.entries(byClient).forEach(([client, types]) => {
+      relatorio += `\n🏪 ${client}\n${'-'.repeat(60)}\n`;
+      Object.entries(types).forEach(([type, posts]) => {
+        const statuses = {};
+        posts.forEach(p => {
+          const s = p.status || 'unknown';
+          statuses[s] = (statuses[s] || 0) + 1;
+        });
+        relatorio += `  ${type.toUpperCase()}: ${posts.length} posts — ${Object.entries(statuses).map(([s, c]) => `${c} ${s}`).join(', ')}\n`;
+        posts.slice(0, 3).forEach((p, idx) => {
+          relatorio += `    ${idx + 1}. ${p.caption?.substring(0, 60) || '(sem caption)'} — ${new Date(p.created_at).toLocaleDateString('pt-BR')}\n`;
+        });
+        if (posts.length > 3) relatorio += `    ... e mais ${posts.length - 3}\n`;
+      });
+    });
+
+    console.log(relatorio);
+    console.log('\n📋 Dados brutos:', filtered);
+    return { relatorio, dados: filtered };
+  } catch(e) {
+    console.error('❌ Erro ao gerar relatório:', e.message);
+  }
+}
+</script>
 </html>
