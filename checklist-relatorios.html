@@ -16683,7 +16683,7 @@ function metaBiGeneratePdfReport() {
 }
 
 function findMetaClientKey(clientName, tenant) {
-  if (!_metaClients) return null;
+  if (!_metaClients || Object.keys(_metaClients).length === 0) return null;
   var nameLower = (clientName || '').toLowerCase().trim();
   var found = null;
   Object.entries(_metaClients).forEach(function(entry) {
@@ -16695,6 +16695,9 @@ function findMetaClientKey(clientName, tenant) {
       found = key;
     }
   });
+  if (!found && ['Bengers', 'Estilo', 'New Service', 'Sr Salsicha', 'The Garrison', 'Pizzaria Super'].some(n => clientName.includes(n))) {
+    console.log('[findMetaClientKey] NOT FOUND: "' + clientName + '" (tenant: ' + tenant + '). Available:', Object.values(_metaClients).filter(m => m.tenant === tenant).map(m => m.name).join(', '));
+  }
   return found;
 }
 
