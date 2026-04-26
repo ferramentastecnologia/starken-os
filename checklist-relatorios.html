@@ -30477,45 +30477,55 @@ function _doRenderTable() {
 <script>
 async function gerarRelatorioPostagens(clientNames = ['Fratellis', 'Saporito']) {
   try {
-    console.log('🔄 Buscando postagens para:', clientNames.join(', '));
+    console.log('🔄 Buscando postagens do último mês para:', clientNames.join(', '));
     const res = await fetch('/api/meta/publish?limit=500');
     const data = await res.json();
     if (!data.history) throw new Error('Sem dados de histórico');
 
-    const filtered = data.history.filter(h =>
-      clientNames.some(name => h.client_name?.toLowerCase().includes(name.toLowerCase()))
-    );
+    // Filtrar por data - último mês
+    const agora = new Date();
+    const umMesAtras = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const filtered = data.history.filter(h => {
+      const postDate = new Date(h.created_at);
+      return postDate >= umMesAtras && clientNames.some(name => h.client_name?.toLowerCase().includes(name.toLowerCase()));
+    });
 
     // Agrupar por cliente e tipo
     const byClient = {};
     filtered.forEach(post => {
       if (!byClient[post.client_name]) byClient[post.client_name] = {};
-      const type = post.post_type || 'post';
+      const type = post.post_type || 'feed';
       if (!byClient[post.client_name][type]) byClient[post.client_name][type] = [];
       byClient[post.client_name][type].push(post);
     });
 
     // Gerar relatório
-    let relatorio = '📊 RELATÓRIO DE POSTAGENS\n' + '='.repeat(80) + '\n\n';
+    let relatorio = '📊 RELATÓRIO DE POSTAGENS - ÚLTIMO MÊS\n' + '='.repeat(80) + '\n\n';
+    relatorio += `Período: ${umMesAtras.toLocaleDateString('pt-BR')} a ${agora.toLocaleDateString('pt-BR')}\n\n`;
+
     Object.entries(byClient).forEach(([client, types]) => {
       relatorio += `\n🏪 ${client}\n${'-'.repeat(60)}\n`;
+      let totalClient = 0;
       Object.entries(types).forEach(([type, posts]) => {
+        totalClient += posts.length;
         const statuses = {};
         posts.forEach(p => {
           const s = p.status || 'unknown';
           statuses[s] = (statuses[s] || 0) + 1;
         });
-        relatorio += `  ${type.toUpperCase()}: ${posts.length} posts — ${Object.entries(statuses).map(([s, c]) => `${c} ${s}`).join(', ')}\n`;
-        posts.slice(0, 3).forEach((p, idx) => {
-          relatorio += `    ${idx + 1}. ${p.caption?.substring(0, 60) || '(sem caption)'} — ${new Date(p.created_at).toLocaleDateString('pt-BR')}\n`;
+        relatorio += `  📱 ${type.toUpperCase()}: ${posts.length} posts — ${Object.entries(statuses).map(([s, c]) => `${c} ${s}`).join(', ')}\n`;
+        posts.slice(0, 2).forEach((p, idx) => {
+          const data = new Date(p.created_at).toLocaleDateString('pt-BR');
+          relatorio += `    ${idx + 1}. "${p.caption?.substring(0, 50) || '(sem caption)'}" — ${data}\n`;
         });
-        if (posts.length > 3) relatorio += `    ... e mais ${posts.length - 3}\n`;
+        if (posts.length > 2) relatorio += `    ... e mais ${posts.length - 2}\n`;
       });
+      relatorio += `  \n  ✅ TOTAL: ${totalClient} postagens neste mês\n`;
     });
 
     console.log(relatorio);
-    console.log('\n📋 Dados brutos:', filtered);
-    return { relatorio, dados: filtered };
+    return relatorio;
   } catch(e) {
     console.error('❌ Erro ao gerar relatório:', e.message);
   }
