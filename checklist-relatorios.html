@@ -26857,9 +26857,12 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
       scheduleContext: { clientId: clientId, type: type, periodKey: periodKey }
     };
     cronogramaShowModal();
+    _cronoLoading = false;
   } catch(err) {
+    _cronoLoading = false;
     console.error('Cronograma from schedule error:', err);
     alert('Erro ao carregar dados: ' + err.message);
+    if (typeof renderSchedWeekly === 'function') renderSchedWeekly();
   }
 }
 
@@ -26923,7 +26926,7 @@ function cronogramaShowModal() {
   var modal = document.createElement('div');
   modal.id = 'cronoModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
-  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+  modal.onclick = function(e) { if (e.target !== modal) return; modal.remove(); if (typeof renderSchedWeekly === 'function') renderSchedWeekly(); };
 
   // ─── Build week groups from due_date ───
   function getMondayKey(dateStr) {
@@ -27008,7 +27011,7 @@ function cronogramaShowModal() {
     + '<div style="background:linear-gradient(135deg,#8B7355,#a89070);padding:14px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex:0 0 auto">'
     + '<div><div style="font-size:1.1rem;font-weight:800"><span class="mso">description</span> Cronograma PDF</div>'
     + '<div style="font-size:0.75rem;opacity:0.8;margin-top:2px">' + s.clientName + '</div></div>'
-    + '<button onclick="document.getElementById(\'cronoModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:1.1rem;cursor:pointer"><span class="mso">close</span></button>'
+    + '<button onclick="document.getElementById(\'cronoModal\').remove();if(typeof renderSchedWeekly===\'function\')renderSchedWeekly();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:1.1rem;cursor:pointer"><span class="mso">close</span></button>'
     + '</div>'
     // Filtro de semana
     + '<div style="padding:8px 20px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--bg,#f1f5f9);flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0">'
