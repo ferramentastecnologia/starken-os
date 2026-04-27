@@ -9738,8 +9738,9 @@ function _renderSwPremium(periodKey) {
   }
 
   // Safe onclick: never put HTML tags inside onclick="..." attribute
+  function jA(v) { return JSON.stringify(v).replace(/"/g, '&quot;'); }
   function safeLoadingClick(id, fnCall) {
-    return 'event.stopPropagation();(function(b){b.disabled=true;b.textContent=String.fromCharCode(8987);' + fnCall + '})(document.getElementById(' + JSON.stringify(id) + '))';
+    return 'event.stopPropagation();(function(b){b.disabled=true;b.textContent=String.fromCharCode(8987);' + fnCall + '})(document.getElementById(' + jA(id) + '))';
   }
 
   var companies = [
@@ -9803,26 +9804,26 @@ function _renderSwPremium(periodKey) {
         var acts = '';
         if (st === 0) {
           if (metaKey) {
-            var fnStr = 'cronogramaFromSchedule(' + JSON.stringify(metaKey) + ',' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')';
+            var fnStr = 'cronogramaFromSchedule(' + jA(metaKey) + ',' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')';
             acts += '<button id="' + btnId + '" class="sw-btn sw-gerar" onclick="' + safeLoadingClick(btnId, fnStr) + '" title="Gerar Cronograma PDF"><span class="mso" style="font-size:14px">description</span> Gerar</button>';
           }
         } else if (st === 1) {
           var hasGroup = mc && mc.whatsappGroupJid;
           if (hasGroup) {
-            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();zappfySendReport(' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')" title="Enviar via Zappfy"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
+            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();zappfySendReport(' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')" title="Enviar via Zappfy"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
           } else if (c.phone) {
-            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();sendWhatsApp(' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')" title="Enviar WhatsApp"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
+            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();sendWhatsApp(' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')" title="Enviar WhatsApp"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
           }
-          acts += '<button class="sw-btn sw-icon" onclick="event.stopPropagation();markCronoSentNow(' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')" title="Marcar enviado"><span class="mso mso-fill" style="font-size:15px">check_circle</span></button>';
+          acts += '<button class="sw-btn sw-icon" onclick="event.stopPropagation();markCronoSentNow(' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')" title="Marcar enviado"><span class="mso mso-fill" style="font-size:15px">check_circle</span></button>';
           if (metaKey) {
-            var fnStr2 = 'cronogramaFromSchedule(' + JSON.stringify(metaKey) + ',' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')';
+            var fnStr2 = 'cronogramaFromSchedule(' + jA(metaKey) + ',' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')';
             acts += '<button id="' + btnId + '" class="sw-btn sw-icon" onclick="' + safeLoadingClick(btnId, fnStr2) + '" title="Regenerar PDF"><span class="mso" style="font-size:14px">description</span></button>';
           }
         } else {
           acts += '<span class="sw-tag-sent"><span class="mso mso-fill" style="font-size:14px">check_circle</span> Enviado</span>';
-          acts += '<button class="sw-btn sw-undo" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(c.id) + ',' + JSON.stringify(periodKey) + ',0,this)" title="Desfazer envio">\u21A9</button>';
+          acts += '<button class="sw-btn sw-undo" onclick="event.stopPropagation();dashMarkCronoStatus(' + jA(c.id) + ',' + jA(periodKey) + ',0,this)" title="Desfazer envio">\u21A9</button>';
           if (metaKey) {
-            var fnStr3 = 'cronogramaFromSchedule(' + JSON.stringify(metaKey) + ',' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')';
+            var fnStr3 = 'cronogramaFromSchedule(' + jA(metaKey) + ',' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')';
             acts += '<button id="' + btnId + '" class="sw-btn sw-icon" onclick="' + safeLoadingClick(btnId, fnStr3) + '" title="Regenerar PDF"><span class="mso" style="font-size:14px">description</span></button>';
           }
         }
@@ -9866,7 +9867,7 @@ function _renderSwPremium(periodKey) {
         + '<div class="sw-col-hdr">'
         + '<div class="sw-col-hdr-info"><div class="sw-col-hdr-title">' + co.label + '</div><div class="sw-col-hdr-sub">' + co.sub + '</div></div>'
         + (pending.length > 0 ? '<div class="sw-pending-badge">Pendentes ' + pending.length + '</div>' : '')
-        + '<input type="text" class="sw-col-search" placeholder="Buscar..." value="' + (curSearch || '').replace(/"/g, '&quot;') + '" oninput="setChecklistSearch(\'sched-weekly\',' + JSON.stringify(co.key) + ',this.value);renderSchedWeekly()" />'
+        + '<input type="text" class="sw-col-search" placeholder="Buscar..." value="' + (curSearch || '').replace(/"/g, '&quot;') + '" oninput="setChecklistSearch(\'sched-weekly\',' + jA(co.key) + ',this.value);renderSchedWeekly()" />'
         + '</div>'
         + '<div class="sw-col-counts">' + countLabel + '</div>'
         + '<div class="sw-col-body">' + bodyHtml + '</div>'
@@ -9889,7 +9890,7 @@ function _renderSwPremium(periodKey) {
       + '<div class="sw-stat sw-stat-orange"><div class="sw-stat-icon"><span class="mso">schedule</span></div><div class="sw-stat-val">' + totalAguardando + '</div><div class="sw-stat-lbl">Aguardando Envio</div></div>'
       + '<div class="sw-stat sw-stat-green"><div class="sw-stat-icon"><span class="mso mso-fill">check_circle</span></div><div class="sw-stat-val">' + eficiencia + '%</div><div class="sw-stat-lbl">Efici\xEAncia Semanal</div></div>'
       + '<div class="sw-stat sw-stat-elite"><div class="sw-stat-icon"><span class="mso">rocket_launch</span></div><div class="sw-stat-val">' + tier + '</div><div class="sw-stat-lbl">Performance Matrix</div></div>'
-      + (pendingCount > 0 ? '<button class="sw-mark-all-btn" onclick="_swMarkAllSent(' + JSON.stringify(periodKey) + ')" title="Marcar todos os clientes desta semana como Enviado"><span class="mso mso-fill">check_circle</span> Marcar todos como enviado (' + pendingCount + ')</button>' : '');
+      + (pendingCount > 0 ? '<button class="sw-mark-all-btn" onclick="_swMarkAllSent(' + jA(periodKey) + ')" title="Marcar todos os clientes desta semana como Enviado"><span class="mso mso-fill">check_circle</span> Marcar todos como enviado (' + pendingCount + ')</button>' : '');
   }
 }
 
