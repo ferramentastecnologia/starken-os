@@ -4258,7 +4258,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
               <!-- Busca de clientes -->
               <div style="margin-bottom:12px">
-                <input type="text" id="metaConfigSearch" placeholder="<span class="mso">search</span> Buscar cliente..." oninput="metaConfigFilterClients(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+                <input type="text" id="metaConfigSearch" placeholder="Buscar cliente..." oninput="metaConfigFilterClients(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
               </div>
               <!-- Lista de clientes agrupados por tenant -->
               <div id="metaConfigClientList" style="margin-bottom:16px"></div>
@@ -9387,7 +9387,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
     }
     segSelectHtml += '</select>';
 
-    var searchInputHtml = '<input type="text" class="col-search-input" data-company="' + co.key + '" placeholder="<span class="mso">search</span> Buscar cliente..." value="' + curSearch.replace(/"/g,'&quot;') + '" oninput="setChecklistSearch(\'' + type + '\',\'' + co.key + '\',this.value)" style="padding:4px 8px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;background:rgba(255,255,255,0.15);color:inherit;font-size:0.75rem;outline:none;width:150px;font-family:inherit;::placeholder-color:rgba(255,255,255,0.6)">';
+    var searchInputHtml = '<input type="text" class="col-search-input" data-company="' + co.key + '" placeholder="Buscar cliente..." value="' + curSearch.replace(/"/g,'&quot;') + '" oninput="setChecklistSearch(\'' + type + '\',\'' + co.key + '\',this.value)" style="padding:4px 8px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;background:rgba(255,255,255,0.15);color:inherit;font-size:0.75rem;outline:none;width:150px;font-family:inherit;::placeholder-color:rgba(255,255,255,0.6)">';
 
     html += '<div class="company-column">';
     html += '<div class="column-header ' + co.css + '" style="flex-wrap:wrap;gap:6px">';
