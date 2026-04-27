@@ -27099,7 +27099,7 @@ function cronogramaPreview() {
       + (currentTitle ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">'
         + '<input type="text" id="cronoTitle_' + i + '" value="' + currentTitle.replace(/"/g, '&quot;') + '" '
         + 'style="flex:1;font-size:10px;font-weight:700;padding:4px 8px;border:1.5px solid var(--border,#ddd);border-radius:6px;background:var(--card,#fff);color:var(--text,#333);text-transform:uppercase;letter-spacing:0.5px;font-family:inherit">'
-        + '<button onclick="cronogramaEditTitle(' + i + ',document.getElementById(\'cronoTitle_' + i + '\').value);this.textContent=\'<span class="mso mso-fill">check_circle</span>\';setTimeout(function(){this.textContent=\'<span class="mso">save</span>\';}.bind(this),1500)" '
+        + '<button onclick="cronogramaEditTitle(' + i + ',document.getElementById(\'cronoTitle_' + i + '\').value);this.innerHTML=\'<span class=\\\'mso mso-fill\\\'>check_circle</span>\';setTimeout(function(){this.innerHTML=\'<span class=\\\'mso\\\'>save</span>\';}.bind(this),1500)" '
         + 'style="padding:3px 8px;border:1.5px solid var(--brand,#3b82f6);border-radius:6px;background:var(--brand,#3b82f6);color:#fff;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap" title="Salvar título"><span class="mso">save</span></button>'
         + '</div>' : '')
       + '<div id="cronoPageCard_' + i + '" style="width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:relative;background:#b5aa9a">'
