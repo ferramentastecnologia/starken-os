@@ -15148,16 +15148,18 @@ function zappfySendReport(clientId, type, periodKey) {
   var token = zappfyGetToken();
   if (!token) { alert('Configure o token da Zappfy primeiro na seção de Configuração.'); return; }
 
-  var client = data.clients.find(function(c) { return c.id === clientId; });
-  if (!client) { alert('Cliente não encontrado'); return; }
+  // Suporta slug (_metaClients key) e UUID legado (data.clients)
+  var metaClient = (_metaClients && _metaClients[clientId]) ? _metaClients[clientId] : null;
+  var client = !metaClient ? data.clients.find(function(c) { return c.id === clientId; }) : null;
+  if (!metaClient && !client) { alert('Cliente não encontrado'); return; }
 
-  var tenant = client.company === 'Starken' ? 'starken' : 'alpha';
-  var metaKey = findMetaClientKey(client.name, tenant);
-  var metaClient = metaKey ? _metaClients[metaKey] : null;
-  var groupJid = metaClient ? metaClient.whatsappGroupJid : null;
+  var clientName = metaClient ? (metaClient.name || clientId) : (client ? client.name : clientId);
+  var metaKey = metaClient ? clientId : findMetaClientKey(client ? client.name : '', metaClient ? (metaClient.tenant || 'starken') : (client && client.company === 'Alpha' ? 'alpha' : 'starken'));
+  var resolvedMeta = metaClient || (metaKey ? _metaClients[metaKey] : null);
+  var groupJid = resolvedMeta ? resolvedMeta.whatsappGroupJid : null;
 
   if (!groupJid) {
-    alert('Grupo WhatsApp não configurado para ' + client.name + '.\n\nVá em Configuração e vincule o grupo Zappfy.');
+    alert('Grupo WhatsApp não configurado para ' + clientName + '.\n\nVá em Configuração e vincule o grupo Zappfy.');
     return;
   }
 
@@ -15191,7 +15193,7 @@ function zappfySendReport(clientId, type, periodKey) {
     + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#64748b)"><span class="mso">close</span></button>'
     + '</div>'
     + '<div style="background:var(--bg-secondary,#f1f5f9);padding:14px 16px;border-radius:10px;margin-bottom:18px">'
-    + '<div style="font-size:0.95rem;font-weight:700">' + (client.name || '') + '</div>'
+    + '<div style="font-size:0.95rem;font-weight:700">' + clientName + '</div>'
     + '<div style="font-size:0.78rem;color:var(--text-secondary,#64748b);margin-top:3px">Grupo: ' + (groupJid.split('@')[0].slice(-8)) + '...@g.us</div>'
     + '</div>'
     + (isCrono
@@ -15288,7 +15290,7 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       // Wait 1.5s then send PDF document
       await new Promise(function(r) { setTimeout(r, 1500); });
       showStatus('<span class="mso">description</span> Enviando PDF...', 'blue');
-      var clientName = client ? client.name : '';
+      var clientName = client ? client.name : (metaClient ? metaClient.name : clientId.replace(/-/g,'_'));
       await fetch('https://api.zappfy.io/send/media', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'token': token },
         body: JSON.stringify({ number: groupJid, type: 'document', file: pdfUrl, docName: 'Cronograma_' + clientName.replace(/\s+/g, '_') + '.pdf', text: '<span class="mso">assignment</span> Cronograma Semanal - ' + clientName })
