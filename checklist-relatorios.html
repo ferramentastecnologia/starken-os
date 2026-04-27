@@ -9754,41 +9754,20 @@ function _renderSwPremium(periodKey) {
       var curSearch = (searchFilters['sched-weekly'] && searchFilters['sched-weekly'][co.key]) || '';
       var tenant = co.key === 'Alpha' ? 'alpha' : 'starken';
 
-      // Build client list: data.clients (localStorage) is source of truth
-      // _metaClients adds new clients not yet in data.clients (by name match)
-      var knownNames = new Set();
-      var allClientsMap = {};
-      // 1. data.clients has priority (UUID-based IDs, correct company/active flags)
-      if (data && data.clients && Array.isArray(data.clients)) {
-        data.clients.forEach(function(c) {
-          if (c && c.name && c.company === co.key && c.active) {
-            allClientsMap[c.name.toLowerCase()] = c;
-            knownNames.add(c.name.toLowerCase());
-          }
-        });
-      }
-      // 2. _metaClients: add only clients not already in data.clients
+      // Fonte de verdade: apenas _metaClients (clientes configurados no Meta)
+      // Clientes removidos do Meta Config não aparecem no Cronograma
+      var allActive = [];
       if (typeof _metaClients === 'object' && _metaClients) {
         Object.keys(_metaClients).forEach(function(metaKey) {
           var mc = _metaClients[metaKey];
           if (!mc || !mc.name) return;
           var companyName = (mc.tenant === 'alpha') ? 'Alpha' : 'Starken';
           if (companyName !== co.key) return;
-          var nameLower = mc.name.toLowerCase();
-          if (knownNames.has(nameLower)) return; // already have this client
-          allClientsMap[nameLower] = {
-            id: metaKey, name: mc.name, company: companyName,
-            phone: mc.phone || '', customPeriod: '', segment: mc.segment || '',
-            active: !mc.status || mc.status === 'ativo'
-          };
+          if (mc.status && mc.status !== 'ativo') return;
+          allActive.push({ id: metaKey, name: mc.name, company: companyName, phone: mc.phone || '', segment: mc.segment || '' });
         });
       }
-
-      // Convert map to array and filter by active status
-      var allActive = Object.values(allClientsMap).filter(function(c) { return c.active; });
       allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
-      console.log('[Cronograma] ' + co.key + ' — Clientes carregados:', allActive.length, '— MetaClients:', Object.keys(_metaClients || {}).length, '— DataClients:', (data && data.clients ? data.clients.length : 0));
-      // Show ALL active clients — no content-group filter
       var clients = allActive.filter(function(c) {
         return !curSearch || (c.name || '').toLowerCase().includes(curSearch);
       });
@@ -9809,9 +9788,8 @@ function _renderSwPremium(periodKey) {
 
       function renderCard(item) {
         var c = item.c, cs = item.cs, st = item.st;
-        var metaKey = findMetaClientKey(c.name, tenant);
-        if (!metaKey && co.key === 'Starken') console.warn('[renderCard] Starken client not found:', c.name, '— tenant:', tenant);
-        var mc = (metaKey && _metaClients) ? _metaClients[metaKey] : null;
+        var metaKey = c.id; // c vem de _metaClients, id já é o slug
+        var mc = _metaClients[metaKey] || null;
         var pdfUrl = cs && cs.pdf_url;
         var pdfName = cs && cs.pdf_name;
         var sentDate = (cs && cs.sent_date) ? new Date(cs.sent_date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -9871,12 +9849,8 @@ function _renderSwPremium(periodKey) {
       function renderSection(label, cls, icon, items) {
         var h = '<div class="sw-sec-label ' + cls + '"><span>' + icon + '\u00A0' + label + '</span><span class="sw-sec-cnt">' + items.length + '</span></div>';
         if (items.length === 0) return h + '<div class="sw-sec-empty">Nenhum cliente</div>';
-        items.forEach(function(item, idx) {
-          try {
-            var cardHtml = renderCard(item);
-            if (co.key === 'Starken' && idx < 2) console.log('[Card HTML] ' + item.c.name + ':', cardHtml.substring(0, 200));
-            h += cardHtml;
-          } catch(e2) { console.error('renderCard err', e2); }
+        items.forEach(function(item) {
+          try { h += renderCard(item); } catch(e2) { console.error('renderCard err', e2); }
         });
         return h;
       }
