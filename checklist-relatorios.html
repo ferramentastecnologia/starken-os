@@ -3846,11 +3846,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
       <select id="loginUser" class="login-field">
         <option value="">Selecione</option>
         <option value="Juan">Juan</option>
-        <option value="Henrique">Henrique</option>
-        <option value="Emilly">Emilly</option>
-        <option value="Leonardo">Leonardo</option>
-        <option value="Dante">Dante</option>
         <option value="Victor">Victor</option>
+        <option value="Emilly">Emilly</option>
+        <option value="Dante">Dante</option>
       </select>
     </div>
     <div>
@@ -3933,9 +3931,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <select class="gp-filter-select" id="gpFilterResponsavel">
                 <option value="">Todos Responsáveis</option>
                 <option value="Juan">Juan</option>
-                <option value="Henrique">Henrique</option>
-                <option value="Emilly">Emilly</option>
                 <option value="Victor">Victor</option>
+                <option value="Emilly">Emilly</option>
               </select>
               <select class="gp-filter-select" id="gpFilterSemana"><option value="">Todas as Semanas</option></select>
             </div>
@@ -4706,8 +4703,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="ctAssigneeFilter" onchange="ctRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
-              <option value="Henrique">Henrique</option>
-              <option value="Emily">Emily</option>
+                    <option value="Emily">Emily</option>
               <option value="Victor">Victor</option>
               <option value="Victor">Victor</option>
             </select>
@@ -5462,8 +5458,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                       <select class="ch-field-value" id="chResponsible" onchange="hubMarkDirty()">
                         <option value="">Selecione</option>
                         <option value="Juan">Juan</option>
-                        <option value="Henrique">Henrique</option>
-                        <option value="Emily">Emily</option>
+                                        <option value="Emily">Emily</option>
                         <option value="Victor">Victor</option>
                       </select>
                     </div>
@@ -6003,10 +5998,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="tfAssigneeFilter" onchange="tfRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
-              <option value="Henrique">Henrique</option>
-              <option value="Emily">Emily</option>
-              <option value="Leonardo">Leonardo</option>
-              <option value="Dante">Dante</option>
+                    <option value="Emily">Emily</option>
+                    <option value="Dante">Dante</option>
             </select>
           </div>
 
@@ -13880,14 +13873,14 @@ renderAll(); // render imediato com dados do localStorage
         <div>
           <label class="gp-field-label">Responsável</label>
           <select id="gpFtResponsavel" class="gp-field">
-            <option value="Juan">Juan</option><option value="Henrique">Henrique</option><option value="Emilly">Emilly</option><option value="Victor">Victor</option><option value="Victor">Victor</option>
+            <option value="Juan">Juan</option><option value="Victor">Victor</option><option value="Emilly">Emilly</option>
           </select>
         </div>
         <div>
           <label class="gp-field-label">Revisão</label>
           <select id="gpFtRevisao" class="gp-field">
             <option value="">Nenhum</option><option value="Juan">Juan</option>
-            <option value="Henrique">Henrique</option><option value="Emilly">Emilly</option>
+            <option value="Victor">Victor</option><option value="Emilly">Emilly</option>
           </select>
         </div>
         <div>
@@ -13928,11 +13921,9 @@ renderAll(); // render imediato com dados do localStorage
 // ================================================================
 const GP_USERS = [
   { name:'Juan',     role:'admin',    color:'#3b82f6' },
-  { name:'Henrique', role:'designer', color:'#8b5cf6' },
+  { name:'Victor',   role:'designer', color:'#8b5cf6' },
   { name:'Emilly',   role:'editor',   color:'#f59e0b' },
-  { name:'Leonardo', role:'admin',    color:'#a855f7' },
   { name:'Dante',    role:'executor', color:'#f97316' },
-  { name:'Victor',   role:'designer', color:'#14b8a6' },
   { name:'Daniela',  role:'designer', color:'#ec4899', disabled:true }
 ];
 
@@ -18361,9 +18352,8 @@ const CT_PRIORITIES = [
 
 const CT_USERS = [
   { name: 'Juan',     color: '#3b82f6' },
-  { name: 'Henrique', color: '#8b5cf6' },
+  { name: 'Victor',   color: '#8b5cf6' },
   { name: 'Emily',    color: '#f59e0b' },
-  { name: 'Leonardo', color: '#10b981' },
   { name: 'Dante',    color: '#f97316' },
 ];
 
@@ -29448,9 +29438,8 @@ function tfShowAssigneeDropdown(event, taskId) {
 
   const users = typeof CT_USERS !== 'undefined' ? CT_USERS : [
     { name: 'Juan', color: '#3b82f6' },
-    { name: 'Henrique', color: '#10b981' },
+    { name: 'Victor', color: '#10b981' },
     { name: 'Emily', color: '#f59e0b' },
-    { name: 'Leonardo', color: '#8b5cf6' },
     { name: 'Dante', color: '#ef4444' },
   ];
 
@@ -29602,7 +29591,7 @@ async function tfBulkChangeStatus() {
 }
 
 async function tfBulkChangeAssignee() {
-  const name = prompt('Nome do responsável (Juan, Henrique, Emily, Leonardo, Dante):');
+  const name = prompt('Nome do responsável (Juan, Victor, Emily, Dante):');
   if (!name) return;
   var ids = Array.from(tfSelectedIds);
   for (var i = 0; i < ids.length; i++) {
@@ -29771,10 +29760,8 @@ async function tfOpenModal(taskId) {
     + '<select onchange="tfSaveTaskField(\'assignee\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit">'
     + '<option value="">Sem responsável</option>'
     + '<option value="Juan"' + (task.assignee==='Juan'?' selected':'') + '>Juan</option>'
-    + '<option value="Henrique"' + (task.assignee==='Henrique'?' selected':'') + '>Henrique</option>'
-    + '<option value="Emily"' + (task.assignee==='Emily'?' selected':'') + '>Emily</option>'
     + '<option value="Victor"' + (task.assignee==='Victor'?' selected':'') + '>Victor</option>'
-    + '<option value="Leonardo"' + (task.assignee==='Leonardo'?' selected':'') + '>Leonardo</option>'
+    + '<option value="Emily"' + (task.assignee==='Emily'?' selected':'') + '>Emily</option>'
     + '<option value="Dante"' + (task.assignee==='Dante'?' selected':'') + '>Dante</option>'
     + '</select>'
     + '<input type="date" value="' + (task.due_date || '') + '" onchange="tfSaveTaskField(\'due_date\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);font-family:inherit">'
@@ -29929,7 +29916,7 @@ var _doState = {
   loading: false
 };
 
-var DESIGNER_NAMES = ['Henrique'];
+var DESIGNER_NAMES = ['Victor'];
 
 function showDesignerOverviewBtn() {
   if (!gpState.user || gpState.user.role === 'designer') return;
