@@ -5933,8 +5933,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <span class="mt-nx-brand-title">Minhas Tasks</span>
               </div>
               <div class="mt-nx-vtabs">
-                <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active">LISTA ÚNICA</button>
-                <button id="mtViewClient" onclick="mtSetView('client')" class="mt-nx-vtab">POR CLIENTE</button>
+                <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active"><span class="mso">view_list</span> LISTA</button>
+                <button id="mtViewKanban" onclick="mtSetView('kanban')" class="mt-nx-vtab"><span class="mso">dashboard</span> KANBAN</button>
+                <button id="mtViewClient" onclick="mtSetView('client')" class="mt-nx-vtab"><span class="mso">business</span> CLIENTE</button>
               </div>
             </div>
             <div class="mt-nx-topbar-right">
@@ -11351,11 +11352,11 @@ async function dashRefreshAll() {
     _groupToClientPromise = null;
     if (typeof loadCronogramaStatus === 'function') await loadCronogramaStatus();
     if (typeof renderDashboard === 'function') renderDashboard();
-    if (icon) icon.textContent = '<span class="mso mso-fill">check_circle</span>';
-    setTimeout(function() { if (icon) { icon.textContent = '<span class="mso">sync</span>'; icon.style.animation = ''; } if (btn) btn.disabled = false; }, 1000);
+    if (icon) icon.innerHTML = '<span class="mso mso-fill">check_circle</span>';
+    setTimeout(function() { if (icon) { icon.innerHTML = '<span class="mso">sync</span>'; icon.style.animation = ''; } if (btn) btn.disabled = false; }, 1000);
   } catch(e) {
     console.warn('dashRefreshAll error:', e);
-    if (icon) icon.textContent = '<span class="mso">warning</span>';
+    if (icon) icon.innerHTML = '<span class="mso">warning</span>';
     if (btn) btn.disabled = false;
   }
 }
@@ -13367,18 +13368,18 @@ async function asanaCheckConnection() {
       _asanaUser = cfg.user;
       _asanaConfig = cfg.config || {};
       dot.className = 'asana-status-dot connected';
-      txt.textContent = '<span class="mso mso-fill">check_circle</span> Conectado como ' + cfg.user.name;
+      txt.innerHTML = '<span class="mso mso-fill">check_circle</span> Conectado como ' + cfg.user.name;
       btn.disabled = false;
       return true;
     } else {
       dot.className = 'asana-status-dot disconnected';
-      txt.textContent = '<span class="mso">cancel</span> ' + (cfg.error || 'Asana não conectado. Configure o ASANA_PAT no Vercel.');
+      txt.innerHTML = '<span class="mso">cancel</span> ' + (cfg.error || 'Asana não conectado. Configure o ASANA_PAT no Vercel.');
       btn.disabled = true;
       return false;
     }
   } catch(e) {
     dot.className = 'asana-status-dot disconnected';
-    txt.textContent = '<span class="mso">cancel</span> API não disponível (' + e.message + '). Deploy as API routes ao Vercel.';
+    txt.innerHTML = '<span class="mso">cancel</span> API não disponível (' + e.message + '). Deploy as API routes ao Vercel.';
     btn.disabled = true;
     return false;
   }
@@ -13504,11 +13505,11 @@ function formatDateBR(isoStr) {
 async function asanaRefreshTasks() {
   const btn = document.getElementById('asanaRefreshBtn');
   btn.disabled = true;
-  btn.textContent = '<span class="mso">sync</span> Atualizando...';
+  btn.innerHTML = '<span class="mso">sync</span> Atualizando...';
   await asanaFetchTasks();
   asanaRenderTasks();
   btn.disabled = false;
-  btn.textContent = '<span class="mso">sync</span> Atualizar';
+  btn.innerHTML = '<span class="mso">sync</span> Atualizar';
   showToast('Tarefas atualizadas');
 }
 
@@ -14088,7 +14089,7 @@ function applyDesignerRestrictions() {
   if (designerBar) {
     designerBar.style.display = 'flex';
     var badge = document.getElementById('designerUserBadge');
-    if (badge && gpState.user) badge.textContent = '<span class="mso">waving_hand</span> ' + gpState.user.name;
+    if (badge && gpState.user) badge.innerHTML = '<span class="mso">waving_hand</span> ' + gpState.user.name;
   }
 
   // Lock navigation — only allow minhas-tasks
@@ -15044,7 +15045,7 @@ async function zappfyTestConnection() {
   statusDiv.style.display = 'block';
   if (!token) {
     statusDiv.style.color = '#dc2626';
-    statusDiv.textContent = '<span class="mso">cancel</span> Insira o token da Zappfy primeiro';
+    statusDiv.innerHTML = '<span class="mso">cancel</span> Insira o token da Zappfy primeiro';
     return;
   }
   statusDiv.style.color = 'var(--text-secondary)';
@@ -15058,14 +15059,14 @@ async function zappfyTestConnection() {
     if (st.connected || st.loggedIn || data.connected || data.loggedIn) {
       statusDiv.style.color = '#16a34a';
       var name = (data.instance && data.instance.profileName) ? ' (' + data.instance.profileName + ')' : '';
-      statusDiv.textContent = '<span class="mso mso-fill">check_circle</span> Conectado! Instância ativa' + name + '.';
+      statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> Conectado! Instância ativa' + name + '.';
     } else {
       statusDiv.style.color = '#f59e0b';
-      statusDiv.textContent = '<span class="mso">warning</span> Instância não conectada. Status: ' + (st.connected === false ? 'desconectada' : JSON.stringify(st));
+      statusDiv.innerHTML = '<span class="mso">warning</span> Instância não conectada. Status: ' + (st.connected === false ? 'desconectada' : JSON.stringify(st));
     }
   } catch (e) {
     statusDiv.style.color = '#dc2626';
-    statusDiv.textContent = '<span class="mso">cancel</span> Erro: ' + e.message;
+    statusDiv.innerHTML = '<span class="mso">cancel</span> Erro: ' + e.message;
   }
 }
 
@@ -15518,12 +15519,12 @@ function zappfyEditMessage() {
   // Replace edit button with save button
   var editBtn = document.querySelector('[onclick="zappfyEditMessage()"]');
   if (editBtn) {
-    editBtn.textContent = '<span class="mso">save</span> Salvar';
+    editBtn.innerHTML = '<span class="mso">save</span> Salvar';
     editBtn.onclick = function() {
       var ta = document.getElementById('zappfyEditTextarea');
       if (ta) { p.textMsg = ta.value; window._zappfyPending = p; }
       zappfyShowPreviewTab('msg');
-      editBtn.textContent = '<span class="mso">edit</span> Editar';
+      editBtn.innerHTML = '<span class="mso">edit</span> Editar';
       editBtn.onclick = zappfyEditMessage;
     };
   }
@@ -15741,7 +15742,7 @@ async function zappfyConfirmSend() {
         + '<a href="' + uploadUrl + '" target="_blank" style="color:#1877f2;text-decoration:underline;word-break:break-all">' + uploadUrl + '</a>'
         + '<button onclick="navigator.clipboard.writeText(\'' + uploadUrl + '\');this.textContent=\'<span class="mso mso-fill">check_circle</span> Copiado!\';setTimeout(()=>{this.textContent=\'<span class="mso">assignment</span> Copiar\'},1500)" style="margin-left:10px;padding:4px 10px;border:1px solid #22c55e;border-radius:6px;background:#fff;color:#166534;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit"><span class="mso">assignment</span> Copiar</button>';
     }
-    btn.textContent = '<span class="mso mso-fill">check_circle</span> Fechar';
+    btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Fechar';
     btn.onclick = function() { document.getElementById('zappfySendModal').remove(); };
     btn.disabled = false;
     window._zappfyPending = null;
@@ -16997,7 +16998,7 @@ function metaBiSaveSistemaData() {
   localStorage.setItem(historyKey, JSON.stringify(history));
 
   var btn = document.getElementById('metaBiSistemaSaveBtn');
-  btn.textContent = '<span class="mso mso-fill">check_circle</span> Salvo!';
+  btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Salvo!';
   btn.style.background = '#22c55e';
   setTimeout(function() { btn.textContent = 'Salvar'; btn.style.background = 'var(--starken)'; }, 2000);
 }
@@ -17548,17 +17549,17 @@ function metaPublishUpdatePreview() {
   const plats = platform.split(',').filter(Boolean);
   if (plats.includes('fb') && plats.includes('ig')) {
     metaEl.textContent = (c.pageName || 'Facebook') + ' + @' + (c.igUsername || 'instagram');
-    platLabel.textContent = '<span class="mso">description</span> FB + <span class="mso">photo_camera</span> IG';
+    platLabel.innerHTML = '<span class="mso">description</span> FB + <span class="mso">photo_camera</span> IG';
     platLabel.style.background = 'linear-gradient(135deg, #dbeafe, #fce7f3)';
     platLabel.style.color = '#6b21a8';
   } else if (plats.includes('fb')) {
     metaEl.textContent = c.pageName || 'Facebook';
-    platLabel.textContent = '<span class="mso">description</span> Facebook';
+    platLabel.innerHTML = '<span class="mso">description</span> Facebook';
     platLabel.style.background = '#dbeafe';
     platLabel.style.color = '#1d4ed8';
   } else if (plats.includes('ig')) {
     metaEl.textContent = '@' + (c.igUsername || 'instagram');
-    platLabel.textContent = '<span class="mso">photo_camera</span> Instagram';
+    platLabel.innerHTML = '<span class="mso">photo_camera</span> Instagram';
     platLabel.style.background = '#fce7f3';
     platLabel.style.color = '#be185d';
   } else {
@@ -17607,7 +17608,7 @@ function metaPublishUpdatePreview() {
       } else {
         const vid = document.createElement('div');
         vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:#1a1a2e';
-        vid.textContent = '<span class="mso">movie</span>';
+        vid.innerHTML = '<span class="mso">movie</span>';
         mediaEl.appendChild(vid);
       }
     } else {
@@ -19076,7 +19077,7 @@ async function ctRefreshAgendadoStatuses() {
       // Flash toast to inform user
       var toast = document.createElement('div');
       toast.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:99999;background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:10px;padding:12px 18px;font-family:inherit;font-size:13px;font-weight:600;color:#047857;box-shadow:0 4px 16px rgba(0,0,0,0.12);animation:alertSlideIn 0.3s ease';
-      toast.textContent = '<span class="mso mso-fill">check_circle</span> Status de publicação atualizado!';
+      toast.innerHTML = '<span class="mso mso-fill">check_circle</span> Status de publicação atualizado!';
       document.body.appendChild(toast);
       setTimeout(function() { toast.remove(); }, 4000);
     }
@@ -19734,7 +19735,7 @@ async function ctRsRunSchedule() {
   }
 
   statusEl.style.color = errors > 0 ? '#b45309' : '#059669';
-  statusEl.textContent = '<span class="mso mso-fill">check_circle</span> ' + queued + ' stories agendados' + (errors > 0 ? ' (' + errors + ' erros)' : '');
+  statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> ' + queued + ' stories agendados' + (errors > 0 ? ' (' + errors + ' erros)' : '');
 
   await ctLoadGroups();
   setTimeout(function(){ var m = document.getElementById('rsSchedModal'); if(m) m.remove(); }, 2000);
@@ -19998,7 +19999,7 @@ async function ctRunMonthWizard() {
   } catch(e) {
     alert('Erro ao criar grupos: ' + e.message);
   } finally {
-    btn.textContent = '<span class="mso">rocket_launch</span> Criar Grupos'; btn.disabled = false;
+    btn.innerHTML = '<span class="mso">rocket_launch</span> Criar Grupos'; btn.disabled = false;
   }
 }
 
@@ -20494,8 +20495,8 @@ async function ctSaveAllFields(silent) {
   if (descVal !== (ctModalTask.description || '')) fields.description = descVal;
 
   if (Object.keys(fields).length === 0) {
-    if (!silent && btn) { btn.disabled = false; btn.textContent = '<span class="mso">save</span> Salvar'; }
-    if (!silent && statusEl) { statusEl.textContent = '<span class="mso mso-fill">check_circle</span> Tudo salvo'; setTimeout(function() { statusEl.textContent = ''; }, 2000); }
+    if (!silent && btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">save</span> Salvar'; }
+    if (!silent && statusEl) { statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> Tudo salvo'; setTimeout(function() { statusEl.textContent = ''; }, 2000); }
     return;
   }
 
@@ -20505,11 +20506,11 @@ async function ctSaveAllFields(silent) {
     await ctApi('upsert_task', fields);
     // Update local cache
     Object.keys(fields).forEach(function(k) { if (k !== 'id' && k !== 'user') ctModalTask[k] = fields[k]; });
-    if (!silent && btn) { btn.disabled = false; btn.textContent = '<span class="mso">save</span> Salvar'; }
-    if (!silent && statusEl) { statusEl.textContent = '<span class="mso mso-fill">check_circle</span> Salvo!'; setTimeout(function() { statusEl.textContent = ''; }, 2500); }
+    if (!silent && btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">save</span> Salvar'; }
+    if (!silent && statusEl) { statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> Salvo!'; setTimeout(function() { statusEl.textContent = ''; }, 2500); }
   } catch(e) {
-    if (!silent && btn) { btn.disabled = false; btn.textContent = '<span class="mso">save</span> Salvar'; }
-    if (!silent && statusEl) { statusEl.textContent = '<span class="mso">cancel</span> Erro'; setTimeout(function() { statusEl.textContent = ''; }, 3000); }
+    if (!silent && btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">save</span> Salvar'; }
+    if (!silent && statusEl) { statusEl.innerHTML = '<span class="mso">cancel</span> Erro'; setTimeout(function() { statusEl.textContent = ''; }, 3000); }
   }
 }
 
@@ -21118,7 +21119,7 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
   } catch(err) {
     console.error('Frame save error:', err);
     alert('Erro: ' + err.message);
-    if (btn) { btn.textContent = '<span class="mso mso-fill">check_circle</span> Salvar como thumbnail'; btn.disabled = false; }
+    if (btn) { btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Salvar como thumbnail'; btn.disabled = false; }
   }
 }
 
@@ -21366,7 +21367,7 @@ function ctCopyCopyVariation(idx) {
   navigator.clipboard.writeText(window._ctAiVariations[idx]).then(function() {
     var btn = event.target;
     var orig = btn.textContent;
-    btn.textContent = '<span class="mso mso-fill">check_circle</span> Copiado!';
+    btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Copiado!';
     setTimeout(function() { btn.textContent = orig; }, 1500);
   });
 }
@@ -21544,7 +21545,7 @@ async function ctUploadMusicFileFmt(file) {
     document.getElementById('ctMusicUrlFmt').value = publicUrl;
     statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> Enviado!'; statusEl.style.color = '#10b981';
     ctMusicTabFmt('url');
-  } catch(err) { statusEl.textContent = '<span class="mso">cancel</span> ' + err.message; statusEl.style.color = '#ef4444'; }
+  } catch(err) { statusEl.innerHTML = '<span class="mso">cancel</span> ' + err.message; statusEl.style.color = '#ef4444'; }
 }
 
 document.addEventListener('input', function(e) {
@@ -21636,12 +21637,12 @@ async function ctRenderVideoWithMusicFmt() {
     document.getElementById('ctMusicDownloadLinkFmt').href = blobUrl;
     document.getElementById('ctMusicDownloadLinkFmt').download = 'video_com_musica.mp4';
 
-    statusEl.textContent = '<span class="mso mso-fill">check_circle</span> ' + sizeMB + 'MB (original: ' + origMB + 'MB) — ' + time + 's — Qualidade 100%';
+    statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> ' + sizeMB + 'MB (original: ' + origMB + 'MB) — ' + time + 's — Qualidade 100%';
     btn.disabled = false; btn.style.opacity = '1';
 
   } catch(err) {
     console.error('FFmpeg merge error:', err);
-    statusEl.textContent = '<span class="mso">cancel</span> ' + err.message;
+    statusEl.innerHTML = '<span class="mso">cancel</span> ' + err.message;
     barEl.style.width = '0%'; barEl.style.background = '#ef4444';
     btn.disabled = false; btn.style.opacity = '1';
   }
@@ -21761,7 +21762,7 @@ async function ctUploadMusicFile(file) {
     statusEl.style.color = '#10b981';
     ctMusicTab('url');
   } catch(err) {
-    statusEl.textContent = '<span class="mso">cancel</span> Erro: ' + err.message;
+    statusEl.innerHTML = '<span class="mso">cancel</span> Erro: ' + err.message;
     statusEl.style.color = '#ef4444';
   }
 }
@@ -21914,7 +21915,7 @@ async function ctRenderVideoWithMusic() {
 
   } catch(err) {
     console.error('Creatomate render error:', err);
-    statusEl.textContent = '<span class="mso">cancel</span> ' + err.message;
+    statusEl.innerHTML = '<span class="mso">cancel</span> ' + err.message;
     barEl.style.width = '0%';
     barEl.style.background = '#ef4444';
     btn.disabled = false; btn.style.opacity = '1';
@@ -22387,7 +22388,7 @@ async function ctBulkSchedule() {
   document.getElementById('bsDatetime').value = iso;
 
   document.getElementById('bsCount').textContent = '(' + _bsTasks.length + ' posts)';
-  document.getElementById('bsSubmitBtn').textContent = '<span class="mso">rocket_launch</span> Agendar Tudo';
+  document.getElementById('bsSubmitBtn').innerHTML = '<span class="mso">rocket_launch</span> Agendar Tudo';
   document.getElementById('bsSubmitBtn').disabled = false;
 
   bsUpdatePreview();
@@ -22616,7 +22617,7 @@ async function ctBulkMoveToGroup(groupId, groupName) {
   } catch(e) {
     alert('Erro ao mover tarefas.');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '<span class="mso">push_pin</span> Mover'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">push_pin</span> Mover'; }
   }
 }
 
@@ -23649,7 +23650,7 @@ function ctOpenLightbox(url, isVideo) {
     // Format title
     var d = new Date(isoDate + 'T12:00:00');
     var dayName = DAY_NAMES_LONG[d.getDay()];
-    titleEl.textContent = '<span class="mso">calendar_today</span> ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
+    titleEl.innerHTML = '<span class="mso">calendar_today</span> ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
 
     if (dayPosts.length === 0) {
       listEl.innerHTML = '<div class="cal-empty-day">Nenhum post neste dia.</div>';
@@ -24798,7 +24799,7 @@ function hubSave() {
     data:        data
   }).then(function(res) {
     btn.disabled    = false;
-    btn.textContent = '<span class="mso">save</span> Salvar';
+    btn.innerHTML = '<span class="mso">save</span> Salvar';
     if (res && res.error) {
       if (ind) { ind.textContent = 'Erro ao salvar'; ind.className = 'ch-save-indicator'; }
       alert('Erro ao salvar: ' + (res.message || res.error));
@@ -24815,7 +24816,7 @@ function hubSave() {
     }
   }).catch(function(err) {
     btn.disabled    = false;
-    btn.textContent = '<span class="mso">save</span> Salvar';
+    btn.innerHTML = '<span class="mso">save</span> Salvar';
     if (ind) { ind.textContent = 'Erro'; ind.className = 'ch-save-indicator'; }
     alert('Erro de conexão: ' + (err && err.message ? err.message : 'desconhecido'));
   });
@@ -25147,7 +25148,7 @@ async function hubUploadLogo(files) {
       // Auto-save
       hubSave();
 
-      if (label) { label.textContent = '<span class="mso mso-fill">check_circle</span> Enviado!'; label.style.opacity = '1'; }
+      if (label) { label.innerHTML = '<span class="mso mso-fill">check_circle</span> Enviado!'; label.style.opacity = '1'; }
       setTimeout(function() { if (label) label.textContent = '⬆ Upload'; }, 2000);
     } else {
       console.error('Logo upload: no file_url in response:', res);
@@ -25278,7 +25279,7 @@ async function ciSave(field, value) {
     await ctApi('save_client_info', payload);
     // Show saved toast
     var footer = document.getElementById('ciFooter');
-    footer.textContent = '<span class="mso">check</span> Salvo!';
+    footer.innerHTML = '<span class="mso">check</span> Salvo!';
     footer.style.color = '#22c55e';
     setTimeout(function() {
       footer.style.color = '';
@@ -26100,7 +26101,7 @@ async function gadsLoad() {
     gadsRenderCampaigns(gadsData.campaigns);
     gadsRenderKeywords(gadsData.keywords);
   } catch (err) {
-    errorEl.textContent = '<span class="mso">warning</span> ' + err.message;
+    errorEl.innerHTML = '<span class="mso">warning</span> ' + err.message;
     errorEl.style.display = 'block';
   } finally {
     loading.style.display = 'none';
@@ -27565,8 +27566,10 @@ async function mtInit() {
 function mtSetView(mode) {
   mtView = mode;
   var listBtn = document.getElementById('mtViewList');
+  var kanbanBtn = document.getElementById('mtViewKanban');
   var clientBtn = document.getElementById('mtViewClient');
   if (listBtn) { listBtn.classList.toggle('active', mode === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
+  if (kanbanBtn) { kanbanBtn.classList.toggle('active', mode === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
   if (clientBtn) { clientBtn.classList.toggle('active', mode === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
   mtRender();
 }
@@ -27584,7 +27587,7 @@ async function mtSendToReview(taskId, btn) {
     if (typeof showToast === 'function') showToast('<span class="mso mso-fill">check_circle</span> Enviado para revisão!', 'success');
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = '<span class="mso">mark_email_unread</span> Revisão';
+    btn.innerHTML = '<span class="mso">mark_email_unread</span> Revisão';
     alert('Erro: ' + e.message);
   }
 }
@@ -27631,8 +27634,10 @@ function mtRender() {
 
   // Update view tab buttons
   var listBtn = document.getElementById('mtViewList');
+  var kanbanBtn = document.getElementById('mtViewKanban');
   var clientBtn = document.getElementById('mtViewClient');
   if (listBtn) { listBtn.classList.toggle('active', mtView === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
+  if (kanbanBtn) { kanbanBtn.classList.toggle('active', mtView === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
   if (clientBtn) { clientBtn.classList.toggle('active', mtView === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
 
   // Render pipeline (executor sees agendar + aprovacao tasks in pipeline)
@@ -27686,7 +27691,9 @@ function mtRender() {
   }
 
   if (tasks.length) {
-    if (mtView === 'client') {
+    if (mtView === 'kanban') {
+      mtRenderKanban(el, tasks);
+    } else if (mtView === 'client') {
       mtRenderByClient(el, tasks);
     } else {
       mtRenderList(el, tasks);
@@ -27964,6 +27971,59 @@ function mtRenderListDesigner(el, tasks) {
   tasks.forEach(t => {
     html += mtRenderCardDesigner(t);
   });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function mtRenderKanban(el, tasks) {
+  const statuses = [
+    { key: 'a-fazer', label: 'A Fazer', color: '#9ca3af' },
+    { key: 'design', label: 'Design', color: '#2563eb' },
+    { key: 'em-revisao', label: 'Em Revisão', color: '#c2410c' },
+    { key: 'aprovacao-design', label: 'Aprovação Design', color: '#dc2626' },
+    { key: 'agendado', label: 'Agendado', color: '#06b6d4' },
+    { key: 'publicado', label: 'Publicado', color: '#22c55e' }
+  ];
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;padding:0;overflow-x:auto">';
+
+  statuses.forEach(status => {
+    const statusTasks = tasks.filter(t => (t.status || 'a-fazer') === status.key);
+    html += '<div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:12px;min-width:280px;border-top:3px solid ' + status.color + '">';
+    html += '<div style="font-size:13px;font-weight:700;color:' + status.color + ';margin-bottom:12px;text-transform:uppercase">' + status.label + ' (' + statusTasks.length + ')</div>';
+
+    statusTasks.forEach(t => {
+      const clients = _metaClients || {};
+      const client = clients[t.client_id] || null;
+      const clientName = client ? (client.pageName || client.name || t.client_id) : (t.group_name || '');
+      const priorityMatch = CT_PRIORITIES.find(p => p.key === (t.priority || 'normal')) || CT_PRIORITIES[2];
+
+      html += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="'
+        + 'background:rgba(255,255,255,0.05);'
+        + 'border:1px solid rgba(255,255,255,0.1);'
+        + 'border-radius:8px;'
+        + 'padding:12px;'
+        + 'margin-bottom:10px;'
+        + 'cursor:pointer;'
+        + 'transition:all 0.2s'
+        + '">';
+
+      html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px">' + clientName + '</div>';
+      html += '<div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px;line-height:1.3">' + (t.name || '') + '</div>';
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px">';
+      html += '<span style="background:' + priorityMatch.color + '20;color:' + priorityMatch.color + ';padding:2px 6px;border-radius:4px">' + priorityMatch.icon + ' ' + priorityMatch.label + '</span>';
+
+      if (t.due_date) {
+        const dueDate = new Date(t.due_date + 'T00:00:00');
+        const dueStr = dueDate.getDate() + '/' + (dueDate.getMonth()+1);
+        html += '<span style="background:rgba(59,130,246,0.2);color:#60a5fa;padding:2px 6px;border-radius:4px">' + dueStr + '</span>';
+      }
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+  });
+
   html += '</div>';
   el.innerHTML = html;
 }
@@ -28771,7 +28831,7 @@ async function ctConfirmPickerMaterials() {
     ctCloseMaterialsPicker();
   } catch(e) {
     alert('Erro ao adicionar: ' + e.message);
-    if (btn) { btn.textContent = '<span class="mso mso-fill">check_circle</span> Usar selecionados'; btn.disabled = false; }
+    if (btn) { btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Usar selecionados'; btn.disabled = false; }
   }
 }
 
