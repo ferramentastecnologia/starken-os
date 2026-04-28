@@ -3850,6 +3850,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <option value="Emilly">Emilly</option>
         <option value="Leonardo">Leonardo</option>
         <option value="Dante">Dante</option>
+        <option value="Victor">Victor</option>
       </select>
     </div>
     <div>
@@ -3934,6 +3935,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <option value="Juan">Juan</option>
                 <option value="Henrique">Henrique</option>
                 <option value="Emilly">Emilly</option>
+                <option value="Victor">Victor</option>
               </select>
               <select class="gp-filter-select" id="gpFilterSemana"><option value="">Todas as Semanas</option></select>
             </div>
@@ -4706,6 +4708,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <option value="Juan">Juan</option>
               <option value="Henrique">Henrique</option>
               <option value="Emily">Emily</option>
+              <option value="Victor">Victor</option>
+              <option value="Victor">Victor</option>
             </select>
           </div>
 
@@ -5460,6 +5464,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                         <option value="Juan">Juan</option>
                         <option value="Henrique">Henrique</option>
                         <option value="Emily">Emily</option>
+                        <option value="Victor">Victor</option>
                       </select>
                     </div>
                     <div class="ch-field-row">
@@ -13875,7 +13880,7 @@ renderAll(); // render imediato com dados do localStorage
         <div>
           <label class="gp-field-label">Responsável</label>
           <select id="gpFtResponsavel" class="gp-field">
-            <option value="Juan">Juan</option><option value="Henrique">Henrique</option><option value="Emilly">Emilly</option>
+            <option value="Juan">Juan</option><option value="Henrique">Henrique</option><option value="Emilly">Emilly</option><option value="Victor">Victor</option><option value="Victor">Victor</option>
           </select>
         </div>
         <div>
@@ -13927,6 +13932,7 @@ const GP_USERS = [
   { name:'Emilly',   role:'editor',   color:'#f59e0b' },
   { name:'Leonardo', role:'admin',    color:'#a855f7' },
   { name:'Dante',    role:'executor', color:'#f97316' },
+  { name:'Victor',   role:'designer', color:'#14b8a6' },
   { name:'Daniela',  role:'designer', color:'#ec4899', disabled:true }
 ];
 
@@ -29767,6 +29773,7 @@ async function tfOpenModal(taskId) {
     + '<option value="Juan"' + (task.assignee==='Juan'?' selected':'') + '>Juan</option>'
     + '<option value="Henrique"' + (task.assignee==='Henrique'?' selected':'') + '>Henrique</option>'
     + '<option value="Emily"' + (task.assignee==='Emily'?' selected':'') + '>Emily</option>'
+    + '<option value="Victor"' + (task.assignee==='Victor'?' selected':'') + '>Victor</option>'
     + '<option value="Leonardo"' + (task.assignee==='Leonardo'?' selected':'') + '>Leonardo</option>'
     + '<option value="Dante"' + (task.assignee==='Dante'?' selected':'') + '>Dante</option>'
     + '</select>'
