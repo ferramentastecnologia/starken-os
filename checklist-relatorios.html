@@ -4843,7 +4843,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div class="ct-modal-meta-item">
                 <label><span class="mso">calendar_today</span> Data Post</label>
                 <div style="display:flex;flex-direction:column;gap:4px">
-                  <input type="date" id="ctModalPostDate" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text-primary);background:var(--surface);cursor:pointer" oninput="ctModalPostDateChange(this.value)">
+                  <input type="hidden" id="ctModalPostDate">
+                  <button type="button" id="ctModalPostDateBtn" onclick="ctOpenPostDatePicker(event)" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text-primary);background:var(--surface);cursor:pointer;text-align:left;font-family:inherit">Selecione a data</button>
                 </div>
               </div>
               <div class="ct-modal-meta-item">
@@ -20370,11 +20371,19 @@ async function ctOpenModal(taskId) {
   statusBtn.style.background = status.bg;
   statusBtn.style.color = status.color;
 
-  // Assignee
-  const user = CT_USERS.find(u => u.name === task.assignee);
+  // Assignee (pode ter múltiplos separados por vírgula)
   const assigneeEl = document.getElementById('ctModalAssignee');
-  if (user) {
-    assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>';
+  const assignees = (task.assignee || '').split(',').map(a => a.trim()).filter(Boolean);
+  if (assignees.length > 0) {
+    let html = '';
+    assignees.forEach((name, i) => {
+      const user = CT_USERS.find(u => u.name === name);
+      if (user) {
+        html += '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div>';
+      }
+    });
+    html += '<span>' + assignees.join(', ') + '</span>';
+    assigneeEl.innerHTML = html;
   } else {
     assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
   }
@@ -23313,6 +23322,144 @@ function ctShowDatePicker(event) {
   setTimeout(() => {
     const closeHandler = function(e) {
       if (ctDatePickerEl && !ctDatePickerEl.contains(e.target)) {
+        closePicker();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    document.addEventListener('click', closeHandler);
+  }, 10);
+}
+
+// ─── POST DATE PICKER (igual ao DUE DATE) ───
+var ctPostDatePickerEl = null;
+
+function ctOpenPostDatePicker(event) {
+  event.preventDefault();
+  if (ctPostDatePickerEl) ctPostDatePickerEl.remove();
+
+  const picker = document.createElement('div');
+  picker.className = 'ct-datepicker';
+  picker.onclick = function(e) { e.stopPropagation(); };
+
+  const rect = event.target.getBoundingClientRect();
+  let top = rect.bottom + 6;
+  let left = rect.left;
+  if (left + 420 > window.innerWidth) left = window.innerWidth - 430;
+  if (top + 380 > window.innerHeight) top = rect.top - 386;
+  picker.style.top = top + 'px';
+  picker.style.left = left + 'px';
+
+  const now = new Date();
+  let viewMonth = now.getMonth();
+  let viewYear = now.getFullYear();
+  const currentVal = document.getElementById('ctModalPostDate').value;
+  if (currentVal) {
+    const cv = new Date(currentVal);
+    if (!isNaN(cv)) { viewMonth = cv.getMonth(); viewYear = cv.getFullYear(); }
+  }
+
+  function getDateStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d; }
+  function nextWeekday(day) { const d = new Date(); while (d.getDay() !== day) d.setDate(d.getDate() + 1); return d; }
+  function formatLabel(d) {
+    const days = ['dom','seg','ter','qua','qui','sex','sáb'];
+    return days[d.getDay()] + ', ' + d.getDate() + '/' + (d.getMonth()+1);
+  }
+
+  const shortcuts = [
+    { label: 'Hoje', hint: formatLabel(now), date: now },
+    { label: 'Mais tarde', hint: '17:25', date: (() => { const d = new Date(); d.setHours(17,25,0,0); return d; })() },
+    { label: 'Amanhã', hint: formatLabel(addDays(1)), date: addDays(1) },
+    { label: 'Este final de semana', hint: formatLabel(nextWeekday(6)), date: nextWeekday(6) },
+    { label: 'Semana que vem', hint: formatLabel(addDays(7)), date: addDays(7) },
+    { label: '2 semanas', hint: formatLabel(addDays(14)), date: addDays(14) },
+    { label: '4 semanas', hint: formatLabel(addDays(28)), date: addDays(28) },
+  ];
+
+  function selectDate(d) {
+    const str = getDateStr(d);
+    document.getElementById('ctModalPostDate').value = str;
+    document.getElementById('ctModalPostDateBtn').textContent = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    ctModalPostDateChange(str);
+    closePicker();
+  }
+
+  function closePicker() { if (ctPostDatePickerEl) { ctPostDatePickerEl.remove(); ctPostDatePickerEl = null; } }
+
+  function renderCalendar() {
+    const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const calDiv = picker.querySelector('.ct-datepicker-cal');
+    if (!calDiv) return;
+
+    let html = '<div class="ct-datepicker-cal-header">';
+    html += '<button onclick="event.stopPropagation();ctPostDatePickerNav(-1)">‹</button>';
+    html += '<span>' + months[viewMonth] + ' ' + viewYear + '</span>';
+    html += '<button onclick="event.stopPropagation();ctPostDatePickerNav(1)">›</button></div>';
+    html += '<div class="ct-datepicker-grid">';
+    ['2ª','3ª','4ª','5ª','6ª','sá','do'].forEach(d => html += '<div class="dp-day-head">' + d + '</div>');
+
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    let startDay = firstDay.getDay() - 1;
+    if (startDay < 0) startDay = 6;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+    const todayStr = getDateStr(now);
+    const selStr = document.getElementById('ctModalPostDate').value;
+
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = daysInPrev - i;
+      html += '<div class="dp-day other-month" onclick="event.stopPropagation();ctPostDatePickerSelectDay(' + (viewMonth-1) + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      let cls = 'dp-day';
+      if (ds === todayStr) cls += ' today';
+      if (ds === selStr) cls += ' selected';
+      html += '<div class="' + cls + '" onclick="event.stopPropagation();ctPostDatePickerSelectDay(' + viewMonth + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    const total = startDay + daysInMonth;
+    const remaining = (7 - (total % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      html += '<div class="dp-day other-month" onclick="event.stopPropagation();ctPostDatePickerSelectDay(' + (viewMonth+1) + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:8px;text-align:center"><button onclick="event.stopPropagation();ctPostDatePickerClear()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;font-size:0.78rem"><span class="mso">delete</span> Remover data</button></div>';
+    calDiv.innerHTML = html;
+  }
+
+  let shortcutsHtml = '<div class="ct-datepicker-shortcuts">';
+  shortcuts.forEach((s, i) => {
+    shortcutsHtml += '<button onclick="event.stopPropagation();ctPostDatePickerShortcut(' + i + ')">' + s.label + '<span class="dp-hint">' + s.hint + '</span></button>';
+  });
+  shortcutsHtml += '</div><div class="ct-datepicker-cal"></div>';
+  picker.innerHTML = shortcutsHtml;
+
+  document.body.appendChild(picker);
+  ctPostDatePickerEl = picker;
+  renderCalendar();
+
+  window.ctPostDatePickerNav = function(dir) {
+    viewMonth += dir;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    renderCalendar();
+  };
+  window.ctPostDatePickerSelectDay = function(m, d, y) {
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    selectDate(new Date(y, m, d));
+  };
+  window.ctPostDatePickerShortcut = function(i) { selectDate(shortcuts[i].date); };
+  window.ctPostDatePickerClear = function() {
+    document.getElementById('ctModalPostDate').value = '';
+    document.getElementById('ctModalPostDateBtn').textContent = 'Selecione a data';
+    ctModalPostDateChange(null);
+    closePicker();
+  };
+
+  setTimeout(() => {
+    const closeHandler = function(e) {
+      if (ctPostDatePickerEl && !ctPostDatePickerEl.contains(e.target)) {
         closePicker();
         document.removeEventListener('click', closeHandler);
       }
