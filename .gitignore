@@ -34,3 +34,6 @@ escritorio/logs/
 # Docs sensíveis
 *.docx
 setup_infra.js
+
+# Claude Code worktrees (local development)
+.claude/worktrees/
