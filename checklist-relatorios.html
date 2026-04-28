@@ -3848,6 +3848,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         <option value="Juan">Juan</option>
         <option value="Victor">Victor</option>
         <option value="Emilly">Emilly</option>
+        <option value="Leonardo">Leonardo</option>
+        <option value="Dante">Dante</option>
+        <option value="Victor">Victor</option>
+        <option value="Emilly">Emilly</option>
         <option value="Dante">Dante</option>
       </select>
     </div>
@@ -3931,6 +3935,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <select class="gp-filter-select" id="gpFilterResponsavel">
                 <option value="">Todos Responsáveis</option>
                 <option value="Juan">Juan</option>
+                <option value="Victor">Victor</option>
+                <option value="Emilly">Emilly</option>
                 <option value="Victor">Victor</option>
                 <option value="Emilly">Emilly</option>
               </select>
@@ -4703,7 +4709,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="ctAssigneeFilter" onchange="ctRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
-                    <option value="Emily">Emily</option>
+              <option value="Victor">Victor</option>
+              <option value="Emily">Emily</option>
               <option value="Victor">Victor</option>
               <option value="Victor">Victor</option>
             </select>
@@ -5459,7 +5466,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                       <select class="ch-field-value" id="chResponsible" onchange="hubMarkDirty()">
                         <option value="">Selecione</option>
                         <option value="Juan">Juan</option>
-                                        <option value="Emily">Emily</option>
+                        <option value="Victor">Victor</option>
+                        <option value="Emily">Emily</option>
                         <option value="Victor">Victor</option>
                       </select>
                     </div>
@@ -5960,6 +5968,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <option value="alteracao-design">Alteração Design</option>
             <option value="aprovacao">Aprovação</option>
             <option value="aprovado">Aprovado</option>
+            <option value="agendar">Agendar</option>
             <option value="agendado">Agendado</option>
             <option value="publicado">Publicado</option>
           </select>
@@ -6000,8 +6009,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="tfAssigneeFilter" onchange="tfRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
-                    <option value="Emily">Emily</option>
-                    <option value="Dante">Dante</option>
+              <option value="Victor">Victor</option>
+              <option value="Emily">Emily</option>
+              <option value="Leonardo">Leonardo</option>
+              <option value="Dante">Dante</option>
             </select>
           </div>
 
@@ -13884,7 +13895,7 @@ renderAll(); // render imediato com dados do localStorage
         <div>
           <label class="gp-field-label">Responsável</label>
           <select id="gpFtResponsavel" class="gp-field">
-            <option value="Juan">Juan</option><option value="Victor">Victor</option><option value="Emilly">Emilly</option>
+            <option value="Juan">Juan</option><option value="Victor">Victor</option><option value="Emilly">Emilly</option><option value="Victor">Victor</option><option value="Victor">Victor</option>
           </select>
         </div>
         <div>
@@ -13932,7 +13943,7 @@ renderAll(); // render imediato com dados do localStorage
 // ================================================================
 const GP_USERS = [
   { name:'Juan',     role:'admin',    color:'#3b82f6' },
-  { name:'Victor',   role:'designer', color:'#8b5cf6' },
+  { name:'Victor', role:'designer', color:'#8b5cf6' },
   { name:'Emilly',   role:'editor',   color:'#f59e0b' },
   { name:'Dante',    role:'executor', color:'#f97316' },
   { name:'Daniela',  role:'designer', color:'#ec4899', disabled:true }
@@ -18360,7 +18371,7 @@ const CT_PRIORITIES = [
 
 const CT_USERS = [
   { name: 'Juan',     color: '#3b82f6' },
-  { name: 'Victor',   color: '#8b5cf6' },
+  { name: 'Victor', color: '#8b5cf6' },
   { name: 'Emily',    color: '#f59e0b' },
   { name: 'Dante',    color: '#f97316' },
 ];
