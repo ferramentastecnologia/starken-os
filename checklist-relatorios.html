@@ -27682,8 +27682,8 @@ function mtRenderRecent(container) {
 // ── Resizable columns (Finder-style) ──
 var _mtColWidthsCache = {};
 var _mtDefaultCols = {
-  'by-list':   [200, 320, 95, 120, 85, 85, 100, 110],
-  'by-client': [320, 95, 140, 130, 85, 85, 100, 110]
+  'by-list':   [200, 320, 95, 120, 85, 85, 110],
+  'by-client': [320, 95, 140, 130, 85, 85, 110]
 };
 
 function _mtGetColWidths(mode) {
@@ -27790,20 +27790,90 @@ function mtRenderByClient(el, tasks) {
 }
 
 function mtRenderList(el, tasks) {
-  var cols = _mtGetColWidths('by-list');
-  let html = '<div class="mt-list">';
-  html += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
-  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PUBLICAÇÃO','PRIO'];
-  hdrs.forEach(function(h, i) {
-    html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
-  });
-  html += '</div>';
+  var isDesigner = gpState.user && gpState.user.role === 'designer';
+
+  if (isDesigner) {
+    mtRenderListDesigner(el, tasks);
+  } else {
+    var cols = _mtGetColWidths('by-list');
+    let html = '<div class="mt-list">';
+    html += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
+    var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PRIO'];
+    hdrs.forEach(function(h, i) {
+      html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
+    });
+    html += '</div>';
+    tasks.forEach(t => {
+      html += mtRenderRow(t, 'by-list');
+    });
+    html += '</div>';
+    el.innerHTML = html;
+    _mtInitResize(el, 'by-list');
+  }
+}
+
+function mtRenderListDesigner(el, tasks) {
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:0">';
   tasks.forEach(t => {
-    html += mtRenderRow(t, 'by-list');
+    html += mtRenderCardDesigner(t);
   });
   html += '</div>';
   el.innerHTML = html;
-  _mtInitResize(el, 'by-list');
+}
+
+function mtRenderCardDesigner(task) {
+  const statusDef = CT_STATUSES.find(s => s.key === (task.status || 'a-fazer')) || CT_STATUSES[0];
+  const statusKey = statusDef.key;
+  const statusLabel = statusDef.label;
+
+  const clients = _metaClients || {};
+  const client = clients[task.client_id] || null;
+  const clientName = client ? (client.pageName || client.name || task.client_id) : (task.group_name || '');
+
+  const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
+  const priorityMatch = CT_PRIORITIES.find(p => p.key === (task.priority || 'normal')) || CT_PRIORITIES[2];
+
+  const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+  const isAlteracao = statusKey === 'alteracao-design';
+  const isUrgent = isAlteracao || (task.priority === 'urgente');
+
+  let actionBtn = '';
+  if (statusKey === 'design') {
+    actionBtn = '<button onclick="event.stopPropagation();mtSendToReview(\'' + task.id + '\',this)" style="width:100%;padding:10px;margin-top:12px;border-radius:8px;border:none;background:#c2410c;color:white;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit"><span class="mso">mark_email_unread</span> Enviar para Revisão</button>';
+  } else if (statusKey === 'alteracao-design') {
+    actionBtn = '<div style="width:100%;padding:10px;margin-top:12px;border-radius:8px;background:#fee2e2;color:#dc2626;text-align:center;font-size:12px;font-weight:700"><span class="mso">edit</span> CORRIGIR AGORA</div>';
+  }
+
+  const borderColor = isAlteracao ? '#dc2626' : (isUrgent ? '#f97316' : '#6366f1');
+  const bgColor = isAlteracao ? 'rgba(220,38,38,0.08)' : (isUrgent ? 'rgba(249,115,22,0.06)' : 'rgba(99,102,241,0.04)');
+
+  let html = '<div onclick="ctOpenModal(\'' + task.id + '\')" style="'
+    + 'background:' + bgColor + ';'
+    + 'border:2px solid ' + borderColor + ';'
+    + 'border-radius:12px;'
+    + 'padding:16px;'
+    + 'cursor:pointer;'
+    + 'transition:all 0.2s;'
+    + 'hover: {box-shadow: 0 8px 16px rgba(0,0,0,0.2);}'
+    + '">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+    + '<div style="flex:1">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + clientName + '</div>'
+    + '<div style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.3">' + (task.name || '') + '</div>'
+    + '</div>'
+    + '<span class="ct-status" data-status="' + statusKey + '" style="background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:8px">' + statusLabel + '</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
+    + formatBadge.replace('<div', '<div style="font-size:11px;padding:2px 8px;border-radius:4px"')
+    + '<span style="display:inline-block;background:' + priorityMatch.color + '20;color:' + priorityMatch.color + ';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">' + priorityMatch.icon + ' ' + priorityMatch.label.toUpperCase() + '</span>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:12px">'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:2px">ENTREGA</div><div style="font-size:14px;font-weight:700;color:#e2e8f0">' + dueStr + '</div></div>'
+    + '</div>'
+    + actionBtn
+    + '</div>';
+
+  return html;
 }
 
 function mtRenderRow(task, mode) {
