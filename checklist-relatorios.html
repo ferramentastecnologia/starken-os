@@ -5934,7 +5934,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
               <div class="mt-nx-vtabs">
                 <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active"><span class="mso">view_list</span> LISTA</button>
-                <button id="mtViewKanban" onclick="mtSetView('kanban')" class="mt-nx-vtab"><span class="mso">dashboard</span> KANBAN</button>
+                <button id="mtViewCards" onclick="mtSetView('cards')" class="mt-nx-vtab"><span class="mso">dashboard</span> CARDS</button>
+                <button id="mtViewKanban" onclick="mtSetView('kanban')" class="mt-nx-vtab"><span class="mso">view_kanban</span> KANBAN</button>
               </div>
             </div>
             <div class="mt-nx-topbar-right">
@@ -27577,8 +27578,10 @@ async function mtInit() {
 function mtSetView(mode) {
   mtView = mode;
   var listBtn = document.getElementById('mtViewList');
+  var cardsBtn = document.getElementById('mtViewCards');
   var kanbanBtn = document.getElementById('mtViewKanban');
   if (listBtn) { listBtn.classList.toggle('active', mode === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
+  if (cardsBtn) { cardsBtn.classList.toggle('active', mode === 'cards'); cardsBtn.style.background = ''; cardsBtn.style.color = ''; }
   if (kanbanBtn) { kanbanBtn.classList.toggle('active', mode === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
   mtRender();
 }
@@ -27643,8 +27646,10 @@ function mtRender() {
 
   // Update view tab buttons
   var listBtn = document.getElementById('mtViewList');
+  var cardsBtn = document.getElementById('mtViewCards');
   var kanbanBtn = document.getElementById('mtViewKanban');
   if (listBtn) { listBtn.classList.toggle('active', mtView === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
+  if (cardsBtn) { cardsBtn.classList.toggle('active', mtView === 'cards'); cardsBtn.style.background = ''; cardsBtn.style.color = ''; }
   if (kanbanBtn) { kanbanBtn.classList.toggle('active', mtView === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
 
   // Render pipeline (executor sees agendar + aprovacao tasks in pipeline)
@@ -27700,6 +27705,8 @@ function mtRender() {
   if (tasks.length) {
     if (mtView === 'kanban') {
       mtRenderKanban(el, tasks);
+    } else if (mtView === 'cards') {
+      mtRenderCards(el, tasks);
     } else {
       mtRenderList(el, tasks);
     }
@@ -27944,35 +27951,33 @@ function mtRenderByClient(el, tasks) {
 }
 
 function mtRenderList(el, tasks) {
-  var isDesigner = gpState.user && gpState.user.role === 'designer';
-
-  if (isDesigner) {
-    mtRenderListDesigner(el, tasks);
-  } else {
-    var cols = _mtGetColWidths('by-list');
-    let html = '<div class="mt-list">';
-    html += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
-    var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PRIO'];
-    hdrs.forEach(function(h, i) {
-      html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
-    });
-    html += '</div>';
-    tasks.forEach(t => {
-      html += mtRenderRow(t, 'by-list');
-    });
-    html += '</div>';
-    el.innerHTML = html;
-    _mtInitResize(el, 'by-list');
-  }
+  var cols = _mtGetColWidths('by-list');
+  let html = '<div class="mt-list">';
+  html += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
+  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PRIO'];
+  hdrs.forEach(function(h, i) {
+    html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
+  });
+  html += '</div>';
+  tasks.forEach(t => {
+    html += mtRenderRow(t, 'by-list');
+  });
+  html += '</div>';
+  el.innerHTML = html;
+  _mtInitResize(el, 'by-list');
 }
 
-function mtRenderListDesigner(el, tasks) {
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;padding:0">';
+function mtRenderCards(el, tasks) {
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:0">';
   tasks.forEach(t => {
     html += mtRenderCardDesigner(t);
   });
   html += '</div>';
   el.innerHTML = html;
+}
+
+function mtRenderListDesigner(el, tasks) {
+  mtRenderCards(el, tasks);
 }
 
 function mtRenderKanban(el, tasks) {
