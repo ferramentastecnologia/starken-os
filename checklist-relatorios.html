@@ -6478,9 +6478,6 @@ function findMetaClientKey(clientName, tenant) {
       matches.push({ key: key, name: mc.name });
     }
   });
-  if (!found && ['Bengers', 'Estilo Tulipa', 'New Service', 'Sr Salsicha', 'The Garrison'].some(n => clientName.includes(n))) {
-    console.log('[findMetaClientKey] NOT FOUND: "' + clientName + '" (tenant: ' + tenant + '). Available in _metaClients:', Object.values(_metaClients).filter(m => m.tenant === tenant).map(m => m.name));
-  }
   return found;
 }
 
@@ -16683,9 +16680,6 @@ function findMetaClientKey(clientName, tenant) {
       found = key;
     }
   });
-  if (!found && ['Bengers', 'Estilo', 'New Service', 'Sr Salsicha', 'The Garrison', 'Pizzaria Super'].some(n => clientName.includes(n))) {
-    console.log('[findMetaClientKey] NOT FOUND: "' + clientName + '" (tenant: ' + tenant + '). Available:', Object.values(_metaClients).filter(m => m.tenant === tenant).map(m => m.name).join(', '));
-  }
   return found;
 }
 
