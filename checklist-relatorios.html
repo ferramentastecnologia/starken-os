@@ -27640,9 +27640,20 @@ function mtRender() {
   const statusFilterEl = document.getElementById('mtStatusFilter');
   const statusFilter = statusFilterEl ? statusFilterEl.value : '';
 
-  // Render Nexus Emerald bento cards & bottom widgets
-  mtRenderBento();
-  mtRenderBottomWidgets();
+  // Render Nexus Emerald bento cards & bottom widgets (only for cards/kanban, not list)
+  if (mtView !== 'list') {
+    mtRenderBento();
+    mtRenderBottomWidgets();
+  } else {
+    var bentoEl = document.getElementById('mtBentoCards');
+    var alertEl = document.getElementById('mtWidgetAlert');
+    var effEl = document.getElementById('mtWidgetEff');
+    var producEl = document.getElementById('mtWidgetProdu');
+    if (bentoEl) bentoEl.innerHTML = '';
+    if (alertEl) alertEl.innerHTML = '';
+    if (effEl) effEl.innerHTML = '';
+    if (producEl) producEl.innerHTML = '';
+  }
 
   // Update view tab buttons
   var listBtn = document.getElementById('mtViewList');
@@ -27951,23 +27962,31 @@ function mtRenderByClient(el, tasks) {
 }
 
 function mtRenderList(el, tasks) {
-  let html = '<div style="display:flex;flex-direction:column;gap:1px;background:rgba(0,0,0,0.2)">';
-  tasks.forEach(t => {
+  let html = '<div style="display:flex;flex-direction:column;gap:0;background:rgba(0,0,0,0.2)">';
+
+  // Header
+  html += '<div style="display:grid;grid-template-columns:150px 1fr 100px 80px 60px;gap:12px;padding:12px;background:rgba(0,0,0,0.3);border-radius:6px 6px 0 0;font-weight:700;font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px">'
+    + '<div>CLIENTE</div>'
+    + '<div>NOME</div>'
+    + '<div>STATUS</div>'
+    + '<div>ENTREGA</div>'
+    + '<div>PRIO</div>'
+    + '</div>';
+
+  tasks.forEach((t, idx) => {
     const statusDef = CT_STATUSES.find(s => s.key === (t.status || 'a-fazer')) || CT_STATUSES[0];
     const clients = _metaClients || {};
     const client = clients[t.client_id] || null;
     const clientName = client ? (client.pageName || client.name || '') : (t.group_name || '');
 
     const dueStr = t.due_date ? new Date(t.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
-    const postDate = (t.publish_config && t.publish_config.post_date) ? new Date(t.publish_config.post_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
     const priorityMatch = CT_PRIORITIES.find(p => p.key === (t.priority || 'normal')) || CT_PRIORITIES[2];
 
-    html += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:150px 1fr 80px 60px 60px 80px;gap:12px;padding:12px;background:rgba(0,0,0,0.1);border-radius:6px;cursor:pointer;transition:all 0.2s;align-items:center">'
+    html += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:150px 1fr 100px 80px 60px;gap:12px;padding:12px;background:rgba(0,0,0,0.1);border-radius:' + (idx === tasks.length - 1 ? '0 0 6px 6px' : '0') + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid rgba(0,0,0,0.2)">'
       + '<div style="font-size:12px;color:rgba(255,255,255,0.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + clientName + '</div>'
       + '<div style="font-size:13px;color:#e2e8f0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
       + '<div style="font-size:11px;background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 8px;border-radius:4px;text-align:center;white-space:nowrap">' + statusDef.label + '</div>'
-      + '<div style="font-size:12px;color:rgba(255,255,255,0.6)">' + dueStr + '</div>'
-      + '<div style="font-size:12px;color:rgba(255,255,255,0.6)">' + postDate + '</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.6);text-align:center">' + dueStr + '</div>'
       + '<div style="font-size:11px;color:' + priorityMatch.color + ';font-weight:700;text-align:center">' + priorityMatch.icon + '</div>'
       + '</div>';
   });
