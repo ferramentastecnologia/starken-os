@@ -5935,7 +5935,6 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div class="mt-nx-vtabs">
                 <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active"><span class="mso">view_list</span> LISTA</button>
                 <button id="mtViewKanban" onclick="mtSetView('kanban')" class="mt-nx-vtab"><span class="mso">dashboard</span> KANBAN</button>
-                <button id="mtViewClient" onclick="mtSetView('client')" class="mt-nx-vtab"><span class="mso">business</span> CLIENTE</button>
               </div>
             </div>
             <div class="mt-nx-topbar-right">
@@ -6557,6 +6556,18 @@ function iconSvg(name, opts) {
 document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
+
+  // Add event listeners to theme buttons
+  ['light', 'dark', 'warm', 'emerald'].forEach(theme => {
+    const btnId = { light: 'themeLight', dark: 'themeDark', warm: 'themeWarm', emerald: 'themeEmerald' }[theme];
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        setTheme(theme);
+      });
+    }
+  });
 
   // Restore last active tab on reload (skip for designers — they go to minhas-tasks only)
   var savedSession = null;
@@ -27567,10 +27578,8 @@ function mtSetView(mode) {
   mtView = mode;
   var listBtn = document.getElementById('mtViewList');
   var kanbanBtn = document.getElementById('mtViewKanban');
-  var clientBtn = document.getElementById('mtViewClient');
   if (listBtn) { listBtn.classList.toggle('active', mode === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
   if (kanbanBtn) { kanbanBtn.classList.toggle('active', mode === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
-  if (clientBtn) { clientBtn.classList.toggle('active', mode === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
   mtRender();
 }
 
@@ -27635,10 +27644,8 @@ function mtRender() {
   // Update view tab buttons
   var listBtn = document.getElementById('mtViewList');
   var kanbanBtn = document.getElementById('mtViewKanban');
-  var clientBtn = document.getElementById('mtViewClient');
   if (listBtn) { listBtn.classList.toggle('active', mtView === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
   if (kanbanBtn) { kanbanBtn.classList.toggle('active', mtView === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
-  if (clientBtn) { clientBtn.classList.toggle('active', mtView === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
 
   // Render pipeline (executor sees agendar + aprovacao tasks in pipeline)
   let pipelineTasks = mtTasks;
@@ -27693,18 +27700,11 @@ function mtRender() {
   if (tasks.length) {
     if (mtView === 'kanban') {
       mtRenderKanban(el, tasks);
-    } else if (mtView === 'client') {
-      mtRenderByClient(el, tasks);
     } else {
       mtRenderList(el, tasks);
     }
   } else {
     el.innerHTML = '<div class="mt-empty">Nenhuma task pendente</div>';
-  }
-
-  // Render recent agendado/publicado section
-  if (mtRecentTasks.length > 0) {
-    mtRenderRecent(el);
   }
 }
 
