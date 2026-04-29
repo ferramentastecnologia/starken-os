@@ -8906,7 +8906,8 @@ const TAB_TITLES = {
   'minhas-tasks':      'Minhas Tasks',
   'traffic':           'Gestão de Tráfego',
   'system-logs':       'Logs do Sistema',
-  'pub-history':       'Publicações & Agendamentos'
+  'pub-history':       'Publicações & Agendamentos',
+  'archived-clients':  'Clientes Arquivados'
 };
 
 function switchTab(tabName) {
@@ -8951,6 +8952,7 @@ function switchTab(tabName) {
   else if (tabName === 'pub-history') { if (!_pubHistLoaded || !_sysLogs.length) pubHistoryRefresh(); else pubHistoryRender(); }
   else if (tabName === 'client-hub') { /* hubOpen() handles init */ }
   else if (tabName === 'dashboard') renderDashboard();
+  else if (tabName === 'archived-clients') renderArchivedClients();
   else renderAll();
 }
 
@@ -12171,7 +12173,15 @@ function renderClients() {
   const cf = document.getElementById('clientCompanyFilter').value;
   const segf = document.getElementById('clientSegmentFilter').value;
   const sf = document.getElementById('clientStatusFilter').value;
-  let cls = data.clients;
+
+  // Filter out archived clients
+  let archivedIds = [];
+  try {
+    const archived = JSON.parse(localStorage.getItem('archived_clients_data') || '[]');
+    archivedIds = archived.map(c => c.id);
+  } catch(e) {}
+
+  let cls = data.clients.filter(c => !archivedIds.includes(c.id));
   if (cf !== 'all') cls = cls.filter(c => c.company === cf);
   if (sf === 'active') cls = cls.filter(c => c.active);
   else if (sf === 'inactive') cls = cls.filter(c => !c.active);
@@ -12216,6 +12226,7 @@ function renderClients() {
       html += '</div>';
       html += statusBadge;
       html += '<button class="btn btn-outline btn-sm" onclick="editClient(\'' + c.id + '\')">Editar</button>';
+      html += '<button class="btn btn-warning btn-sm" onclick="archiveClient(\'' + c.id + '\')">Arquivar</button>';
       html += '<button class="btn btn-danger btn-sm" onclick="deleteClient(\'' + c.id + '\')">Remover</button>';
       html += '</div>';
       html += '</div>';
@@ -12364,6 +12375,102 @@ function deleteClient(id) {
   deleteFromSupabase('clients', id); // CASCADE deletes reports too
   showToast('Removido');
   renderAll();
+}
+
+function archiveClient(id) {
+  const c = data.clients.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm('Arquivar "' + c.name + '"? O histórico será mantido.')) return;
+
+  // Get archived clients list from localStorage
+  let archived = [];
+  try {
+    archived = JSON.parse(localStorage.getItem('archived_clients_data') || '[]');
+  } catch(e) {}
+
+  // Add client to archived list (with full data for restoration)
+  const archivedClient = Object.assign({}, c);
+  if (!archived.find(x => x.id === id)) {
+    archived.push(archivedClient);
+    localStorage.setItem('archived_clients_data', JSON.stringify(archived));
+  }
+
+  // Remove from active clients
+  data.clients = data.clients.filter(x => x.id !== id);
+  saveData(data);
+
+  showToast('Cliente arquivado');
+  renderAll();
+}
+
+function restoreClient(id) {
+  let archived = [];
+  try {
+    archived = JSON.parse(localStorage.getItem('archived_clients_data') || '[]');
+  } catch(e) {}
+
+  const archivedClient = archived.find(x => x.id === id);
+  if (!archivedClient) return;
+
+  if (!confirm('Restaurar "' + archivedClient.name + '"?')) return;
+
+  // Add back to active clients
+  data.clients.push(archivedClient);
+  saveData(data);
+
+  // Remove from archived
+  archived = archived.filter(x => x.id !== id);
+  localStorage.setItem('archived_clients_data', JSON.stringify(archived));
+
+  showToast('Cliente restaurado');
+  renderAll();
+}
+
+function renderArchivedClients() {
+  let archived = [];
+  try {
+    archived = JSON.parse(localStorage.getItem('archived_clients_data') || '[]');
+  } catch(e) {}
+
+  const tabContent = document.getElementById('tab-archived-clients');
+  if (!tabContent) return;
+
+  if (archived.length === 0) {
+    tabContent.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-secondary)">Nenhum cliente arquivado</div>';
+    return;
+  }
+
+  let html = '<div style="padding:20px">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px">';
+
+  for (const c of archived) {
+    const statusBadge = c.active
+      ? '<span class="status-badge status-sent"><span class="dot"></span>Ativo</span>'
+      : '<span class="status-badge status-pending"><span class="dot"></span>Inativo</span>';
+
+    const segBadge = c.segment ? '<span style="display:inline-block;background:#f1f5f9;color:var(--text-secondary);border-radius:4px;padding:1px 7px;font-size:0.68rem;font-weight:600;margin-right:4px">' + esc(c.segment) + '</span>' : '';
+    const coCSS = (c.company === 'Starken') ? 'starken' : 'alpha';
+
+    html += '<div class="client-row" style="border:1px solid var(--border-default);border-radius:8px;padding:15px">';
+    html += '<div class="client-row-top" style="margin-bottom:12px">';
+    html += '<div class="client-avatar ' + coCSS + '">' + getInitials(c.name) + '</div>';
+    html += '<div style="flex:1">';
+    html += '<div class="client-name">' + esc(c.name) + '</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">' + segBadge;
+    html += (c.phone ? '<span class="mso">chat_bubble</span> ' + esc(c.phone) : 'Sem telefone');
+    if (c.customPeriod) html += ' &middot; ' + esc(c.customPeriod);
+    html += '</div>';
+    html += '</div>';
+    html += statusBadge;
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;margin-top:12px">';
+    html += '<button class="btn btn-primary btn-sm" style="flex:1" onclick="restoreClient(\'' + c.id + '\')"><span class="mso">restore</span> Restaurar</button>';
+    html += '</div>';
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+  tabContent.innerHTML = html;
 }
 
 // ============ HISTORY ============
