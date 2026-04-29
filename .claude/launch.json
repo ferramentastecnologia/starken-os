@@ -4,8 +4,8 @@
     {
       "name": "starken-os",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "7000", "--directory", "C:\\Users\\Juan\\Documents\\GitHub\\starken-performance"],
-      "port": 7000
+      "runtimeArgs": ["-m", "http.server", "7001", "--directory", "C:\\Users\\Juan\\Documents\\GitHub\\starken-os"],
+      "port": 7001
     }
   ]
 }

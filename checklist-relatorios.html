@@ -1257,14 +1257,14 @@ body {
 .sw-col-body::-webkit-scrollbar { width:4px; }
 .sw-col-body::-webkit-scrollbar-track { background:transparent; }
 .sw-col-body::-webkit-scrollbar-thumb { background:rgba(148,163,184,0.3); border-radius:4px; }
-.sw-sec-label { display:flex; align-items:center; justify-content:space-between; padding:5px 10px; border-radius:7px; font-size:0.72rem; font-weight:700; margin:2px 0 4px; border-left:2px solid transparent; }
+.sw-sec-label { display:flex; align-items:center; justify-content:space-between; padding:5px 10px; border-radius:7px; font-size:0.72rem; font-weight:700; margin:2px 0 4px; border-left:2px solid transparent; flex-shrink:0; }
 .sw-sec-label.pending { background:rgba(245,158,11,0.1); color:#f59e0b; border-left-color:#f59e0b; }
 .sw-sec-label.generated { background:rgba(59,130,246,0.1); color:#60a5fa; border-left-color:#3b82f6; }
 .sw-sec-label.sent { background:rgba(12,217,173,0.1); color:#0cd9ad; border-left-color:#0cd9ad; }
 .sw-sec-cnt { background:rgba(0,0,0,0.12); border-radius:10px; padding:1px 8px; }
 [data-theme="dark"] .sw-sec-cnt { background:rgba(255,255,255,0.1); }
 .sw-sec-empty { text-align:center; padding:10px; font-size:0.75rem; color:var(--text-tertiary); opacity:0.6; }
-.sw-card { background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color 0.15s,box-shadow 0.15s; }
+.sw-card { display:flex; flex-direction:column; flex-shrink:0; background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px; overflow:hidden; transition:border-color 0.15s,box-shadow 0.15s; }
 .sw-card:hover { border-color:rgba(12,217,173,0.4); box-shadow:0 2px 12px rgba(12,217,173,0.06); }
 .sw-card.sw-gen { border-left:3px solid #3b82f6; }
 .sw-card.sw-sent { border-left:3px solid #0cd9ad; }
@@ -3846,9 +3846,12 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
       <select id="loginUser" class="login-field">
         <option value="">Selecione</option>
         <option value="Juan">Juan</option>
-        <option value="Henrique">Henrique</option>
+        <option value="Victor">Victor</option>
         <option value="Emilly">Emilly</option>
         <option value="Leonardo">Leonardo</option>
+        <option value="Dante">Dante</option>
+        <option value="Victor">Victor</option>
+        <option value="Emilly">Emilly</option>
         <option value="Dante">Dante</option>
       </select>
     </div>
@@ -3932,7 +3935,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <select class="gp-filter-select" id="gpFilterResponsavel">
                 <option value="">Todos Responsáveis</option>
                 <option value="Juan">Juan</option>
-                <option value="Henrique">Henrique</option>
+                <option value="Victor">Victor</option>
+                <option value="Emilly">Emilly</option>
+                <option value="Victor">Victor</option>
                 <option value="Emilly">Emilly</option>
               </select>
               <select class="gp-filter-select" id="gpFilterSemana"><option value="">Todas as Semanas</option></select>
@@ -4258,7 +4263,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
               <!-- Busca de clientes -->
               <div style="margin-bottom:12px">
-                <input type="text" id="metaConfigSearch" placeholder="<span class="mso">search</span> Buscar cliente..." oninput="metaConfigFilterClients(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
+                <input type="text" id="metaConfigSearch" placeholder="Buscar cliente..." oninput="metaConfigFilterClients(this.value)" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.82rem;font-family:inherit;background:var(--card);color:var(--text);box-sizing:border-box">
               </div>
               <!-- Lista de clientes agrupados por tenant -->
               <div id="metaConfigClientList" style="margin-bottom:16px"></div>
@@ -4704,8 +4709,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="ctAssigneeFilter" onchange="ctRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
-              <option value="Henrique">Henrique</option>
+              <option value="Victor">Victor</option>
               <option value="Emily">Emily</option>
+              <option value="Victor">Victor</option>
+              <option value="Victor">Victor</option>
             </select>
           </div>
 
@@ -4843,7 +4850,8 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               <div class="ct-modal-meta-item">
                 <label><span class="mso">calendar_today</span> Data Post</label>
                 <div style="display:flex;flex-direction:column;gap:4px">
-                  <input type="date" id="ctModalPostDate" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text-primary);background:var(--surface);cursor:pointer" oninput="ctModalPostDateChange(this.value)">
+                  <input type="hidden" id="ctModalPostDate">
+                  <button type="button" id="ctModalPostDateBtn" onclick="ctOpenPostDatePicker(event)" style="border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--text-primary);background:var(--surface);cursor:pointer;text-align:left;font-family:inherit">Selecione a data</button>
                 </div>
               </div>
               <div class="ct-modal-meta-item">
@@ -5458,8 +5466,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                       <select class="ch-field-value" id="chResponsible" onchange="hubMarkDirty()">
                         <option value="">Selecione</option>
                         <option value="Juan">Juan</option>
-                        <option value="Henrique">Henrique</option>
+                        <option value="Victor">Victor</option>
                         <option value="Emily">Emily</option>
+                        <option value="Victor">Victor</option>
                       </select>
                     </div>
                     <div class="ch-field-row">
@@ -5932,8 +5941,9 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <span class="mt-nx-brand-title">Minhas Tasks</span>
               </div>
               <div class="mt-nx-vtabs">
-                <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active">LISTA ÚNICA</button>
-                <button id="mtViewClient" onclick="mtSetView('client')" class="mt-nx-vtab">POR CLIENTE</button>
+                <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active"><span class="mso">view_list</span> LISTA</button>
+                <button id="mtViewCards" onclick="mtSetView('cards')" class="mt-nx-vtab"><span class="mso">dashboard</span> CARDS</button>
+                <button id="mtViewKanban" onclick="mtSetView('kanban')" class="mt-nx-vtab"><span class="mso">view_kanban</span> KANBAN</button>
               </div>
             </div>
             <div class="mt-nx-topbar-right">
@@ -5958,6 +5968,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <option value="alteracao-design">Alteração Design</option>
             <option value="aprovacao">Aprovação</option>
             <option value="aprovado">Aprovado</option>
+            <option value="agendar">Agendar</option>
             <option value="agendado">Agendado</option>
             <option value="publicado">Publicado</option>
           </select>
@@ -5998,7 +6009,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <select id="tfAssigneeFilter" onchange="tfRenderList()">
               <option value="">Todos</option>
               <option value="Juan">Juan</option>
-              <option value="Henrique">Henrique</option>
+              <option value="Victor">Victor</option>
               <option value="Emily">Emily</option>
               <option value="Leonardo">Leonardo</option>
               <option value="Dante">Dante</option>
@@ -6467,6 +6478,7 @@ function findMetaClientKey(clientName, tenant) {
   if (!_metaClients || Object.keys(_metaClients).length === 0) return null;
   var nameLower = (clientName || '').toLowerCase().trim();
   var found = null;
+  var matches = [];
   Object.entries(_metaClients).forEach(function(entry) {
     var key = entry[0];
     var mc = entry[1];
@@ -6474,6 +6486,7 @@ function findMetaClientKey(clientName, tenant) {
     var mcName = (mc.name || key).toLowerCase().trim();
     if (mcName === nameLower || mcName.includes(nameLower) || nameLower.includes(mcName)) {
       found = key;
+      matches.push({ key: key, name: mc.name });
     }
   });
   return found;
@@ -6552,6 +6565,18 @@ function iconSvg(name, opts) {
 document.addEventListener('DOMContentLoaded', function() {
   const saved = localStorage.getItem('starken-theme') || 'light';
   setTheme(saved);
+
+  // Add event listeners to theme buttons
+  ['light', 'dark', 'warm', 'emerald'].forEach(theme => {
+    const btnId = { light: 'themeLight', dark: 'themeDark', warm: 'themeWarm', emerald: 'themeEmerald' }[theme];
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        setTheme(theme);
+      });
+    }
+  });
 
   // Restore last active tab on reload (skip for designers — they go to minhas-tasks only)
   var savedSession = null;
@@ -6664,10 +6689,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const key = h.id || h.post_id;
         const shownAt = _alertsShown[key]; // timestamp (ms) or true (legacy)
 
-        // FAILED posts: re-alerta a cada 2h enquanto ainda estiver FAILED
+        // FAILED posts: alerta apenas uma vez (erros persistem no dashboard)
         if (h.status === 'FAILED') {
-          const alreadyShownRecently = shownAt && (now - shownAt) < TWO_HOURS;
-          if (alreadyShownRecently) return;
+          if (shownAt) return; // Já foi mostrado uma vez — não repete
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
           const errMsg = h.error_message ? ' · ' + h.error_message : ''; // mensagem completa
           // Garante que _pubHistPostData está populado para retry direto do toast
@@ -9383,7 +9407,7 @@ function renderTwoColumnChecklist(containerId, type, periodKey) {
     }
     segSelectHtml += '</select>';
 
-    var searchInputHtml = '<input type="text" class="col-search-input" data-company="' + co.key + '" placeholder="<span class="mso">search</span> Buscar cliente..." value="' + curSearch.replace(/"/g,'&quot;') + '" oninput="setChecklistSearch(\'' + type + '\',\'' + co.key + '\',this.value)" style="padding:4px 8px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;background:rgba(255,255,255,0.15);color:inherit;font-size:0.75rem;outline:none;width:150px;font-family:inherit;::placeholder-color:rgba(255,255,255,0.6)">';
+    var searchInputHtml = '<input type="text" class="col-search-input" data-company="' + co.key + '" placeholder="Buscar cliente..." value="' + curSearch.replace(/"/g,'&quot;') + '" oninput="setChecklistSearch(\'' + type + '\',\'' + co.key + '\',this.value)" style="padding:4px 8px;border:1.5px solid rgba(255,255,255,0.35);border-radius:7px;background:rgba(255,255,255,0.15);color:inherit;font-size:0.75rem;outline:none;width:150px;font-family:inherit;::placeholder-color:rgba(255,255,255,0.6)">';
 
     html += '<div class="company-column">';
     html += '<div class="column-header ' + co.css + '" style="flex-wrap:wrap;gap:6px">';
@@ -9713,6 +9737,7 @@ async function renderSchedWeekly() {
   const periodKey = monthKey + '-S' + (wk ? wk.week : 1);
   await ensureCtClientsWithContent();
   await ensureClientsWithWeekTasks(periodKey);
+  await loadCronogramaStatus();
   _renderSwPremium(periodKey);
 }
 
@@ -9733,8 +9758,9 @@ function _renderSwPremium(periodKey) {
   }
 
   // Safe onclick: never put HTML tags inside onclick="..." attribute
+  function jA(v) { return JSON.stringify(v).replace(/"/g, '&quot;'); }
   function safeLoadingClick(id, fnCall) {
-    return 'event.stopPropagation();(function(b){b.disabled=true;b.textContent=String.fromCharCode(8987);' + fnCall + '})(document.getElementById(' + JSON.stringify(id) + '))';
+    return 'event.stopPropagation();(function(b){b.disabled=true;b.textContent=String.fromCharCode(8987);' + fnCall + '})(document.getElementById(' + jA(id) + '))';
   }
 
   var companies = [
@@ -9748,9 +9774,21 @@ function _renderSwPremium(periodKey) {
     try {
       var curSearch = (searchFilters['sched-weekly'] && searchFilters['sched-weekly'][co.key]) || '';
       var tenant = co.key === 'Alpha' ? 'alpha' : 'starken';
-      var allActive = (data.clients || []).filter(function(c) { return c.active && c.company === co.key; });
+
+      // Fonte de verdade: apenas _metaClients (clientes configurados no Meta)
+      // Clientes removidos do Meta Config não aparecem no Cronograma
+      var allActive = [];
+      if (typeof _metaClients === 'object' && _metaClients) {
+        Object.keys(_metaClients).forEach(function(metaKey) {
+          var mc = _metaClients[metaKey];
+          if (!mc || !mc.name) return;
+          var companyName = (mc.tenant === 'alpha') ? 'Alpha' : 'Starken';
+          if (companyName !== co.key) return;
+          if (mc.status && mc.status !== 'ativo') return;
+          allActive.push({ id: metaKey, name: mc.name, company: companyName, phone: mc.phone || '', segment: mc.segment || '' });
+        });
+      }
       allActive.sort(function(a, b) { return (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }); });
-      // Show ALL active clients — no content-group filter
       var clients = allActive.filter(function(c) {
         return !curSearch || (c.name || '').toLowerCase().includes(curSearch);
       });
@@ -9771,8 +9809,8 @@ function _renderSwPremium(periodKey) {
 
       function renderCard(item) {
         var c = item.c, cs = item.cs, st = item.st;
-        var metaKey = findMetaClientKey(c.name, tenant);
-        var mc = (metaKey && _metaClients) ? _metaClients[metaKey] : null;
+        var metaKey = c.id; // c vem de _metaClients, id já é o slug
+        var mc = _metaClients[metaKey] || null;
         var pdfUrl = cs && cs.pdf_url;
         var pdfName = cs && cs.pdf_name;
         var sentDate = (cs && cs.sent_date) ? new Date(cs.sent_date).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
@@ -9786,26 +9824,26 @@ function _renderSwPremium(periodKey) {
         var acts = '';
         if (st === 0) {
           if (metaKey) {
-            var fnStr = 'cronogramaFromSchedule(' + JSON.stringify(metaKey) + ',' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')';
+            var fnStr = 'cronogramaFromSchedule(' + jA(metaKey) + ',' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')';
             acts += '<button id="' + btnId + '" class="sw-btn sw-gerar" onclick="' + safeLoadingClick(btnId, fnStr) + '" title="Gerar Cronograma PDF"><span class="mso" style="font-size:14px">description</span> Gerar</button>';
           }
         } else if (st === 1) {
           var hasGroup = mc && mc.whatsappGroupJid;
           if (hasGroup) {
-            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();zappfySendReport(' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')" title="Enviar via Zappfy"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
+            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();zappfySendReport(' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')" title="Enviar via Zappfy"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
           } else if (c.phone) {
-            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();sendWhatsApp(' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')" title="Enviar WhatsApp"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
+            acts += '<button class="sw-btn sw-enviar" onclick="event.stopPropagation();sendWhatsApp(' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')" title="Enviar WhatsApp"><span class="mso" style="font-size:14px">smartphone</span> Enviar</button>';
           }
-          acts += '<button class="sw-btn sw-icon" onclick="event.stopPropagation();markCronoSentNow(' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')" title="Marcar enviado"><span class="mso mso-fill" style="font-size:15px">check_circle</span></button>';
+          acts += '<button class="sw-btn sw-icon" onclick="event.stopPropagation();markCronoSentNow(' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')" title="Marcar enviado"><span class="mso mso-fill" style="font-size:15px">check_circle</span></button>';
           if (metaKey) {
-            var fnStr2 = 'cronogramaFromSchedule(' + JSON.stringify(metaKey) + ',' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')';
+            var fnStr2 = 'cronogramaFromSchedule(' + jA(metaKey) + ',' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')';
             acts += '<button id="' + btnId + '" class="sw-btn sw-icon" onclick="' + safeLoadingClick(btnId, fnStr2) + '" title="Regenerar PDF"><span class="mso" style="font-size:14px">description</span></button>';
           }
         } else {
           acts += '<span class="sw-tag-sent"><span class="mso mso-fill" style="font-size:14px">check_circle</span> Enviado</span>';
-          acts += '<button class="sw-btn sw-undo" onclick="event.stopPropagation();dashMarkCronoStatus(' + JSON.stringify(c.id) + ',' + JSON.stringify(periodKey) + ',0,this)" title="Desfazer envio">\u21A9</button>';
+          acts += '<button class="sw-btn sw-undo" onclick="event.stopPropagation();dashMarkCronoStatus(' + jA(c.id) + ',' + jA(periodKey) + ',0,this)" title="Desfazer envio">\u21A9</button>';
           if (metaKey) {
-            var fnStr3 = 'cronogramaFromSchedule(' + JSON.stringify(metaKey) + ',' + JSON.stringify(c.id) + ',\'sched-weekly\',' + JSON.stringify(periodKey) + ')';
+            var fnStr3 = 'cronogramaFromSchedule(' + jA(metaKey) + ',' + jA(c.id) + ',\'sched-weekly\',' + jA(periodKey) + ')';
             acts += '<button id="' + btnId + '" class="sw-btn sw-icon" onclick="' + safeLoadingClick(btnId, fnStr3) + '" title="Regenerar PDF"><span class="mso" style="font-size:14px">description</span></button>';
           }
         }
@@ -9832,7 +9870,9 @@ function _renderSwPremium(periodKey) {
       function renderSection(label, cls, icon, items) {
         var h = '<div class="sw-sec-label ' + cls + '"><span>' + icon + '\u00A0' + label + '</span><span class="sw-sec-cnt">' + items.length + '</span></div>';
         if (items.length === 0) return h + '<div class="sw-sec-empty">Nenhum cliente</div>';
-        items.forEach(function(item) { try { h += renderCard(item); } catch(e2) { console.error('renderCard err', e2); } });
+        items.forEach(function(item) {
+          try { h += renderCard(item); } catch(e2) { console.error('renderCard err', e2); }
+        });
         return h;
       }
 
@@ -9847,7 +9887,7 @@ function _renderSwPremium(periodKey) {
         + '<div class="sw-col-hdr">'
         + '<div class="sw-col-hdr-info"><div class="sw-col-hdr-title">' + co.label + '</div><div class="sw-col-hdr-sub">' + co.sub + '</div></div>'
         + (pending.length > 0 ? '<div class="sw-pending-badge">Pendentes ' + pending.length + '</div>' : '')
-        + '<input type="text" class="sw-col-search" placeholder="Buscar..." value="' + (curSearch || '').replace(/"/g, '&quot;') + '" oninput="setChecklistSearch(\'sched-weekly\',' + JSON.stringify(co.key) + ',this.value);renderSchedWeekly()" />'
+        + '<input type="text" class="sw-col-search" placeholder="Buscar..." value="' + (curSearch || '').replace(/"/g, '&quot;') + '" oninput="setChecklistSearch(\'sched-weekly\',' + jA(co.key) + ',this.value);renderSchedWeekly()" />'
         + '</div>'
         + '<div class="sw-col-counts">' + countLabel + '</div>'
         + '<div class="sw-col-body">' + bodyHtml + '</div>'
@@ -9870,7 +9910,7 @@ function _renderSwPremium(periodKey) {
       + '<div class="sw-stat sw-stat-orange"><div class="sw-stat-icon"><span class="mso">schedule</span></div><div class="sw-stat-val">' + totalAguardando + '</div><div class="sw-stat-lbl">Aguardando Envio</div></div>'
       + '<div class="sw-stat sw-stat-green"><div class="sw-stat-icon"><span class="mso mso-fill">check_circle</span></div><div class="sw-stat-val">' + eficiencia + '%</div><div class="sw-stat-lbl">Efici\xEAncia Semanal</div></div>'
       + '<div class="sw-stat sw-stat-elite"><div class="sw-stat-icon"><span class="mso">rocket_launch</span></div><div class="sw-stat-val">' + tier + '</div><div class="sw-stat-lbl">Performance Matrix</div></div>'
-      + (pendingCount > 0 ? '<button class="sw-mark-all-btn" onclick="_swMarkAllSent(' + JSON.stringify(periodKey) + ')" title="Marcar todos os clientes desta semana como Enviado"><span class="mso mso-fill">check_circle</span> Marcar todos como enviado (' + pendingCount + ')</button>' : '');
+      + (pendingCount > 0 ? '<button class="sw-mark-all-btn" onclick="_swMarkAllSent(' + jA(periodKey) + ')" title="Marcar todos os clientes desta semana como Enviado"><span class="mso mso-fill">check_circle</span> Marcar todos como enviado (' + pendingCount + ')</button>' : '');
   }
 }
 
@@ -11332,11 +11372,11 @@ async function dashRefreshAll() {
     _groupToClientPromise = null;
     if (typeof loadCronogramaStatus === 'function') await loadCronogramaStatus();
     if (typeof renderDashboard === 'function') renderDashboard();
-    if (icon) icon.textContent = '<span class="mso mso-fill">check_circle</span>';
-    setTimeout(function() { if (icon) { icon.textContent = '<span class="mso">sync</span>'; icon.style.animation = ''; } if (btn) btn.disabled = false; }, 1000);
+    if (icon) icon.innerHTML = '<span class="mso mso-fill">check_circle</span>';
+    setTimeout(function() { if (icon) { icon.innerHTML = '<span class="mso">sync</span>'; icon.style.animation = ''; } if (btn) btn.disabled = false; }, 1000);
   } catch(e) {
     console.warn('dashRefreshAll error:', e);
-    if (icon) icon.textContent = '<span class="mso">warning</span>';
+    if (icon) icon.innerHTML = '<span class="mso">warning</span>';
     if (btn) btn.disabled = false;
   }
 }
@@ -13348,18 +13388,18 @@ async function asanaCheckConnection() {
       _asanaUser = cfg.user;
       _asanaConfig = cfg.config || {};
       dot.className = 'asana-status-dot connected';
-      txt.textContent = '<span class="mso mso-fill">check_circle</span> Conectado como ' + cfg.user.name;
+      txt.innerHTML = '<span class="mso mso-fill">check_circle</span> Conectado como ' + cfg.user.name;
       btn.disabled = false;
       return true;
     } else {
       dot.className = 'asana-status-dot disconnected';
-      txt.textContent = '<span class="mso">cancel</span> ' + (cfg.error || 'Asana não conectado. Configure o ASANA_PAT no Vercel.');
+      txt.innerHTML = '<span class="mso">cancel</span> ' + (cfg.error || 'Asana não conectado. Configure o ASANA_PAT no Vercel.');
       btn.disabled = true;
       return false;
     }
   } catch(e) {
     dot.className = 'asana-status-dot disconnected';
-    txt.textContent = '<span class="mso">cancel</span> API não disponível (' + e.message + '). Deploy as API routes ao Vercel.';
+    txt.innerHTML = '<span class="mso">cancel</span> API não disponível (' + e.message + '). Deploy as API routes ao Vercel.';
     btn.disabled = true;
     return false;
   }
@@ -13485,11 +13525,11 @@ function formatDateBR(isoStr) {
 async function asanaRefreshTasks() {
   const btn = document.getElementById('asanaRefreshBtn');
   btn.disabled = true;
-  btn.textContent = '<span class="mso">sync</span> Atualizando...';
+  btn.innerHTML = '<span class="mso">sync</span> Atualizando...';
   await asanaFetchTasks();
   asanaRenderTasks();
   btn.disabled = false;
-  btn.textContent = '<span class="mso">sync</span> Atualizar';
+  btn.innerHTML = '<span class="mso">sync</span> Atualizar';
   showToast('Tarefas atualizadas');
 }
 
@@ -13855,14 +13895,14 @@ renderAll(); // render imediato com dados do localStorage
         <div>
           <label class="gp-field-label">Responsável</label>
           <select id="gpFtResponsavel" class="gp-field">
-            <option value="Juan">Juan</option><option value="Henrique">Henrique</option><option value="Emilly">Emilly</option>
+            <option value="Juan">Juan</option><option value="Victor">Victor</option><option value="Emilly">Emilly</option><option value="Victor">Victor</option><option value="Victor">Victor</option>
           </select>
         </div>
         <div>
           <label class="gp-field-label">Revisão</label>
           <select id="gpFtRevisao" class="gp-field">
             <option value="">Nenhum</option><option value="Juan">Juan</option>
-            <option value="Henrique">Henrique</option><option value="Emilly">Emilly</option>
+            <option value="Victor">Victor</option><option value="Emilly">Emilly</option>
           </select>
         </div>
         <div>
@@ -13903,9 +13943,8 @@ renderAll(); // render imediato com dados do localStorage
 // ================================================================
 const GP_USERS = [
   { name:'Juan',     role:'admin',    color:'#3b82f6' },
-  { name:'Henrique', role:'designer', color:'#8b5cf6' },
+  { name:'Victor', role:'designer', color:'#8b5cf6' },
   { name:'Emilly',   role:'editor',   color:'#f59e0b' },
-  { name:'Leonardo', role:'admin',    color:'#a855f7' },
   { name:'Dante',    role:'executor', color:'#f97316' },
   { name:'Daniela',  role:'designer', color:'#ec4899', disabled:true }
 ];
@@ -14070,7 +14109,7 @@ function applyDesignerRestrictions() {
   if (designerBar) {
     designerBar.style.display = 'flex';
     var badge = document.getElementById('designerUserBadge');
-    if (badge && gpState.user) badge.textContent = '<span class="mso">waving_hand</span> ' + gpState.user.name;
+    if (badge && gpState.user) badge.innerHTML = '<span class="mso">waving_hand</span> ' + gpState.user.name;
   }
 
   // Lock navigation — only allow minhas-tasks
@@ -15026,7 +15065,7 @@ async function zappfyTestConnection() {
   statusDiv.style.display = 'block';
   if (!token) {
     statusDiv.style.color = '#dc2626';
-    statusDiv.textContent = '<span class="mso">cancel</span> Insira o token da Zappfy primeiro';
+    statusDiv.innerHTML = '<span class="mso">cancel</span> Insira o token da Zappfy primeiro';
     return;
   }
   statusDiv.style.color = 'var(--text-secondary)';
@@ -15040,14 +15079,14 @@ async function zappfyTestConnection() {
     if (st.connected || st.loggedIn || data.connected || data.loggedIn) {
       statusDiv.style.color = '#16a34a';
       var name = (data.instance && data.instance.profileName) ? ' (' + data.instance.profileName + ')' : '';
-      statusDiv.textContent = '<span class="mso mso-fill">check_circle</span> Conectado! Instância ativa' + name + '.';
+      statusDiv.innerHTML = '<span class="mso mso-fill">check_circle</span> Conectado! Instância ativa' + name + '.';
     } else {
       statusDiv.style.color = '#f59e0b';
-      statusDiv.textContent = '<span class="mso">warning</span> Instância não conectada. Status: ' + (st.connected === false ? 'desconectada' : JSON.stringify(st));
+      statusDiv.innerHTML = '<span class="mso">warning</span> Instância não conectada. Status: ' + (st.connected === false ? 'desconectada' : JSON.stringify(st));
     }
   } catch (e) {
     statusDiv.style.color = '#dc2626';
-    statusDiv.textContent = '<span class="mso">cancel</span> Erro: ' + e.message;
+    statusDiv.innerHTML = '<span class="mso">cancel</span> Erro: ' + e.message;
   }
 }
 
@@ -15128,16 +15167,18 @@ function zappfySendReport(clientId, type, periodKey) {
   var token = zappfyGetToken();
   if (!token) { alert('Configure o token da Zappfy primeiro na seção de Configuração.'); return; }
 
-  var client = data.clients.find(function(c) { return c.id === clientId; });
-  if (!client) { alert('Cliente não encontrado'); return; }
+  // Suporta slug (_metaClients key) e UUID legado (data.clients)
+  var metaClient = (_metaClients && _metaClients[clientId]) ? _metaClients[clientId] : null;
+  var client = !metaClient ? data.clients.find(function(c) { return c.id === clientId; }) : null;
+  if (!metaClient && !client) { alert('Cliente não encontrado'); return; }
 
-  var tenant = client.company === 'Starken' ? 'starken' : 'alpha';
-  var metaKey = findMetaClientKey(client.name, tenant);
-  var metaClient = metaKey ? _metaClients[metaKey] : null;
-  var groupJid = metaClient ? metaClient.whatsappGroupJid : null;
+  var clientName = metaClient ? (metaClient.name || clientId) : (client ? client.name : clientId);
+  var metaKey = metaClient ? clientId : findMetaClientKey(client ? client.name : '', metaClient ? (metaClient.tenant || 'starken') : (client && client.company === 'Alpha' ? 'alpha' : 'starken'));
+  var resolvedMeta = metaClient || (metaKey ? _metaClients[metaKey] : null);
+  var groupJid = resolvedMeta ? resolvedMeta.whatsappGroupJid : null;
 
   if (!groupJid) {
-    alert('Grupo WhatsApp não configurado para ' + client.name + '.\n\nVá em Configuração e vincule o grupo Zappfy.');
+    alert('Grupo WhatsApp não configurado para ' + clientName + '.\n\nVá em Configuração e vincule o grupo Zappfy.');
     return;
   }
 
@@ -15171,7 +15212,7 @@ function zappfySendReport(clientId, type, periodKey) {
     + '<button onclick="document.getElementById(\'zappfySendModal\').remove()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-secondary,#64748b)"><span class="mso">close</span></button>'
     + '</div>'
     + '<div style="background:var(--bg-secondary,#f1f5f9);padding:14px 16px;border-radius:10px;margin-bottom:18px">'
-    + '<div style="font-size:0.95rem;font-weight:700">' + (client.name || '') + '</div>'
+    + '<div style="font-size:0.95rem;font-weight:700">' + clientName + '</div>'
     + '<div style="font-size:0.78rem;color:var(--text-secondary,#64748b);margin-top:3px">Grupo: ' + (groupJid.split('@')[0].slice(-8)) + '...@g.us</div>'
     + '</div>'
     + (isCrono
@@ -15268,7 +15309,7 @@ async function zappfyExecuteSend(clientId, type, periodKey, metaKey, groupJid) {
       // Wait 1.5s then send PDF document
       await new Promise(function(r) { setTimeout(r, 1500); });
       showStatus('<span class="mso">description</span> Enviando PDF...', 'blue');
-      var clientName = client ? client.name : '';
+      var clientName = client ? client.name : (metaClient ? metaClient.name : clientId.replace(/-/g,'_'));
       await fetch('https://api.zappfy.io/send/media', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'token': token },
         body: JSON.stringify({ number: groupJid, type: 'document', file: pdfUrl, docName: 'Cronograma_' + clientName.replace(/\s+/g, '_') + '.pdf', text: '<span class="mso">assignment</span> Cronograma Semanal - ' + clientName })
@@ -15498,12 +15539,12 @@ function zappfyEditMessage() {
   // Replace edit button with save button
   var editBtn = document.querySelector('[onclick="zappfyEditMessage()"]');
   if (editBtn) {
-    editBtn.textContent = '<span class="mso">save</span> Salvar';
+    editBtn.innerHTML = '<span class="mso">save</span> Salvar';
     editBtn.onclick = function() {
       var ta = document.getElementById('zappfyEditTextarea');
       if (ta) { p.textMsg = ta.value; window._zappfyPending = p; }
       zappfyShowPreviewTab('msg');
-      editBtn.textContent = '<span class="mso">edit</span> Editar';
+      editBtn.innerHTML = '<span class="mso">edit</span> Editar';
       editBtn.onclick = zappfyEditMessage;
     };
   }
@@ -15721,7 +15762,7 @@ async function zappfyConfirmSend() {
         + '<a href="' + uploadUrl + '" target="_blank" style="color:#1877f2;text-decoration:underline;word-break:break-all">' + uploadUrl + '</a>'
         + '<button onclick="navigator.clipboard.writeText(\'' + uploadUrl + '\');this.textContent=\'<span class="mso mso-fill">check_circle</span> Copiado!\';setTimeout(()=>{this.textContent=\'<span class="mso">assignment</span> Copiar\'},1500)" style="margin-left:10px;padding:4px 10px;border:1px solid #22c55e;border-radius:6px;background:#fff;color:#166534;font-size:0.75rem;font-weight:600;cursor:pointer;font-family:inherit"><span class="mso">assignment</span> Copiar</button>';
     }
-    btn.textContent = '<span class="mso mso-fill">check_circle</span> Fechar';
+    btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Fechar';
     btn.onclick = function() { document.getElementById('zappfySendModal').remove(); };
     btn.disabled = false;
     window._zappfyPending = null;
@@ -16638,7 +16679,7 @@ function metaBiGeneratePdfReport() {
 }
 
 function findMetaClientKey(clientName, tenant) {
-  if (!_metaClients) return null;
+  if (!_metaClients || Object.keys(_metaClients).length === 0) return null;
   var nameLower = (clientName || '').toLowerCase().trim();
   var found = null;
   Object.entries(_metaClients).forEach(function(entry) {
@@ -16974,7 +17015,7 @@ function metaBiSaveSistemaData() {
   localStorage.setItem(historyKey, JSON.stringify(history));
 
   var btn = document.getElementById('metaBiSistemaSaveBtn');
-  btn.textContent = '<span class="mso mso-fill">check_circle</span> Salvo!';
+  btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Salvo!';
   btn.style.background = '#22c55e';
   setTimeout(function() { btn.textContent = 'Salvar'; btn.style.background = 'var(--starken)'; }, 2000);
 }
@@ -17525,17 +17566,17 @@ function metaPublishUpdatePreview() {
   const plats = platform.split(',').filter(Boolean);
   if (plats.includes('fb') && plats.includes('ig')) {
     metaEl.textContent = (c.pageName || 'Facebook') + ' + @' + (c.igUsername || 'instagram');
-    platLabel.textContent = '<span class="mso">description</span> FB + <span class="mso">photo_camera</span> IG';
+    platLabel.innerHTML = '<span class="mso">description</span> FB + <span class="mso">photo_camera</span> IG';
     platLabel.style.background = 'linear-gradient(135deg, #dbeafe, #fce7f3)';
     platLabel.style.color = '#6b21a8';
   } else if (plats.includes('fb')) {
     metaEl.textContent = c.pageName || 'Facebook';
-    platLabel.textContent = '<span class="mso">description</span> Facebook';
+    platLabel.innerHTML = '<span class="mso">description</span> Facebook';
     platLabel.style.background = '#dbeafe';
     platLabel.style.color = '#1d4ed8';
   } else if (plats.includes('ig')) {
     metaEl.textContent = '@' + (c.igUsername || 'instagram');
-    platLabel.textContent = '<span class="mso">photo_camera</span> Instagram';
+    platLabel.innerHTML = '<span class="mso">photo_camera</span> Instagram';
     platLabel.style.background = '#fce7f3';
     platLabel.style.color = '#be185d';
   } else {
@@ -17584,7 +17625,7 @@ function metaPublishUpdatePreview() {
       } else {
         const vid = document.createElement('div');
         vid.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;background:#1a1a2e';
-        vid.textContent = '<span class="mso">movie</span>';
+        vid.innerHTML = '<span class="mso">movie</span>';
         mediaEl.appendChild(vid);
       }
     } else {
@@ -18330,9 +18371,8 @@ const CT_PRIORITIES = [
 
 const CT_USERS = [
   { name: 'Juan',     color: '#3b82f6' },
-  { name: 'Henrique', color: '#8b5cf6' },
+  { name: 'Victor', color: '#8b5cf6' },
   { name: 'Emily',    color: '#f59e0b' },
-  { name: 'Leonardo', color: '#10b981' },
   { name: 'Dante',    color: '#f97316' },
 ];
 
@@ -19054,7 +19094,7 @@ async function ctRefreshAgendadoStatuses() {
       // Flash toast to inform user
       var toast = document.createElement('div');
       toast.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:99999;background:#ecfdf5;border:1px solid #a7f3d0;border-left:4px solid #10b981;border-radius:10px;padding:12px 18px;font-family:inherit;font-size:13px;font-weight:600;color:#047857;box-shadow:0 4px 16px rgba(0,0,0,0.12);animation:alertSlideIn 0.3s ease';
-      toast.textContent = '<span class="mso mso-fill">check_circle</span> Status de publicação atualizado!';
+      toast.innerHTML = '<span class="mso mso-fill">check_circle</span> Status de publicação atualizado!';
       document.body.appendChild(toast);
       setTimeout(function() { toast.remove(); }, 4000);
     }
@@ -19712,7 +19752,7 @@ async function ctRsRunSchedule() {
   }
 
   statusEl.style.color = errors > 0 ? '#b45309' : '#059669';
-  statusEl.textContent = '<span class="mso mso-fill">check_circle</span> ' + queued + ' stories agendados' + (errors > 0 ? ' (' + errors + ' erros)' : '');
+  statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> ' + queued + ' stories agendados' + (errors > 0 ? ' (' + errors + ' erros)' : '');
 
   await ctLoadGroups();
   setTimeout(function(){ var m = document.getElementById('rsSchedModal'); if(m) m.remove(); }, 2000);
@@ -19976,7 +20016,7 @@ async function ctRunMonthWizard() {
   } catch(e) {
     alert('Erro ao criar grupos: ' + e.message);
   } finally {
-    btn.textContent = '<span class="mso">rocket_launch</span> Criar Grupos'; btn.disabled = false;
+    btn.innerHTML = '<span class="mso">rocket_launch</span> Criar Grupos'; btn.disabled = false;
   }
 }
 
@@ -20349,11 +20389,19 @@ async function ctOpenModal(taskId) {
   statusBtn.style.background = status.bg;
   statusBtn.style.color = status.color;
 
-  // Assignee
-  const user = CT_USERS.find(u => u.name === task.assignee);
+  // Assignee (pode ter múltiplos separados por vírgula)
   const assigneeEl = document.getElementById('ctModalAssignee');
-  if (user) {
-    assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div><span>' + user.name + '</span>';
+  const assignees = (task.assignee || '').split(',').map(a => a.trim()).filter(Boolean);
+  if (assignees.length > 0) {
+    let html = '';
+    assignees.forEach((name, i) => {
+      const user = CT_USERS.find(u => u.name === name);
+      if (user) {
+        html += '<div class="ct-assignee-avatar" style="background:' + user.color + '">' + user.name.substring(0,2).toUpperCase() + '</div>';
+      }
+    });
+    html += '<span>' + assignees.join(', ') + '</span>';
+    assigneeEl.innerHTML = html;
   } else {
     assigneeEl.innerHTML = '<div class="ct-assignee-avatar" style="background:#6b7280">?</div><span>Não atribuído</span>';
   }
@@ -20464,8 +20512,8 @@ async function ctSaveAllFields(silent) {
   if (descVal !== (ctModalTask.description || '')) fields.description = descVal;
 
   if (Object.keys(fields).length === 0) {
-    if (!silent && btn) { btn.disabled = false; btn.textContent = '<span class="mso">save</span> Salvar'; }
-    if (!silent && statusEl) { statusEl.textContent = '<span class="mso mso-fill">check_circle</span> Tudo salvo'; setTimeout(function() { statusEl.textContent = ''; }, 2000); }
+    if (!silent && btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">save</span> Salvar'; }
+    if (!silent && statusEl) { statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> Tudo salvo'; setTimeout(function() { statusEl.textContent = ''; }, 2000); }
     return;
   }
 
@@ -20475,11 +20523,11 @@ async function ctSaveAllFields(silent) {
     await ctApi('upsert_task', fields);
     // Update local cache
     Object.keys(fields).forEach(function(k) { if (k !== 'id' && k !== 'user') ctModalTask[k] = fields[k]; });
-    if (!silent && btn) { btn.disabled = false; btn.textContent = '<span class="mso">save</span> Salvar'; }
-    if (!silent && statusEl) { statusEl.textContent = '<span class="mso mso-fill">check_circle</span> Salvo!'; setTimeout(function() { statusEl.textContent = ''; }, 2500); }
+    if (!silent && btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">save</span> Salvar'; }
+    if (!silent && statusEl) { statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> Salvo!'; setTimeout(function() { statusEl.textContent = ''; }, 2500); }
   } catch(e) {
-    if (!silent && btn) { btn.disabled = false; btn.textContent = '<span class="mso">save</span> Salvar'; }
-    if (!silent && statusEl) { statusEl.textContent = '<span class="mso">cancel</span> Erro'; setTimeout(function() { statusEl.textContent = ''; }, 3000); }
+    if (!silent && btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">save</span> Salvar'; }
+    if (!silent && statusEl) { statusEl.innerHTML = '<span class="mso">cancel</span> Erro'; setTimeout(function() { statusEl.textContent = ''; }, 3000); }
   }
 }
 
@@ -21088,7 +21136,7 @@ async function ctSaveFrameAsThumb(videoAttachmentId) {
   } catch(err) {
     console.error('Frame save error:', err);
     alert('Erro: ' + err.message);
-    if (btn) { btn.textContent = '<span class="mso mso-fill">check_circle</span> Salvar como thumbnail'; btn.disabled = false; }
+    if (btn) { btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Salvar como thumbnail'; btn.disabled = false; }
   }
 }
 
@@ -21336,7 +21384,7 @@ function ctCopyCopyVariation(idx) {
   navigator.clipboard.writeText(window._ctAiVariations[idx]).then(function() {
     var btn = event.target;
     var orig = btn.textContent;
-    btn.textContent = '<span class="mso mso-fill">check_circle</span> Copiado!';
+    btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Copiado!';
     setTimeout(function() { btn.textContent = orig; }, 1500);
   });
 }
@@ -21514,7 +21562,7 @@ async function ctUploadMusicFileFmt(file) {
     document.getElementById('ctMusicUrlFmt').value = publicUrl;
     statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> Enviado!'; statusEl.style.color = '#10b981';
     ctMusicTabFmt('url');
-  } catch(err) { statusEl.textContent = '<span class="mso">cancel</span> ' + err.message; statusEl.style.color = '#ef4444'; }
+  } catch(err) { statusEl.innerHTML = '<span class="mso">cancel</span> ' + err.message; statusEl.style.color = '#ef4444'; }
 }
 
 document.addEventListener('input', function(e) {
@@ -21606,12 +21654,12 @@ async function ctRenderVideoWithMusicFmt() {
     document.getElementById('ctMusicDownloadLinkFmt').href = blobUrl;
     document.getElementById('ctMusicDownloadLinkFmt').download = 'video_com_musica.mp4';
 
-    statusEl.textContent = '<span class="mso mso-fill">check_circle</span> ' + sizeMB + 'MB (original: ' + origMB + 'MB) — ' + time + 's — Qualidade 100%';
+    statusEl.innerHTML = '<span class="mso mso-fill">check_circle</span> ' + sizeMB + 'MB (original: ' + origMB + 'MB) — ' + time + 's — Qualidade 100%';
     btn.disabled = false; btn.style.opacity = '1';
 
   } catch(err) {
     console.error('FFmpeg merge error:', err);
-    statusEl.textContent = '<span class="mso">cancel</span> ' + err.message;
+    statusEl.innerHTML = '<span class="mso">cancel</span> ' + err.message;
     barEl.style.width = '0%'; barEl.style.background = '#ef4444';
     btn.disabled = false; btn.style.opacity = '1';
   }
@@ -21731,7 +21779,7 @@ async function ctUploadMusicFile(file) {
     statusEl.style.color = '#10b981';
     ctMusicTab('url');
   } catch(err) {
-    statusEl.textContent = '<span class="mso">cancel</span> Erro: ' + err.message;
+    statusEl.innerHTML = '<span class="mso">cancel</span> Erro: ' + err.message;
     statusEl.style.color = '#ef4444';
   }
 }
@@ -21884,7 +21932,7 @@ async function ctRenderVideoWithMusic() {
 
   } catch(err) {
     console.error('Creatomate render error:', err);
-    statusEl.textContent = '<span class="mso">cancel</span> ' + err.message;
+    statusEl.innerHTML = '<span class="mso">cancel</span> ' + err.message;
     barEl.style.width = '0%';
     barEl.style.background = '#ef4444';
     btn.disabled = false; btn.style.opacity = '1';
@@ -22357,7 +22405,7 @@ async function ctBulkSchedule() {
   document.getElementById('bsDatetime').value = iso;
 
   document.getElementById('bsCount').textContent = '(' + _bsTasks.length + ' posts)';
-  document.getElementById('bsSubmitBtn').textContent = '<span class="mso">rocket_launch</span> Agendar Tudo';
+  document.getElementById('bsSubmitBtn').innerHTML = '<span class="mso">rocket_launch</span> Agendar Tudo';
   document.getElementById('bsSubmitBtn').disabled = false;
 
   bsUpdatePreview();
@@ -22586,7 +22634,7 @@ async function ctBulkMoveToGroup(groupId, groupName) {
   } catch(e) {
     alert('Erro ao mover tarefas.');
   } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '<span class="mso">push_pin</span> Mover'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<span class="mso">push_pin</span> Mover'; }
   }
 }
 
@@ -23300,6 +23348,144 @@ function ctShowDatePicker(event) {
   }, 10);
 }
 
+// ─── POST DATE PICKER (igual ao DUE DATE) ───
+var ctPostDatePickerEl = null;
+
+function ctOpenPostDatePicker(event) {
+  event.preventDefault();
+  if (ctPostDatePickerEl) ctPostDatePickerEl.remove();
+
+  const picker = document.createElement('div');
+  picker.className = 'ct-datepicker';
+  picker.onclick = function(e) { e.stopPropagation(); };
+
+  const rect = event.target.getBoundingClientRect();
+  let top = rect.bottom + 6;
+  let left = rect.left;
+  if (left + 420 > window.innerWidth) left = window.innerWidth - 430;
+  if (top + 380 > window.innerHeight) top = rect.top - 386;
+  picker.style.top = top + 'px';
+  picker.style.left = left + 'px';
+
+  const now = new Date();
+  let viewMonth = now.getMonth();
+  let viewYear = now.getFullYear();
+  const currentVal = document.getElementById('ctModalPostDate').value;
+  if (currentVal) {
+    const cv = new Date(currentVal);
+    if (!isNaN(cv)) { viewMonth = cv.getMonth(); viewYear = cv.getFullYear(); }
+  }
+
+  function getDateStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return d; }
+  function nextWeekday(day) { const d = new Date(); while (d.getDay() !== day) d.setDate(d.getDate() + 1); return d; }
+  function formatLabel(d) {
+    const days = ['dom','seg','ter','qua','qui','sex','sáb'];
+    return days[d.getDay()] + ', ' + d.getDate() + '/' + (d.getMonth()+1);
+  }
+
+  const shortcuts = [
+    { label: 'Hoje', hint: formatLabel(now), date: now },
+    { label: 'Mais tarde', hint: '17:25', date: (() => { const d = new Date(); d.setHours(17,25,0,0); return d; })() },
+    { label: 'Amanhã', hint: formatLabel(addDays(1)), date: addDays(1) },
+    { label: 'Este final de semana', hint: formatLabel(nextWeekday(6)), date: nextWeekday(6) },
+    { label: 'Semana que vem', hint: formatLabel(addDays(7)), date: addDays(7) },
+    { label: '2 semanas', hint: formatLabel(addDays(14)), date: addDays(14) },
+    { label: '4 semanas', hint: formatLabel(addDays(28)), date: addDays(28) },
+  ];
+
+  function selectDate(d) {
+    const str = getDateStr(d);
+    document.getElementById('ctModalPostDate').value = str;
+    document.getElementById('ctModalPostDateBtn').textContent = d.getDate() + '/' + (d.getMonth()+1) + '/' + d.getFullYear();
+    ctModalPostDateChange(str);
+    closePicker();
+  }
+
+  function closePicker() { if (ctPostDatePickerEl) { ctPostDatePickerEl.remove(); ctPostDatePickerEl = null; } }
+
+  function renderCalendar() {
+    const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const calDiv = picker.querySelector('.ct-datepicker-cal');
+    if (!calDiv) return;
+
+    let html = '<div class="ct-datepicker-cal-header">';
+    html += '<button onclick="event.stopPropagation();ctPostDatePickerNav(-1)">‹</button>';
+    html += '<span>' + months[viewMonth] + ' ' + viewYear + '</span>';
+    html += '<button onclick="event.stopPropagation();ctPostDatePickerNav(1)">›</button></div>';
+    html += '<div class="ct-datepicker-grid">';
+    ['2ª','3ª','4ª','5ª','6ª','sá','do'].forEach(d => html += '<div class="dp-day-head">' + d + '</div>');
+
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    let startDay = firstDay.getDay() - 1;
+    if (startDay < 0) startDay = 6;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrev = new Date(viewYear, viewMonth, 0).getDate();
+    const todayStr = getDateStr(now);
+    const selStr = document.getElementById('ctModalPostDate').value;
+
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = daysInPrev - i;
+      html += '<div class="dp-day other-month" onclick="event.stopPropagation();ctPostDatePickerSelectDay(' + (viewMonth-1) + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+      let cls = 'dp-day';
+      if (ds === todayStr) cls += ' today';
+      if (ds === selStr) cls += ' selected';
+      html += '<div class="' + cls + '" onclick="event.stopPropagation();ctPostDatePickerSelectDay(' + viewMonth + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    const total = startDay + daysInMonth;
+    const remaining = (7 - (total % 7)) % 7;
+    for (let d = 1; d <= remaining; d++) {
+      html += '<div class="dp-day other-month" onclick="event.stopPropagation();ctPostDatePickerSelectDay(' + (viewMonth+1) + ',' + d + ',' + viewYear + ')">' + d + '</div>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:8px;text-align:center"><button onclick="event.stopPropagation();ctPostDatePickerClear()" style="padding:4px 12px;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;font-size:0.78rem"><span class="mso">delete</span> Remover data</button></div>';
+    calDiv.innerHTML = html;
+  }
+
+  let shortcutsHtml = '<div class="ct-datepicker-shortcuts">';
+  shortcuts.forEach((s, i) => {
+    shortcutsHtml += '<button onclick="event.stopPropagation();ctPostDatePickerShortcut(' + i + ')">' + s.label + '<span class="dp-hint">' + s.hint + '</span></button>';
+  });
+  shortcutsHtml += '</div><div class="ct-datepicker-cal"></div>';
+  picker.innerHTML = shortcutsHtml;
+
+  document.body.appendChild(picker);
+  ctPostDatePickerEl = picker;
+  renderCalendar();
+
+  window.ctPostDatePickerNav = function(dir) {
+    viewMonth += dir;
+    if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+    if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+    renderCalendar();
+  };
+  window.ctPostDatePickerSelectDay = function(m, d, y) {
+    if (m < 0) { m = 11; y--; }
+    if (m > 11) { m = 0; y++; }
+    selectDate(new Date(y, m, d));
+  };
+  window.ctPostDatePickerShortcut = function(i) { selectDate(shortcuts[i].date); };
+  window.ctPostDatePickerClear = function() {
+    document.getElementById('ctModalPostDate').value = '';
+    document.getElementById('ctModalPostDateBtn').textContent = 'Selecione a data';
+    ctModalPostDateChange(null);
+    closePicker();
+  };
+
+  setTimeout(() => {
+    const closeHandler = function(e) {
+      if (ctPostDatePickerEl && !ctPostDatePickerEl.contains(e.target)) {
+        closePicker();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    document.addEventListener('click', closeHandler);
+  }, 10);
+}
+
 async function ctForceDownload(url, filename) {
   try {
     var btn = event.currentTarget || event.target;
@@ -23481,7 +23667,7 @@ function ctOpenLightbox(url, isVideo) {
     // Format title
     var d = new Date(isoDate + 'T12:00:00');
     var dayName = DAY_NAMES_LONG[d.getDay()];
-    titleEl.textContent = '<span class="mso">calendar_today</span> ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
+    titleEl.innerHTML = '<span class="mso">calendar_today</span> ' + d.getDate() + ' de ' + MONTH_NAMES[d.getMonth()] + ', ' + d.getFullYear() + ' \u2014 ' + dayName;
 
     if (dayPosts.length === 0) {
       listEl.innerHTML = '<div class="cal-empty-day">Nenhum post neste dia.</div>';
@@ -24630,7 +24816,7 @@ function hubSave() {
     data:        data
   }).then(function(res) {
     btn.disabled    = false;
-    btn.textContent = '<span class="mso">save</span> Salvar';
+    btn.innerHTML = '<span class="mso">save</span> Salvar';
     if (res && res.error) {
       if (ind) { ind.textContent = 'Erro ao salvar'; ind.className = 'ch-save-indicator'; }
       alert('Erro ao salvar: ' + (res.message || res.error));
@@ -24647,7 +24833,7 @@ function hubSave() {
     }
   }).catch(function(err) {
     btn.disabled    = false;
-    btn.textContent = '<span class="mso">save</span> Salvar';
+    btn.innerHTML = '<span class="mso">save</span> Salvar';
     if (ind) { ind.textContent = 'Erro'; ind.className = 'ch-save-indicator'; }
     alert('Erro de conexão: ' + (err && err.message ? err.message : 'desconhecido'));
   });
@@ -24979,7 +25165,7 @@ async function hubUploadLogo(files) {
       // Auto-save
       hubSave();
 
-      if (label) { label.textContent = '<span class="mso mso-fill">check_circle</span> Enviado!'; label.style.opacity = '1'; }
+      if (label) { label.innerHTML = '<span class="mso mso-fill">check_circle</span> Enviado!'; label.style.opacity = '1'; }
       setTimeout(function() { if (label) label.textContent = '⬆ Upload'; }, 2000);
     } else {
       console.error('Logo upload: no file_url in response:', res);
@@ -25110,7 +25296,7 @@ async function ciSave(field, value) {
     await ctApi('save_client_info', payload);
     // Show saved toast
     var footer = document.getElementById('ciFooter');
-    footer.textContent = '<span class="mso">check</span> Salvo!';
+    footer.innerHTML = '<span class="mso">check</span> Salvo!';
     footer.style.color = '#22c55e';
     setTimeout(function() {
       footer.style.color = '';
@@ -25932,7 +26118,7 @@ async function gadsLoad() {
     gadsRenderCampaigns(gadsData.campaigns);
     gadsRenderKeywords(gadsData.keywords);
   } catch (err) {
-    errorEl.textContent = '<span class="mso">warning</span> ' + err.message;
+    errorEl.innerHTML = '<span class="mso">warning</span> ' + err.message;
     errorEl.style.display = 'block';
   } finally {
     loading.style.display = 'none';
@@ -26809,9 +26995,12 @@ async function cronogramaFromSchedule(clientSlug, clientId, type, periodKey) {
       scheduleContext: { clientId: clientId, type: type, periodKey: periodKey }
     };
     cronogramaShowModal();
+    _cronoLoading = false;
   } catch(err) {
+    _cronoLoading = false;
     console.error('Cronograma from schedule error:', err);
     alert('Erro ao carregar dados: ' + err.message);
+    if (typeof renderSchedWeekly === 'function') renderSchedWeekly();
   }
 }
 
@@ -26875,7 +27064,7 @@ function cronogramaShowModal() {
   var modal = document.createElement('div');
   modal.id = 'cronoModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)';
-  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+  modal.onclick = function(e) { if (e.target !== modal) return; modal.remove(); if (typeof renderSchedWeekly === 'function') renderSchedWeekly(); };
 
   // ─── Build week groups from due_date ───
   function getMondayKey(dateStr) {
@@ -26960,7 +27149,7 @@ function cronogramaShowModal() {
     + '<div style="background:linear-gradient(135deg,#8B7355,#a89070);padding:14px 24px;color:#fff;display:flex;justify-content:space-between;align-items:center;flex:0 0 auto">'
     + '<div><div style="font-size:1.1rem;font-weight:800"><span class="mso">description</span> Cronograma PDF</div>'
     + '<div style="font-size:0.75rem;opacity:0.8;margin-top:2px">' + s.clientName + '</div></div>'
-    + '<button onclick="document.getElementById(\'cronoModal\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:1.1rem;cursor:pointer"><span class="mso">close</span></button>'
+    + '<button onclick="document.getElementById(\'cronoModal\').remove();if(typeof renderSchedWeekly===\'function\')renderSchedWeekly();" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:8px;font-size:1.1rem;cursor:pointer"><span class="mso">close</span></button>'
     + '</div>'
     // Filtro de semana
     + '<div style="padding:8px 20px;border-bottom:1px solid var(--border,#e5e7eb);background:var(--bg,#f1f5f9);flex:0 0 auto;display:flex;align-items:center;gap:8px;overflow-x:auto;flex-shrink:0">'
@@ -27073,7 +27262,7 @@ function cronogramaPreview() {
       + (currentTitle ? '<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">'
         + '<input type="text" id="cronoTitle_' + i + '" value="' + currentTitle.replace(/"/g, '&quot;') + '" '
         + 'style="flex:1;font-size:10px;font-weight:700;padding:4px 8px;border:1.5px solid var(--border,#ddd);border-radius:6px;background:var(--card,#fff);color:var(--text,#333);text-transform:uppercase;letter-spacing:0.5px;font-family:inherit">'
-        + '<button onclick="cronogramaEditTitle(' + i + ',document.getElementById(\'cronoTitle_' + i + '\').value);this.textContent=\'<span class="mso mso-fill">check_circle</span>\';setTimeout(function(){this.textContent=\'<span class="mso">save</span>\';}.bind(this),1500)" '
+        + '<button onclick="cronogramaEditTitle(' + i + ',document.getElementById(\'cronoTitle_' + i + '\').value);this.innerHTML=\'<span class=\\\'mso mso-fill\\\'>check_circle</span>\';setTimeout(function(){this.innerHTML=\'<span class=\\\'mso\\\'>save</span>\';}.bind(this),1500)" '
         + 'style="padding:3px 8px;border:1.5px solid var(--brand,#3b82f6);border-radius:6px;background:var(--brand,#3b82f6);color:#fff;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap" title="Salvar título"><span class="mso">save</span></button>'
         + '</div>' : '')
       + '<div id="cronoPageCard_' + i + '" style="width:' + cardW + 'px;height:' + cardH + 'px;overflow:hidden;border-radius:10px;box-shadow:0 2px 12px rgba(0,0,0,0.18);position:relative;background:#b5aa9a">'
@@ -27354,11 +27543,9 @@ async function mtInit() {
   var avatarEl = document.getElementById('mtNxAvatar');
   if (avatarEl) avatarEl.textContent = gpState.user.initials || (gpState.user.name || '').substring(0, 2).toUpperCase();
 
-  // Executor role: hide status filter (only 'agendar' tasks shown)
+  // Show status filter for all roles
   var mtStatusFilterEl = document.getElementById('mtStatusFilter');
-  if (gpState.user.role === 'executor' && mtStatusFilterEl) {
-    mtStatusFilterEl.style.display = 'none';
-  }
+  if (mtStatusFilterEl) mtStatusFilterEl.style.display = '';
 
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
@@ -27396,9 +27583,11 @@ async function mtInit() {
 function mtSetView(mode) {
   mtView = mode;
   var listBtn = document.getElementById('mtViewList');
-  var clientBtn = document.getElementById('mtViewClient');
+  var cardsBtn = document.getElementById('mtViewCards');
+  var kanbanBtn = document.getElementById('mtViewKanban');
   if (listBtn) { listBtn.classList.toggle('active', mode === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
-  if (clientBtn) { clientBtn.classList.toggle('active', mode === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
+  if (cardsBtn) { cardsBtn.classList.toggle('active', mode === 'cards'); cardsBtn.style.background = ''; cardsBtn.style.color = ''; }
+  if (kanbanBtn) { kanbanBtn.classList.toggle('active', mode === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
   mtRender();
 }
 
@@ -27415,7 +27604,7 @@ async function mtSendToReview(taskId, btn) {
     if (typeof showToast === 'function') showToast('<span class="mso mso-fill">check_circle</span> Enviado para revisão!', 'success');
   } catch(e) {
     btn.disabled = false;
-    btn.textContent = '<span class="mso">mark_email_unread</span> Revisão';
+    btn.innerHTML = '<span class="mso">mark_email_unread</span> Revisão';
     alert('Erro: ' + e.message);
   }
 }
@@ -27456,29 +27645,39 @@ function mtRender() {
   const statusFilterEl = document.getElementById('mtStatusFilter');
   const statusFilter = statusFilterEl ? statusFilterEl.value : '';
 
-  // Render Nexus Emerald bento cards & bottom widgets
-  mtRenderBento();
-  mtRenderBottomWidgets();
+  // Render Nexus Emerald bento cards & bottom widgets (only for cards/kanban, not list)
+  if (mtView !== 'list') {
+    mtRenderBento();
+    mtRenderBottomWidgets();
+  } else {
+    var bentoEl = document.getElementById('mtBentoCards');
+    var alertEl = document.getElementById('mtWidgetAlert');
+    var effEl = document.getElementById('mtWidgetEff');
+    var producEl = document.getElementById('mtWidgetProdu');
+    if (bentoEl) bentoEl.innerHTML = '';
+    if (alertEl) alertEl.innerHTML = '';
+    if (effEl) effEl.innerHTML = '';
+    if (producEl) producEl.innerHTML = '';
+  }
 
   // Update view tab buttons
   var listBtn = document.getElementById('mtViewList');
-  var clientBtn = document.getElementById('mtViewClient');
+  var cardsBtn = document.getElementById('mtViewCards');
+  var kanbanBtn = document.getElementById('mtViewKanban');
   if (listBtn) { listBtn.classList.toggle('active', mtView === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
-  if (clientBtn) { clientBtn.classList.toggle('active', mtView === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
+  if (cardsBtn) { cardsBtn.classList.toggle('active', mtView === 'cards'); cardsBtn.style.background = ''; cardsBtn.style.color = ''; }
+  if (kanbanBtn) { kanbanBtn.classList.toggle('active', mtView === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
 
-  // Render pipeline (executor sees only 'agendar' tasks)
+  // Render pipeline (executor sees agendar + aprovacao tasks in pipeline)
   let pipelineTasks = mtTasks;
   if (gpState.user && gpState.user.role === 'executor') {
-    pipelineTasks = mtTasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao'; });
+    pipelineTasks = mtTasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao' || s === 'aprovacao-design'; });
   }
   mtRenderPipeline(pipelineTasks);
 
   let tasks = mtTasks;
 
-  // Executor role (Dante): only show tasks with status 'agendar' or 'aprovacao'
-  if (gpState.user && gpState.user.role === 'executor') {
-    tasks = tasks.filter(t => { var s = t.status || 'a-fazer'; return s === 'agendar' || s === 'aprovacao'; });
-  }
+  // Executor role: show all assigned tasks (no status restriction)
 
   if (statusFilter) {
     tasks = tasks.filter(t => (t.status || 'a-fazer') === statusFilter);
@@ -27520,18 +27719,15 @@ function mtRender() {
   }
 
   if (tasks.length) {
-    if (mtView === 'client') {
-      mtRenderByClient(el, tasks);
+    if (mtView === 'kanban') {
+      mtRenderKanban(el, tasks);
+    } else if (mtView === 'cards') {
+      mtRenderCards(el, tasks);
     } else {
       mtRenderList(el, tasks);
     }
   } else {
     el.innerHTML = '<div class="mt-empty">Nenhuma task pendente</div>';
-  }
-
-  // Render recent agendado/publicado section
-  if (mtRecentTasks.length > 0) {
-    mtRenderRecent(el);
   }
 }
 
@@ -27663,8 +27859,8 @@ function mtRenderRecent(container) {
 // ── Resizable columns (Finder-style) ──
 var _mtColWidthsCache = {};
 var _mtDefaultCols = {
-  'by-list':   [200, 320, 95, 120, 85, 85, 100, 110],
-  'by-client': [320, 95, 140, 130, 85, 85, 100, 110]
+  'by-list':   [200, 320, 95, 120, 85, 85, 110],
+  'by-client': [320, 95, 140, 130, 85, 85, 110]
 };
 
 function _mtGetColWidths(mode) {
@@ -27770,21 +27966,226 @@ function mtRenderByClient(el, tasks) {
   _mtInitResize(el, 'by-client');
 }
 
-function mtRenderList(el, tasks) {
-  var cols = _mtGetColWidths('by-list');
-  let html = '<div class="mt-list">';
-  html += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
-  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PUBLICAÇÃO','PRIO'];
-  hdrs.forEach(function(h, i) {
-    html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
+function mtGetPostDate(task) {
+  return (task.publish_config && task.publish_config.post_date) || task.due_date || null;
+}
+
+function mtIsTaskOverdue(task) {
+  const status = task.status || 'a-fazer';
+  const isCompleted = ['publicado', 'agendado'].includes(status);
+  if (isCompleted) return false;
+
+  const postDate = mtGetPostDate(task);
+  if (!postDate) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const taskDate = new Date(postDate + 'T00:00:00');
+  return taskDate < today;
+}
+
+function mtCalculateDaysLate(task) {
+  const postDate = mtGetPostDate(task);
+  if (!postDate) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const taskDate = new Date(postDate + 'T00:00:00');
+  const diffMs = today - taskDate;
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function mtSeparateTasks(tasks) {
+  const queueStatuses = ['a-fazer', 'em-andamento', 'criacao-conteudo', 'design', 'em-revisao', 'aprovacao-design', 'alteracao-design', 'aprovacao', 'alteracao', 'revisao', 'aguardando', 'standby', 'aprovado', 'agendar'];
+  const queue = tasks.filter(t => queueStatuses.includes(t.status || 'a-fazer'));
+  const completed = tasks.filter(t => !queueStatuses.includes(t.status || 'a-fazer'));
+  return { queue, completed };
+}
+
+function mtRenderListSection(sectionTitle, tasks) {
+  let html = '';
+
+  if (tasks.length === 0) return html;
+
+  html += '<div style="margin-top:16px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);padding:8px 12px;background:rgba(0,0,0,0.4);border-radius:4px 4px 0 0">' + sectionTitle + ' (' + tasks.length + ')</div>';
+
+  // Header
+  html += '<div style="display:grid;grid-template-columns:150px 1fr 100px 80px 80px 60px;gap:12px;padding:12px;background:rgba(0,0,0,0.3);font-weight:600;font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid rgba(0,0,0,0.2)">'
+    + '<div>CLIENTE</div>'
+    + '<div>NOME</div>'
+    + '<div>STATUS</div>'
+    + '<div>POST</div>'
+    + '<div>ENTREGA</div>'
+    + '<div>PRIO</div>'
+    + '</div>';
+
+  tasks.forEach((t, idx) => {
+    const statusDef = CT_STATUSES.find(s => s.key === (t.status || 'a-fazer')) || CT_STATUSES[0];
+    const clients = _metaClients || {};
+    const client = clients[t.client_id] || null;
+    const clientName = client ? (client.pageName || client.name || '') : (t.group_name || '');
+
+    const postDate = mtGetPostDate(t);
+    const postStr = postDate ? new Date(postDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+    const dueStr = t.due_date ? new Date(t.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+    const priorityMatch = CT_PRIORITIES.find(p => p.key === (t.priority || 'normal')) || CT_PRIORITIES[2];
+
+    const isOverdue = mtIsTaskOverdue(t);
+    const daysLate = mtCalculateDaysLate(t);
+    const overdueIndicator = isOverdue && daysLate > 0 ? ' (' + daysLate + 'd)' : '';
+    const overdueStyle = isOverdue ? 'color:#fca5a5;font-weight:600;' : '';
+
+    html += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:150px 1fr 100px 80px 80px 60px;gap:12px;padding:12px;background:rgba(0,0,0,0.1);cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid rgba(0,0,0,0.2);' + (isOverdue ? 'background:rgba(220,38,38,0.08);' : '') + '">'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + clientName + '</div>'
+      + '<div style="font-size:13px;color:#e2e8f0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
+      + '<div style="font-size:11px;background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 8px;border-radius:4px;text-align:center;white-space:nowrap">' + statusDef.label + '</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.7);text-align:center;' + overdueStyle + '">' + postStr + overdueIndicator + '</div>'
+      + '<div style="font-size:12px;color:rgba(255,255,255,0.6);text-align:center">' + dueStr + '</div>'
+      + '<div style="font-size:11px;color:' + priorityMatch.color + ';font-weight:700;text-align:center">' + priorityMatch.icon + '</div>'
+      + '</div>';
   });
+
+  return html;
+}
+
+function mtRenderList(el, tasks) {
+  let html = '<div style="display:flex;flex-direction:column;gap:0;background:rgba(0,0,0,0.2)">';
+
+  const { queue, completed } = mtSeparateTasks(tasks);
+
+  // Queue section
+  html += mtRenderListSection('NA FILA', queue);
+
+  // Completed section
+  html += mtRenderListSection('ENTREGUE/AGENDADO', completed);
+
+  if (queue.length === 0 && completed.length === 0) {
+    html += '<div style="padding:40px;text-align:center;color:rgba(255,255,255,0.5)">Nenhuma tarefa encontrada</div>';
+  }
+
   html += '</div>';
+  el.innerHTML = html;
+}
+
+function mtRenderCards(el, tasks) {
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:0">';
   tasks.forEach(t => {
-    html += mtRenderRow(t, 'by-list');
+    html += mtRenderCardDesigner(t);
   });
   html += '</div>';
   el.innerHTML = html;
-  _mtInitResize(el, 'by-list');
+}
+
+function mtRenderListDesigner(el, tasks) {
+  mtRenderCards(el, tasks);
+}
+
+function mtRenderKanban(el, tasks) {
+  const statuses = [
+    { key: 'a-fazer', label: 'A Fazer', color: '#9ca3af' },
+    { key: 'design', label: 'Design', color: '#2563eb' },
+    { key: 'em-revisao', label: 'Em Revisão', color: '#c2410c' },
+    { key: 'aprovacao-design', label: 'Aprovação Design', color: '#dc2626' },
+    { key: 'agendado', label: 'Agendado', color: '#06b6d4' },
+    { key: 'publicado', label: 'Publicado', color: '#22c55e' }
+  ];
+
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;padding:0;overflow-x:auto">';
+
+  statuses.forEach(status => {
+    const statusTasks = tasks.filter(t => (t.status || 'a-fazer') === status.key);
+    html += '<div style="background:rgba(0,0,0,0.2);border-radius:12px;padding:12px;min-width:280px;border-top:3px solid ' + status.color + '">';
+    html += '<div style="font-size:13px;font-weight:700;color:' + status.color + ';margin-bottom:12px;text-transform:uppercase">' + status.label + ' (' + statusTasks.length + ')</div>';
+
+    statusTasks.forEach(t => {
+      const clients = _metaClients || {};
+      const client = clients[t.client_id] || null;
+      const clientName = client ? (client.pageName || client.name || t.client_id) : (t.group_name || '');
+      const priorityMatch = CT_PRIORITIES.find(p => p.key === (t.priority || 'normal')) || CT_PRIORITIES[2];
+
+      html += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="'
+        + 'background:rgba(255,255,255,0.05);'
+        + 'border:1px solid rgba(255,255,255,0.1);'
+        + 'border-radius:8px;'
+        + 'padding:12px;'
+        + 'margin-bottom:10px;'
+        + 'cursor:pointer;'
+        + 'transition:all 0.2s'
+        + '">';
+
+      html += '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:4px">' + clientName + '</div>';
+      html += '<div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:8px;line-height:1.3">' + (t.name || '') + '</div>';
+      html += '<div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px">';
+      html += '<span style="background:' + priorityMatch.color + '20;color:' + priorityMatch.color + ';padding:2px 6px;border-radius:4px">' + priorityMatch.icon + ' ' + priorityMatch.label + '</span>';
+
+      if (t.due_date) {
+        const dueDate = new Date(t.due_date + 'T00:00:00');
+        const dueStr = dueDate.getDate() + '/' + (dueDate.getMonth()+1);
+        html += '<span style="background:rgba(59,130,246,0.2);color:#60a5fa;padding:2px 6px;border-radius:4px">' + dueStr + '</span>';
+      }
+      html += '</div></div>';
+    });
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function mtRenderCardDesigner(task) {
+  const statusDef = CT_STATUSES.find(s => s.key === (task.status || 'a-fazer')) || CT_STATUSES[0];
+  const statusKey = statusDef.key;
+  const statusLabel = statusDef.label;
+
+  const clients = _metaClients || {};
+  const client = clients[task.client_id] || null;
+  const clientName = client ? (client.pageName || client.name || task.client_id) : (task.group_name || '');
+
+  const formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(task.publish_config) : '';
+  const priorityMatch = CT_PRIORITIES.find(p => p.key === (task.priority || 'normal')) || CT_PRIORITIES[2];
+
+  const dueStr = task.due_date ? new Date(task.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+  const isAlteracao = statusKey === 'alteracao-design';
+  const isUrgent = isAlteracao || (task.priority === 'urgente');
+
+  let actionBtn = '';
+  if (statusKey === 'design') {
+    actionBtn = '<button onclick="event.stopPropagation();mtSendToReview(\'' + task.id + '\',this)" style="width:100%;padding:10px;margin-top:12px;border-radius:8px;border:none;background:#c2410c;color:white;cursor:pointer;font-size:13px;font-weight:700;font-family:inherit"><span class="mso">mark_email_unread</span> Enviar para Revisão</button>';
+  } else if (statusKey === 'alteracao-design') {
+    actionBtn = '<div style="width:100%;padding:10px;margin-top:12px;border-radius:8px;background:#fee2e2;color:#dc2626;text-align:center;font-size:12px;font-weight:700"><span class="mso">edit</span> CORRIGIR AGORA</div>';
+  }
+
+  const borderColor = isAlteracao ? '#dc2626' : (isUrgent ? '#f97316' : '#6366f1');
+  const bgColor = isAlteracao ? 'rgba(220,38,38,0.08)' : (isUrgent ? 'rgba(249,115,22,0.06)' : 'rgba(99,102,241,0.04)');
+
+  let html = '<div onclick="ctOpenModal(\'' + task.id + '\')" style="'
+    + 'background:' + bgColor + ';'
+    + 'border:2px solid ' + borderColor + ';'
+    + 'border-radius:12px;'
+    + 'padding:16px;'
+    + 'cursor:pointer;'
+    + 'transition:all 0.2s;'
+    + 'hover: {box-shadow: 0 8px 16px rgba(0,0,0,0.2);}'
+    + '">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">'
+    + '<div style="flex:1">'
+    + '<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + clientName + '</div>'
+    + '<div style="font-size:15px;font-weight:700;color:#e2e8f0;line-height:1.3">' + (task.name || '') + '</div>'
+    + '</div>'
+    + '<span class="ct-status" data-status="' + statusKey + '" style="background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 10px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;margin-left:8px">' + statusLabel + '</span>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
+    + formatBadge.replace('<div', '<div style="font-size:11px;padding:2px 8px;border-radius:4px"')
+    + '<span style="display:inline-block;background:' + priorityMatch.color + '20;color:' + priorityMatch.color + ';padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">' + priorityMatch.icon + ' ' + priorityMatch.label.toUpperCase() + '</span>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px;margin-bottom:12px">'
+    + '<div><div style="font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:2px">ENTREGA</div><div style="font-size:14px;font-weight:700;color:#e2e8f0">' + dueStr + '</div></div>'
+    + '</div>'
+    + actionBtn
+    + '</div>';
+
+  return html;
 }
 
 function mtRenderRow(task, mode) {
@@ -28535,7 +28936,7 @@ async function ctConfirmPickerMaterials() {
     ctCloseMaterialsPicker();
   } catch(e) {
     alert('Erro ao adicionar: ' + e.message);
-    if (btn) { btn.textContent = '<span class="mso mso-fill">check_circle</span> Usar selecionados'; btn.disabled = false; }
+    if (btn) { btn.innerHTML = '<span class="mso mso-fill">check_circle</span> Usar selecionados'; btn.disabled = false; }
   }
 }
 
@@ -29419,9 +29820,8 @@ function tfShowAssigneeDropdown(event, taskId) {
 
   const users = typeof CT_USERS !== 'undefined' ? CT_USERS : [
     { name: 'Juan', color: '#3b82f6' },
-    { name: 'Henrique', color: '#10b981' },
+    { name: 'Victor', color: '#10b981' },
     { name: 'Emily', color: '#f59e0b' },
-    { name: 'Leonardo', color: '#8b5cf6' },
     { name: 'Dante', color: '#ef4444' },
   ];
 
@@ -29573,7 +29973,7 @@ async function tfBulkChangeStatus() {
 }
 
 async function tfBulkChangeAssignee() {
-  const name = prompt('Nome do responsável (Juan, Henrique, Emily, Leonardo, Dante):');
+  const name = prompt('Nome do responsável (Juan, Victor, Emily, Dante):');
   if (!name) return;
   var ids = Array.from(tfSelectedIds);
   for (var i = 0; i < ids.length; i++) {
@@ -29742,9 +30142,8 @@ async function tfOpenModal(taskId) {
     + '<select onchange="tfSaveTaskField(\'assignee\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);cursor:pointer;font-family:inherit">'
     + '<option value="">Sem responsável</option>'
     + '<option value="Juan"' + (task.assignee==='Juan'?' selected':'') + '>Juan</option>'
-    + '<option value="Henrique"' + (task.assignee==='Henrique'?' selected':'') + '>Henrique</option>'
+    + '<option value="Victor"' + (task.assignee==='Victor'?' selected':'') + '>Victor</option>'
     + '<option value="Emily"' + (task.assignee==='Emily'?' selected':'') + '>Emily</option>'
-    + '<option value="Leonardo"' + (task.assignee==='Leonardo'?' selected':'') + '>Leonardo</option>'
     + '<option value="Dante"' + (task.assignee==='Dante'?' selected':'') + '>Dante</option>'
     + '</select>'
     + '<input type="date" value="' + (task.due_date || '') + '" onchange="tfSaveTaskField(\'due_date\',this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:0.8rem;background:var(--card);color:var(--text);font-family:inherit">'
@@ -29899,7 +30298,7 @@ var _doState = {
   loading: false
 };
 
-var DESIGNER_NAMES = ['Henrique'];
+var DESIGNER_NAMES = ['Victor'];
 
 function showDesignerOverviewBtn() {
   if (!gpState.user || gpState.user.role === 'designer') return;
@@ -30431,4 +30830,61 @@ function _doRenderTable() {
 </div>
 
 </body>
+<script>
+async function gerarRelatorioPostagens(clientNames = ['Fratellis', 'Saporito']) {
+  try {
+    console.log('🔄 Buscando postagens do último mês para:', clientNames.join(', '));
+    const res = await fetch('/api/meta/publish?limit=500');
+    const data = await res.json();
+    if (!data.history) throw new Error('Sem dados de histórico');
+
+    // Filtrar por data - último mês
+    const agora = new Date();
+    const umMesAtras = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const filtered = data.history.filter(h => {
+      const postDate = new Date(h.created_at);
+      return postDate >= umMesAtras && clientNames.some(name => h.client_name?.toLowerCase().includes(name.toLowerCase()));
+    });
+
+    // Agrupar por cliente e tipo
+    const byClient = {};
+    filtered.forEach(post => {
+      if (!byClient[post.client_name]) byClient[post.client_name] = {};
+      const type = post.post_type || 'feed';
+      if (!byClient[post.client_name][type]) byClient[post.client_name][type] = [];
+      byClient[post.client_name][type].push(post);
+    });
+
+    // Gerar relatório
+    let relatorio = '📊 RELATÓRIO DE POSTAGENS - ÚLTIMO MÊS\n' + '='.repeat(80) + '\n\n';
+    relatorio += `Período: ${umMesAtras.toLocaleDateString('pt-BR')} a ${agora.toLocaleDateString('pt-BR')}\n\n`;
+
+    Object.entries(byClient).forEach(([client, types]) => {
+      relatorio += `\n🏪 ${client}\n${'-'.repeat(60)}\n`;
+      let totalClient = 0;
+      Object.entries(types).forEach(([type, posts]) => {
+        totalClient += posts.length;
+        const statuses = {};
+        posts.forEach(p => {
+          const s = p.status || 'unknown';
+          statuses[s] = (statuses[s] || 0) + 1;
+        });
+        relatorio += `  📱 ${type.toUpperCase()}: ${posts.length} posts — ${Object.entries(statuses).map(([s, c]) => `${c} ${s}`).join(', ')}\n`;
+        posts.slice(0, 2).forEach((p, idx) => {
+          const data = new Date(p.created_at).toLocaleDateString('pt-BR');
+          relatorio += `    ${idx + 1}. "${p.caption?.substring(0, 50) || '(sem caption)'}" — ${data}\n`;
+        });
+        if (posts.length > 2) relatorio += `    ... e mais ${posts.length - 2}\n`;
+      });
+      relatorio += `  \n  ✅ TOTAL: ${totalClient} postagens neste mês\n`;
+    });
+
+    console.log(relatorio);
+    return relatorio;
+  } catch(e) {
+    console.error('❌ Erro ao gerar relatório:', e.message);
+  }
+}
+</script>
 </html>
