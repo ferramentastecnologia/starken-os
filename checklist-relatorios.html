@@ -4144,6 +4144,17 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
         </div>
       </div>
 
+      <!-- CLIENTES ARQUIVADOS -->
+      <div id="tab-archived-clients" class="tab-content" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Clientes Arquivados</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary)">Histórico preservado • Clique para restaurar</div>
+          </div>
+          <div class="two-columns" id="archivedClientsColumns"></div>
+        </div>
+      </div>
+
       <!-- ASANA TASKS -->
       <div id="tab-asana-tasks" class="tab-content">
         <div class="asana-status-bar" id="asanaStatusBar">
@@ -7361,6 +7372,9 @@ let SIDEBAR_MENU = [
     { type: 'item', id: 'clients', label: 'Clientes', icon: '<span class="mso">group</span>', tab: 'clients' },
     { type: 'item', id: 'history', label: 'Histórico', icon: '<span class="mso">assignment</span>', tab: 'history' },
     { type: 'item', id: 'system-logs', label: 'Logs do Sistema', icon: '<span class="mso">build</span>', tab: 'system-logs' },
+  ]},
+  { type: 'category', id: 'cat-archived', label: 'Clientes Arquivados', items: [
+    { type: 'item', id: 'archived-clients', label: 'Arquivados', icon: '<span class="mso">archive</span>', tab: 'archived-clients' },
   ]},
   { type: 'category', id: 'cat-agents', label: 'Agents', items: [
     { type: 'item', id: 'ai-squads', label: 'AI Squads', icon: '<span class="mso">smart_toy</span>', tab: 'ai-squads' },
