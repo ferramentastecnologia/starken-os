@@ -25828,8 +25828,8 @@ function hubUploadMaterials(files) {
   }
 
   function uploadOne(file) {
-    if (file.size > 50 * 1024 * 1024) {
-      hubToast('Arquivo muito grande (max 50MB): ' + file.name);
+    if (file.size > 100 * 1024 * 1024) {
+      hubToast('Arquivo muito grande (max 100MB): ' + file.name);
       done++; errors++;
       return Promise.resolve();
     }
