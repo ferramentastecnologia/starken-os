@@ -6645,6 +6645,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
   restoreSidebarFolders();
 
+  // ─── MONITOR SUPABASE RECONNECTION (every 30s) ───
+  // If clients are empty or meta clients preload failed, retry to reconnect
+  var _supabaseReconnectInterval = null;
+  function _monitorSupabaseConnection() {
+    if (!_supabaseReconnectInterval) {
+      _supabaseReconnectInterval = setInterval(function() {
+        var hasClients = _metaClients && Object.keys(_metaClients).length > 0;
+        if (!hasClients) {
+          console.info('[Reconexão] Tentando recarregar clientes Meta...');
+          metaClientsPreload();
+        }
+      }, 30000); // Every 30 seconds
+    }
+  }
+  _monitorSupabaseConnection();
+
   // ─── DESIGNER OVERVIEW BTN: show for non-designers after DOM ready ───
   setTimeout(function() {
     try {
