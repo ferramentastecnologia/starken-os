@@ -14680,6 +14680,9 @@ function metaConfigRestoreFromLocal() {
   return null;
 }
 
+var metaConfigInitRetries = 0;
+var metaConfigInitMaxRetries = 3;
+
 function metaConfigInit() {
   // Load Zappfy token from localStorage
   setTimeout(function() {
@@ -14688,42 +14691,52 @@ function metaConfigInit() {
     if (t && el) el.value = t;
   }, 100);
 
-  // 1. Tenta carregar do servidor (Supabase)
-  fetch(metaApiBase() + '/api/meta/config').then(r => r.json()).then(data => {
-    if (data.configured && data.config?.clients && Object.keys(data.config.clients).length > 0) {
-      _metaClients = data.config.clients;
-      metaConfigAutoSave(); // sincroniza localStorage com servidor
-    } else {
-      // 2. Fallback: restaura do localStorage
-      const local = metaConfigRestoreFromLocal();
-      if (local) _metaClients = local;
-    }
-    // Sync Zappfy token from Supabase -> localStorage
-    if (data.config?.tenants?._zappfyToken) {
-      _metaTenants._zappfyToken = data.config.tenants._zappfyToken;
-      if (!localStorage.getItem('zappfy_token')) {
-        localStorage.setItem('zappfy_token', data.config.tenants._zappfyToken);
+  // 1. Tenta carregar do servidor (Supabase) com timeout
+  fetch(metaApiBase() + '/api/meta/config', { timeout: 8000 })
+    .then(r => r.json())
+    .then(data => {
+      if (data.configured && data.config?.clients && Object.keys(data.config.clients).length > 0) {
+        _metaClients = data.config.clients;
+        metaConfigAutoSave(); // sincroniza localStorage com servidor
+      } else {
+        // 2. Fallback: restaura do localStorage
+        const local = metaConfigRestoreFromLocal();
+        if (local) _metaClients = local;
       }
-      var el = document.getElementById('zappfyTokenInput');
-      if (el && !el.value) el.value = data.config.tenants._zappfyToken;
-    }
-    metaConfigRenderClientList();
-    if (Object.keys(_metaClients).length > 0) {
-      document.getElementById('metaConfigAddClientRow').style.display = 'block';
-      document.getElementById('metaConfigSaveRow').style.display = 'block';
-    }
-  }).catch(() => {
-    // Servidor indisponível: restaura do localStorage
-    const local = metaConfigRestoreFromLocal();
-    if (local) {
-      _metaClients = local;
+      // Sync Zappfy token from Supabase -> localStorage
+      if (data.config?.tenants?._zappfyToken) {
+        _metaTenants._zappfyToken = data.config.tenants._zappfyToken;
+        if (!localStorage.getItem('zappfy_token')) {
+          localStorage.setItem('zappfy_token', data.config.tenants._zappfyToken);
+        }
+        var el = document.getElementById('zappfyTokenInput');
+        if (el && !el.value) el.value = data.config.tenants._zappfyToken;
+      }
       metaConfigRenderClientList();
       if (Object.keys(_metaClients).length > 0) {
         document.getElementById('metaConfigAddClientRow').style.display = 'block';
         document.getElementById('metaConfigSaveRow').style.display = 'block';
       }
-    }
-  });
+      metaConfigInitRetries = 0; // Reset retries on success
+    })
+    .catch(function(err) {
+      console.warn('metaConfigInit fetch failed:', err);
+      // Servidor indisponível: restaura do localStorage
+      const local = metaConfigRestoreFromLocal();
+      if (local) {
+        _metaClients = local;
+        metaConfigRenderClientList();
+        if (Object.keys(_metaClients).length > 0) {
+          document.getElementById('metaConfigAddClientRow').style.display = 'block';
+          document.getElementById('metaConfigSaveRow').style.display = 'block';
+        }
+      } else if (metaConfigInitRetries < metaConfigInitMaxRetries) {
+        // Retry com backoff se não tem dados locais
+        var delayMs = 2000 * Math.pow(2, metaConfigInitRetries);
+        metaConfigInitRetries++;
+        setTimeout(function() { metaConfigInit(); }, delayMs);
+      }
+    });
 }
 
 async function metaConfigDiscover() {
