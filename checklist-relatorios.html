@@ -12351,11 +12351,17 @@ function saveClient() {
     if (c) { c.name = name; c.company = company; c.segment = segment; c.phone = phone; c.customPeriod = customPeriod; c.active = active; }
     showToast('Cliente atualizado');
   } else {
-    data.clients.push({ id: gid(), name, company, segment, phone, customPeriod, active });
+    const newId = gid();
+    data.clients.push({ id: newId, name, company, segment, phone, customPeriod, active });
+    // Also add to _metaClients (sidebar) with slug key
+    const clientKey = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const tenantKey = company === 'Alpha' ? 'alpha' : 'starken';
+    _metaClients[clientKey] = { name: name, tenant: tenantKey, segment: segment || 'Gastronomia' };
     showToast('Cliente adicionado');
   }
   saveData(data);
   closeClientModal();
+  populateSidebarClients();
   renderAll();
 }
 
