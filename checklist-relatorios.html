@@ -6989,26 +6989,51 @@ function initSupabase() {
 }
 
 // Supabase query proxy — routes through /api/content (service role key, no CORS issues)
-async function _sbQuery(table, { select='*', filters=[], order=null, limit=null } = {}) {
+// Deduplicação: evita queries idênticas simultâneas
+var _sbQueryInFlight = {};
+
+// Deduplicação: evita queries idênticas simultâneas
+var _sbQueryInFlight = {};
+
+async function _sbQuery(table, { select='*', filters=[], order=null, limit=null, _retry=0 } = {}) {
+  // Chave única para deduplicar requests idênticos
+  var cacheKey = table + '|' + select + '|' + JSON.stringify(filters) + '|' + order + '|' + limit;
+  if (_sbQueryInFlight[cacheKey]) return _sbQueryInFlight[cacheKey];
+
   const ctrl = new AbortController();
-  const timer = setTimeout(function() { ctrl.abort(); }, 12000);
-  try {
-    const res = await fetch('/api/content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'query', table: table, select: select, filters: filters, order: order, limit: limit }),
-      signal: ctrl.signal
-    });
-    clearTimeout(timer);
-    if (!res.ok) { const txt = await res.text(); throw new Error('API ' + res.status + ': ' + txt.slice(0, 200)); }
-    const json = await res.json();
-    if (json && json.error) throw new Error(json.error);
-    return json;
-  } catch(e) {
-    clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('Timeout (20s) em ' + table);
-    throw e;
-  }
+  const timer = setTimeout(function() { ctrl.abort(); }, 30000); // 30s timeout
+  const promise = (async function() {
+    try {
+      const res = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'query', table: table, select: select, filters: filters, order: order, limit: limit }),
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (!res.ok) { const txt = await res.text(); throw new Error('API ' + res.status + ': ' + txt.slice(0, 200)); }
+      const json = await res.json();
+      if (json && json.error) throw new Error(json.error);
+      return json;
+    } catch(e) {
+      clearTimeout(timer);
+      if (e.name === 'AbortError') {
+        // Retry automático 1x em caso de timeout
+        if (_retry < 1) {
+          console.warn('[_sbQuery] Timeout em ' + table + ', tentando novamente em 3s...');
+          await new Promise(function(resolve) { setTimeout(resolve, 3000); });
+          return _sbQuery(table, { select: select, filters: filters, order: order, limit: limit, _retry: _retry + 1 });
+        }
+        throw new Error('Timeout (30s) em ' + table);
+      }
+      throw e;
+    } finally {
+      delete _sbQueryInFlight[cacheKey];
+    }
+  })();
+
+  _sbQueryInFlight[cacheKey] = promise;
+  return promise;
 }
 
 function setSyncStatus(status) {
@@ -10163,13 +10188,16 @@ function renderDashboard() {
     '<div class="stat-card warning" onclick="switchTab(\'sched-weekly\')" style="cursor:pointer" title="Ver cronogramas pendentes de envio"><div class="stat-icon" style="background:var(--warning-bg)">!</div><div class="stat-label">Cronogramas Pendentes</div><div class="stat-value">' + wPending + '</div></div>' +
     '<div class="stat-card success"><div class="stat-icon" style="background:var(--success-bg)"><span class="mso">check</span></div><div class="stat-label">Cronogramas Enviados</div><div class="stat-value">' + wSent + '/' + active.length + '</div></div>';
 
-  renderContentProgress('weeklyProgress', wk, active, 'weekly');
-  renderContentProgress('monthlyProgress', mk, active, 'monthly');
+  // Renderiza imediatamente o que não precisa do Supabase
   renderDashWeekCronoList(cronoWk, active);
-  renderDashWeekPosts(wk);
-  renderOperationalScore(mk, active);
   renderRecentSends();
-  renderDashPublishErrors();
+
+  // Queries Supabase com delay sequencial para não sobrecarregar o servidor
+  renderContentProgress('weeklyProgress', wk, active, 'weekly');
+  setTimeout(function() { renderContentProgress('monthlyProgress', mk, active, 'monthly'); }, 400);
+  setTimeout(function() { renderDashWeekPosts(wk); }, 800);
+  setTimeout(function() { renderOperationalScore(mk, active); }, 1200);
+  setTimeout(function() { renderDashPublishErrors(); }, 1600);
 
   // Emerald-only enhancements (hero, bento grid, implementations table)
   try { emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, cronoWk); } catch(e) { console.warn('emerald dash error', e); }
