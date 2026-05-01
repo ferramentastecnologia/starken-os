@@ -42,12 +42,24 @@ function fail(message, status = 400) {
 }
 
 async function supaSelect(table, query = '') {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { headers: HEADERS });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`SELECT ${table} failed: ${err}`);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 25000); // 25s backend timeout
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+      headers: HEADERS,
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`SELECT ${table} failed: ${err}`);
+    }
+    return res.json();
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error(`SELECT ${table} timeout (25s) — Supabase lento`);
+    throw e;
   }
-  return res.json();
 }
 
 async function supaInsert(table, record) {
