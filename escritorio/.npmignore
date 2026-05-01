@@ -1,4 +1,0 @@
-src/**/*.test.ts
-src/**/*.test.js
-.next/server/**/*.map
-./tests/
