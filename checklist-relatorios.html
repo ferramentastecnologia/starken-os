@@ -14298,6 +14298,9 @@ function metaApiBase() {
 }
 
 // Pré-carrega clientes Meta no init (sem depender da aba Config)
+var metaClientsPreloadRetries = 0;
+var metaClientsPreloadMaxRetries = 5;
+
 function metaClientsPreload() {
   // 1. Tenta localStorage primeiro (instantâneo)
   var localLoaded = false;
@@ -14314,22 +14317,36 @@ function metaClientsPreload() {
       }
     }
   } catch(e) {}
+
   // 2. SEMPRE busca do servidor para garantir dados atualizados
-  fetch(metaApiBase() + '/api/meta/config').then(r => r.json()).then(data => {
-    if (data.configured && data.config?.clients && Object.keys(data.config.clients).length > 0) {
-      _metaClients = data.config.clients;
-      try { localStorage.setItem(META_CLIENTS_LS_KEY, JSON.stringify(_metaClients)); } catch(e) {}
-      console.info('Meta clients atualizados do servidor (' + Object.keys(_metaClients).length + ' clientes)');
-      populateSidebarClients();
-      restoreSidebarFolders();
-    }
-  }).catch(function(err) {
-    console.warn('metaClientsPreload fetch failed:', err);
-    // Se não tinha do localStorage, tenta de novo em 3s
-    if (!localLoaded) {
-      setTimeout(function() { metaClientsPreload(); }, 3000);
-    }
-  });
+  fetch(metaApiBase() + '/api/meta/config', { timeout: 8000 })
+    .then(r => r.json())
+    .then(data => {
+      if (data.configured && data.config?.clients && Object.keys(data.config.clients).length > 0) {
+        _metaClients = data.config.clients;
+        try { localStorage.setItem(META_CLIENTS_LS_KEY, JSON.stringify(_metaClients)); } catch(e) {}
+        console.info('Meta clients atualizados do servidor (' + Object.keys(_metaClients).length + ' clientes)');
+        populateSidebarClients();
+        restoreSidebarFolders();
+        metaClientsPreloadRetries = 0; // Reset retries on success
+      }
+    })
+    .catch(function(err) {
+      console.warn('metaClientsPreload fetch failed (tentativa ' + (metaClientsPreloadRetries + 1) + '/' + metaClientsPreloadMaxRetries + '):', err);
+
+      // Retry com backoff exponencial (3s, 6s, 12s, 24s, 48s)
+      if (metaClientsPreloadRetries < metaClientsPreloadMaxRetries) {
+        var delayMs = 3000 * Math.pow(2, metaClientsPreloadRetries);
+        metaClientsPreloadRetries++;
+        console.info('Retentando em ' + (delayMs / 1000) + 's...');
+        setTimeout(function() { metaClientsPreload(); }, delayMs);
+      } else {
+        console.error('metaClientsPreload: Máximo de tentativas atingido. Usando dados do localStorage.');
+        if (!localLoaded) {
+          console.error('Aviso: Nenhum cliente Meta disponível. Sistema em modo offline.');
+        }
+      }
+    });
 }
 
 // Auto-restore sessão no carregamento
