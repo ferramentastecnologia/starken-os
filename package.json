@@ -1,0 +1,38 @@
+{
+  "name": "starken-os",
+  "version": "2.0.0",
+  "description": "Starken OS — SPA de gestão de conteúdo e publicação Meta/Asana",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js",
+    "prod": "NODE_ENV=production node server.js",
+    "pm2:start": "pm2 start server.js --name 'starken-api'",
+    "pm2:stop": "pm2 stop starken-api",
+    "pm2:restart": "pm2 restart starken-api",
+    "pm2:logs": "pm2 logs starken-api",
+    "pm2:save": "pm2 save",
+    "pm2:startup": "pm2 startup",
+    "test": "echo \"No tests configured yet\"",
+    "lint": "echo \"No linting configured yet\""
+  },
+  "keywords": [
+    "meta",
+    "facebook",
+    "instagram",
+    "content-management",
+    "scheduling",
+    "asana"
+  ],
+  "author": "Starken Tecnologia",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}

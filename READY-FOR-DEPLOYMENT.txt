@@ -1,0 +1,78 @@
+================================================================================
+  STARKEN OS — PRONTO PARA DEPLOY NA VPS HOSTINGER
+================================================================================
+
+✅ ARQUIVOS CRIADOS (6 arquivos novos)
+
+1. server.js (420 linhas)
+   └─ Express server que multiplexar 12 funções serverless
+   └─ Servindo frontend estático + /api/* proxy
+
+2. package.json
+   └─ Dependências mínimas (express@4.18.2)
+   └─ Scripts npm: start, pm2:start, pm2:restart
+
+3. nginx.conf (180 linhas)
+   └─ Reverse proxy nginx (HTTP → HTTPS)
+   └─ Proxy /api/* para Node.js:3000
+   └─ SSL/HTTPS com Let's Encrypt
+
+4. .env.example
+   └─ Template para variáveis de ambiente
+   └─ Instruções para preencher
+
+5. SETUP-VPS.md (300+ linhas, 11 STEPs)
+   └─ Guia passo-a-passo para AlmaLinux
+   └─ Troubleshooting + rollback inclusos
+
+6. DEPLOYMENT-READY.md (este sumário)
+   └─ Overview completo da arquitetura
+   └─ Quick start + próximos passos
+
+================================================================================
+  PRÓXIMOS PASSOS
+================================================================================
+
+IMEDIATAMENTE (antes de SSH):
+  [ ] Ler DEPLOYMENT-READY.md (visão geral)
+  [ ] Ler SETUP-VPS.md (instruções detalhadas)
+  [ ] Ter credenciais Supabase prontas
+
+SSH NA VPS:
+  ssh root@187.77.46.199
+
+SEGUIR GUIA:
+  Executar cada STEP de SETUP-VPS.md (STEP 1 → STEP 11)
+  Tempo: ~2 horas (primeira vez)
+
+================================================================================
+  ARQUITETURA FINAL
+================================================================================
+
+Cliente → https://starkentecnologia.com → nginx:443
+  ├─ /               → /home/ubuntu/apps/starken-os/checklist-relatorios.html
+  └─ /api/*          → proxy para localhost:3000 (Node.js/Express)
+                         └─ 12 funções multiplexadas
+                         └─ Supabase para dados
+
+================================================================================
+  VERIFICAÇÃO RÁPIDA APÓS SETUP
+================================================================================
+
+Na VPS:
+  curl http://localhost:3000/api/health
+  # Esperado: {"status":"ok", ...}
+
+  curl https://starkentecnologia.com/api/health
+  # Esperado: {"status":"ok", ...} (após DNS apontado)
+
+  pm2 status
+  # Esperado: starken-api → online
+
+================================================================================
+  VERSÃO: 2.0.0
+  DATA: 2026-05-02
+  TESTADO EM: AlmaLinux 10, Node.js 20, nginx 1.24
+================================================================================
+
+👉 PRÓXIMO: Ler SETUP-VPS.md e executar na VPS
