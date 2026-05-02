@@ -283,16 +283,15 @@ curl -H "Host: starkentecnologia.com" http://localhost/api/health
 # 9.1 Instalar certbot
 sudo dnf install -y certbot python3-certbot-nginx
 
-# 9.2 Obter certificado (substitua seu domínio)
+# 9.2 Obter certificado (para subdomínio)
 sudo certbot certonly --standalone \
-  -d starkentecnologia.com \
-  -d www.starkentecnologia.com \
-  --email your-email@example.com \
+  -d app.starkentecnologia.com \
+  --email seu-email@example.com \
   --agree-tos -n
 
 # Resultado esperado:
 # Successfully received certificate.
-# Certificate is saved at: /etc/letsencrypt/live/starkentecnologia.com/...
+# Certificate is saved at: /etc/letsencrypt/live/app.starkentecnologia.com/...
 ```
 
 **9.3 Recarregar nginx com SSL**:
@@ -318,35 +317,34 @@ sudo systemctl start certbot.timer
 
 ---
 
-### STEP 10: Configurar Domínio DNS (1-2 horas)
+### STEP 10: Configurar Domínio DNS em Registro.br (5 min)
 
-Este passo é MANUAL e depende do seu registrador (GoDaddy, Namecheap, etc):
+Este passo é feito no painel Registro.br (seu registrador):
 
 ```
-1. Ir para seu registrador de domínio
-2. Adicionar/Editar record A:
-   - Host: @ (raiz)
-   - Type: A
-   - Value: 187.77.46.199
-   - TTL: 3600 (ou menor para rápida propagação)
+1. Abrir painel Registro.br
+2. Acessar zona DNS de starkentecnologia.com
+3. Adicionar/Editar record A:
+   - Nome do Host: app
+   - Tipo: A (address)
+   - Valor: 187.77.46.199
+   - TTL: 3600 (ou padrão)
 
-3. Adicionar record CNAME:
-   - Host: www
-   - Type: CNAME
-   - Value: starkentecnologia.com (ou @ conforme registrador)
-   - TTL: 3600
-
-4. Salvar e esperar propagação (5 min - 48 horas)
+4. Salvar e esperar propagação (5 min - 2 horas)
 ```
 
-**Verificar propagação**:
+**Verificar propagação** (terminal local):
 ```bash
-# Terminal local (seu computador)
-nslookup starkentecnologia.com
+# Terminal do seu computador
+nslookup app.starkentecnologia.com
 
 # Resultado esperado:
+# Server: ...
+# Name: app.starkentecnologia.com
 # Address: 187.77.46.199
 ```
+
+**Enquanto isso**: Site principal continua em `starkentecnologia.com` (Lovable)
 
 ---
 
@@ -354,16 +352,17 @@ nslookup starkentecnologia.com
 
 ```bash
 # 11.1 Verificar aplicação online
-curl https://starkentecnologia.com/api/health
+curl https://app.starkentecnologia.com/api/health
 
 # 11.2 Abrir em navegador (esperar DNS propagação)
-# https://starkentecnologia.com
+# https://app.starkentecnologia.com
 
 # 11.3 Testar features críticas
 #  - Login com PIN
 #  - Carregar dashboard
 #  - Publicar post no Facebook
 #  - Agendamento IG
+#  - Calendário de posts
 
 # 11.4 Verificar logs
 pm2 logs starken-api

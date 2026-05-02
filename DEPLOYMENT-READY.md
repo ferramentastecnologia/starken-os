@@ -24,15 +24,16 @@
 ## 🎯 Arquitetura Final
 
 ```
-Cliente (https://starkentecnologia.com)
-    ↓
- nginx:443
-    ├─ Frontend (HTML/CSS/JS) → 187.77.46.199
-    └─ /api/* → localhost:3000
-         ↓
-    Node.js/Express (PM2)
-         ↓
-    Supabase (dados)
+app.starkentecnologia.com        app.app.starkentecnologia.com
+   (Lovable)                 (VPS 187.77.46.199)
+      ↓                              ↓
+   Front                         nginx:443
+  (website)                         ├─ Frontend (HTML/CSS/JS)
+                                    └─ /api/* → localhost:3000
+                                         ↓
+                                    Node.js/Express (PM2)
+                                         ↓
+                                    Supabase (dados)
 ```
 
 ---
@@ -68,7 +69,7 @@ cat SETUP-VPS.md
 
 - [ ] Acesso SSH à VPS: `ssh root@187.77.46.199` funciona
 - [ ] Credenciais Supabase (copiar de `.env` atual ou Supabase console)
-- [ ] Domínio `starkentecnologia.com` registrado (ou outro)
+- [ ] Domínio `app.starkentecnologia.com` registrado (ou outro)
 - [ ] Acesso a registrador de domínio para configurar DNS
 
 ---
@@ -142,7 +143,7 @@ server {
 # HTTPS server
 server {
     listen 443 ssl http2;
-    ssl_certificate /etc/letsencrypt/live/starkentecnologia.com/...;
+    ssl_certificate /etc/letsencrypt/live/app.starkentecnologia.com/...;
     
     # Servir frontend
     root /home/ubuntu/apps/starken-os;
@@ -342,7 +343,7 @@ sudo tail -f /var/log/nginx/starken_error.log
 pm2 logs starken-api --err
 
 # DNS propagado?
-nslookup starkentecnologia.com
+nslookup app.starkentecnologia.com
 ```
 
 ---
