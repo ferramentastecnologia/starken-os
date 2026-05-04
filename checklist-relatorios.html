@@ -11952,7 +11952,7 @@ async function renderDashStoriesChecklist(activeClients) {
     if (rsGroupIds.length > 0) {
       try {
         weekTasks = await _sbQuery('content_tasks', {
-          select: 'id,group_id,status,due_date,title',
+          select: 'id,group_id,status,due_date,name',
           filters: [
             'group_id=in.(' + rsGroupIds.join(',') + ')',
             'due_date=gte.' + weekStartISO.slice(0,10),
@@ -12120,7 +12120,7 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
     if (rsGroupIds.length > 0) {
       try {
         weekTasks = await _sbQuery('content_tasks', {
-          select: 'id,group_id,status,due_date,title',
+          select: 'id,group_id,status,due_date,name',
           filters: [
             'group_id=in.(' + rsGroupIds.join(',') + ')',
             'due_date=gte.' + weekStartISO.slice(0,10),
@@ -12258,7 +12258,7 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
           h += '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;transition:all 0.15s">';
           h += '<span class="mso" style="color:' + color + ';font-size:22px;flex-shrink:0">' + icon + '</span>';
           h += '<div style="flex:1;min-width:0">';
-          h += '<div style="font-size:0.95rem;font-weight:600;color:var(--text-primary)">' + esc(t.title || 'Sem título') + '</div>';
+          h += '<div style="font-size:0.95rem;font-weight:600;color:var(--text-primary)">' + esc(t.name || 'Sem nome') + '</div>';
           h += '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px;font-weight:500">' + (isAgendado ? '✓ Agendado' : '⏰ A agendar') + '</div>';
           h += '</div>';
           h += '</div>';
