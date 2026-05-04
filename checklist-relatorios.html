@@ -4022,6 +4022,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div id="dashWeekPostsList"></div>
           </div>
         </div>
+        <div class="card" style="margin-top:16px">
+          <div class="card-title" style="margin-bottom:14px"><span class="mso">smartphone</span> Checklist Semanal - Stories Recorrentes</div>
+          <div id="dashWeeklyStoriesChecklist"></div>
+        </div>
         <div class="card" id="dashPubFailCard" style="margin-top:16px;display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div class="card-title" style="margin:0"><span class="mso" style="color:#ef4444">cancel</span> Falhas de Publicação</div>
@@ -10190,17 +10194,93 @@ function renderDashboard() {
 
   // Renderiza imediatamente o que não precisa do Supabase
   renderDashWeekCronoList(cronoWk, active);
-  renderRecentSends();
+  renderRecentSends(active);
 
   // Queries Supabase com delay sequencial para não sobrecarregar o servidor
   renderContentProgress('weeklyProgress', wk, active, 'weekly');
   setTimeout(function() { renderContentProgress('monthlyProgress', mk, active, 'monthly'); }, 400);
-  setTimeout(function() { renderDashWeekPosts(wk); }, 800);
+  setTimeout(function() { renderDashWeekPosts(wk, active); }, 800);
   setTimeout(function() { renderOperationalScore(mk, active); }, 1200);
-  setTimeout(function() { renderDashPublishErrors(); }, 1600);
+  setTimeout(function() { renderDashPublishErrors(active); }, 1600);
+  setTimeout(function() { renderDashWeeklyStoriesChecklist(wk, active); }, 2000);
 
   // Emerald-only enhancements (hero, bento grid, implementations table)
   try { emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, cronoWk); } catch(e) { console.warn('emerald dash error', e); }
+}
+
+// ═══ CHECKLIST SEMANAL DE STORIES RECORRENTES ═══
+async function renderDashWeeklyStoriesChecklist(weekKey, activeClients) {
+  const container = document.getElementById('dashWeeklyStoriesChecklist');
+  if (!container) return;
+
+  try {
+    // Parse week key to get date range
+    const [year, month, weekNum] = weekKey.split('-').map(Number);
+    const firstDay = new Date(year, month - 1, 1);
+    const weekStart = new Date(firstDay);
+    weekStart.setDate(firstDay.getDate() + (weekNum - 1) * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    // Fetch recurring stories for all active clients
+    let html = '<div style="font-size:0.85rem">';
+    let hasStories = false;
+
+    for (const client of activeClients) {
+      const tasks = await _sbQuery('content_tasks', {
+        filters: [
+          { col: 'client_id', op: 'eq', val: client.id },
+          { col: 'created_at', op: 'gte', val: weekStart.toISOString() },
+          { col: 'created_at', op: 'lte', val: weekEnd.toISOString() }
+        ]
+      });
+
+      // Filter for recurring stories (check if it has recurring_story attachment)
+      const stories = tasks.filter(t => t.format === 'story' || (t.description && t.description.includes('story')));
+
+      if (stories.length > 0) {
+        hasStories = true;
+        html += '<div style="margin-bottom:12px;padding:10px;background:var(--bg-elevated);border-radius:6px;border-left:3px solid #0284c7">';
+        html += '<div style="font-weight:600;color:var(--text-primary);margin-bottom:6px">' + esc(client.name) + '</div>';
+
+        for (const story of stories) {
+          const published = story.status === 'Publicado' || story.status === 'published';
+          html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.8rem">';
+          html += '<input type="checkbox" ' + (published ? 'checked' : '') + ' style="cursor:pointer" onchange="dashUpdateStoryStatus(\'' + esc(story.id) + '\', this.checked)">';
+          html += '<span style="color:var(--text-secondary)">' + (story.name || 'Story sem nome') + '</span>';
+          if (published) html += '<span class="mso" style="font-size:0.75rem;color:var(--color-success)">check_circle</span>';
+          html += '</div>';
+        }
+
+        html += '</div>';
+      }
+    }
+
+    if (!hasStories) {
+      html += '<div style="color:var(--text-secondary);padding:20px;text-align:center">Nenhum story recorrente nesta semana</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+  } catch(e) {
+    console.warn('Error rendering weekly stories checklist:', e);
+    const container = document.getElementById('dashWeeklyStoriesChecklist');
+    if (container) container.innerHTML = '<div style="color:var(--color-danger);padding:12px">Erro ao carregar stories</div>';
+  }
+}
+
+// Update story status (mark as published/not published)
+async function dashUpdateStoryStatus(taskId, published) {
+  try {
+    await ctApi('update_task', {
+      task_id: taskId,
+      status: published ? 'Publicado' : 'Pendente'
+    });
+    showToast('Status atualizado');
+  } catch(e) {
+    console.error('Error updating story status:', e);
+    showToast('Erro ao atualizar');
+  }
 }
 
 // ═══ PDF EXPORT ═══
@@ -11815,9 +11895,12 @@ window.limparCache = function() {
 };
 
 // Recent sends from Supabase cronograma_status cache
-function renderRecentSends() {
+function renderRecentSends(activeClients) {
   var el = document.getElementById('recentSends');
   if (!el) return;
+
+  // Build set of active client IDs
+  var activeClientIds = (activeClients || []).map(function(c) { return c.id; });
 
   // Collect recent entries from _cronogramaStatusCache
   var recentItems = [];
@@ -11827,6 +11910,8 @@ function renderRecentSends() {
       var entry = _cronogramaStatusCache[key];
       if (entry && (entry.status >= 1 || entry.generated_at)) {
         var clientId = key.split('_')[0];
+        // Filter to active clients only
+        if (!activeClientIds.includes(clientId)) return;
         var periodKey = key.substring(clientId.length + 1);
         var c = data.clients.find(function(x) { return x.id === clientId; });
         recentItems.push({
@@ -11843,7 +11928,7 @@ function renderRecentSends() {
   // Also add from localStorage reports for non-sched-weekly types
   data.reports.forEach(function(r) {
     if (r.type === 'sched-weekly') return; // already from Supabase
-    if (r.status >= 1) {
+    if (r.status >= 1 && activeClientIds.includes(r.clientId)) {
       var c = data.clients.find(function(x) { return x.id === r.clientId; });
       recentItems.push({
         name: c ? c.name : '(Removido)',
@@ -11888,7 +11973,7 @@ function renderRecentSends() {
 var _dashPubErrorsCache = null; // { ts: number, items: [] }
 var _dashPubErrorsTTL = 3 * 60 * 1000; // 3 min
 
-async function renderDashPublishErrors() {
+async function renderDashPublishErrors(activeClients) {
   var card = document.getElementById('dashPubFailCard');
   var el = document.getElementById('dashPubErrors');
   if (!el) return;
@@ -11896,7 +11981,7 @@ async function renderDashPublishErrors() {
   // Use cache if fresh
   var now = Date.now();
   if (_dashPubErrorsCache && (now - _dashPubErrorsCache.ts) < _dashPubErrorsTTL) {
-    _renderPubErrorsList(el, card, _dashPubErrorsCache.items);
+    _renderPubErrorsList(el, card, _dashPubErrorsCache.items, activeClients);
     return;
   }
 
@@ -11909,23 +11994,34 @@ async function renderDashPublishErrors() {
       return { id: q.id, client_name: q.client_name, client_key: q.client_key, platform: q.platform, error_message: q.error_message, scheduled_for: q.scheduled_for, created_at: q.created_at, status: 'FAILED', from_queue: true, task_id: q.task_id };
     });
 
+    // Filter to only active clients
+    var activeClientIds = (activeClients || []).map(function(c) { return c.id; });
+    var filtered = histItems.concat(qItems).filter(function(item) {
+      return activeClientIds.includes(item.client_key);
+    });
+
     // Merge, deduplicate by task_id+platform
     var seen = new Set();
     var merged = [];
-    histItems.concat(qItems).forEach(function(item) {
+    filtered.forEach(function(item) {
       var key = (item.task_id || '') + '_' + (item.platform || '') + '_' + (item.created_at || '').slice(0, 16);
       if (!seen.has(key)) { seen.add(key); merged.push(item); }
     });
     merged.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
 
     _dashPubErrorsCache = { ts: Date.now(), items: merged };
-    _renderPubErrorsList(el, card, merged);
+    _renderPubErrorsList(el, card, merged, activeClients);
   } catch(e) {
     console.warn('renderDashPublishErrors error:', e);
   }
 }
 
-function _renderPubErrorsList(el, card, items) {
+function _renderPubErrorsList(el, card, items, activeClients) {
+  // Filter items to active clients if provided
+  if (activeClients && activeClients.length > 0) {
+    var activeClientIds = activeClients.map(function(c) { return c.id; });
+    items = items.filter(function(item) { return activeClientIds.includes(item.client_key); });
+  }
   if (!items || !items.length) {
     if (card) card.style.display = 'none';
     return;
@@ -11997,7 +12093,7 @@ function dashShowAllPubErrors() {
 // Agendamentos & Publicações da Semana
 var _dashWeekPostsCache = {}; // { periodKey: { clientKey: { scheduled: N, published: N, total: N } } }
 
-async function renderDashWeekPosts(weekKey) {
+async function renderDashWeekPosts(weekKey, activeClients) {
   var el = document.getElementById('dashWeekPostsList');
   if (!el) return;
 
@@ -12026,13 +12122,16 @@ async function renderDashWeekPosts(weekKey) {
     // Get group → client mapping (cached)
     var groupToClient = await _ensureGroupToClient();
 
+    // Filter to only active clients
+    var activeClientIds = (activeClients || []).map(function(c) { return c.id; });
+
     // Build per-day → per-client structure with individual tasks
     var dayData = {}; // { 'YYYY-MM-DD': { clientKey: { name, tenant, tasks: [], scheduled, published, total } } }
     var totalSched = 0, totalPub = 0, totalPosts = 0;
 
     tasks.forEach(function(t) {
       var clientKey = groupToClient[t.group_id];
-      if (!clientKey) return;
+      if (!clientKey || !activeClientIds.includes(clientKey)) return;
       var day = t.due_date || 'sem-data';
 
       if (!dayData[day]) dayData[day] = {};
