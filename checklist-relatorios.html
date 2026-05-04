@@ -12088,12 +12088,14 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
   var content = document.getElementById('storiesModalContent');
 
   try {
+    console.log('🎯 renderStoriesModalWeek started:', { metaKey, clientName, weekKey });
+
     // Calcular range da semana (segunda a domingo)
     var parts = weekKey.split('-S');
     var monthKey = parts[0];
     var weekNum = parseInt(parts[1]);
     var mInfo = MONTHS_2026.find(function(m) { return m.key === monthKey; });
-    if (!mInfo) throw new Error('Mês não encontrado');
+    if (!mInfo) throw new Error('Mês não encontrado: ' + monthKey);
 
     var weeks = getMonthWeeks(mInfo.year, mInfo.month);
     var wInfo = weeks.find(function(w) { return w.week === weekNum; });
@@ -12104,12 +12106,15 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
     var weekStartISO = weekStart.toISOString();
     var weekEndISO = weekEnd.toISOString();
 
-    // Busca grupos de stories recorrentes para este cliente
+    // Busca grupos de stories recorrentes
     var groups = await _sbQuery('content_groups', { select: 'id,name,client_id', filters: [] }) || [];
     var rsGroups = groups.filter(function(g) {
-      return g.name && g.name.toUpperCase().includes('STORIES RECORRENTES') && g.client_id === metaKey;
+      return g.name && g.name.toUpperCase().includes('STORIES RECORRENTES');
     });
-    var rsGroupIds = rsGroups.map(function(g){ return g.id; });
+
+    // Filtra grupos apenas para este cliente
+    var clientGroups = rsGroups.filter(function(g) { return g.client_id === metaKey; });
+    var rsGroupIds = clientGroups.map(function(g){ return g.id; });
 
     var weekTasks = [];
     if (rsGroupIds.length > 0) {
@@ -12122,7 +12127,9 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
             'due_date=lte.' + weekEndISO.slice(0,10)
           ]
         }) || [];
-      } catch(e) {}
+      } catch(e) {
+        console.warn('Error fetching week tasks:', e);
+      }
     }
 
     // Mapeia tasks por dia da semana
