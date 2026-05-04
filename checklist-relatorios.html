@@ -12010,7 +12010,7 @@ async function renderDashPublishErrors(activeClients) {
     merged.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
 
     _dashPubErrorsCache = { ts: Date.now(), items: merged };
-    _renderPubErrorsList(el, card, merged);
+    _renderPubErrorsList(el, card, merged, activeClients);
   } catch(e) {
     console.warn('renderDashPublishErrors error:', e);
   }
