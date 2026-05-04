@@ -12029,7 +12029,7 @@ async function renderDashStoriesChecklist(activeClients) {
         dayBars += '</div>';
       });
 
-      cardsHtml += '<div onclick="openStoriesModalWeek(\'' + metaKey + '\',' + JSON.stringify(c.name) + ',null)" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.15s;position:relative;min-height:140px;display:flex;flex-direction:column" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+      cardsHtml += '<div onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + c.name.replace(/'/g, "\\'") + '\',null)" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.15s;position:relative;min-height:140px;display:flex;flex-direction:column" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
       cardsHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
       cardsHtml += '<div class="client-avatar ' + css + '" style="width:32px;height:32px;font-size:0.65rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
       cardsHtml += '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</div>';
@@ -12164,9 +12164,9 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
 
     h += '<div style="padding:12px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:12px;justify-content:space-between">';
     h += '<div style="display:flex;gap:8px;align-items:center">';
-    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(' + JSON.stringify(metaKey) + ',' + JSON.stringify(clientName) + ',' + JSON.stringify(allWeeks[weekIdx - 1]) + ')" ' + (canPrev ? '' : 'disabled') + ' title="Semana anterior">‹</button>';
+    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + clientName.replace(/'/g, "\\'") + '\',\'' + (allWeeks[weekIdx - 1] || '') + '\')" ' + (canPrev ? '' : 'disabled') + ' title="Semana anterior">‹</button>';
     h += '<span style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);min-width:160px;text-align:center">' + _dashWeekLabel(weekKey) + '</span>';
-    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(' + JSON.stringify(metaKey) + ',' + JSON.stringify(clientName) + ',' + JSON.stringify(allWeeks[weekIdx + 1]) + ')" ' + (canNext ? '' : 'disabled') + ' title="Próxima semana">›</button>';
+    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + clientName.replace(/'/g, "\\'") + '\',\'' + (allWeeks[weekIdx + 1] || '') + '\')" ' + (canNext ? '' : 'disabled') + ' title="Próxima semana">›</button>';
     h += '</div>';
     h += '</div>';
 
