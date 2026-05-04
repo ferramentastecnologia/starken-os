@@ -4022,12 +4022,24 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
             <div id="dashWeekPostsList"></div>
           </div>
         </div>
-        <div class="card" style="margin-top:16px">
-          <div class="dash-card-head" style="margin-bottom:12px">
+        <div class="card" style="margin-top:16px" id="dashStoriesCard">
+          <div class="dash-card-head" style="margin-bottom:16px">
             <div class="card-title"><span class="mso">auto_stories</span> Stories Recorrentes</div>
-            <span id="dashStoriesProgress" style="font-size:0.75rem;font-weight:600;color:var(--text-secondary)"></span>
+            <div id="dashStoriesRingWrap" style="display:flex;align-items:center;gap:10px">
+              <svg id="dashStoriesRing" width="48" height="48" viewBox="0 0 48 48" style="flex-shrink:0">
+                <circle cx="24" cy="24" r="19" fill="none" stroke="var(--border-default,#e5e7eb)" stroke-width="5"/>
+                <circle id="dashStoriesRingFill" cx="24" cy="24" r="19" fill="none" stroke="#10b981" stroke-width="5"
+                  stroke-linecap="round" stroke-dasharray="0 120" stroke-dashoffset="-30"
+                  style="transition:stroke-dasharray 0.6s ease"/>
+                <text id="dashStoriesRingPct" x="24" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text-primary,#111827)">0%</text>
+              </svg>
+              <div>
+                <div id="dashStoriesCount" style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">0/0</div>
+                <div style="font-size:0.7rem;color:var(--text-secondary)">agendados esta semana</div>
+              </div>
+            </div>
           </div>
-          <div id="dashStoriesChecklist" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px"></div>
+          <div id="dashStoriesChecklist" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
         </div>
         <div class="card" id="dashPubFailCard" style="margin-top:16px;display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -11909,85 +11921,141 @@ function renderRecentSends() {
 // ── STORIES RECORRENTES CHECKLIST ──
 async function renderDashStoriesChecklist(activeClients) {
   var el = document.getElementById('dashStoriesChecklist');
-  var prog = document.getElementById('dashStoriesProgress');
   if (!el) return;
 
-  el.innerHTML = '<span style="color:var(--text-secondary);font-size:0.8rem">Carregando...</span>';
+  el.innerHTML = '<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-secondary);font-size:0.82rem"><span class="mso" style="animation:spin 1s linear infinite;display:inline-block;margin-right:6px">sync</span>Carregando stories...</div>';
 
   try {
-    // Busca grupos de stories recorrentes no Supabase
+    // Semana atual: segunda a domingo
+    var now = new Date();
+    var dayOfWeek = now.getDay(); // 0=dom, 1=seg...
+    var weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    weekStart.setHours(0,0,0,0);
+    var weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    weekEnd.setHours(23,59,59,999);
+    var weekStartISO = weekStart.toISOString();
+    var weekEndISO   = weekEnd.toISOString();
+
+    // Busca grupos de stories recorrentes
     var groups = await _sbQuery('content_groups', { select: 'id,name,client_id', filters: [] }) || [];
     var rsGroups = groups.filter(function(g) {
       return g.name && g.name.toUpperCase().includes('STORIES RECORRENTES');
     });
-
-    // Mapeia client_id → tem stories recorrentes
     var clientsWithStories = {};
-    rsGroups.forEach(function(g) { clientsWithStories[g.client_id] = true; });
+    rsGroups.forEach(function(g) { clientsWithStories[g.client_id] = g.id; });
 
-    // Busca attachments de recurring_story criados nesta semana
-    var now = new Date();
-    var weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay()); // domingo da semana
-    weekStart.setHours(0,0,0,0);
-    var weekStartISO = weekStart.toISOString();
-
-    var atts = [];
-    try {
-      atts = await _sbQuery('content_attachments', {
-        select: 'task_id,created_at',
-        filters: ['category=eq.recurring_story', 'created_at=gte.' + weekStartISO]
-      }) || [];
-    } catch(e) { /* sem attachments ainda */ }
-
-    // Busca tasks para mapear task_id → group_id
-    var taskIds = [...new Set(atts.map(function(a) { return a.task_id; }))];
-    var tasksWithUploads = {};
-    if (taskIds.length > 0) {
+    // Busca tasks de stories desta semana com status
+    var rsGroupIds = rsGroups.map(function(g){ return g.id; });
+    var weekTasks = [];
+    if (rsGroupIds.length > 0) {
       try {
-        var tasks = await _sbQuery('content_tasks', {
-          select: 'id,group_id',
-          filters: ['id=in.(' + taskIds.join(',') + ')']
+        weekTasks = await _sbQuery('content_tasks', {
+          select: 'id,group_id,status,due_date,title',
+          filters: [
+            'group_id=in.(' + rsGroupIds.join(',') + ')',
+            'due_date=gte.' + weekStartISO.slice(0,10),
+            'due_date=lte.' + weekEndISO.slice(0,10)
+          ]
         }) || [];
-        tasks.forEach(function(t) {
-          var g = rsGroups.find(function(g) { return g.id === t.group_id; });
-          if (g) tasksWithUploads[g.client_id] = true;
-        });
       } catch(e) {}
     }
 
-    // Renderiza checklist por cliente ativo
-    var clientStatuses = (typeof ctGetClientStatuses === 'function') ? ctGetClientStatuses() : {};
-    var metaClients = _metaClients || {};
+    // Mapeia client_id → { tasks, status agregado }
+    var clientTaskMap = {};
+    weekTasks.forEach(function(t) {
+      var g = rsGroups.find(function(g){ return g.id === t.group_id; });
+      if (!g) return;
+      if (!clientTaskMap[g.client_id]) clientTaskMap[g.client_id] = [];
+      clientTaskMap[g.client_id].push(t);
+    });
 
-    var done = 0, total = 0;
-    var html = '';
+    // Determina status por cliente
+    // agendado = tem task com status agendado/publicado; a-agendar = tem tasks mas não agendado; pendente = sem tasks
+    function getClientStoryStatus(tasks) {
+      if (!tasks || tasks.length === 0) return 'pendente';
+      var hasAgendado = tasks.some(function(t){ return t.status === 'agendado' || t.status === 'publicado'; });
+      if (hasAgendado) return 'agendado';
+      return 'a-agendar';
+    }
+
+    var done = 0, agendar = 0, total = 0;
+    var cardsHtml = '';
 
     activeClients.forEach(function(c) {
       var coTenant = c.company === 'Alpha' ? 'alpha' : 'starken';
       var metaKey = (typeof findMetaClientKey === 'function') ? findMetaClientKey(c.name, coTenant) : null;
       if (!metaKey) return;
-
-      // Só mostra clientes que TÊM grupo de stories recorrentes
       if (!clientsWithStories[metaKey]) return;
 
       total++;
-      var uploaded = !!tasksWithUploads[metaKey];
-      if (uploaded) done++;
+      var tasks = clientTaskMap[metaKey] || [];
+      var storyStatus = getClientStoryStatus(tasks);
+      if (storyStatus === 'agendado') done++;
+      else if (storyStatus === 'a-agendar') agendar++;
 
       var css = c.company === 'Starken' ? 'starken' : 'alpha';
-      html += '<div onclick="sidebarSelectClient(\'' + metaKey + '\')" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;border:1px solid ' + (uploaded ? 'var(--color-success-border)' : 'var(--border-default)') + ';background:' + (uploaded ? 'var(--color-success-bg)' : 'var(--bg-elevated)') + ';cursor:pointer;transition:all 0.15s" title="' + esc(c.name) + '">';
-      html += '<span class="mso" style="font-size:1rem;color:' + (uploaded ? 'var(--color-success)' : 'var(--text-tertiary)') + '">' + (uploaded ? 'check_circle' : 'radio_button_unchecked') + '</span>';
-      html += '<div class="client-avatar ' + css + '" style="width:20px;height:20px;font-size:0.5rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
-      html += '<span style="font-size:0.75rem;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">' + esc(c.name) + '</span>';
-      html += '</div>';
+
+      // Cores e ícones por status
+      var statusColor, statusBg, statusBorder, statusIcon, statusLabel;
+      if (storyStatus === 'agendado') {
+        statusColor = '#16a34a'; statusBg = '#f0fdf4'; statusBorder = '#86efac';
+        statusIcon = 'check_circle'; statusLabel = 'Agendado';
+      } else if (storyStatus === 'a-agendar') {
+        statusColor = '#d97706'; statusBg = '#fffbeb'; statusBorder = '#fcd34d';
+        statusIcon = 'schedule'; statusLabel = 'A Agendar';
+      } else {
+        statusColor = '#6b7280'; statusBg = 'var(--bg-elevated)'; statusBorder = 'var(--border-default)';
+        statusIcon = 'radio_button_unchecked'; statusLabel = 'Pendente';
+      }
+
+      // Mini barra de progresso dos dias da semana
+      var days = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+      var dayBars = '';
+      days.forEach(function(d, i) {
+        var dayDate = new Date(weekStart);
+        dayDate.setDate(weekStart.getDate() + i);
+        var dayStr = dayDate.toISOString().slice(0,10);
+        var dayTask = tasks.find(function(t){ return t.due_date && t.due_date.slice(0,10) === dayStr; });
+        var isToday = dayDate.toISOString().slice(0,10) === now.toISOString().slice(0,10);
+        var barColor = '#e5e7eb';
+        if (dayTask) {
+          if (dayTask.status === 'agendado' || dayTask.status === 'publicado') barColor = '#16a34a';
+          else barColor = '#f59e0b';
+        }
+        dayBars += '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">';
+        dayBars += '<div style="width:100%;height:6px;border-radius:3px;background:' + barColor + ';' + (isToday ? 'box-shadow:0 0 0 1.5px #6366f1' : '') + '"></div>';
+        dayBars += '<span style="font-size:0.55rem;color:var(--text-tertiary);font-weight:' + (isToday ? '700' : '500') + '">' + d + '</span>';
+        dayBars += '</div>';
+      });
+
+      cardsHtml += '<div onclick="sidebarSelectClient(\'' + metaKey + '\')" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s;position:relative" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+      cardsHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
+      cardsHtml += '<div class="client-avatar ' + css + '" style="width:28px;height:28px;font-size:0.6rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
+      cardsHtml += '<div style="flex:1;min-width:0"><div style="font-size:0.78rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</div>';
+      cardsHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:2px"><span class="mso" style="font-size:0.85rem;color:' + statusColor + '">' + statusIcon + '</span><span style="font-size:0.68rem;font-weight:600;color:' + statusColor + '">' + statusLabel + '</span></div></div>';
+      cardsHtml += '</div>';
+      cardsHtml += '<div style="display:flex;gap:3px;align-items:flex-end">' + dayBars + '</div>';
+      cardsHtml += '</div>';
     });
 
-    el.innerHTML = html || '<span style="color:var(--text-secondary);font-size:0.8rem">Nenhum cliente com Stories Recorrentes configurado</span>';
-    if (prog) prog.textContent = done + '/' + total + ' enviados esta semana';
+    el.innerHTML = cardsHtml || '<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-secondary);font-size:0.82rem">Nenhum cliente com Stories Recorrentes configurado</div>';
+
+    // Atualiza anel SVG
+    var circumference = 2 * Math.PI * 19; // ~119.4
+    var pct = total > 0 ? done / total : 0;
+    var fillLen = circumference * pct;
+    var ring = document.getElementById('dashStoriesRingFill');
+    var ringPct = document.getElementById('dashStoriesRingPct');
+    var countEl = document.getElementById('dashStoriesCount');
+    if (ring) ring.setAttribute('stroke-dasharray', fillLen.toFixed(1) + ' ' + circumference.toFixed(1));
+    if (ring) ring.setAttribute('stroke', pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#f59e0b' : '#6b7280');
+    if (ringPct) ringPct.textContent = Math.round(pct * 100) + '%';
+    if (countEl) countEl.textContent = done + '/' + total;
 
   } catch(e) {
-    el.innerHTML = '<span style="color:var(--text-secondary);font-size:0.8rem">Erro ao carregar: ' + e.message + '</span>';
+    el.innerHTML = '<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-secondary);font-size:0.82rem">Erro ao carregar: ' + e.message + '</div>';
   }
 }
 
@@ -11995,7 +12063,10 @@ var _dashPubErrorsCache = null; // { ts: number, items: [] }
 var _dashPubErrorsTTL = 3 * 60 * 1000; // 3 min
 
 async function renderDashPublishErrors() {
+  // Oculto do dashboard temporariamente — acesse em Publicações
   var card = document.getElementById('dashPubFailCard');
+  if (card) card.style.display = 'none';
+  return;
   var el = document.getElementById('dashPubErrors');
   if (!el) return;
 
