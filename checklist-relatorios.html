@@ -4039,7 +4039,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
               </div>
             </div>
           </div>
-          <div id="dashStoriesChecklist" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
+          <div id="dashStoriesChecklist" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px"></div>
         </div>
         <div class="card" id="dashPubFailCard" style="margin-top:16px;display:none">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -11987,7 +11987,6 @@ async function renderDashStoriesChecklist(activeClients) {
       var coTenant = c.company === 'Alpha' ? 'alpha' : 'starken';
       var metaKey = (typeof findMetaClientKey === 'function') ? findMetaClientKey(c.name, coTenant) : null;
       if (!metaKey) return;
-      if (!clientsWithStories[metaKey]) return;
 
       total++;
       var tasks = clientTaskMap[metaKey] || [];
@@ -12030,17 +12029,17 @@ async function renderDashStoriesChecklist(activeClients) {
         dayBars += '</div>';
       });
 
-      cardsHtml += '<div onclick="sidebarSelectClient(\'' + metaKey + '\')" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:10px;padding:12px 14px;cursor:pointer;transition:all 0.15s;position:relative" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.1)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
-      cardsHtml += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">';
-      cardsHtml += '<div class="client-avatar ' + css + '" style="width:28px;height:28px;font-size:0.6rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
-      cardsHtml += '<div style="flex:1;min-width:0"><div style="font-size:0.78rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</div>';
-      cardsHtml += '<div style="display:flex;align-items:center;gap:4px;margin-top:2px"><span class="mso" style="font-size:0.85rem;color:' + statusColor + '">' + statusIcon + '</span><span style="font-size:0.68rem;font-weight:600;color:' + statusColor + '">' + statusLabel + '</span></div></div>';
+      cardsHtml += '<div onclick="sidebarSelectClient(\'' + metaKey + '\')" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.15s;position:relative;min-height:140px;display:flex;flex-direction:column" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+      cardsHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
+      cardsHtml += '<div class="client-avatar ' + css + '" style="width:32px;height:32px;font-size:0.65rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
+      cardsHtml += '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</div>';
+      cardsHtml += '<div style="display:flex;align-items:center;gap:5px;margin-top:3px"><span class="mso" style="font-size:0.9rem;color:' + statusColor + '">' + statusIcon + '</span><span style="font-size:0.72rem;font-weight:600;color:' + statusColor + '">' + statusLabel + '</span></div></div>';
       cardsHtml += '</div>';
-      cardsHtml += '<div style="display:flex;gap:3px;align-items:flex-end">' + dayBars + '</div>';
+      cardsHtml += '<div style="display:flex;gap:3px;align-items:flex-end;margin-top:auto;flex-grow:1;align-items:flex-end">' + dayBars + '</div>';
       cardsHtml += '</div>';
     });
 
-    el.innerHTML = cardsHtml || '<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-secondary);font-size:0.82rem">Nenhum cliente com Stories Recorrentes configurado</div>';
+    el.innerHTML = cardsHtml || '<div style="grid-column:1/-1;padding:16px;text-align:center;color:var(--text-secondary);font-size:0.82rem">Nenhum cliente ativo</div>';
 
     // Atualiza anel SVG
     var circumference = 2 * Math.PI * 19; // ~119.4
