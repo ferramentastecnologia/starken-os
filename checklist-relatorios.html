@@ -12062,11 +12062,15 @@ async function renderDashStoriesChecklist(activeClients) {
 var _storiesModalState = { metaKey: null, clientName: null, weekKey: null };
 
 async function openStoriesModalWeek(metaKey, clientName, weekKey) {
-  // Se não passou weekKey, usa a semana atual
+  // Se não passou weekKey, usa a semana atual CORRETO
   if (!weekKey) {
-    weekKey = _dashGetCurrentWeekKey();
+    var now = new Date();
+    var currentWeekKey = _dashGetCurrentWeekKey();
+    // Force to load current week correctly
+    weekKey = currentWeekKey;
   }
   _storiesModalState = { metaKey: metaKey, clientName: clientName, weekKey: weekKey };
+  console.log('📅 Opening modal for week:', weekKey);
 
   var modal = document.getElementById('storiesModal');
   if (!modal) {
@@ -12255,12 +12259,19 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
           var icon = isAgendado ? 'check_circle' : 'schedule';
           var color = isAgendado ? '#16a34a' : '#d97706';
 
-          h += '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;transition:all 0.15s">';
-          h += '<span class="mso" style="color:' + color + ';font-size:22px;flex-shrink:0">' + icon + '</span>';
+          h += '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;transition:all 0.15s">';
+
+          // Checkbox/Check icon
+          h += '<input type="checkbox" id="task_' + t.id + '" ' + (isAgendado ? 'checked' : '') + ' onchange="markStoriesTaskStatus(\'' + t.id + '\', this.checked ? \'agendado\' : \'a-agendar\')" style="width:20px;height:20px;cursor:pointer;accent-color:' + color + '" />';
+
           h += '<div style="flex:1;min-width:0">';
-          h += '<div style="font-size:0.95rem;font-weight:600;color:var(--text-primary)">' + esc(t.name || 'Sem nome') + '</div>';
-          h += '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px;font-weight:500">' + (isAgendado ? '✓ Agendado' : '⏰ A agendar') + '</div>';
+          h += '<div style="font-size:0.92rem;font-weight:600;color:var(--text-primary)">' + esc(t.name || 'Sem nome') + '</div>';
+          h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:3px">' + (isAgendado ? '✓ Agendado' : '⏰ A agendar') + '</div>';
           h += '</div>';
+
+          // Status badge
+          h += '<span style="background:' + color + ';color:white;padding:4px 10px;border-radius:14px;font-size:0.68rem;font-weight:600;white-space:nowrap">' + (isAgendado ? 'Pronto' : 'Pendente') + '</span>';
+
           h += '</div>';
         });
 
@@ -12277,6 +12288,27 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
 
     h += '</div>';
 
+    // ── FOOTER COM AÇÕES ──
+    h += '<div style="padding:20px 32px;background:var(--bg-elevated);border-top:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between">';
+    var completedTasks = weekTasks.filter(function(t) { return t.status === 'agendado' || t.status === 'publicado'; }).length;
+    var taskProgress = total > 0 ? Math.round((completedTasks / total) * 100) : 0;
+
+    h += '<div style="display:flex;align-items:center;gap:16px">';
+    h += '<div style="font-size:0.9rem;color:var(--text-secondary)">';
+    h += '<span style="font-weight:700;color:var(--text-primary)">' + completedTasks + '/' + total + '</span> tarefas agendadas';
+    h += '</div>';
+    h += '<div style="width:120px;height:8px;background:var(--border-default);border-radius:4px;overflow:hidden">';
+    h += '<div style="width:' + taskProgress + '%;height:100%;background:' + (taskProgress === 100 ? '#16a34a' : taskProgress >= 50 ? '#f59e0b' : '#6b7280') + ';transition:width 0.3s"></div>';
+    h += '</div>';
+    h += '</div>';
+
+    if (total > 0) {
+      h += '<button onclick="showToast(\'✓ Semana organizada!\', \'success\'); document.getElementById(\\\'storiesModal\\\').style.display=\\\'none\\\'" style="background:' + (taskProgress === 100 ? '#16a34a' : '#d97706') + ';color:white;border:none;padding:10px 20px;border-radius:6px;font-weight:600;cursor:pointer;font-family:inherit">';
+      h += taskProgress === 100 ? '✓ Semana Completa' : '📋 Organizar Semana';
+      h += '</button>';
+    }
+    h += '</div>';
+
     content.innerHTML = h;
 
   } catch(e) {
@@ -12284,6 +12316,37 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
   }
 }
 
+
+// ── STORIES MODAL ACTIONS ──
+async function markStoriesTaskStatus(taskId, newStatus) {
+  try {
+    console.log('📝 Marking task', taskId, 'as', newStatus);
+
+    // Atualiza no Supabase
+    if (_supabase) {
+      var response = await _supabase
+        .from('content_tasks')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', taskId);
+
+      if (response.error) {
+        console.error('❌ Error updating task:', response.error);
+        showToast('Erro ao atualizar task', 'error');
+        return false;
+      }
+
+      console.log('✓ Task updated successfully');
+      showToast('Task marcada como ' + newStatus, 'success');
+
+      // Renderiza novamente o modal
+      await renderStoriesModalWeek(_storiesModalState.metaKey, _storiesModalState.clientName, _storiesModalState.weekKey);
+      return true;
+    }
+  } catch(e) {
+    console.error('❌ Error:', e);
+    return false;
+  }
+}
 
 var _dashPubErrorsCache = null; // { ts: number, items: [] }
 var _dashPubErrorsTTL = 3 * 60 * 1000; // 3 min
