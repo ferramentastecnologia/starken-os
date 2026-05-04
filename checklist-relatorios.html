@@ -6721,6 +6721,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const shownAt = _alertsShown[key]; // timestamp (ms) or true (legacy)
 
         // FAILED posts: alerta apenas uma vez (erros persistem no dashboard)
+        // DESABILITADO: notificações de falha foram desligadas
+        /*
         if (h.status === 'FAILED') {
           if (shownAt) return; // Já foi mostrado uma vez — não repete
           const platLabel = h.platform === 'ig' ? 'Instagram' : 'Facebook';
@@ -6739,6 +6741,7 @@ document.addEventListener('DOMContentLoaded', function() {
           });
           return;
         }
+        */
 
         if (shownAt) return; // posts não-FAILED: mostra só uma vez
 
