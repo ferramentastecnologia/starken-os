@@ -12029,7 +12029,7 @@ async function renderDashStoriesChecklist(activeClients) {
         dayBars += '</div>';
       });
 
-      cardsHtml += '<div onclick="openStoriesModal(\'' + metaKey + '\',' + JSON.stringify(c.name) + ')" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.15s;position:relative;min-height:140px;display:flex;flex-direction:column" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
+      cardsHtml += '<div onclick="openStoriesModalWeek(\'' + metaKey + '\',' + JSON.stringify(c.name) + ',null)" style="background:' + statusBg + ';border:1.5px solid ' + statusBorder + ';border-radius:12px;padding:16px 18px;cursor:pointer;transition:all 0.15s;position:relative;min-height:140px;display:flex;flex-direction:column" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.12)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
       cardsHtml += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
       cardsHtml += '<div class="client-avatar ' + css + '" style="width:32px;height:32px;font-size:0.65rem;flex-shrink:0">' + getInitials(c.name) + '</div>';
       cardsHtml += '<div style="flex:1;min-width:0"><div style="font-size:0.82rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.name) + '</div>';
@@ -12058,146 +12058,218 @@ async function renderDashStoriesChecklist(activeClients) {
   }
 }
 
-// ── STORIES MODAL ──
-async function openStoriesModal(metaKey, clientName) {
+// ── STORIES MODAL SEMANAL ──
+var _storiesModalState = { metaKey: null, clientName: null, weekKey: null };
+
+async function openStoriesModalWeek(metaKey, clientName, weekKey) {
+  // Se não passou weekKey, usa a semana atual
+  if (!weekKey) {
+    weekKey = _dashGetCurrentWeekKey();
+  }
+  _storiesModalState = { metaKey: metaKey, clientName: clientName, weekKey: weekKey };
+
   var modal = document.getElementById('storiesModal');
   if (!modal) {
-    // Criar modal se não existir
     modal = document.createElement('div');
     modal.id = 'storiesModal';
     modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;z-index:9999;align-items:center;justify-content:center';
-    modal.innerHTML = '<div id="storiesModalContent" style="background:var(--bg-primary);border-radius:12px;width:90%;max-width:800px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 25px rgba(0,0,0,0.15)"></div>';
+    modal.innerHTML = '<div id="storiesModalContent" style="background:var(--bg-primary);border-radius:12px;width:95%;max-width:1000px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 25px rgba(0,0,0,0.15);overflow:hidden"></div>';
     document.body.appendChild(modal);
   }
 
   var content = document.getElementById('storiesModalContent');
-  content.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-secondary)"><span class="mso" style="animation:spin 1s linear infinite;display:inline-block;margin-right:8px;font-size:20px">sync</span>Carregando...</div>';
+  content.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-secondary)"><span class="mso" style="animation:spin 1s linear infinite;display:inline-block;margin-right:8px;font-size:24px">sync</span>Carregando...</div>';
   modal.style.display = 'flex';
 
+  await renderStoriesModalWeek(metaKey, clientName, weekKey);
+}
+
+async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
+  var content = document.getElementById('storiesModalContent');
+
   try {
-    // Busca grupos de stories recorrentes
+    // Calcular range da semana (segunda a domingo)
+    var parts = weekKey.split('-S');
+    var monthKey = parts[0];
+    var weekNum = parseInt(parts[1]);
+    var mInfo = MONTHS_2026.find(function(m) { return m.key === monthKey; });
+    if (!mInfo) throw new Error('Mês não encontrado');
+
+    var weeks = getMonthWeeks(mInfo.year, mInfo.month);
+    var wInfo = weeks.find(function(w) { return w.week === weekNum; });
+    if (!wInfo) throw new Error('Semana não encontrada');
+
+    var weekStart = new Date(wInfo.periodStartDate);
+    var weekEnd = new Date(wInfo.periodEndDate);
+    var weekStartISO = weekStart.toISOString();
+    var weekEndISO = weekEnd.toISOString();
+
+    // Busca grupos de stories recorrentes para este cliente
     var groups = await _sbQuery('content_groups', { select: 'id,name,client_id', filters: [] }) || [];
     var rsGroups = groups.filter(function(g) {
-      return g.name && g.name.toUpperCase().includes('STORIES RECORRENTES');
+      return g.name && g.name.toUpperCase().includes('STORIES RECORRENTES') && g.client_id === metaKey;
     });
-    var rsGroupIds = rsGroups.filter(function(g) { return g.client_id === metaKey; }).map(function(g){ return g.id; });
+    var rsGroupIds = rsGroups.map(function(g){ return g.id; });
 
-    var allTasks = [];
+    var weekTasks = [];
     if (rsGroupIds.length > 0) {
       try {
-        allTasks = await _sbQuery('content_tasks', {
+        weekTasks = await _sbQuery('content_tasks', {
           select: 'id,group_id,status,due_date,title',
-          filters: ['group_id=in.(' + rsGroupIds.join(',') + ')']
+          filters: [
+            'group_id=in.(' + rsGroupIds.join(',') + ')',
+            'due_date=gte.' + weekStartISO.slice(0,10),
+            'due_date=lte.' + weekEndISO.slice(0,10)
+          ]
         }) || [];
       } catch(e) {}
     }
 
-    // Categoriza tasks por status
-    var agendar = [], agendado = [], pendente = [];
-    allTasks.forEach(function(t) {
-      if (t.status === 'agendado' || t.status === 'publicado') {
-        agendado.push(t);
-      } else if (t.status === 'a-agendar') {
-        agendar.push(t);
-      } else {
-        pendente.push(t);
+    // Mapeia tasks por dia da semana
+    var tasksByDay = {};
+    var days = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    days.forEach(function(d) { tasksByDay[d] = []; });
+
+    weekTasks.forEach(function(t) {
+      var d = new Date(t.due_date);
+      var dayOfWeek = d.getDay(); // 0=dom, 1=seg...
+      var dayKey = dayOfWeek === 0 ? 'dom' : days[dayOfWeek - 1];
+      tasksByDay[dayKey].push(t);
+    });
+
+    // Conta por status para a semana toda
+    var agendado = 0, agendar = 0;
+    weekTasks.forEach(function(t) {
+      if (t.status === 'agendado' || t.status === 'publicado') agendado++;
+      else if (t.status === 'a-agendar') agendar++;
+    });
+    var total = weekTasks.length;
+    var pct = total > 0 ? agendado / total : 0;
+
+    // ── HEADER ──
+    var h = '';
+    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border-default)">';
+    h += '<div>';
+    h += '<div style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">' + esc(clientName) + '</div>';
+    h += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Stories Recorrentes — ' + _dashWeekLabel(weekKey) + '</div>';
+    h += '</div>';
+    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text-secondary);line-height:1">&times;</button>';
+    h += '</div>';
+
+    // ── WEEK NAVIGATION ──
+    var allWeeks = _dashAllWeekKeys();
+    var weekIdx = allWeeks.indexOf(weekKey);
+    var canPrev = weekIdx > 0;
+    var canNext = weekIdx < allWeeks.length - 1;
+
+    h += '<div style="padding:12px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:12px;justify-content:space-between">';
+    h += '<div style="display:flex;gap:8px;align-items:center">';
+    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(' + JSON.stringify(metaKey) + ',' + JSON.stringify(clientName) + ',' + JSON.stringify(allWeeks[weekIdx - 1]) + ')" ' + (canPrev ? '' : 'disabled') + ' title="Semana anterior">‹</button>';
+    h += '<span style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);min-width:160px;text-align:center">' + _dashWeekLabel(weekKey) + '</span>';
+    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(' + JSON.stringify(metaKey) + ',' + JSON.stringify(clientName) + ',' + JSON.stringify(allWeeks[weekIdx + 1]) + ')" ' + (canNext ? '' : 'disabled') + ' title="Próxima semana">›</button>';
+    h += '</div>';
+    h += '</div>';
+
+    // ── PROGRESS INDICATOR ──
+    h += '<div style="padding:16px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:16px">';
+    var circumference = 2 * Math.PI * 18;
+    var fillLen = circumference * pct;
+    var ringColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#f59e0b' : '#6b7280';
+    h += '<svg width="50" height="50" viewBox="0 0 40 40">';
+    h += '<circle cx="20" cy="20" r="18" fill="none" stroke="var(--border-default)" stroke-width="3"/>';
+    h += '<circle cx="20" cy="20" r="18" fill="none" stroke="' + ringColor + '" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + fillLen.toFixed(1) + ' ' + circumference.toFixed(1) + '" stroke-dashoffset="-14.14" style="transition:stroke-dasharray 0.5s ease"/>';
+    h += '<text x="20" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-primary)">' + Math.round(pct * 100) + '%</text>';
+    h += '</svg>';
+    h += '<div>';
+    h += '<div style="font-size:0.95rem;font-weight:700;color:var(--text-primary)">' + agendado + ' de ' + total + ' agendadas</div>';
+    h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + agendar + ' a agendar</div>';
+    h += '</div>';
+    h += '</div>';
+
+    // ── DAILY BREAKDOWN ──
+    h += '<div style="padding:20px 24px;overflow-x:auto;border-bottom:1px solid var(--border-default)">';
+    h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px;min-width:700px">';
+
+    var dayLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    var dayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    var now = new Date();
+    var todayISO = now.toISOString().slice(0,10);
+
+    dayKeys.forEach(function(dayKey, idx) {
+      var dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + idx);
+      var dayISO = dayDate.toISOString().slice(0,10);
+      var isToday = dayISO === todayISO;
+      var dayTasks = tasksByDay[dayKey] || [];
+      var dayAgendado = dayTasks.filter(function(t) { return t.status === 'agendado' || t.status === 'publicado'; }).length;
+      var dayAgendar = dayTasks.filter(function(t) { return t.status === 'a-agendar'; }).length;
+
+      var dayBg = dayTasks.length === 0 ? 'var(--bg-elevated)' : dayAgendado > 0 ? '#f0fdf4' : '#fffbeb';
+      var dayBorder = dayTasks.length === 0 ? 'var(--border-default)' : dayAgendado > 0 ? '#86efac' : '#fcd34d';
+
+      h += '<div style="border:1.5px solid ' + dayBorder + ';border-radius:8px;padding:12px;background:' + dayBg + ';text-align:center;' + (isToday ? 'box-shadow:0 0 0 2px #6366f1' : '') + '">';
+      h += '<div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:8px">' + dayLabels[idx] + '</div>';
+      h += '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary)">' + dayTasks.length + '</div>';
+      if (dayTasks.length > 0) {
+        h += '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px">';
+        if (dayAgendado > 0) h += '<span style="color:#16a34a">✓ ' + dayAgendado + '</span> ';
+        if (dayAgendar > 0) h += '<span style="color:#d97706">⏰ ' + dayAgendar + '</span>';
+        h += '</div>';
+      }
+      h += '</div>';
+    });
+
+    h += '</div>';
+    h += '</div>';
+
+    // ── TASK LIST BY DAY ──
+    h += '<div style="flex:1;overflow-y:auto;padding:20px 24px">';
+
+    dayKeys.forEach(function(dayKey, idx) {
+      var dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + idx);
+      var dayTasks = tasksByDay[dayKey] || [];
+
+      if (dayTasks.length > 0) {
+        h += '<div style="margin-bottom:24px">';
+        h += '<div style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">' + dayLabels[idx] + ' (' + dayDate.toLocaleDateString('pt-BR') + ')</div>';
+
+        dayTasks.forEach(function(t) {
+          var isAgendado = t.status === 'agendado' || t.status === 'publicado';
+          var bg = isAgendado ? '#f0fdf4' : '#fffbeb';
+          var border = isAgendado ? '#86efac' : '#fcd34d';
+          var icon = isAgendado ? 'check_circle' : 'schedule';
+          var color = isAgendado ? '#16a34a' : '#d97706';
+
+          h += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
+          h += '<span class="mso" style="color:' + color + ';font-size:18px;flex-shrink:0">' + icon + '</span>';
+          h += '<div style="flex:1;min-width:0">';
+          h += '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary)">' + esc(t.title || 'Sem título') + '</div>';
+          h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + (isAgendado ? 'Agendado' : 'A agendar') + '</div>';
+          h += '</div>';
+          h += '</div>';
+        });
+
+        h += '</div>';
       }
     });
 
-    var total = allTasks.length;
-    var doneCount = agendado.length;
+    if (total === 0) {
+      h += '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary)">';
+      h += '<span class="mso" style="display:block;font-size:40px;margin-bottom:12px;opacity:0.4">inbox</span>';
+      h += '<div>Nenhuma story configurada para esta semana</div>';
+      h += '</div>';
+    }
 
-    var h = '';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border-default)">';
-    h += '<div style="font-size:1.2rem;font-weight:700;color:var(--text-primary)">' + esc(clientName) + ' - Stories Recorrentes</div>';
-    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-secondary)">&times;</button>';
-    h += '</div>';
-
-    // Status indicator
-    h += '<div style="padding:16px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:12px">';
-    h += '<svg width="40" height="40" viewBox="0 0 40 40">';
-    h += '<circle cx="20" cy="20" r="18" fill="none" stroke="var(--border-default)" stroke-width="3"/>';
-    var circumference = 2 * Math.PI * 18;
-    var pct = total > 0 ? doneCount / total : 0;
-    var fillLen = circumference * pct;
-    var ringColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#f59e0b' : '#6b7280';
-    h += '<circle cx="20" cy="20" r="18" fill="none" stroke="' + ringColor + '" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + fillLen.toFixed(1) + ' ' + circumference.toFixed(1) + '" stroke-dashoffset="-14.14"/>';
-    h += '<text x="20" y="24" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text-primary)">' + Math.round(pct * 100) + '%</text>';
-    h += '</svg>';
-    h += '<div>';
-    h += '<div style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">' + doneCount + '/' + total + '</div>';
-    h += '<div style="font-size:0.75rem;color:var(--text-secondary)">agendadas</div>';
-    h += '</div>';
-    h += '</div>';
-
-    // Filter chips
-    h += '<div style="padding:16px 24px;border-bottom:1px solid var(--border-default);display:flex;gap:8px;flex-wrap:wrap">';
-    h += '<button class="dash-filter-chip active" onclick="this.parentElement.querySelectorAll(\'.dash-filter-chip\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\');storiesModalShowGroup(\'all\',\'' + metaKey + '\')" data-group="all">Todos <span class="chip-ct">' + total + '</span></button>';
-    h += '<button class="dash-filter-chip" onclick="this.parentElement.querySelectorAll(\'.dash-filter-chip\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\');storiesModalShowGroup(\'agendado\',\'' + metaKey + '\')" data-group="agendado">Agendados <span class="chip-ct">' + agendado.length + '</span></button>';
-    h += '<button class="dash-filter-chip" onclick="this.parentElement.querySelectorAll(\'.dash-filter-chip\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\');storiesModalShowGroup(\'agendar\',\'' + metaKey + '\')" data-group="agendar">A Agendar <span class="chip-ct">' + agendar.length + '</span></button>';
-    h += '<button class="dash-filter-chip" onclick="this.parentElement.querySelectorAll(\'.dash-filter-chip\').forEach(b=>b.classList.remove(\'active\'));this.classList.add(\'active\');storiesModalShowGroup(\'pendente\',\'' + metaKey + '\')" data-group="pendente">Sem Tasks <span class="chip-ct">' + pendente.length + '</span></button>';
-    h += '</div>';
-
-    // Task list
-    h += '<div id="storiesTasksList" style="flex:1;overflow-y:auto;padding:16px 24px">';
-    h += renderStoriesTaskList('all', agendado, agendar, pendente, total);
     h += '</div>';
 
     content.innerHTML = h;
 
   } catch(e) {
-    content.innerHTML = '<div style="padding:24px;text-align:center;color:#ef4444">Erro ao carregar: ' + e.message + '</div>';
+    content.innerHTML = '<div style="padding:24px;text-align:center;color:#ef4444"><div style="font-weight:700;margin-bottom:8px">Erro ao carregar</div>' + e.message + '</div>';
   }
 }
 
-function renderStoriesTaskList(filter, agendado, agendar, pendente, total) {
-  var h = '';
-  var showAll = (filter === 'all');
-
-  if ((showAll || filter === 'agendado') && agendado.length > 0) {
-    h += '<div style="margin-bottom:20px">';
-    h += '<div style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">Agendadas (' + agendado.length + ')</div>';
-    agendado.forEach(function(t) {
-      h += '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
-      h += '<span class="mso" style="color:#16a34a;font-size:18px;flex-shrink:0">check_circle</span>';
-      h += '<div style="flex:1;min-width:0">';
-      h += '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.title || 'Sem título') + '</div>';
-      h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + (t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : 'Sem data') + '</div>';
-      h += '</div>';
-      h += '</div>';
-    });
-    h += '</div>';
-  }
-
-  if ((showAll || filter === 'agendar') && agendar.length > 0) {
-    h += '<div style="margin-bottom:20px">';
-    h += '<div style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">A Agendar (' + agendar.length + ')</div>';
-    agendar.forEach(function(t) {
-      h += '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
-      h += '<span class="mso" style="color:#d97706;font-size:18px;flex-shrink:0">schedule</span>';
-      h += '<div style="flex:1;min-width:0">';
-      h += '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(t.title || 'Sem título') + '</div>';
-      h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + (t.due_date ? new Date(t.due_date).toLocaleDateString('pt-BR') : 'Sem data') + '</div>';
-      h += '</div>';
-      h += '</div>';
-    });
-    h += '</div>';
-  }
-
-  if (total === 0 || ((showAll || filter === 'pendente') && agendado.length === 0 && agendar.length === 0)) {
-    h += '<div style="text-align:center;padding:40px 20px;color:var(--text-secondary);font-size:0.9rem">';
-    h += '<span class="mso" style="display:block;font-size:32px;margin-bottom:12px;opacity:0.5">inbox</span>';
-    h += total === 0 ? 'Nenhuma story configurada para este cliente' : 'Nenhuma task neste filtro';
-    h += '</div>';
-  }
-
-  return h;
-}
-
-function storiesModalShowGroup(filter, metaKey) {
-  // Placeholder - será implementado para filtrar a lista
-  console.log('Filter:', filter);
-}
 
 var _dashPubErrorsCache = null; // { ts: number, items: [] }
 var _dashPubErrorsTTL = 3 * 60 * 1000; // 3 min
