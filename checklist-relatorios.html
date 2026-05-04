@@ -4041,17 +4041,6 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           </div>
           <div id="dashStoriesChecklist" style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px"></div>
         </div>
-        <div class="card" id="dashPubFailCard" style="margin-top:16px;display:none">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <div class="card-title" style="margin:0"><span class="mso" style="color:#ef4444">cancel</span> Falhas de Publicação</div>
-            <button onclick="dashShowAllPubErrors()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.72rem;cursor:pointer;color:var(--text-secondary);font-family:inherit">Ver todas</button>
-          </div>
-          <div id="dashPubErrors"></div>
-        </div>
-        <div class="card" style="margin-top:16px">
-          <div class="card-title" style="margin-bottom:14px">Últimos Envios</div>
-          <div id="recentSends"></div>
-        </div>
         <div id="emImplementations"></div>
       </div>
 
@@ -10222,15 +10211,13 @@ function renderDashboard() {
 
   // Renderiza imediatamente o que não precisa do Supabase
   renderDashWeekCronoList(cronoWk, active);
-  renderRecentSends();
 
   // Queries Supabase com delay sequencial para não sobrecarregar o servidor
   renderContentProgress('weeklyProgress', wk, active, 'weekly');
   setTimeout(function() { renderContentProgress('monthlyProgress', mk, active, 'monthly'); }, 400);
   setTimeout(function() { renderDashWeekPosts(wk); }, 800);
   setTimeout(function() { renderOperationalScore(mk, active); }, 1200);
-  setTimeout(function() { renderDashPublishErrors(); }, 1600);
-  setTimeout(function() { renderDashStoriesChecklist(active); }, 2000);
+  setTimeout(function() { renderDashStoriesChecklist(active); }, 1600);
 
   // Emerald-only enhancements (hero, bento grid, implementations table)
   try { emDashRender(active, starken, alpha, wGen, wSent, wPending, mk, cronoWk); } catch(e) { console.warn('emerald dash error', e); }
@@ -11848,74 +11835,6 @@ window.limparCache = function() {
 };
 
 // Recent sends from Supabase cronograma_status cache
-function renderRecentSends() {
-  var el = document.getElementById('recentSends');
-  if (!el) return;
-
-  // Collect recent entries from _cronogramaStatusCache
-  var recentItems = [];
-  Object.keys(_cronogramaStatusCache).forEach(function(key) {
-    // Skip UUID keys (only use clientId_periodKey format)
-    if (key.includes('_') && !key.match(/^[0-9a-f]{8}-/)) {
-      var entry = _cronogramaStatusCache[key];
-      if (entry && (entry.status >= 1 || entry.generated_at)) {
-        var clientId = key.split('_')[0];
-        var periodKey = key.substring(clientId.length + 1);
-        var c = data.clients.find(function(x) { return x.id === clientId; });
-        recentItems.push({
-          name: c ? c.name : clientId,
-          company: c ? c.company : '',
-          status: entry.status || 0,
-          date: entry.sent_date || entry.generated_at || entry.updated_at,
-          periodKey: periodKey
-        });
-      }
-    }
-  });
-
-  // Also add from localStorage reports for non-sched-weekly types
-  data.reports.forEach(function(r) {
-    if (r.type === 'sched-weekly') return; // already from Supabase
-    if (r.status >= 1) {
-      var c = data.clients.find(function(x) { return x.id === r.clientId; });
-      recentItems.push({
-        name: c ? c.name : '(Removido)',
-        company: c ? c.company : '',
-        status: r.status || 0,
-        date: r.sentDate || r.createdAt,
-        periodKey: r.period,
-        type: r.type
-      });
-    }
-  });
-
-  // Sort by date descending, take 8
-  recentItems.sort(function(a,b) {
-    var da = a.date ? new Date(a.date).getTime() : 0;
-    var db = b.date ? new Date(b.date).getTime() : 0;
-    return db - da;
-  });
-  var recent = recentItems.slice(0, 8);
-
-  if (!recent.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Nenhum registro recente.</p>'; return; }
-
-  var rh = '';
-  for (var i = 0; i < recent.length; i++) {
-    var r = recent[i];
-    var co = r.company;
-    var typeL = r.type === 'monthly' ? 'Mensal' : r.type === 'weekly' ? 'Semanal' : 'Crono';
-    var dateStr = r.date ? new Date(r.date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    var statusLabel = r.status === 2 ? 'Enviado' : r.status >= 1 ? 'Gerado' : 'Pendente';
-    var statusColor = r.status === 2 ? '#22c55e' : r.status >= 1 ? '#3b82f6' : '#f59e0b';
-    rh += '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border-light)">';
-    rh += '<div class="client-avatar ' + (co === 'Starken' ? 'starken' : 'alpha') + '" style="width:30px;height:30px;font-size:0.65rem">' + getInitials(r.name) + '</div>';
-    rh += '<div style="flex:1"><span style="font-weight:600;font-size:0.85rem">' + esc(r.name) + '</span> <span style="font-size:0.72rem;color:var(--text-muted)">' + typeL + ' - ' + r.periodKey + '</span></div>';
-    rh += '<span style="font-size:0.72rem;font-weight:600;color:' + statusColor + '">' + statusLabel + '</span>';
-    rh += '<span style="font-size:0.75rem;color:var(--text-muted)">' + dateStr + '</span>';
-    rh += '</div>';
-  }
-  el.innerHTML = rh;
-}
 
 // ── Publish Failures Widget ──────────────────────────────────────────────────
 // ── STORIES RECORRENTES CHECKLIST ──
@@ -12346,118 +12265,6 @@ async function markStoriesTaskStatus(taskId, newStatus) {
     console.error('❌ Error:', e);
     return false;
   }
-}
-
-var _dashPubErrorsCache = null; // { ts: number, items: [] }
-var _dashPubErrorsTTL = 3 * 60 * 1000; // 3 min
-
-async function renderDashPublishErrors() {
-  // Oculto do dashboard temporariamente — acesse em Publicações
-  var card = document.getElementById('dashPubFailCard');
-  if (card) card.style.display = 'none';
-  return;
-  var el = document.getElementById('dashPubErrors');
-  if (!el) return;
-
-  // Use cache if fresh
-  var now = Date.now();
-  if (_dashPubErrorsCache && (now - _dashPubErrorsCache.ts) < _dashPubErrorsTTL) {
-    _renderPubErrorsList(el, card, _dashPubErrorsCache.items);
-    return;
-  }
-
-  try {
-    var cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
-    // Use _sbQuery which returns raw array (queryProxy response format)
-    var histItems = await _sbQuery('publish_history', { select: '*', filters: ['status=eq.FAILED', 'created_at=gte.' + cutoff], order: 'created_at.desc', limit: 30 }) || [];
-    var rawQueue = await _sbQuery('publish_queue', { select: '*', filters: ['status=eq.FAILED', 'created_at=gte.' + cutoff], order: 'created_at.desc', limit: 20 }) || [];
-    var qItems = rawQueue.map(function(q) {
-      return { id: q.id, client_name: q.client_name, client_key: q.client_key, platform: q.platform, error_message: q.error_message, scheduled_for: q.scheduled_for, created_at: q.created_at, status: 'FAILED', from_queue: true, task_id: q.task_id };
-    });
-
-    // Merge, deduplicate by task_id+platform
-    var seen = new Set();
-    var merged = [];
-    histItems.concat(qItems).forEach(function(item) {
-      var key = (item.task_id || '') + '_' + (item.platform || '') + '_' + (item.created_at || '').slice(0, 16);
-      if (!seen.has(key)) { seen.add(key); merged.push(item); }
-    });
-    merged.sort(function(a, b) { return new Date(b.created_at) - new Date(a.created_at); });
-
-    _dashPubErrorsCache = { ts: Date.now(), items: merged };
-    _renderPubErrorsList(el, card, merged);
-  } catch(e) {
-    console.warn('renderDashPublishErrors error:', e);
-  }
-}
-
-function _renderPubErrorsList(el, card, items) {
-  if (!items || !items.length) {
-    if (card) card.style.display = 'none';
-    return;
-  }
-  if (card) card.style.display = '';
-
-  var recent = items.slice(0, 5);
-  var h = '';
-  recent.forEach(function(f) {
-    var platLabel = f.platform === 'ig' || f.platform === 'instagram' ? 'Instagram' : 'Facebook';
-    var platColor = f.platform === 'ig' || f.platform === 'instagram' ? '#e1306c' : '#1877f2';
-    var platIcon = f.platform === 'ig' || f.platform === 'instagram' ? 'photo_camera' : 'facebook';
-    var dateStr = f.created_at ? new Date(f.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    var errMsg = (f.error_message || '').slice(0, 80) + ((f.error_message || '').length > 80 ? '…' : '');
-    var retryHtml = (f.id && typeof pubHistRetry === 'function') ? '<button onclick="pubHistRetry(' + JSON.stringify(f.id) + ')" style="background:none;border:1px solid #ef4444;border-radius:5px;padding:2px 7px;font-size:0.68rem;color:#ef4444;cursor:pointer;font-family:inherit;flex-shrink:0">Retry</button>' : '';
-    h += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-light)">';
-    h += '<span class="mso" style="color:' + platColor + ';font-size:1rem">' + platIcon + '</span>';
-    h += '<div style="flex:1;min-width:0">';
-    h += '<span style="font-weight:600;font-size:0.83rem">' + esc(f.client_name || f.client_key || '?') + '</span>';
-    h += '<span style="font-size:0.7rem;color:#94a3b8;margin-left:5px">' + platLabel + '</span>';
-    if (errMsg) h += '<div style="font-size:0.7rem;color:#ef4444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">' + esc(errMsg) + '</div>';
-    h += '</div>';
-    h += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">';
-    h += '<span style="font-size:0.68rem;color:var(--text-muted)">' + dateStr + '</span>';
-    h += retryHtml;
-    h += '</div>';
-    h += '</div>';
-  });
-  if (items.length > 5) {
-    h += '<div style="text-align:center;padding:8px 0 0;font-size:0.75rem;color:var(--text-muted)">+ ' + (items.length - 5) + ' outras falhas nos últimos 30 dias</div>';
-  }
-  el.innerHTML = h;
-}
-
-function dashShowAllPubErrors() {
-  var items = (_dashPubErrorsCache && _dashPubErrorsCache.items) || [];
-  if (!items.length) return showToast('Nenhuma falha de publicação nos últimos 30 dias', 'success');
-  var modal = document.createElement('div');
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99990;display:flex;align-items:center;justify-content:center;padding:20px';
-  modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
-  var box = document.createElement('div');
-  box.style.cssText = 'background:var(--bg-surface,#1e293b);border-radius:14px;padding:24px;max-width:620px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.4)';
-  var hdr = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
-  hdr += '<div style="font-size:1rem;font-weight:700;color:#ef4444"><span class="mso">cancel</span> Falhas de Publicação — últimos 30 dias (' + items.length + ')</div>';
-  hdr += '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-muted);line-height:1">×</button>';
-  hdr += '</div>';
-  var rows = '';
-  items.forEach(function(f) {
-    var platLabel = f.platform === 'ig' || f.platform === 'instagram' ? 'IG' : 'FB';
-    var platColor = f.platform === 'ig' || f.platform === 'instagram' ? '#e1306c' : '#1877f2';
-    var dateStr = f.created_at ? new Date(f.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    var errMsg = f.error_message || 'Erro desconhecido';
-    var retryBtn = (f.id && typeof pubHistRetry === 'function') ? '<button onclick="pubHistRetry(' + JSON.stringify(f.id) + ')" style="background:none;border:1px solid #ef4444;border-radius:5px;padding:2px 8px;font-size:0.68rem;color:#ef4444;cursor:pointer;font-family:inherit">Retry</button>' : '';
-    rows += '<div style="padding:10px;border-radius:8px;background:var(--bg-elevated,rgba(239,68,68,0.06));border:1px solid rgba(239,68,68,0.2);margin-bottom:8px">';
-    rows += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-    rows += '<span style="font-weight:700;font-size:0.85rem">' + esc(f.client_name || f.client_key || '?') + '</span>';
-    rows += '<span style="font-size:0.7rem;font-weight:700;color:' + platColor + ';padding:1px 6px;border-radius:4px;border:1px solid ' + platColor + '">' + platLabel + '</span>';
-    rows += '<span style="font-size:0.72rem;color:var(--text-muted);margin-left:auto">' + dateStr + '</span>';
-    rows += retryBtn;
-    rows += '</div>';
-    rows += '<div style="font-size:0.75rem;color:#fca5a5">' + esc(errMsg) + '</div>';
-    rows += '</div>';
-  });
-  box.innerHTML = hdr + '<div style="overflow-y:auto;flex:1">' + rows + '</div>';
-  modal.appendChild(box);
-  document.body.appendChild(modal);
 }
 
 // Agendamentos & Publicações da Semana
