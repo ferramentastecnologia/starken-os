@@ -12072,8 +12072,8 @@ async function openStoriesModalWeek(metaKey, clientName, weekKey) {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'storiesModal';
-    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;z-index:9999;align-items:center;justify-content:center';
-    modal.innerHTML = '<div id="storiesModalContent" style="background:var(--bg-primary);border-radius:12px;width:95%;max-width:1000px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 25px rgba(0,0,0,0.15);overflow:hidden"></div>';
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:none;z-index:9999;align-items:center;justify-content:center;padding:20px';
+    modal.innerHTML = '<div id="storiesModalContent" style="background:var(--bg-primary);border-radius:12px;width:100%;max-width:1200px;height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 25px rgba(0,0,0,0.15);overflow:hidden"></div>';
     document.body.appendChild(modal);
   }
 
@@ -12148,12 +12148,13 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
 
     // ── HEADER ──
     var h = '';
-    h += '<div style="display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid var(--border-default)">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:24px 32px;border-bottom:1px solid var(--border-default)">';
     h += '<div>';
-    h += '<div style="font-size:1.1rem;font-weight:700;color:var(--text-primary)">' + esc(clientName) + '</div>';
-    h += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">Stories Recorrentes — ' + _dashWeekLabel(weekKey) + '</div>';
+    h += '<div style="font-size:1.3rem;font-weight:700;color:var(--text-primary)">' + esc(clientName) + '</div>';
+    h += '<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;font-weight:500">Stories Recorrentes</div>';
+    h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + _dashWeekLabel(weekKey) + '</div>';
     h += '</div>';
-    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="background:none;border:none;font-size:28px;cursor:pointer;color:var(--text-secondary);line-height:1">&times;</button>';
+    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="background:none;border:none;font-size:32px;cursor:pointer;color:var(--text-secondary);line-height:1;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center">&times;</button>';
     h += '</div>';
 
     // ── WEEK NAVIGATION ──
@@ -12171,24 +12172,24 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
     h += '</div>';
 
     // ── PROGRESS INDICATOR ──
-    h += '<div style="padding:16px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:16px">';
+    h += '<div style="padding:24px 32px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:24px">';
     var circumference = 2 * Math.PI * 18;
     var fillLen = circumference * pct;
     var ringColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#f59e0b' : '#6b7280';
-    h += '<svg width="50" height="50" viewBox="0 0 40 40">';
+    h += '<svg width="60" height="60" viewBox="0 0 40 40" style="flex-shrink:0">';
     h += '<circle cx="20" cy="20" r="18" fill="none" stroke="var(--border-default)" stroke-width="3"/>';
     h += '<circle cx="20" cy="20" r="18" fill="none" stroke="' + ringColor + '" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + fillLen.toFixed(1) + ' ' + circumference.toFixed(1) + '" stroke-dashoffset="-14.14" style="transition:stroke-dasharray 0.5s ease"/>';
-    h += '<text x="20" y="24" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-primary)">' + Math.round(pct * 100) + '%</text>';
+    h += '<text x="20" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-primary)">' + Math.round(pct * 100) + '%</text>';
     h += '</svg>';
     h += '<div>';
-    h += '<div style="font-size:0.95rem;font-weight:700;color:var(--text-primary)">' + agendado + ' de ' + total + ' agendadas</div>';
-    h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + agendar + ' a agendar</div>';
+    h += '<div style="font-size:1rem;font-weight:700;color:var(--text-primary)">' + agendado + ' de ' + total + ' agendadas</div>';
+    h += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">' + agendar + ' a agendar</div>';
     h += '</div>';
     h += '</div>';
 
     // ── DAILY BREAKDOWN ──
-    h += '<div style="padding:20px 24px;overflow-x:auto;border-bottom:1px solid var(--border-default)">';
-    h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:12px;min-width:700px">';
+    h += '<div style="padding:24px;border-bottom:1px solid var(--border-default)">';
+    h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:16px">';
 
     var dayLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
     var dayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
@@ -12207,13 +12208,14 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
       var dayBg = dayTasks.length === 0 ? 'var(--bg-elevated)' : dayAgendado > 0 ? '#f0fdf4' : '#fffbeb';
       var dayBorder = dayTasks.length === 0 ? 'var(--border-default)' : dayAgendado > 0 ? '#86efac' : '#fcd34d';
 
-      h += '<div style="border:1.5px solid ' + dayBorder + ';border-radius:8px;padding:12px;background:' + dayBg + ';text-align:center;' + (isToday ? 'box-shadow:0 0 0 2px #6366f1' : '') + '">';
-      h += '<div style="font-size:0.75rem;font-weight:700;color:var(--text-secondary);margin-bottom:8px">' + dayLabels[idx] + '</div>';
-      h += '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary)">' + dayTasks.length + '</div>';
+      h += '<div style="border:2px solid ' + dayBorder + ';border-radius:10px;padding:16px;background:' + dayBg + ';text-align:center;transition:all 0.15s;' + (isToday ? 'box-shadow:0 0 0 3px #6366f1;transform:scale(1.02)' : '') + '">';
+      h += '<div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">' + dayLabels[idx] + '</div>';
+      h += '<div style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">' + dayTasks.length + '</div>';
+      h += '<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">' + dayDate.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) + '</div>';
       if (dayTasks.length > 0) {
-        h += '<div style="font-size:0.65rem;color:var(--text-secondary);margin-top:6px">';
-        if (dayAgendado > 0) h += '<span style="color:#16a34a">✓ ' + dayAgendado + '</span> ';
-        if (dayAgendar > 0) h += '<span style="color:#d97706">⏰ ' + dayAgendar + '</span>';
+        h += '<div style="font-size:0.7rem;color:var(--text-secondary)">';
+        if (dayAgendado > 0) h += '<div style="color:#16a34a;font-weight:600">✓ ' + dayAgendado + '</div>';
+        if (dayAgendar > 0) h += '<div style="color:#d97706;font-weight:600">⏰ ' + dayAgendar + '</div>';
         h += '</div>';
       }
       h += '</div>';
@@ -12223,16 +12225,21 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
     h += '</div>';
 
     // ── TASK LIST BY DAY ──
-    h += '<div style="flex:1;overflow-y:auto;padding:20px 24px">';
+    h += '<div style="flex:1;overflow-y:auto;padding:32px">';
 
+    var hasAnyTasks = false;
     dayKeys.forEach(function(dayKey, idx) {
       var dayDate = new Date(weekStart);
       dayDate.setDate(weekStart.getDate() + idx);
       var dayTasks = tasksByDay[dayKey] || [];
 
       if (dayTasks.length > 0) {
-        h += '<div style="margin-bottom:24px">';
-        h += '<div style="font-size:0.85rem;font-weight:700;color:var(--text-secondary);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.5px">' + dayLabels[idx] + ' (' + dayDate.toLocaleDateString('pt-BR') + ')</div>';
+        hasAnyTasks = true;
+        h += '<div style="margin-bottom:32px">';
+        h += '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:10px">';
+        h += '<span style="font-size:1.2rem">' + dayLabels[idx] + '</span>';
+        h += '<span style="color:var(--text-secondary);font-size:0.85rem;font-weight:500;text-transform:none">(' + dayDate.toLocaleDateString('pt-BR') + ')</span>';
+        h += '</div>';
 
         dayTasks.forEach(function(t) {
           var isAgendado = t.status === 'agendado' || t.status === 'publicado';
@@ -12241,11 +12248,11 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
           var icon = isAgendado ? 'check_circle' : 'schedule';
           var color = isAgendado ? '#16a34a' : '#d97706';
 
-          h += '<div style="background:' + bg + ';border:1px solid ' + border + ';border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px">';
-          h += '<span class="mso" style="color:' + color + ';font-size:18px;flex-shrink:0">' + icon + '</span>';
+          h += '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:14px;transition:all 0.15s">';
+          h += '<span class="mso" style="color:' + color + ';font-size:22px;flex-shrink:0">' + icon + '</span>';
           h += '<div style="flex:1;min-width:0">';
-          h += '<div style="font-size:0.9rem;font-weight:600;color:var(--text-primary)">' + esc(t.title || 'Sem título') + '</div>';
-          h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + (isAgendado ? 'Agendado' : 'A agendar') + '</div>';
+          h += '<div style="font-size:0.95rem;font-weight:600;color:var(--text-primary)">' + esc(t.title || 'Sem título') + '</div>';
+          h += '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:4px;font-weight:500">' + (isAgendado ? '✓ Agendado' : '⏰ A agendar') + '</div>';
           h += '</div>';
           h += '</div>';
         });
@@ -12254,10 +12261,10 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
       }
     });
 
-    if (total === 0) {
-      h += '<div style="text-align:center;padding:60px 20px;color:var(--text-secondary)">';
-      h += '<span class="mso" style="display:block;font-size:40px;margin-bottom:12px;opacity:0.4">inbox</span>';
-      h += '<div>Nenhuma story configurada para esta semana</div>';
+    if (!hasAnyTasks) {
+      h += '<div style="text-align:center;padding:80px 40px;color:var(--text-secondary)">';
+      h += '<span class="mso" style="display:block;font-size:48px;margin-bottom:16px;opacity:0.3">inbox</span>';
+      h += '<div style="font-size:1rem;font-weight:500">Nenhuma story configurada para esta semana</div>';
       h += '</div>';
     }
 
