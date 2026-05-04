@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git fetch origin claude/disable-failure-notifications-gCPvb && git pull origin claude/disable-failure-notifications-gCPvb",
+            "statusMessage": "Atualizando branch disable-failure-notifications",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
