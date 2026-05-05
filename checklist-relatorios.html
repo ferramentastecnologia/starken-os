@@ -6695,6 +6695,10 @@ document.addEventListener('DOMContentLoaded', function() {
   let _queueLastErrorAt = 0;    // timestamp of last system-level error shown (throttle alerts)
 
   async function processQueueAndCheckAlerts() {
+    // ⛔ DESATIVADO — sistema limpo de logs de postagens/agendamentos
+    // pg_cron no backend processa a fila; frontend não precisa mais alertar.
+    return;
+    // eslint-disable-next-line no-unreachable
     if (_queueProcessing) return; // already running, skip
     _queueProcessing = true;
     try {
@@ -6841,12 +6845,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ── Pede permissão para Web Notifications ──
   function initNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    // ⛔ DESATIVADO — não pedimos mais permissão de notificação
+    return;
   }
 
   function showAlertNotifications(alerts) {
+    // ⛔ DESATIVADO — sistema limpo de toasts de falhas/atrasos
+    return;
+    // eslint-disable-next-line no-unreachable
     const hasErrors = alerts.some(a => a.type === 'error');
     const hasWarnings = alerts.some(a => a.type === 'warning');
 
@@ -6956,18 +6962,23 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function startQueueProcessor() {
-    if (_queueInterval) return;
-    setTimeout(() => processQueueAndCheckAlerts(), 30000);
-    _queueInterval = setInterval(() => processQueueAndCheckAlerts(), 120000);
+    // ⛔ DESATIVADO — pg_cron no backend processa a fila.
+    // Sem polling frontend = sem toasts de falhas, sem badge de alerta.
+    return;
   }
 
-  const checkLogin = setInterval(() => {
-    if (typeof gpState !== 'undefined' && gpState.user) {
-      clearInterval(checkLogin);
-      initNotificationPermission();
-      startQueueProcessor();
-    }
-  }, 2000);
+  // Limpa qualquer estado de alerta antigo no localStorage
+  try { localStorage.removeItem('starken_alerts_shown'); } catch(e) {}
+
+  // Remove toasts/banners residuais que possam estar no DOM
+  function _cleanupAlertArtifacts() {
+    try {
+      ['forgottenPostsBanner','alertBadge'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.remove();
+      });
+    } catch(e) {}
+  }
+  setInterval(_cleanupAlertArtifacts, 3000);
 });
 
 // ============ DATA ============
@@ -19083,8 +19094,7 @@ function ctInit() {
   fetch(ctApiBase() + '/api/content', { method: 'OPTIONS' }).catch(() => {});
   // Auto-promote agendado → publicado for past dates
   ctAutoPromotePublished();
-  // Verificar posts esquecidos (agendado + data passada) — roda depois do promote
-  setTimeout(ctCheckForgottenPosts, 5000);
+  // ⛔ Verificação de posts esquecidos desativada — sistema limpo de logs de agendamento
 }
 
 // Auto-promote tasks with status 'agendado' to 'publicado' if post date has passed
@@ -19163,6 +19173,12 @@ async function ctAutoPromotePublished() {
 
 // Verifica posts esquecidos: status 'agendado' com data de entrega no passado
 async function ctCheckForgottenPosts() {
+  // ⛔ DESATIVADO — sistema limpo de logs de postagens/agendamentos
+  var existing = document.getElementById('forgottenPostsBanner');
+  if (existing) existing.remove();
+  return;
+  // eslint-disable-next-line no-unreachable
+  async function _disabled() {
   if (!_supabase) return;
   // Throttle: uma vez por sessão (evita spam a cada navegação)
   var sessionKey = 'starken_forgotten_checked_' + new Date().toISOString().slice(0, 10);
@@ -19236,6 +19252,7 @@ async function ctCheckForgottenPosts() {
   } catch(e) {
     console.warn('ctCheckForgottenPosts error:', e);
   }
+  } // fecha _disabled
 }
 
 function ctLoadClientDropdown() {
