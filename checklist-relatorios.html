@@ -12076,120 +12076,268 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
     var total = weekTasks.length;
     var pct = total > 0 ? agendado / total : 0;
 
-    // ── HEADER ──
-    var h = '';
-    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:24px 32px;border-bottom:1px solid var(--border-default)">';
-    h += '<div>';
-    h += '<div style="font-size:1.3rem;font-weight:700;color:var(--text-primary)">' + esc(clientName) + '</div>';
-    h += '<div style="font-size:0.85rem;color:var(--text-secondary);margin-top:6px;font-weight:500">Stories Recorrentes</div>';
-    h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px">' + _dashWeekLabel(weekKey) + '</div>';
-    h += '</div>';
-    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="background:none;border:none;font-size:32px;cursor:pointer;color:var(--text-secondary);line-height:1;padding:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center">&times;</button>';
-    h += '</div>';
-
-    // ── WEEK NAVIGATION ──
+    // ── PREP ──
+    var dayLabels = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    var dayLabelsShort = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
+    var dayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
+    var now = new Date();
+    var todayISO = now.toISOString().slice(0,10);
     var allWeeks = _dashAllWeekKeys();
     var weekIdx = allWeeks.indexOf(weekKey);
     var canPrev = weekIdx > 0;
     var canNext = weekIdx < allWeeks.length - 1;
+    var publicado = weekTasks.filter(function(t){ return t.status === 'publicado'; }).length;
+    var taskProgress = total > 0 ? Math.round((agendado / total) * 100) : 0;
+    var initials = (clientName || '?').split(' ').slice(0,2).map(function(s){return s.charAt(0).toUpperCase();}).join('');
+    var clientHash = 0;
+    for (var ci = 0; ci < (clientName||'').length; ci++) clientHash = ((clientHash<<5)-clientHash) + clientName.charCodeAt(ci);
+    var hue1 = Math.abs(clientHash) % 360;
+    var hue2 = (hue1 + 40) % 360;
+    var avatarGrad = 'linear-gradient(135deg, hsl('+hue1+',70%,55%) 0%, hsl('+hue2+',70%,45%) 100%)';
 
-    h += '<div style="padding:12px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:12px;justify-content:space-between">';
-    h += '<div style="display:flex;gap:8px;align-items:center">';
-    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + clientName.replace(/'/g, "\\'") + '\',\'' + (allWeeks[weekIdx - 1] || '') + '\')" ' + (canPrev ? '' : 'disabled') + ' title="Semana anterior">‹</button>';
-    h += '<span style="font-size:0.85rem;font-weight:600;color:var(--text-secondary);min-width:160px;text-align:center">' + _dashWeekLabel(weekKey) + '</span>';
-    h += '<button class="dash-nav-btn" onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + clientName.replace(/'/g, "\\'") + '\',\'' + (allWeeks[weekIdx + 1] || '') + '\')" ' + (canNext ? '' : 'disabled') + ' title="Próxima semana">›</button>';
+    // Status global da semana
+    var weekStatusLabel, weekStatusColor, weekStatusIcon, weekStatusBg;
+    if (total === 0) {
+      weekStatusLabel = 'Sem tarefas'; weekStatusColor = '#6b7280'; weekStatusIcon = 'inbox'; weekStatusBg = 'rgba(107,114,128,0.12)';
+    } else if (taskProgress === 100) {
+      weekStatusLabel = 'Tudo agendado'; weekStatusColor = '#16a34a'; weekStatusIcon = 'verified'; weekStatusBg = 'rgba(22,163,74,0.14)';
+    } else if (taskProgress >= 50) {
+      weekStatusLabel = 'Em progresso'; weekStatusColor = '#f59e0b'; weekStatusIcon = 'pending'; weekStatusBg = 'rgba(245,158,11,0.14)';
+    } else {
+      weekStatusLabel = 'Pendente'; weekStatusColor = '#ef4444'; weekStatusIcon = 'priority_high'; weekStatusBg = 'rgba(239,68,68,0.14)';
+    }
+
+    var h = '';
+
+    // ═════════ HEADER (gradient hero) ═════════
+    h += '<div style="position:relative;padding:28px 32px 24px;background:'+avatarGrad+';color:#fff;flex-shrink:0;overflow:hidden">';
+    h += '<div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:rgba(255,255,255,0.08);border-radius:50%"></div>';
+    h += '<div style="position:absolute;bottom:-60px;left:-60px;width:180px;height:180px;background:rgba(255,255,255,0.06);border-radius:50%"></div>';
+
+    h += '<div style="position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;z-index:1">';
+    h += '<div style="display:flex;align-items:center;gap:16px;min-width:0;flex:1">';
+    // Avatar
+    h += '<div style="width:60px;height:60px;border-radius:14px;background:rgba(255,255,255,0.22);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0;border:2px solid rgba(255,255,255,0.3);box-shadow:0 4px 12px rgba(0,0,0,0.15)">' + esc(initials) + '</div>';
+    h += '<div style="min-width:0;flex:1">';
+    h += '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+    h += '<div style="font-size:1.4rem;font-weight:800;letter-spacing:-0.3px;line-height:1.1">' + esc(clientName) + '</div>';
+    h += '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,0.22);padding:4px 10px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:0.3px;backdrop-filter:blur(10px)"><span class="mso" style="font-size:14px">'+weekStatusIcon+'</span>'+weekStatusLabel+'</span>';
+    h += '</div>';
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.82rem;opacity:0.92;font-weight:500">';
+    h += '<span class="mso" style="font-size:16px">photo_camera</span>';
+    h += '<span>Stories Recorrentes</span>';
+    h += '<span style="opacity:0.5">•</span>';
+    h += '<span class="mso" style="font-size:16px">date_range</span>';
+    h += '<span>' + _dashWeekLabel(weekKey) + '</span>';
     h += '</div>';
     h += '</div>';
+    h += '</div>';
 
-    // ── PROGRESS INDICATOR ──
-    h += '<div style="padding:24px 32px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);display:flex;align-items:center;gap:24px">';
-    var circumference = 2 * Math.PI * 18;
+    // Close button
+    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="background:rgba(255,255,255,0.18);border:none;cursor:pointer;color:#fff;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;backdrop-filter:blur(10px)" onmouseover="this.style.background=\'rgba(255,255,255,0.3)\'" onmouseout="this.style.background=\'rgba(255,255,255,0.18)\'"><span class="mso" style="font-size:22px">close</span></button>';
+    h += '</div>'; // fim flex
+
+    h += '</div>'; // fim header
+
+    // ═════════ STATS BAR + WEEK NAV ═════════
+    h += '<div style="padding:20px 32px;background:var(--bg-elevated);border-bottom:1px solid var(--border-default);flex-shrink:0">';
+
+    // Week nav
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px">';
+    h += '<div style="display:flex;align-items:center;gap:10px">';
+    h += '<button onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + clientName.replace(/'/g, "\\'") + '\',\'' + (allWeeks[weekIdx - 1] || '') + '\')" ' + (canPrev ? '' : 'disabled') + ' title="Semana anterior" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;'+(canPrev?'':'opacity:0.4;cursor:not-allowed')+'" onmouseover="if(!this.disabled)this.style.background=\'var(--border-default)\'" onmouseout="this.style.background=\'var(--bg-primary)\'"><span class="mso" style="font-size:18px;color:var(--text-primary)">chevron_left</span></button>';
+    h += '<div style="text-align:center;min-width:200px">';
+    h += '<div style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.6px">Semana</div>';
+    h += '<div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-top:2px">' + _dashWeekLabel(weekKey) + '</div>';
+    h += '</div>';
+    h += '<button onclick="openStoriesModalWeek(\'' + metaKey + '\',\'' + clientName.replace(/'/g, "\\'") + '\',\'' + (allWeeks[weekIdx + 1] || '') + '\')" ' + (canNext ? '' : 'disabled') + ' title="Próxima semana" style="width:34px;height:34px;border-radius:8px;border:1px solid var(--border-default);background:var(--bg-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;'+(canNext?'':'opacity:0.4;cursor:not-allowed')+'" onmouseover="if(!this.disabled)this.style.background=\'var(--border-default)\'" onmouseout="this.style.background=\'var(--bg-primary)\'"><span class="mso" style="font-size:18px;color:var(--text-primary)">chevron_right</span></button>';
+    h += '</div>';
+
+    // Quick actions
+    if (total > 0) {
+      var pendingIds = weekTasks.filter(function(t){return t.status==='a-agendar';}).map(function(t){return t.id;});
+      var hasPending = pendingIds.length > 0;
+      h += '<div style="display:flex;gap:8px">';
+      h += '<button onclick="markAllStoriesTasks('+JSON.stringify(pendingIds).replace(/"/g,'&quot;')+',\'agendado\')" '+(hasPending?'':'disabled')+' style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid #16a34a;background:'+(hasPending?'#16a34a':'var(--bg-elevated)')+';color:'+(hasPending?'#fff':'var(--text-secondary)')+';border-radius:8px;font-size:0.78rem;font-weight:600;cursor:'+(hasPending?'pointer':'not-allowed')+';transition:all 0.15s;'+(hasPending?'':'opacity:0.5')+'"><span class="mso" style="font-size:16px">done_all</span>Marcar todas</button>';
+      h += '</div>';
+    }
+    h += '</div>'; // fim flex nav
+
+    // Stats Cards
+    h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">';
+
+    // Card 1: Progresso (ring grande)
+    var circumference = 2 * Math.PI * 22;
     var fillLen = circumference * pct;
-    var ringColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#f59e0b' : '#6b7280';
-    h += '<svg width="60" height="60" viewBox="0 0 40 40" style="flex-shrink:0">';
-    h += '<circle cx="20" cy="20" r="18" fill="none" stroke="var(--border-default)" stroke-width="3"/>';
-    h += '<circle cx="20" cy="20" r="18" fill="none" stroke="' + ringColor + '" stroke-width="3" stroke-linecap="round" stroke-dasharray="' + fillLen.toFixed(1) + ' ' + circumference.toFixed(1) + '" stroke-dashoffset="-14.14" style="transition:stroke-dasharray 0.5s ease"/>';
-    h += '<text x="20" y="24" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text-primary)">' + Math.round(pct * 100) + '%</text>';
+    var ringColor = pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#f59e0b' : pct > 0 ? '#6366f1' : '#9ca3af';
+    h += '<div style="background:var(--bg-primary);border:1px solid var(--border-default);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">';
+    h += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+ringColor+'"></div>';
+    h += '<svg width="56" height="56" viewBox="0 0 56 56" style="flex-shrink:0;transform:rotate(-90deg)">';
+    h += '<circle cx="28" cy="28" r="22" fill="none" stroke="var(--border-default)" stroke-width="5"/>';
+    h += '<circle cx="28" cy="28" r="22" fill="none" stroke="' + ringColor + '" stroke-width="5" stroke-linecap="round" stroke-dasharray="' + fillLen.toFixed(1) + ' ' + circumference.toFixed(1) + '" style="transition:stroke-dasharray 0.6s ease"/>';
     h += '</svg>';
+    h += '<div style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:56px;text-align:center;font-size:0.85rem;font-weight:800;color:var(--text-primary)">' + Math.round(pct * 100) + '%</div>';
+    h += '<div style="min-width:0">';
+    h += '<div style="font-size:0.65rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Progresso</div>';
+    h += '<div style="font-size:0.95rem;font-weight:800;color:var(--text-primary);margin-top:2px">'+agendado+'/'+total+'</div>';
+    h += '</div>';
+    h += '</div>';
+
+    // Card 2: Total
+    h += '<div style="background:var(--bg-primary);border:1px solid var(--border-default);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">';
+    h += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:#6366f1"></div>';
+    h += '<div style="width:42px;height:42px;border-radius:10px;background:rgba(99,102,241,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="mso" style="font-size:22px;color:#6366f1">photo_library</span></div>';
     h += '<div>';
-    h += '<div style="font-size:1rem;font-weight:700;color:var(--text-primary)">' + agendado + ' de ' + total + ' agendadas</div>';
-    h += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px">' + agendar + ' a agendar</div>';
+    h += '<div style="font-size:0.65rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Total Stories</div>';
+    h += '<div style="font-size:1.4rem;font-weight:800;color:var(--text-primary);margin-top:2px;line-height:1">' + total + '</div>';
     h += '</div>';
     h += '</div>';
 
-    // ── DAILY BREAKDOWN ──
-    h += '<div style="padding:24px;border-bottom:1px solid var(--border-default)">';
-    h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:16px">';
+    // Card 3: Agendadas
+    h += '<div style="background:var(--bg-primary);border:1px solid var(--border-default);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">';
+    h += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:#16a34a"></div>';
+    h += '<div style="width:42px;height:42px;border-radius:10px;background:rgba(22,163,74,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="mso" style="font-size:22px;color:#16a34a">event_available</span></div>';
+    h += '<div>';
+    h += '<div style="font-size:0.65rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">Agendadas</div>';
+    h += '<div style="font-size:1.4rem;font-weight:800;color:#16a34a;margin-top:2px;line-height:1">' + agendado + '</div>';
+    h += '</div>';
+    h += '</div>';
 
-    var dayLabels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-    var dayKeys = ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
-    var now = new Date();
-    var todayISO = now.toISOString().slice(0,10);
+    // Card 4: A Agendar
+    h += '<div style="background:var(--bg-primary);border:1px solid var(--border-default);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden">';
+    h += '<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+(agendar>0?'#f59e0b':'#9ca3af')+'"></div>';
+    h += '<div style="width:42px;height:42px;border-radius:10px;background:'+(agendar>0?'rgba(245,158,11,0.12)':'rgba(156,163,175,0.12)')+';display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="mso" style="font-size:22px;color:'+(agendar>0?'#f59e0b':'#9ca3af')+'">schedule</span></div>';
+    h += '<div>';
+    h += '<div style="font-size:0.65rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">A Agendar</div>';
+    h += '<div style="font-size:1.4rem;font-weight:800;color:'+(agendar>0?'#f59e0b':'var(--text-primary)')+';margin-top:2px;line-height:1">' + agendar + '</div>';
+    h += '</div>';
+    h += '</div>';
+
+    h += '</div>'; // fim grid stats
+    h += '</div>'; // fim stats bar
+
+    // ═════════ DAILY TIMELINE ═════════
+    h += '<div style="padding:20px 32px;border-bottom:1px solid var(--border-default);flex-shrink:0">';
+    h += '<div style="font-size:0.7rem;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px">';
+    h += '<span class="mso" style="font-size:14px">view_week</span>Distribuição da Semana';
+    h += '</div>';
+    h += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
 
     dayKeys.forEach(function(dayKey, idx) {
       var dayDate = new Date(weekStart);
       dayDate.setDate(weekStart.getDate() + idx);
       var dayISO = dayDate.toISOString().slice(0,10);
       var isToday = dayISO === todayISO;
+      var isPast = dayISO < todayISO;
       var dayTasks = tasksByDay[dayKey] || [];
       var dayAgendado = dayTasks.filter(function(t) { return t.status === 'agendado' || t.status === 'publicado'; }).length;
       var dayAgendar = dayTasks.filter(function(t) { return t.status === 'a-agendar'; }).length;
+      var dayPct = dayTasks.length > 0 ? dayAgendado / dayTasks.length : 0;
 
-      var dayBg = dayTasks.length === 0 ? 'var(--bg-elevated)' : dayAgendado > 0 ? '#f0fdf4' : '#fffbeb';
-      var dayBorder = dayTasks.length === 0 ? 'var(--border-default)' : dayAgendado > 0 ? '#86efac' : '#fcd34d';
+      var dayBg, dayBorder, dayAccent;
+      if (dayTasks.length === 0) {
+        dayBg = 'var(--bg-elevated)'; dayBorder = 'var(--border-default)'; dayAccent = '#9ca3af';
+      } else if (dayPct === 1) {
+        dayBg = 'linear-gradient(135deg, rgba(22,163,74,0.08), rgba(22,163,74,0.03))'; dayBorder = '#86efac'; dayAccent = '#16a34a';
+      } else if (dayPct > 0) {
+        dayBg = 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.03))'; dayBorder = '#fcd34d'; dayAccent = '#d97706';
+      } else {
+        dayBg = 'linear-gradient(135deg, rgba(239,68,68,0.06), rgba(239,68,68,0.02))'; dayBorder = '#fca5a5'; dayAccent = '#ef4444';
+      }
 
-      h += '<div style="border:2px solid ' + dayBorder + ';border-radius:10px;padding:16px;background:' + dayBg + ';text-align:center;transition:all 0.15s;' + (isToday ? 'box-shadow:0 0 0 3px #6366f1;transform:scale(1.02)' : '') + '">';
-      h += '<div style="font-size:0.8rem;font-weight:700;color:var(--text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">' + dayLabels[idx] + '</div>';
-      h += '<div style="font-size:1.4rem;font-weight:700;color:var(--text-primary);margin-bottom:4px">' + dayTasks.length + '</div>';
-      h += '<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">' + dayDate.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) + '</div>';
-      if (dayTasks.length > 0) {
-        h += '<div style="font-size:0.7rem;color:var(--text-secondary)">';
-        if (dayAgendado > 0) h += '<div style="color:#16a34a;font-weight:600">✓ ' + dayAgendado + '</div>';
-        if (dayAgendar > 0) h += '<div style="color:#d97706;font-weight:600">⏰ ' + dayAgendar + '</div>';
+      var todayShadow = isToday ? 'box-shadow:0 0 0 2px #6366f1, 0 4px 12px rgba(99,102,241,0.25);transform:translateY(-2px);' : '';
+
+      h += '<a href="#day-'+dayKey+'" style="text-decoration:none;color:inherit;display:block">';
+      h += '<div style="border:1.5px solid ' + dayBorder + ';border-radius:12px;padding:12px 8px;background:' + dayBg + ';text-align:center;transition:all 0.2s;cursor:pointer;position:relative;'+todayShadow+'" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 16px rgba(0,0,0,0.08)\'" onmouseout="this.style.transform=\''+(isToday?'translateY(-2px)':'')+'\';this.style.boxShadow=\''+(isToday?'0 0 0 2px #6366f1, 0 4px 12px rgba(99,102,241,0.25)':'')+'\'">';
+      if (isToday) {
+        h += '<div style="position:absolute;top:6px;right:6px;width:6px;height:6px;background:#6366f1;border-radius:50%;box-shadow:0 0 0 3px rgba(99,102,241,0.3)"></div>';
+      }
+      h += '<div style="font-size:0.65rem;font-weight:700;color:'+(isToday?'#6366f1':'var(--text-secondary)')+';margin-bottom:4px;letter-spacing:0.5px">' + dayLabelsShort[idx] + '</div>';
+      h += '<div style="font-size:0.7rem;font-weight:600;color:var(--text-secondary);margin-bottom:8px">' + dayDate.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'}) + '</div>';
+
+      if (dayTasks.length === 0) {
+        h += '<div style="font-size:1.6rem;font-weight:800;color:var(--text-secondary);opacity:0.4;line-height:1">—</div>';
+        h += '<div style="font-size:0.6rem;color:var(--text-secondary);opacity:0.6;margin-top:4px">vazio</div>';
+      } else {
+        h += '<div style="font-size:1.5rem;font-weight:800;color:'+dayAccent+';line-height:1">' + dayTasks.length + '</div>';
+        h += '<div style="font-size:0.6rem;color:var(--text-secondary);margin-top:3px;font-weight:500">' + (dayTasks.length === 1 ? 'story' : 'stories') + '</div>';
+        // Mini progress bar
+        h += '<div style="height:3px;background:rgba(0,0,0,0.06);border-radius:2px;margin-top:8px;overflow:hidden">';
+        h += '<div style="height:100%;width:'+(dayPct*100)+'%;background:'+dayAccent+';transition:width 0.5s"></div>';
         h += '</div>';
       }
       h += '</div>';
+      h += '</a>';
     });
 
-    h += '</div>';
-    h += '</div>';
+    h += '</div>'; // fim grid days
+    h += '</div>'; // fim daily timeline
 
-    // ── TASK LIST BY DAY ──
-    h += '<div style="flex:1;overflow-y:auto;padding:32px">';
+    // ═════════ TASK LIST BY DAY ═════════
+    h += '<div style="flex:1;overflow-y:auto;padding:24px 32px;background:var(--bg-elevated)">';
 
     var hasAnyTasks = false;
     dayKeys.forEach(function(dayKey, idx) {
       var dayDate = new Date(weekStart);
       dayDate.setDate(weekStart.getDate() + idx);
+      var dayISO = dayDate.toISOString().slice(0,10);
+      var isToday = dayISO === todayISO;
       var dayTasks = tasksByDay[dayKey] || [];
 
       if (dayTasks.length > 0) {
         hasAnyTasks = true;
-        h += '<div style="margin-bottom:32px">';
-        h += '<div style="font-size:0.9rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:10px">';
-        h += '<span style="font-size:1.2rem">' + dayLabels[idx] + '</span>';
-        h += '<span style="color:var(--text-secondary);font-size:0.85rem;font-weight:500;text-transform:none">(' + dayDate.toLocaleDateString('pt-BR') + ')</span>';
+        var dayAgendado = dayTasks.filter(function(t){return t.status==='agendado'||t.status==='publicado';}).length;
+        var dayPct = dayAgendado / dayTasks.length;
+        var dayHeaderColor = dayPct === 1 ? '#16a34a' : dayPct > 0 ? '#d97706' : '#ef4444';
+
+        h += '<div id="day-'+dayKey+'" style="margin-bottom:24px;scroll-margin-top:20px">';
+
+        // Day header
+        h += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:0 4px">';
+        h += '<div style="width:38px;height:38px;border-radius:10px;background:'+dayHeaderColor+';color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 8px '+dayHeaderColor+'40">';
+        h += '<div style="font-size:0.55rem;font-weight:700;letter-spacing:0.5px;line-height:1">'+dayLabelsShort[idx]+'</div>';
+        h += '<div style="font-size:0.85rem;font-weight:800;line-height:1;margin-top:1px">'+dayDate.getDate()+'</div>';
+        h += '</div>';
+        h += '<div style="flex:1;min-width:0">';
+        h += '<div style="font-size:0.95rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px">';
+        h += dayLabels[idx];
+        if (isToday) h += '<span style="background:#6366f1;color:#fff;font-size:0.6rem;padding:2px 8px;border-radius:8px;font-weight:700;letter-spacing:0.3px">HOJE</span>';
+        h += '</div>';
+        h += '<div style="font-size:0.72rem;color:var(--text-secondary);font-weight:500;margin-top:2px">' + dayDate.toLocaleDateString('pt-BR', {day:'2-digit',month:'long', year:'numeric'}) + ' • ' + dayAgendado + '/' + dayTasks.length + ' agendadas</div>';
+        h += '</div>';
+        h += '<div style="font-size:0.7rem;font-weight:700;color:'+dayHeaderColor+';background:'+dayHeaderColor+'20;padding:4px 10px;border-radius:8px">'+Math.round(dayPct*100)+'%</div>';
         h += '</div>';
 
         dayTasks.forEach(function(t) {
           var isAgendado = t.status === 'agendado' || t.status === 'publicado';
-          var bg = isAgendado ? '#f0fdf4' : '#fffbeb';
-          var border = isAgendado ? '#86efac' : '#fcd34d';
-          var icon = isAgendado ? 'check_circle' : 'schedule';
-          var color = isAgendado ? '#16a34a' : '#d97706';
+          var isPublicado = t.status === 'publicado';
+          var color = isPublicado ? '#3b82f6' : isAgendado ? '#16a34a' : '#d97706';
+          var bg = isPublicado ? 'linear-gradient(90deg, rgba(59,130,246,0.04), transparent)' : isAgendado ? 'linear-gradient(90deg, rgba(22,163,74,0.04), transparent)' : 'linear-gradient(90deg, rgba(245,158,11,0.04), transparent)';
+          var borderL = color;
+          var statusLabel = isPublicado ? 'Publicado' : isAgendado ? 'Agendado' : 'A Agendar';
+          var statusIcon = isPublicado ? 'check_circle' : isAgendado ? 'event_available' : 'schedule';
 
-          h += '<div style="background:' + bg + ';border:1.5px solid ' + border + ';border-radius:10px;padding:14px;margin-bottom:12px;display:flex;align-items:center;gap:12px;transition:all 0.15s">';
+          h += '<div style="background:var(--bg-primary);border:1px solid var(--border-default);border-left:3px solid '+borderL+';border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;transition:all 0.15s;cursor:pointer;background-image:'+bg+'" onmouseover="this.style.transform=\'translateX(4px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.06)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\'">';
 
-          // Checkbox/Check icon
-          h += '<input type="checkbox" id="task_' + t.id + '" ' + (isAgendado ? 'checked' : '') + ' onchange="markStoriesTaskStatus(\'' + t.id + '\', this.checked ? \'agendado\' : \'a-agendar\')" style="width:20px;height:20px;cursor:pointer;accent-color:' + color + '" />';
+          // Checkbox custom
+          h += '<label style="position:relative;display:flex;align-items:center;justify-content:center;width:24px;height:24px;flex-shrink:0;cursor:pointer">';
+          h += '<input type="checkbox" id="task_' + t.id + '" ' + (isAgendado ? 'checked' : '') + ' onchange="markStoriesTaskStatus(\'' + t.id + '\', this.checked ? \'agendado\' : \'a-agendar\')" style="appearance:none;-webkit-appearance:none;width:24px;height:24px;border:2px solid '+(isAgendado?color:'#d1d5db')+';border-radius:7px;cursor:pointer;background:'+(isAgendado?color:'transparent')+';transition:all 0.15s;margin:0" />';
+          if (isAgendado) {
+            h += '<span class="mso" style="position:absolute;color:#fff;font-size:16px;pointer-events:none;font-weight:700">check</span>';
+          }
+          h += '</label>';
 
+          // Task content
           h += '<div style="flex:1;min-width:0">';
-          h += '<div style="font-size:0.92rem;font-weight:600;color:var(--text-primary)">' + esc(t.name || 'Sem nome') + '</div>';
-          h += '<div style="font-size:0.75rem;color:var(--text-secondary);margin-top:3px">' + (isAgendado ? '✓ Agendado' : '⏰ A agendar') + '</div>';
+          h += '<div style="font-size:0.92rem;font-weight:600;color:var(--text-primary);'+(isPublicado?'text-decoration:line-through;opacity:0.7':'')+'">' + esc(t.name || 'Sem título') + '</div>';
+          h += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;display:flex;align-items:center;gap:6px;font-weight:500">';
+          h += '<span class="mso" style="font-size:14px;color:'+color+'">'+statusIcon+'</span>';
+          h += '<span>' + statusLabel + '</span>';
+          h += '</div>';
           h += '</div>';
 
           // Status badge
-          h += '<span style="background:' + color + ';color:white;padding:4px 10px;border-radius:14px;font-size:0.68rem;font-weight:600;white-space:nowrap">' + (isAgendado ? 'Pronto' : 'Pendente') + '</span>';
+          h += '<span style="background:'+color+';color:#fff;padding:5px 12px;border-radius:14px;font-size:0.68rem;font-weight:700;white-space:nowrap;letter-spacing:0.3px;text-transform:uppercase;box-shadow:0 2px 6px '+color+'40">' + (isPublicado?'Pub':isAgendado?'OK':'Pend') + '</span>';
 
           h += '</div>';
         });
@@ -12199,34 +12347,41 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
     });
 
     if (!hasAnyTasks) {
-      h += '<div style="text-align:center;padding:80px 40px;color:var(--text-secondary)">';
-      h += '<span class="mso" style="display:block;font-size:48px;margin-bottom:16px;opacity:0.3">inbox</span>';
-      h += '<div style="font-size:1rem;font-weight:500">Nenhuma story configurada para esta semana</div>';
+      h += '<div style="text-align:center;padding:60px 40px">';
+      h += '<div style="width:120px;height:120px;border-radius:50%;background:linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.08));display:flex;align-items:center;justify-content:center;margin:0 auto 20px"><span class="mso" style="font-size:56px;background:linear-gradient(135deg,#6366f1,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">photo_camera_back</span></div>';
+      h += '<div style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:6px">Nenhum story para esta semana</div>';
+      h += '<div style="font-size:0.85rem;color:var(--text-secondary);max-width:380px;margin:0 auto;line-height:1.5">Esta semana ainda não tem stories recorrentes configuradas para <strong>'+esc(clientName)+'</strong>. Crie tarefas no grupo <em>Stories Recorrentes</em> deste cliente.</div>';
       h += '</div>';
     }
 
+    h += '</div>'; // fim task list
+
+    // ═════════ FOOTER ═════════
+    h += '<div style="padding:16px 32px;background:var(--bg-primary);border-top:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-shrink:0">';
+
+    // Esquerda: progress bar grande
+    h += '<div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">';
+    h += '<div style="font-size:0.85rem;color:var(--text-primary);white-space:nowrap"><span style="font-weight:800;font-size:1rem">' + agendado + '/' + total + '</span> <span style="color:var(--text-secondary);font-weight:500">tarefas</span></div>';
+    h += '<div style="flex:1;max-width:280px;height:8px;background:var(--border-default);border-radius:4px;overflow:hidden;position:relative">';
+    var barColor = taskProgress === 100 ? 'linear-gradient(90deg, #16a34a, #22c55e)' : taskProgress >= 50 ? 'linear-gradient(90deg, #f59e0b, #fbbf24)' : taskProgress > 0 ? 'linear-gradient(90deg, #6366f1, #818cf8)' : '#9ca3af';
+    h += '<div style="width:' + taskProgress + '%;height:100%;background:'+barColor+';transition:width 0.5s ease;border-radius:4px"></div>';
+    h += '</div>';
+    h += '<div style="font-size:0.85rem;font-weight:800;color:'+(taskProgress===100?'#16a34a':taskProgress>=50?'#f59e0b':taskProgress>0?'#6366f1':'var(--text-secondary)')+'">'+taskProgress+'%</div>';
     h += '</div>';
 
-    // ── FOOTER COM AÇÕES ──
-    h += '<div style="padding:20px 32px;background:var(--bg-elevated);border-top:1px solid var(--border-default);display:flex;align-items:center;justify-content:space-between">';
-    var completedTasks = weekTasks.filter(function(t) { return t.status === 'agendado' || t.status === 'publicado'; }).length;
-    var taskProgress = total > 0 ? Math.round((completedTasks / total) * 100) : 0;
-
-    h += '<div style="display:flex;align-items:center;gap:16px">';
-    h += '<div style="font-size:0.9rem;color:var(--text-secondary)">';
-    h += '<span style="font-weight:700;color:var(--text-primary)">' + completedTasks + '/' + total + '</span> tarefas agendadas';
-    h += '</div>';
-    h += '<div style="width:120px;height:8px;background:var(--border-default);border-radius:4px;overflow:hidden">';
-    h += '<div style="width:' + taskProgress + '%;height:100%;background:' + (taskProgress === 100 ? '#16a34a' : taskProgress >= 50 ? '#f59e0b' : '#6b7280') + ';transition:width 0.3s"></div>';
-    h += '</div>';
-    h += '</div>';
-
+    // Direita: ações
+    h += '<div style="display:flex;gap:8px;flex-shrink:0">';
+    h += '<button onclick="document.getElementById(\'storiesModal\').style.display=\'none\'" style="padding:9px 16px;border:1px solid var(--border-default);background:var(--bg-elevated);color:var(--text-primary);border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;font-size:0.85rem;transition:all 0.15s" onmouseover="this.style.background=\'var(--border-default)\'" onmouseout="this.style.background=\'var(--bg-elevated)\'">Fechar</button>';
     if (total > 0) {
-      h += '<button onclick="showToast(\'✓ Semana organizada!\', \'success\'); document.getElementById(\\\'storiesModal\\\').style.display=\\\'none\\\'" style="background:' + (taskProgress === 100 ? '#16a34a' : '#d97706') + ';color:white;border:none;padding:10px 20px;border-radius:6px;font-weight:600;cursor:pointer;font-family:inherit">';
-      h += taskProgress === 100 ? '✓ Semana Completa' : '📋 Organizar Semana';
+      var btnGrad = taskProgress === 100 ? 'linear-gradient(135deg, #16a34a, #22c55e)' : 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+      var btnLabel = taskProgress === 100 ? 'Semana Completa' : 'Concluir Semana';
+      var btnIcon = taskProgress === 100 ? 'verified' : 'check_circle';
+      h += '<button onclick="showToast(\'✓ Semana organizada!\', \'success\'); document.getElementById(\'storiesModal\').style.display=\'none\'" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;background:'+btnGrad+';color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit;font-size:0.85rem;box-shadow:0 4px 12px rgba(99,102,241,0.3);transition:all 0.15s" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 6px 16px rgba(99,102,241,0.4)\'" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'0 4px 12px rgba(99,102,241,0.3)\'">';
+      h += '<span class="mso" style="font-size:18px">'+btnIcon+'</span>'+btnLabel;
       h += '</button>';
     }
     h += '</div>';
+    h += '</div>'; // fim footer
 
     content.innerHTML = h;
 
@@ -12237,6 +12392,32 @@ async function renderStoriesModalWeek(metaKey, clientName, weekKey) {
 
 
 // ── STORIES MODAL ACTIONS ──
+async function markAllStoriesTasks(taskIds, newStatus) {
+  if (!Array.isArray(taskIds) || taskIds.length === 0) return;
+  if (!confirm('Marcar ' + taskIds.length + ' ' + (taskIds.length === 1 ? 'tarefa' : 'tarefas') + ' como ' + newStatus + '?')) return;
+
+  try {
+    if (!_supabase) return;
+    showToast('Atualizando ' + taskIds.length + ' tarefas...', 'info');
+
+    var updates = taskIds.map(function(id){
+      return _supabase
+        .from('content_tasks')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', id);
+    });
+    await Promise.all(updates);
+
+    showToast('✓ ' + taskIds.length + ' tarefas atualizadas!', 'success');
+    if (_storiesModalState) {
+      await renderStoriesModalWeek(_storiesModalState.metaKey, _storiesModalState.clientName, _storiesModalState.weekKey);
+    }
+  } catch(e) {
+    console.error('Error bulk updating tasks:', e);
+    showToast('Erro ao atualizar tarefas em massa', 'error');
+  }
+}
+
 async function markStoriesTaskStatus(taskId, newStatus) {
   try {
     console.log('📝 Marking task', taskId, 'as', newStatus);
