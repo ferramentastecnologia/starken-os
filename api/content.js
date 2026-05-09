@@ -307,9 +307,10 @@ async function listMyTasks({ user, name, assignee }) {
   );
 
   // JS post-filter: exact match within comma-separated list (prevents "Dan" matching "Daniela")
+  // Also exclude Stand-by status (future tasks, not for now)
   const filtered = tasks.filter(task => {
     const assignees = (task.assignee || '').split(',').map(a => a.trim()).filter(Boolean);
-    return assignees.includes(targetName);
+    return assignees.includes(targetName) && task.status !== 'stand-by';
   });
 
   // Flatten with group/client info
