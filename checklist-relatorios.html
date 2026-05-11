@@ -3740,6 +3740,10 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
 .mt-nx-search .mso{color:rgba(255,255,255,0.3);font-size:15px!important}
 .mt-nx-search input{background:transparent;border:none;outline:none;color:#e2e8f0;font-size:12px;font-family:inherit;width:100%}
 .mt-nx-search input::placeholder{color:rgba(255,255,255,0.25)}
+.mt-nx-status-filter{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:5px 11px}
+.mt-nx-status-filter .mso{color:rgba(255,255,255,0.3);font-size:15px!important}
+.mt-nx-filter-select{background:transparent;border:none;outline:none;color:#e2e8f0;font-size:12px;font-family:inherit;cursor:pointer;width:150px}
+.mt-nx-filter-select option{background:#1a1f2e;color:#e2e8f0}
 .mt-nx-icon-btn{width:32px;height:32px;border-radius:7px;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;font-size:0}
 .mt-nx-icon-btn:hover{background:rgba(255,255,255,0.08);color:#fff}
 .mt-nx-icon-btn .mso{font-size:17px!important;display:block}
@@ -5975,6 +5979,20 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <span class="mso">search</span>
                 <input type="text" id="mtSearch" placeholder="Buscar tarefas..." oninput="mtRender()">
               </div>
+              <div class="mt-nx-status-filter">
+                <span class="mso">filter_list</span>
+                <select id="mtStatusFilterDropdown" onchange="mtRender()" class="mt-nx-filter-select">
+                  <option value="">Todos os status</option>
+                  <option value="a-fazer">A Fazer</option>
+                  <option value="em-andamento">Em Andamento</option>
+                  <option value="design">Design</option>
+                  <option value="em-revisao">Em Revisão</option>
+                  <option value="alteracao-design">Alteração Design</option>
+                  <option value="aprovacao">Aprovação</option>
+                  <option value="agendado">Agendado</option>
+                  <option value="publicado">Publicado</option>
+                </select>
+              </div>
               <button class="mt-nx-icon-btn" title="Notificações"><span class="mso">notifications</span></button>
               <button class="mt-nx-icon-btn" title="Tema" onclick="gpCycleTheme&&gpCycleTheme()"><span class="mso">dark_mode</span></button>
               <div class="mt-nx-avatar" id="mtNxAvatar">JP</div>
@@ -5982,20 +6000,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
           </div>
           <!-- Bento stats -->
           <div class="mt-nx-bento" id="mtBentoCards"></div>
-          <!-- Hidden controls for JS compat -->
-          <select id="mtStatusFilter" onchange="mtRender()" style="display:none">
-            <option value="">Todos os status</option>
-            <option value="a-fazer">A Fazer</option>
-            <option value="em-andamento">Em Andamento</option>
-            <option value="design">Design</option>
-            <option value="em-revisao">Em Revisão</option>
-            <option value="alteracao-design">Alteração Design</option>
-            <option value="aprovacao">Aprovação</option>
-            <option value="aprovado">Aprovado</option>
-            <option value="agendar">Agendar</option>
-            <option value="agendado">Agendado</option>
-            <option value="publicado">Publicado</option>
-          </select>
+          <!-- Hidden pipeline stats -->
           <div id="mtPipeline" style="display:none"></div>
           <!-- Main table -->
           <div class="mt-nx-main">
@@ -28229,8 +28234,8 @@ async function mtInit() {
   if (avatarEl) avatarEl.textContent = gpState.user.initials || (gpState.user.name || '').substring(0, 2).toUpperCase();
 
   // Show status filter for all roles
-  var mtStatusFilterEl = document.getElementById('mtStatusFilter');
-  if (mtStatusFilterEl) mtStatusFilterEl.style.display = '';
+  var mtStatusFilterDropdownEl = document.getElementById('mtStatusFilterDropdown');
+  if (mtStatusFilterDropdownEl) mtStatusFilterDropdownEl.style.display = '';
 
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
@@ -28312,16 +28317,16 @@ function mtRenderPipeline(tasks) {
   statusGroups.forEach(sg => {
     const count = tasks.filter(t => t.status === sg.key).length;
     if (count === 0) return;
-    html += '<button onclick="document.getElementById(\'mtStatusFilter\').value=\'' + sg.key + '\';mtRender()" '
+    html += '<button onclick="document.getElementById(\'mtStatusFilterDropdown\').value=\'' + sg.key + '\';mtRender()" '
       + 'style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1px solid ' + sg.bg + ';background:' + sg.bg + ';color:' + sg.color + ';cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;transition:all 0.15s'
       + (sg.urgent ? ';box-shadow:0 0 0 2px ' + sg.color + '40' : '') + '" '
       + 'title="Filtrar por ' + sg.label + '">'
       + sg.label + ' <span style="background:' + sg.color + ';color:white;border-radius:10px;padding:1px 7px;font-size:11px">' + count + '</span></button>';
   });
   // Reset filter button if active
-  const filterVal = document.getElementById('mtStatusFilter') ? document.getElementById('mtStatusFilter').value : '';
+  const filterVal = document.getElementById('mtStatusFilterDropdown') ? document.getElementById('mtStatusFilterDropdown').value : '';
   if (filterVal) {
-    html += '<button onclick="document.getElementById(\'mtStatusFilter\').value=\'\';mtRender()" '
+    html += '<button onclick="document.getElementById(\'mtStatusFilterDropdown\').value=\'\';mtRender()" '
       + 'style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text-secondary);cursor:pointer;font-size:11px;font-family:inherit">'
       + '<span class="mso">close</span> Limpar filtro</button>';
   }
@@ -28330,7 +28335,7 @@ function mtRenderPipeline(tasks) {
 
 function mtRender() {
   const el = document.getElementById('mtContent');
-  const statusFilterEl = document.getElementById('mtStatusFilter');
+  const statusFilterEl = document.getElementById('mtStatusFilterDropdown');
   const statusFilter = statusFilterEl ? statusFilterEl.value : '';
 
   // Render Nexus Emerald bento cards & bottom widgets (only for cards/kanban, not list/client)
@@ -28570,13 +28575,13 @@ function mtRenderBento() {
   var html = '';
   stats.forEach(function(s) {
     var n = String(s.count).padStart(2, '0');
-    html += '<div class="mt-nx-stat" style="border-left-color:' + s.border + '" onclick="var sf=document.getElementById(\'mtStatusFilter\');if(sf)sf.value=\'' + s.filter + '\';mtRender()">';
+    html += '<div class="mt-nx-stat" style="border-left-color:' + s.border + '" onclick="var sf=document.getElementById(\'mtStatusFilterDropdown\');if(sf)sf.value=\'' + s.filter + '\';mtRender()">';
     html += '<div class="mt-nx-stat-lbl">' + s.label.toUpperCase() + '</div>';
     html += '<div class="mt-nx-stat-num">' + n + '</div>';
     html += '<span class="mt-nx-stat-badge" style="color:' + s.badgeColor + ';background:' + s.badgeBg + '">' + s.badge + '</span>';
     html += '</div>';
   });
-  html += '<div class="mt-nx-stat mt-nx-stat-total" onclick="var sf=document.getElementById(\'mtStatusFilter\');if(sf)sf.value=\'\';mtRender()">';
+  html += '<div class="mt-nx-stat mt-nx-stat-total" onclick="var sf=document.getElementById(\'mtStatusFilterDropdown\');if(sf)sf.value=\'\';mtRender()">';
   html += '<div class="mt-nx-stat-lbl">TOTAL CONCLUÍDO</div>';
   html += '<div class="mt-nx-stat-num">' + totalPub + '</div>';
   html += '</div>';
