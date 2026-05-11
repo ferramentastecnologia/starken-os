@@ -28680,8 +28680,8 @@ function mtRenderRecent(container) {
 // ── Resizable columns (Finder-style) ──
 var _mtColWidthsCache = {};
 var _mtDefaultCols = {
-  'by-list':   [200, 320, 95, 120, 85, 85, 110],
-  'by-client': [320, 95, 140, 130, 85, 85, 110]
+  'by-list':   [200, 320, 95, 120, 85, 85, 110, 80],
+  'by-client': [320, 95, 140, 130, 85, 85, 110, 80, 90]
 };
 
 function _mtGetColWidths(mode) {
@@ -28772,7 +28772,7 @@ function mtRenderByClient(el, tasks) {
     var cols = _mtGetColWidths('by-client');
     html += '<div class="mt-list">';
     html += '<div class="mt-header-row by-client" style="grid-template-columns:' + cols.join(' ') + '">';
-    var hdrs = ['NOME','FORMATO','STATUS','RESPONSÁVEL','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PUBLICAÇÃO','PRIO'];
+    var hdrs = ['NOME','FORMATO','STATUS','RESPONSÁVEL','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PUBLICAÇÃO','PRIO','URGÊNCIA'];
     hdrs.forEach(function(h, i) {
       html += '<div class="mt-header-col" data-col="' + i + '">' + h + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
     });
@@ -29099,16 +29099,18 @@ function mtRenderRow(task, mode) {
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.45)">' + dueStr + '</div>';
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.4">' + mtPostStr + _mtDaysBadge + '</div>';
   html += _waCell;
-  // PRIO column with urgency and priority badges
-  var prioCell = '<div style="text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center">';
+  html += '<div style="text-align:center">' + priorityBadge + '</div>';
+  // URGÊNCIA column - show urgency and design status badges
+  var urgencyCell = '<div style="text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center">';
   if (isAlteracao) {
-    prioCell += '<span style="background:#ef4444;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">⚠ URGENTE</span>';
+    urgencyCell += '<span style="background:#ef4444;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">⚠ URGENTE</span>';
   } else if (statusKey === 'design') {
-    prioCell += '<span style="background:#2563eb;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">✏ DESIGN</span>';
+    urgencyCell += '<span style="background:#2563eb;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">✏ DESIGN</span>';
+  } else {
+    urgencyCell += '<span style="color:rgba(255,255,255,0.3);font-size:11px">—</span>';
   }
-  prioCell += priorityBadge;
-  prioCell += '</div>';
-  html += prioCell;
+  urgencyCell += '</div>';
+  html += urgencyCell;
   html += '</div>';
 
   return html;
