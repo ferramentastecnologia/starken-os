@@ -28464,13 +28464,12 @@ function mtRenderByClient(el, tasks) {
     h += '</div>';
 
     // Table header
-    h += '<div style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr 0.8fr;gap:12px;padding:12px 16px;background:var(--bg-elevated);font-weight:600;font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border-default)">'
+    h += '<div style="display:grid;grid-template-columns:2.5fr 1.2fr 1fr 1fr 0.8fr;gap:16px;padding:12px 16px;background:var(--bg-elevated);font-weight:600;font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border-default)">'
       + '<div>NOME</div>'
       + '<div>STATUS</div>'
       + '<div style="text-align:center"><span class="mso" style="font-size:12px">calendar_today</span> POST</div>'
       + '<div style="text-align:center"><span class="mso" style="font-size:12px">assignment_turned_in</span> ENTREGA</div>'
       + '<div style="text-align:center"><span class="mso" style="font-size:12px">flag</span> PRIO</div>'
-      + '<div></div>'
       + '</div>';
 
     // Rows
@@ -28493,13 +28492,12 @@ function mtRenderByClient(el, tasks) {
       var overdueIndicator = isOverdue && daysLate > 0 ? ' (' + daysLate + 'd)' : '';
       var rowBg = isOverdue ? 'rgba(220,38,38,0.08)' : 'rgba(255,255,255,0.01)';
 
-      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:2fr 1.5fr 1fr 1fr 1fr 0.8fr;gap:12px;padding:12px 16px;background:' + rowBg + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid var(--border-default);hover: {background:rgba(99,102,241,0.08)}">'
+      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:2.5fr 1.2fr 1fr 1fr 0.8fr;gap:16px;padding:12px 16px;background:' + rowBg + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid var(--border-default)">'
         + '<div style="font-size:0.9rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
         + '<div style="font-size:0.8rem;background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 8px;border-radius:6px;text-align:center;white-space:nowrap;font-weight:600">' + statusDef.label + '</div>'
         + '<div style="font-size:0.85rem;color:var(--text-secondary);text-align:center">' + postStr + '</div>'
         + '<div style="font-size:0.85rem;color:var(--text-secondary);text-align:center">' + dueStr + overdueIndicator + '</div>'
         + '<div style="font-size:0.85rem;color:' + priorityMatch.color + ';font-weight:700;text-align:center">' + priorityMatch.icon + '</div>'
-        + '<div></div>'
         + '</div>';
     });
 
