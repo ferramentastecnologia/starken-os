@@ -14878,6 +14878,23 @@ function gpLogout() {
   gpState.user = null;
   try { localStorage.removeItem('starkenSession'); } catch(e) {}
   try { localStorage.removeItem('starken_last_client'); } catch(e) {}
+
+  // ✅ LIMPA TODO CACHE PARA EVITAR STALE DATA EM MODO ANONIMO/OUTROS COMPUTADORES
+  try { localStorage.removeItem('metaClientsBackup'); } catch(e) {}
+  try { localStorage.removeItem('sidebarFolders'); } catch(e) {}
+  try { localStorage.removeItem('sidebarMenuOrder'); } catch(e) {}
+  try { localStorage.removeItem('sidebar_processo_open'); } catch(e) {}
+  try { localStorage.removeItem('starken_alerts_shown'); } catch(e) {}
+  try { localStorage.removeItem('starken_client_statuses'); } catch(e) {}
+  try { localStorage.removeItem('archived_clients_data'); } catch(e) {}
+  try { localStorage.removeItem('deleted_seed_clients'); } catch(e) {}
+  try { localStorage.removeItem('CHECKLIST_CLIENTS'); } catch(e) {}
+
+  // Reset global clients object para força reload na próxima login
+  _metaClients = {};
+  // Reset preload retries para não bloquear o próximo login
+  metaClientsPreloadRetries = 0;
+
   // Reset designer lock flag so next login works correctly
   window._designerSwitchTabLocked = false;
   // Restore sidebar and menu for next login
