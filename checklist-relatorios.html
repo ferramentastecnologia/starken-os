@@ -28464,12 +28464,15 @@ function mtRenderByClient(el, tasks) {
     h += '</div>';
 
     // Table header
-    h += '<div style="display:grid;grid-template-columns:2.5fr 1.2fr 1fr 1fr 0.8fr;gap:16px;padding:12px 16px;background:var(--bg-elevated);font-weight:600;font-size:0.75rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border-default)">'
+    h += '<div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 0.9fr 1fr 0.9fr 1fr 0.7fr;gap:12px;padding:12px 16px;background:var(--bg-elevated);font-weight:600;font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border-default)">'
       + '<div>NOME</div>'
+      + '<div style="text-align:center">FORMATO</div>'
       + '<div>STATUS</div>'
-      + '<div style="text-align:center"><span class="mso" style="font-size:12px">calendar_today</span> POST</div>'
-      + '<div style="text-align:center"><span class="mso" style="font-size:12px">assignment_turned_in</span> ENTREGA</div>'
-      + '<div style="text-align:center"><span class="mso" style="font-size:12px">flag</span> PRIO</div>'
+      + '<div style="text-align:center">RESPONSÁVEL</div>'
+      + '<div style="text-align:center"><span class="mso" style="font-size:11px">assignment_turned_in</span> ENTREGA</div>'
+      + '<div style="text-align:center"><span class="mso" style="font-size:11px">calendar_today</span> POST</div>'
+      + '<div style="text-align:center">PUBLICAÇÃO</div>'
+      + '<div style="text-align:center"><span class="mso" style="font-size:11px">flag</span></div>'
       + '</div>';
 
     // Rows
@@ -28492,12 +28495,34 @@ function mtRenderByClient(el, tasks) {
       var overdueIndicator = isOverdue && daysLate > 0 ? ' (' + daysLate + 'd)' : '';
       var rowBg = isOverdue ? 'rgba(220,38,38,0.08)' : 'rgba(255,255,255,0.01)';
 
-      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:2.5fr 1.2fr 1fr 1fr 0.8fr;gap:16px;padding:12px 16px;background:' + rowBg + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid var(--border-default)">'
-        + '<div style="font-size:0.9rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
+      // Format badge
+      var formatBadge = typeof ctRenderFormatBadge === 'function' ? ctRenderFormatBadge(t.publish_config) : '';
+
+      // Responsável
+      var responsavel = t.assignee || '—';
+
+      // Publicação (tempo atrás)
+      var pubTime = '—';
+      if (t.publish_config && t.publish_config.published_at) {
+        var pubDate = new Date(t.publish_config.published_at);
+        var now = new Date();
+        var diffMs = now - pubDate;
+        var diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        var diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        if (diffDays > 0) pubTime = diffDays + 'd atrás';
+        else if (diffHours > 0) pubTime = diffHours + 'h atrás';
+        else pubTime = 'agora';
+      }
+
+      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:2fr 1.2fr 1fr 0.9fr 1fr 0.9fr 1fr 0.7fr;gap:12px;padding:12px 16px;background:' + rowBg + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid var(--border-default)">'
+        + '<div style="font-size:0.85rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
+        + '<div style="font-size:0.75rem;text-align:center;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">' + formatBadge + '</div>'
         + '<div style="font-size:0.8rem;background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 8px;border-radius:6px;text-align:center;white-space:nowrap;font-weight:600">' + statusDef.label + '</div>'
-        + '<div style="font-size:0.85rem;color:var(--text-secondary);text-align:center">' + postStr + '</div>'
-        + '<div style="font-size:0.85rem;color:var(--text-secondary);text-align:center">' + dueStr + overdueIndicator + '</div>'
-        + '<div style="font-size:0.85rem;color:' + priorityMatch.color + ';font-weight:700;text-align:center">' + priorityMatch.icon + '</div>'
+        + '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center">' + esc(responsavel) + '</div>'
+        + '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center">' + dueStr + overdueIndicator + '</div>'
+        + '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center">' + postStr + '</div>'
+        + '<div style="font-size:0.75rem;color:var(--text-secondary);text-align:center">' + pubTime + '</div>'
+        + '<div style="font-size:0.75rem;color:' + priorityMatch.color + ';font-weight:700;text-align:center">' + priorityMatch.icon + '</div>'
         + '</div>';
     });
 
