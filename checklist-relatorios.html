@@ -14739,12 +14739,25 @@ function applyDesignerRestrictions() {
   if (menuBtn) menuBtn.style.display = 'none';
   if (mainContent) mainContent.style.marginLeft = '0';
 
-  // Show designer topbar (user badge + logout)
+  // Show designer topbar (user badge + theme buttons + logout)
   var designerBar = document.getElementById('designerTopbarActions');
   if (designerBar) {
     designerBar.style.display = 'flex';
     var badge = document.getElementById('designerUserBadge');
     if (badge && gpState.user) badge.innerHTML = '<span class="mso">waving_hand</span> ' + gpState.user.name;
+
+    // Add theme buttons to designer topbar if not already there
+    if (!document.getElementById('designerThemeButtons')) {
+      var themeDiv = document.createElement('div');
+      themeDiv.id = 'designerThemeButtons';
+      themeDiv.style.cssText = 'display:flex;gap:6px;align-items:center;border-left:1px solid var(--border);padding:0 12px';
+      themeDiv.innerHTML =
+        '<button onclick="setTheme(\'light\')" title="Tema Claro" style="width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:#f1f5f9;cursor:pointer;transition:all 0.2s" id="designerThemeLight"><span class="mso" style="font-size:12px">wb_sunny</span></button>' +
+        '<button onclick="setTheme(\'dark\')" title="Tema Escuro" style="width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:#0f172a;cursor:pointer;transition:all 0.2s" id="designerThemeDark"><span class="mso" style="font-size:12px">dark_mode</span></button>' +
+        '<button onclick="setTheme(\'warm\')" title="Tema Sépia" style="width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:#f5f0e8;cursor:pointer;transition:all 0.2s" id="designerThemeWarm"><span class="mso" style="font-size:12px">eco</span></button>' +
+        '<button onclick="setTheme(\'emerald\')" title="Tema Emerald" style="width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.3);background:radial-gradient(circle at 30% 30%,#46eecd 0%,#00d1b2 60%,#0c141f 100%);cursor:pointer;transition:all 0.2s" id="designerThemeEmerald"><span class="mso" style="font-size:12px">diamond</span></button>';
+      designerBar.insertBefore(themeDiv, designerBar.firstChild);
+    }
   }
 
   // Lock navigation — only allow minhas-tasks
