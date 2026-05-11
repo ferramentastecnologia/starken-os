@@ -28437,7 +28437,7 @@ function mtRenderByClient(el, tasks) {
   });
 
   var sortedClients = Object.keys(grouped).sort();
-  var h = '<div style="padding:16px;display:flex;flex-direction:column;gap:20px">';
+  var h = '<div style="padding:16px;display:flex;flex-direction:column;gap:20px;overflow-x:auto">';
 
   sortedClients.forEach(function(cname) {
     var group = grouped[cname];
@@ -28476,8 +28476,12 @@ function mtRenderByClient(el, tasks) {
     h += '</div>';
     h += '</div>';
 
+    // Table wrapper with horizontal scroll
+    h += '<div style="overflow-x:auto;border-radius:8px;border:1px solid var(--border-default)">';
+    h += '<div style="min-width:1000px">';
+
     // Table header
-    h += '<div style="display:grid;grid-template-columns:2fr 1.2fr 1fr 0.9fr 1fr 0.9fr 1fr 0.7fr;gap:12px;padding:12px 16px;background:var(--bg-elevated);font-weight:600;font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border-default)">'
+    h += '<div style="display:grid;grid-template-columns:2.2fr 1.4fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 0.9fr;gap:12px;padding:12px 16px;background:var(--bg-elevated);font-weight:600;font-size:0.7rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border-default);position:sticky;top:0">'
       + '<div>NOME</div>'
       + '<div style="text-align:center">FORMATO</div>'
       + '<div>STATUS</div>'
@@ -28527,7 +28531,7 @@ function mtRenderByClient(el, tasks) {
         else pubTime = 'agora';
       }
 
-      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:2fr 1.2fr 1fr 0.9fr 1fr 0.9fr 1fr 0.7fr;gap:12px;padding:12px 16px;background:' + rowBg + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid var(--border-default)">'
+      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:2.2fr 1.4fr 1.2fr 1.2fr 1.2fr 1.2fr 1.2fr 0.9fr;gap:12px;padding:12px 16px;background:' + rowBg + ';cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid var(--border-default)">'
         + '<div style="font-size:0.85rem;color:var(--text-primary);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
         + '<div style="font-size:0.75rem;text-align:center;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">' + formatBadge + '</div>'
         + '<div style="font-size:0.8rem;background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 8px;border-radius:6px;text-align:center;white-space:nowrap;font-weight:600">' + statusDef.label + '</div>'
@@ -28539,7 +28543,9 @@ function mtRenderByClient(el, tasks) {
         + '</div>';
     });
 
-    h += '</div>';
+    h += '</div>'; // fecha header + rows
+    h += '</div>'; // fecha wrapper min-width
+    h += '</div>'; // fecha scroll container
   });
 
   h += '</div>';
