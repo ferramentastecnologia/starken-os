@@ -5967,6 +5967,7 @@ select.ch-field-value { appearance: auto; cursor: pointer; }
                 <button id="mtViewList" onclick="mtSetView('list')" class="mt-nx-vtab active"><span class="mso">view_list</span> LISTA</button>
                 <button id="mtViewCards" onclick="mtSetView('cards')" class="mt-nx-vtab"><span class="mso">dashboard</span> CARDS</button>
                 <button id="mtViewKanban" onclick="mtSetView('kanban')" class="mt-nx-vtab"><span class="mso">view_kanban</span> KANBAN</button>
+                <button id="mtViewClient" onclick="mtSetView('client')" class="mt-nx-vtab"><span class="mso">business</span> POR CLIENTE</button>
               </div>
             </div>
             <div class="mt-nx-topbar-right">
@@ -28221,7 +28222,7 @@ async function mtInit() {
   try {
     const res = await ctApi('list_my_tasks', { assignee: gpState.user.name });
     mtTasks = Array.isArray(res) ? res : (res.data || []);
-    mtView = 'list';
+    mtView = localStorage.getItem('mtViewMode') || 'list';
 
     // Load recent agendado/publicado tasks (last 7 days)
     mtRecentTasks = [];
@@ -28253,12 +28254,15 @@ async function mtInit() {
 
 function mtSetView(mode) {
   mtView = mode;
+  localStorage.setItem('mtViewMode', mode);
   var listBtn = document.getElementById('mtViewList');
   var cardsBtn = document.getElementById('mtViewCards');
   var kanbanBtn = document.getElementById('mtViewKanban');
+  var clientBtn = document.getElementById('mtViewClient');
   if (listBtn) { listBtn.classList.toggle('active', mode === 'list'); listBtn.style.background = ''; listBtn.style.color = ''; }
   if (cardsBtn) { cardsBtn.classList.toggle('active', mode === 'cards'); cardsBtn.style.background = ''; cardsBtn.style.color = ''; }
   if (kanbanBtn) { kanbanBtn.classList.toggle('active', mode === 'kanban'); kanbanBtn.style.background = ''; kanbanBtn.style.color = ''; }
+  if (clientBtn) { clientBtn.classList.toggle('active', mode === 'client'); clientBtn.style.background = ''; clientBtn.style.color = ''; }
   mtRender();
 }
 
@@ -28316,8 +28320,8 @@ function mtRender() {
   const statusFilterEl = document.getElementById('mtStatusFilter');
   const statusFilter = statusFilterEl ? statusFilterEl.value : '';
 
-  // Render Nexus Emerald bento cards & bottom widgets (only for cards/kanban, not list)
-  if (mtView !== 'list') {
+  // Render Nexus Emerald bento cards & bottom widgets (only for cards/kanban, not list/client)
+  if (mtView !== 'list' && mtView !== 'client') {
     mtRenderBento();
     mtRenderBottomWidgets();
   } else {
@@ -28394,12 +28398,95 @@ function mtRender() {
       mtRenderKanban(el, tasks);
     } else if (mtView === 'cards') {
       mtRenderCards(el, tasks);
+    } else if (mtView === 'client') {
+      mtRenderByClient(el, tasks);
     } else {
       mtRenderList(el, tasks);
     }
   } else {
     el.innerHTML = '<div class="mt-empty">Nenhuma task pendente</div>';
   }
+}
+
+// ── Render by Client: Group tasks by client ──
+function mtRenderByClient(el, tasks) {
+  var clients = _metaClients || {};
+  var grouped = {};
+
+  tasks.forEach(function(t) {
+    var cid = t.client_id || 'default';
+    var cl = clients[cid];
+    var cname = cl ? (cl.pageName || cl.name || cid) : (t.group_name || 'Sem cliente');
+    if (!grouped[cname]) {
+      grouped[cname] = { name: cname, client_id: cid, tasks: [] };
+    }
+    grouped[cname].tasks.push(t);
+  });
+
+  var sortedClients = Object.keys(grouped).sort();
+  var h = '<div style="display:flex;flex-direction:column;gap:0;background:rgba(0,0,0,0.2)">';
+
+  sortedClients.forEach(function(cname) {
+    var group = grouped[cname];
+    var count = group.tasks.length;
+    var statusCounts = {};
+
+    group.tasks.forEach(function(t) {
+      var st = t.status || 'a-fazer';
+      statusCounts[st] = (statusCounts[st] || 0) + 1;
+    });
+
+    var urgentCount = statusCounts['alteracao-design'] || 0;
+
+    // Section header
+    h += '<div style="margin-top:16px;font-size:12px;font-weight:600;color:rgba(255,255,255,0.8);padding:8px 12px;background:rgba(0,0,0,0.4);border-radius:4px 4px 0 0">';
+    h += '<span class="mso" style="font-size:14px;margin-right:6px">business</span>' + esc(cname) + ' <span style="color:rgba(255,255,255,0.5);font-weight:400">(' + count + ')</span>';
+    if (urgentCount > 0) h += ' <span style="background:#dc2626;color:#fff;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700">⚠ ' + urgentCount + ' urgente</span>';
+    h += '</div>';
+
+    // Table header
+    h += '<div style="display:grid;grid-template-columns:150px 1fr 100px 80px 80px 60px;gap:12px;padding:12px;background:rgba(0,0,0,0.3);font-weight:600;font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid rgba(0,0,0,0.2)">'
+      + '<div></div>'
+      + '<div>NOME</div>'
+      + '<div>STATUS</div>'
+      + '<div>POST</div>'
+      + '<div>ENTREGA</div>'
+      + '<div>PRIO</div>'
+      + '</div>';
+
+    // Rows
+    var sortedTasks = group.tasks.slice().sort(function(a, b) {
+      var statusOrder = { 'alteracao-design': 0, 'design': 1, 'em-revisao': 2, 'aprovacao-design': 3, 'a-fazer': 4, 'em-andamento': 5 };
+      var sA = statusOrder[a.status] ?? 9;
+      var sB = statusOrder[b.status] ?? 9;
+      if (sA !== sB) return sA - sB;
+      return 0;
+    });
+
+    sortedTasks.forEach(function(t) {
+      var statusDef = CT_STATUSES.find(function(s) { return s.key === (t.status || 'a-fazer'); }) || CT_STATUSES[0];
+      var postDate = mtGetPostDate(t);
+      var postStr = postDate ? new Date(postDate + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+      var dueStr = t.due_date ? new Date(t.due_date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '—';
+      var priorityMatch = CT_PRIORITIES.find(function(p) { return p.key === (t.priority || 'normal'); }) || CT_PRIORITIES[2];
+      var isOverdue = mtIsTaskOverdue(t);
+      var daysLate = mtCalculateDaysLate(t);
+      var overdueIndicator = isOverdue && daysLate > 0 ? ' (' + daysLate + 'd)' : '';
+      var overdueStyle = isOverdue ? 'color:#fca5a5;font-weight:600;' : '';
+
+      h += '<div onclick="ctOpenModal(\'' + t.id + '\')" style="display:grid;grid-template-columns:150px 1fr 100px 80px 80px 60px;gap:12px;padding:12px;background:rgba(0,0,0,0.1);cursor:pointer;transition:all 0.2s;align-items:center;border-bottom:1px solid rgba(0,0,0,0.2);' + (isOverdue ? 'background:rgba(220,38,38,0.08);' : '') + '">'
+        + '<div></div>'
+        + '<div style="font-size:13px;color:#e2e8f0;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.name || '') + '</div>'
+        + '<div style="font-size:11px;background:' + statusDef.bg + ';color:' + statusDef.color + ';padding:4px 8px;border-radius:4px;text-align:center;white-space:nowrap">' + statusDef.label + '</div>'
+        + '<div style="font-size:12px;color:rgba(255,255,255,0.7);text-align:center;' + overdueStyle + '">' + postStr + overdueIndicator + '</div>'
+        + '<div style="font-size:12px;color:rgba(255,255,255,0.6);text-align:center">' + dueStr + '</div>'
+        + '<div style="font-size:11px;color:' + priorityMatch.color + ';font-weight:700;text-align:center">' + priorityMatch.icon + '</div>'
+        + '</div>';
+    });
+  });
+
+  h += '</div>';
+  el.innerHTML = h;
 }
 
 // ── Nexus Emerald: Bento stat cards ──
