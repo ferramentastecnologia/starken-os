@@ -29099,7 +29099,16 @@ function mtRenderRow(task, mode) {
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.45)">' + dueStr + '</div>';
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.4">' + mtPostStr + _mtDaysBadge + '</div>';
   html += _waCell;
-  html += '<div style="text-align:center">' + priorityBadge + '</div>';
+  // PRIO column with urgency and priority badges
+  var prioCell = '<div style="text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center">';
+  if (isAlteracao) {
+    prioCell += '<span style="background:#ef4444;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">⚠ URGENTE</span>';
+  } else if (statusKey === 'design') {
+    prioCell += '<span style="background:#2563eb;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">✏ DESIGN</span>';
+  }
+  prioCell += priorityBadge;
+  prioCell += '</div>';
+  html += prioCell;
   html += '</div>';
 
   return html;
