@@ -28688,7 +28688,13 @@ function _mtGetColWidths(mode) {
   if (!_mtColWidthsCache[mode]) {
     try {
       var saved = localStorage.getItem('mt_col_widths_' + mode);
-      if (saved) _mtColWidthsCache[mode] = JSON.parse(saved);
+      if (saved) {
+        var parsed = JSON.parse(saved);
+        // Invalida cache se número de colunas mudou
+        if (parsed.length === _mtDefaultCols[mode].length) {
+          _mtColWidthsCache[mode] = parsed;
+        }
+      }
     } catch(e) {}
     if (!_mtColWidthsCache[mode]) _mtColWidthsCache[mode] = _mtDefaultCols[mode].slice();
   }
