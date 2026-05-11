@@ -28646,7 +28646,7 @@ function mtRenderRecent(container) {
   var cols = _mtGetColWidths('by-list');
   h += '<div class="mt-list">';
   h += '<div class="mt-header-row by-list" style="grid-template-columns:' + cols.join(' ') + '">';
-  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PUBLICAÇÃO','PRIO'];
+  var hdrs = ['CLIENTE','NOME','FORMATO','STATUS','<span class="mso">design_services</span> ENTREGA','<span class="mso">calendar_today</span> POST','PUBLICAÇÃO','PRIO','URGÊNCIA'];
   hdrs.forEach(function(hdr, i) {
     h += '<div class="mt-header-col" data-col="' + i + '">' + hdr + '<div class="mt-resize-handle" data-col="' + i + '"></div></div>';
   });
@@ -28680,8 +28680,8 @@ function mtRenderRecent(container) {
 // ── Resizable columns (Finder-style) ──
 var _mtColWidthsCache = {};
 var _mtDefaultCols = {
-  'by-list':   [200, 320, 95, 120, 85, 85, 110, 80],
-  'by-client': [320, 95, 140, 130, 85, 85, 110, 80, 90]
+  'by-list':   [200, 320, 95, 120, 85, 85, 110, 80, 110],
+  'by-client': [320, 95, 140, 130, 85, 85, 110, 75, 120]
 };
 
 function _mtGetColWidths(mode) {
@@ -29099,13 +29099,13 @@ function mtRenderRow(task, mode) {
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.45)">' + dueStr + '</div>';
   html += '<div style="font-size:12px;color:rgba(255,255,255,0.45);line-height:1.4">' + mtPostStr + _mtDaysBadge + '</div>';
   html += _waCell;
-  html += '<div style="text-align:center">' + priorityBadge + '</div>';
+  html += '<div style="text-align:center;padding:0 4px">' + priorityBadge + '</div>';
   // URGÊNCIA column - show urgency and design status badges
-  var urgencyCell = '<div style="text-align:center;display:flex;flex-direction:column;gap:4px;align-items:center;justify-content:center">';
+  var urgencyCell = '<div style="text-align:center;padding:0 4px;display:flex;flex-direction:column;gap:3px;align-items:center;justify-content:center;min-width:120px">';
   if (isAlteracao) {
-    urgencyCell += '<span style="background:#ef4444;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">⚠ URGENTE</span>';
+    urgencyCell += '<span style="background:#ef4444;color:#fff;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;display:inline-block">⚠ URGENTE</span>';
   } else if (statusKey === 'design') {
-    urgencyCell += '<span style="background:#2563eb;color:#fff;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap">✏ DESIGN</span>';
+    urgencyCell += '<span style="background:#2563eb;color:#fff;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700;white-space:nowrap;display:inline-block">✏ DESIGN</span>';
   } else {
     urgencyCell += '<span style="color:rgba(255,255,255,0.3);font-size:11px">—</span>';
   }
