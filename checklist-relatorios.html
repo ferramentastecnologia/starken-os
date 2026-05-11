@@ -28849,6 +28849,7 @@ function mtRenderByClient(el, tasks) {
   );
 
   let html = '';
+  var _mtOpenGroups = JSON.parse(localStorage.getItem('mt_open_groups') || '{}');
 
   sortedCids.forEach(cid => {
     const clientTasks = groups[cid].tasks;
@@ -28861,15 +28862,35 @@ function mtRenderByClient(el, tasks) {
     clientTasks.sort((a, b) => {
       const dA = (a.publish_config && a.publish_config.post_date) || a.due_date || '0000-00-00';
       const dB = (b.publish_config && b.publish_config.post_date) || b.due_date || '0000-00-00';
-      return dB.localeCompare(dA); // descendente
+      return dB.localeCompare(dA);
     });
 
+    const isOpen = !!_mtOpenGroups[cid];
+
+    // Badges de alerta para exibir no header quando fechado
+    const aprovDesign = clientTasks.filter(t => t.status === 'aprovacao-design').length;
+    const alteracao   = clientTasks.filter(t => t.status === 'alteracao-design').length;
+    const design      = clientTasks.filter(t => t.status === 'design').length;
+    var alertBadges = '';
+    if (alteracao > 0) alertBadges += '<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">⚠ ' + alteracao + ' urgente</span>';
+    if (aprovDesign > 0) alertBadges += '<span style="background:#059669;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">✓ ' + aprovDesign + ' aprovação</span>';
+    if (design > 0) alertBadges += '<span style="background:#2563eb;color:#fff;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700">✏ ' + design + ' design</span>';
+
+    var safeId = cid.replace(/[^a-zA-Z0-9]/g, '_');
+
     html += '<div class="mt-client-section">';
-    html += '<div class="mt-client-header">';
+
+    // Header clicável
+    html += '<div class="mt-client-header" onclick="mtToggleGroup(\'' + safeId + '\',\'' + cid + '\')" style="cursor:pointer;user-select:none">';
     html += '<div class="mt-client-avatar" style="background:' + color + '">' + initials + '</div>';
     html += '<span class="mt-client-name">' + clientName + '</span>';
     html += '<span class="mt-client-count">' + clientTasks.length + '</span>';
+    html += '<div style="display:flex;gap:6px;align-items:center;margin-left:12px;flex:1">' + alertBadges + '</div>';
+    html += '<span class="mso" id="chevron_' + safeId + '" style="color:rgba(255,255,255,0.3);font-size:18px;transition:transform 0.2s;' + (isOpen ? 'transform:rotate(180deg)' : '') + '">expand_more</span>';
     html += '</div>';
+
+    // Body colapsável
+    html += '<div id="group_' + safeId + '" style="display:' + (isOpen ? 'block' : 'none') + '">';
     var cols = _mtGetColWidths('by-client');
     html += '<div class="mt-list">';
     html += '<div class="mt-header-row by-client" style="grid-template-columns:' + cols.join(' ') + '">';
@@ -28881,11 +28902,28 @@ function mtRenderByClient(el, tasks) {
     clientTasks.forEach(t => {
       html += mtRenderRow(t, 'by-client');
     });
-    html += '</div></div>';
+    html += '</div>';
+    html += '</div>';
+
+    html += '</div>';
   });
 
   el.innerHTML = html;
   _mtInitResize(el, 'by-client');
+}
+
+function mtToggleGroup(safeId, cid) {
+  var body    = document.getElementById('group_' + safeId);
+  var chevron = document.getElementById('chevron_' + safeId);
+  if (!body) return;
+  var open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+  try {
+    var state = JSON.parse(localStorage.getItem('mt_open_groups') || '{}');
+    if (open) delete state[cid]; else state[cid] = 1;
+    localStorage.setItem('mt_open_groups', JSON.stringify(state));
+  } catch(e) {}
 }
 
 function mtGetPostDate(task) {
