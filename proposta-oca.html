@@ -191,7 +191,444 @@
     .p9 { background: linear-gradient(135deg,#1a1510,#2d2518); }
     .post-icon { font-size: 2.5rem; opacity: 0.4; }
 
-    /* ─── STORIES MOCKUP ─── */
+    /* ─── FEED GRID (9 CRIATIVOS) ─── */
+    .feed-grid {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 12px;
+      margin-top: 44px;
+    }
+    .feed-card {
+      aspect-ratio: 1; border-radius: 8px; overflow: hidden;
+      position: relative; background: #0a0a0a; color: #fff;
+      font-family: 'Inter', sans-serif; font-weight: 800;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .feed-num {
+      position: absolute; top: 8px; left: 8px; z-index: 20;
+      background: var(--red); color: #fff;
+      font-size: 0.6rem; font-weight: 900; padding: 3px 8px; border-radius: 4px;
+    }
+    @media(max-width:768px){ .feed-grid { grid-template-columns: repeat(2,1fr); } }
+    @media(max-width:480px){ .feed-grid { grid-template-columns: 1fr; } }
+
+    /* 01 Prato do Dia */
+    .feed-prato { background: linear-gradient(180deg, #3d2818 0%, #1a0f08 100%); }
+    .feed-prato .feed-img {
+      position: absolute; top: 8%; left: 8%; width: 84%; height: 60%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #c47a2a, #5d2e0c 60%, #1a0a00 100%);
+      box-shadow: inset 0 -8px 20px rgba(0,0,0,0.5);
+    }
+    .feed-prato .feed-img::after {
+      content: ''; position: absolute; top: 20%; left: 25%; width: 35%; height: 25%;
+      background: radial-gradient(ellipse, rgba(255,220,140,0.3), transparent);
+    }
+    .feed-badge {
+      position: absolute; top: 8px; right: 8px; z-index: 5;
+      background: var(--red); color: #fff;
+      font-size: 0.55rem; font-weight: 900; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px;
+    }
+    .feed-price-tag {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: var(--red); padding: 10px 12px;
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .price-lbl { font-size: 0.7rem; font-weight: 900; line-height: 1; }
+    .price-val { font-size: 0.85rem; }
+    .price-val strong { font-size: 1.4rem; font-weight: 900; }
+    .price-val sup { font-size: 0.6rem; }
+
+    /* 02 Terça Picanha */
+    .feed-picanha { background: linear-gradient(180deg, #1a0a00, #0a0500); }
+    .feed-picanha .feed-fire-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 70%, rgba(232,35,26,0.5), transparent 60%),
+                  radial-gradient(ellipse at 50% 80%, rgba(255,180,50,0.3), transparent 50%);
+    }
+    .feed-picanha .feed-banner-title {
+      position: absolute; top: 8%; left: 0; right: 0; text-align: center;
+      font-size: 1.1rem; font-weight: 900; line-height: 1; letter-spacing: -1px;
+      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+      color: #fff; z-index: 5;
+    }
+    .feed-picanha .feed-banner-title::before {
+      content: ''; position: absolute; top: -20%; left: -10%; right: -10%; bottom: -20%;
+      background: linear-gradient(135deg, var(--red), transparent 60%); z-index: -1;
+    }
+    .feed-meat-grill {
+      position: absolute; top: 35%; left: 10%; width: 70%; height: 40%;
+      background: linear-gradient(135deg, #6b3410 0%, #3d1d05 50%, #1a0a00 100%);
+      border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    }
+    .feed-price-circle {
+      position: absolute; right: 6%; top: 30%;
+      width: 56px; height: 56px; background: #FFD700;
+      border-radius: 50%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      color: #000; font-size: 0.55rem; font-weight: 900;
+      z-index: 5;
+    }
+    .feed-price-circle strong { font-size: 1.1rem; line-height: 1; }
+    .feed-price-circle sup { font-size: 0.5rem; }
+    .feed-logo {
+      position: absolute; bottom: 6%; left: 0; right: 0; text-align: center;
+      background: var(--red); color: #fff; padding: 6px;
+      font-size: 0.7rem; font-weight: 900;
+    }
+    .feed-logo span { font-size: 0.45rem; font-weight: 600; opacity: 0.9; }
+
+    /* 03 Combo Família */
+    .feed-combo { background: #1a0a08; }
+    .feed-top-bar {
+      position: absolute; top: 0; left: 0; right: 0;
+      background: var(--red); color: #fff; padding: 8px 12px;
+      font-size: 0.85rem; font-weight: 900; text-align: center; letter-spacing: 1px;
+    }
+    .feed-combo-img {
+      position: absolute; top: 30%; left: 5%; width: 90%; height: 45%;
+      background: linear-gradient(135deg, #5d2e0c 0%, #2d1500 100%);
+      border-radius: 6px;
+    }
+    .feed-combo-img::after {
+      content: ''; position: absolute; top: 20%; left: 15%; width: 70%; height: 60%;
+      background: radial-gradient(ellipse, #8b4513 30%, #5d2e0c 60%, transparent);
+      border-radius: 50%;
+    }
+    .feed-bottom-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 8px 12px; background: rgba(0,0,0,0.85);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .feed-logo-small {
+      background: var(--red); padding: 3px 8px; border-radius: 3px;
+      font-size: 0.65rem; font-weight: 900; flex-shrink: 0;
+    }
+    .feed-combo-desc { font-size: 0.55rem; font-weight: 600; opacity: 0.9; }
+
+    /* 04 Costela na Brasa */
+    .feed-costela { background: #0a0a0a; }
+    .feed-novidade {
+      position: absolute; top: 6%; left: 0; right: 0; text-align: center;
+      font-size: 0.7rem; font-weight: 900; color: #fff;
+    }
+    .feed-costela-title {
+      position: absolute; top: 14%; left: 0; right: 0; text-align: center;
+      font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 800;
+      font-style: italic; color: #fff; line-height: 1;
+    }
+    .feed-costela-sub {
+      position: absolute; top: 28%; left: 0; right: 0; text-align: center;
+      font-size: 0.5rem; font-weight: 500; color: rgba(255,255,255,0.7);
+      font-style: italic;
+    }
+    .feed-costela-img {
+      position: absolute; top: 38%; left: 8%; width: 84%; height: 42%;
+      background: linear-gradient(135deg, #3d1d05 0%, #1a0a00 60%, #0a0500 100%);
+      border-radius: 4px;
+      box-shadow: 0 6px 18px rgba(232,35,26,0.3);
+    }
+    .feed-costela-img::after {
+      content: ''; position: absolute; inset: 10%;
+      background: linear-gradient(90deg, #6b3410, #3d1d05, #6b3410);
+      border-radius: 4px;
+    }
+    .feed-logo-bottom {
+      position: absolute; bottom: 6%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.7rem; font-weight: 900;
+    }
+    .feed-logo-bottom span { font-size: 0.45rem; opacity: 0.7; }
+
+    /* 05 Carne Boa é na Oca */
+    .feed-carne { background: linear-gradient(180deg, #1a0a00, #2d1000 60%, #1a0a00); }
+    .feed-fire-icons {
+      position: absolute; top: 8%; left: 0; right: 0; text-align: center;
+      font-size: 0.6rem; opacity: 0.9;
+    }
+    .feed-carne-title {
+      position: absolute; top: 22%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 1.1rem; font-weight: 900; line-height: 1; letter-spacing: -1px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .feed-carne-title span { color: var(--red); }
+    .feed-carne-sub {
+      position: absolute; top: 52%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.55rem; font-family: 'Playfair Display', serif;
+      font-style: italic; line-height: 1.4;
+    }
+    .feed-logo-redbox {
+      position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+      background: var(--red); color: #fff; padding: 4px 10px; border-radius: 3px;
+      font-size: 0.7rem; font-weight: 900;
+    }
+
+    /* 06 Da Brasa Pro Prato */
+    .feed-brasa { background: linear-gradient(135deg, #3d1d05, #1a0a00); }
+    .feed-brasa-split {
+      position: absolute; inset: 0;
+      background: linear-gradient(110deg, transparent 49%, var(--red) 49.5%, var(--red) 51%, transparent 51.5%);
+    }
+    .feed-brasa-title {
+      position: absolute; bottom: 18%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 1rem; font-weight: 900; line-height: 1; letter-spacing: -0.5px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .feed-logo-mini {
+      position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+      background: var(--red); color: #fff; padding: 3px 8px; border-radius: 3px;
+      font-size: 0.6rem; font-weight: 900;
+    }
+
+    /* 07 Cardápio */
+    .feed-menu { background: linear-gradient(180deg, #2d1500 0%, #1a0a00 100%); padding: 0; }
+    .feed-menu-header {
+      position: absolute; top: 8%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.85rem; font-weight: 900; line-height: 1.2;
+    }
+    .feed-menu-list {
+      position: absolute; top: 30%; left: 10%; right: 10%;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .menu-line {
+      display: flex; justify-content: space-between; align-items: center;
+      color: #fff; font-size: 0.6rem; font-weight: 700;
+      padding-bottom: 4px; border-bottom: 1px solid var(--red);
+    }
+
+    /* 08 Depoimento */
+    .feed-review { background: linear-gradient(135deg, #1a0a0a, #0a0505); padding: 0; }
+    .feed-review-quote {
+      position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
+      color: var(--red); font-size: 3.5rem; font-weight: 900; line-height: 0.5;
+      font-family: 'Playfair Display', serif;
+    }
+    .feed-review-text {
+      position: absolute; top: 42%; left: 10%; right: 10%; text-align: center;
+      color: #fff; font-size: 0.6rem; font-style: italic; line-height: 1.5;
+      font-family: 'Playfair Display', serif;
+    }
+    .feed-review-stars {
+      position: absolute; bottom: 28%; left: 0; right: 0; text-align: center;
+      color: #FFD700; font-size: 0.7rem; letter-spacing: 2px;
+    }
+    .feed-review-author {
+      position: absolute; bottom: 20%; left: 0; right: 0; text-align: center;
+      color: rgba(255,255,255,0.7); font-size: 0.5rem; font-weight: 500;
+    }
+
+    /* 09 Peça Já */
+    .feed-delivery { background: var(--red); }
+    .feed-fire-corner {
+      position: absolute; top: 0; right: 0; width: 50%; height: 30%;
+      background: linear-gradient(225deg, #000 0%, transparent 70%);
+    }
+    .feed-pecaja-logo {
+      position: absolute; top: 6%; left: 50%; transform: translateX(-50%);
+      color: #fff; font-size: 1.4rem; font-weight: 900; letter-spacing: -1px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .feed-pecaja-title {
+      position: absolute; top: 28%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: -1px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .feed-bike {
+      position: absolute; top: 48%; left: 50%; transform: translateX(-50%);
+      font-size: 2.5rem;
+    }
+    .feed-delivery-info {
+      position: absolute; bottom: 14%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.65rem; font-weight: 700;
+    }
+
+    /* ─── PHONES GALLERY (STORIES) ─── */
+    .phones-gallery {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+      margin: 56px auto 0; max-width: 980px;
+    }
+    @media(max-width:768px){ .phones-gallery { grid-template-columns: repeat(2, 1fr); gap: 16px; } }
+    @media(max-width:480px){ .phones-gallery { grid-template-columns: 1fr 1fr; gap: 12px; } }
+    .phone-sm {
+      width: 100%; max-width: 200px; margin: 0 auto;
+    }
+    .phone-caption {
+      text-align: center; font-size: 0.75rem; color: rgba(255,255,255,0.6);
+      margin-top: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .st-bars { position: absolute; top: 5%; left: 0; right: 0; display: flex; gap: 2px; padding: 0 8px; z-index: 30; }
+    .st-bar { height: 2px; flex: 1; background: rgba(255,255,255,0.3); border-radius: 2px; }
+    .st-bar.active { background: #fff; }
+    .st-logo-tag {
+      display: block; margin: 12% auto 0; width: fit-content;
+      background: var(--red); color: #fff; padding: 3px 10px;
+      font-size: 0.65rem; font-weight: 900; border-radius: 4px; letter-spacing: 1px;
+      position: relative; z-index: 10;
+    }
+
+    /* Story 1 - Promoção */
+    .st-promo { background: linear-gradient(180deg, #1a0a00 0%, #2d1000 100%); position: relative; overflow: hidden; }
+    .st-promo::before {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40%;
+      background: radial-gradient(ellipse at 50% 100%, rgba(232,35,26,0.6), transparent 70%);
+    }
+    .st-title-top {
+      position: absolute; top: 12%; left: 0; right: 0; text-align: center; z-index: 5;
+      color: #fff; font-size: 0.95rem; font-weight: 900; line-height: 1; letter-spacing: -0.5px;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .st-title-top span { color: #fff; }
+    .st-meat-plate {
+      position: absolute; top: 32%; left: 15%; width: 70%; height: 30%;
+      background: linear-gradient(135deg, #6b3410 0%, #3d1d05 100%);
+      border-radius: 50%;
+      box-shadow: 0 8px 20px rgba(232,35,26,0.4);
+    }
+    .st-price-big {
+      position: absolute; bottom: 18%; left: 0; right: 0; text-align: center;
+      color: #FFD700; font-size: 0.95rem; font-weight: 900;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .st-price-big strong { font-size: 1.4rem; }
+    .st-price-big sup { font-size: 0.6rem; }
+    .st-promo .st-logo-tag { position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%); margin: 0; }
+
+    /* Story 2 - Menu */
+    .st-menu { background: linear-gradient(180deg, #1a0a00, #0a0500); padding-top: 8%; }
+    .st-menu-title {
+      text-align: center; color: #fff; font-size: 0.7rem; font-weight: 900;
+      line-height: 1.2; margin: 6px 0 12px;
+    }
+    .st-menu-items { padding: 0 14px; display: flex; flex-direction: column; gap: 8px; }
+    .st-menu-row {
+      display: flex; justify-content: space-between; align-items: center;
+      color: #fff; font-size: 0.55rem; font-weight: 700;
+      padding-bottom: 4px; border-bottom: 1px solid var(--red);
+    }
+    .st-swipe {
+      position: absolute; bottom: 5%; left: 0; right: 0; text-align: center;
+      color: var(--red); font-size: 0.5rem; font-weight: 700;
+    }
+
+    /* Story 3 - Peça Já (Delivery) */
+    .st-delivery { background: var(--red); position: relative; }
+    .st-fire-top {
+      position: absolute; top: 0; left: 0; right: 0; height: 30%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.4), transparent 60%);
+    }
+    .st-logo-big {
+      position: absolute; top: 12%; left: 50%; transform: translateX(-50%);
+      color: #fff; font-size: 1.1rem; font-weight: 900; letter-spacing: -1px;
+      text-shadow: 2px 2px 0 #000; z-index: 5;
+    }
+    .st-delivery-title {
+      position: absolute; top: 30%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 1rem; font-weight: 900; letter-spacing: -0.5px;
+      text-shadow: 2px 2px 0 #000;
+    }
+    .st-bike {
+      position: absolute; top: 48%; left: 50%; transform: translateX(-50%);
+      font-size: 2rem;
+    }
+    .st-delivery-info {
+      position: absolute; bottom: 22%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.6rem; font-weight: 700;
+    }
+    .st-whatsapp {
+      position: absolute; bottom: 10%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.55rem; font-weight: 600;
+    }
+
+    /* Story 4 - Depoimento */
+    .st-review { background: linear-gradient(135deg, #1a0a0a, #0a0505); padding-top: 12%; position: relative; }
+    .st-review-title {
+      text-align: center; color: #fff; font-size: 0.7rem; font-weight: 800;
+      line-height: 1.2; margin: 8px 0;
+    }
+    .st-review-quote {
+      text-align: center; color: var(--red); font-size: 2rem; font-weight: 900;
+      line-height: 0.3; font-family: 'Playfair Display', serif;
+      margin: 16px 0 8px;
+    }
+    .st-review-text {
+      padding: 0 12px; color: #fff; font-size: 0.55rem;
+      font-style: italic; line-height: 1.5; text-align: center;
+      font-family: 'Playfair Display', serif;
+    }
+    .st-review-stars {
+      text-align: center; color: #FFD700; font-size: 0.65rem; margin-top: 8px;
+    }
+    .st-review-by {
+      text-align: center; color: rgba(255,255,255,0.6); font-size: 0.45rem;
+      margin-top: 4px;
+    }
+    .st-review .st-logo-tag {
+      position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%); margin: 0;
+    }
+
+    /* Story 5 - Direto da Brasa */
+    .st-brasa { background: linear-gradient(180deg, #1a0a00, #0a0500); position: relative; }
+    .st-brasa-title {
+      position: absolute; top: 10%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.65rem; font-weight: 900;
+      z-index: 5;
+    }
+    .st-brasa-img {
+      position: absolute; top: 22%; left: 0; right: 0; height: 50%;
+      background:
+        radial-gradient(ellipse at 50% 60%, rgba(255,150,50,0.4), transparent 60%),
+        linear-gradient(180deg, #2d1000 0%, #5d2e0c 50%, #2d1000 100%);
+    }
+    .st-brasa-img::after {
+      content: ''; position: absolute; bottom: 0; left: 10%; right: 10%; height: 40%;
+      background: linear-gradient(180deg, transparent, rgba(232,35,26,0.6));
+    }
+    .st-brasa-logo {
+      position: absolute; bottom: 18%; left: 0; right: 0; text-align: center;
+      color: var(--red); font-size: 1.1rem; font-weight: 900; letter-spacing: -1px;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .st-brasa-sub {
+      position: absolute; bottom: 10%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.5rem; font-style: italic;
+    }
+
+    /* Story 6 - Aberto Hoje */
+    .st-aberto { background: linear-gradient(180deg, #1a0a00, #0a0500); position: relative; padding-top: 6%; }
+    .st-aberto-logo {
+      text-align: center; background: var(--red); color: #fff;
+      width: fit-content; margin: 8% auto 0;
+      padding: 3px 10px; font-size: 0.65rem; font-weight: 900; border-radius: 4px;
+    }
+    .st-aberto-title {
+      text-align: center; color: #fff; font-size: 1rem; font-weight: 900;
+      line-height: 1; margin-top: 12px;
+      text-shadow: 1px 1px 0 #000;
+    }
+    .st-aberto-clock {
+      position: absolute; top: 16%; right: 14%; font-size: 1.6rem;
+    }
+    .st-aberto-time {
+      position: absolute; bottom: 18%; left: 0; right: 0; text-align: center;
+      color: #fff; font-size: 0.55rem; font-weight: 600;
+    }
+    .st-aberto-time .t-big {
+      color: #FFD700; font-size: 0.85rem; font-weight: 900; margin: 2px 0;
+    }
+    .st-aberto-foot {
+      position: absolute; bottom: 8%; left: 0; right: 0; text-align: center;
+      color: rgba(255,255,255,0.6); font-size: 0.45rem; font-weight: 500;
+    }
+
+    /* ─── STORY STRATEGY (bottom info) ─── */
+    .story-strategy {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 48px;
+      max-width: 900px; margin-left: auto; margin-right: auto;
+    }
+    .story-strategy-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px;
+    }
+    @media(max-width:640px){ .story-strategy { grid-template-columns: 1fr; } }
+
+    /* ─── STORIES MOCKUP (legado, mantém pra responsividade) ─── */
     .stories-section { background: var(--black); padding: 88px 32px; }
     .stories-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
     .stories-phones { display: flex; gap: 24px; justify-content: center; }
@@ -580,172 +1017,225 @@
     <h2>Cada post com um propósito</h2>
     <p>Não é sobre quantidade — é sobre relevância. Cada criativo ocupa um papel específico na construção da marca Oca.</p>
 
-    <div class="posts-grid">
-      <div class="post-item">
-        <div class="post-bg p1" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">🏷️</div>
+    <div class="feed-grid">
+
+      <!-- 01 Prato do Dia -->
+      <div class="feed-card feed-prato">
+        <div class="feed-badge">OCA</div>
+        <div class="feed-img feed-meat-1"></div>
+        <div class="feed-price-tag">
+          <div class="price-lbl">PRATO<br>DO DIA</div>
+          <div class="price-val">R$ <strong>34</strong><sup>,90</sup></div>
         </div>
-        <div class="post-num">01</div>
-        <div class="post-label"><span>Nova Identidade</span></div>
-        <div class="post-overlay"><p>Apresentação do novo visual. "O Oca mudou" — primeiro impacto que gera curiosidade e retorno</p></div>
+        <div class="feed-num">01</div>
       </div>
-      <div class="post-item">
-        <div class="post-bg p2" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">🍖</div>
+
+      <!-- 02 Terça da Picanha -->
+      <div class="feed-card feed-picanha">
+        <div class="feed-fire-bg"></div>
+        <div class="feed-banner-title">TERÇA DA<br>PICANHA</div>
+        <div class="feed-meat-grill"></div>
+        <div class="feed-price-circle">R$<br><strong>29</strong><sup>,90</sup></div>
+        <div class="feed-logo">OCA <span>Restaurante &amp; Grill</span></div>
+        <div class="feed-num">02</div>
+      </div>
+
+      <!-- 03 Combo Família -->
+      <div class="feed-card feed-combo">
+        <div class="feed-top-bar">COMBO FAMÍLIA</div>
+        <div class="feed-combo-img"></div>
+        <div class="feed-bottom-bar">
+          <div class="feed-logo-small">OCA</div>
+          <div class="feed-combo-desc">A partir de R$ 89,90 — Serve até 4 pessoas</div>
         </div>
-        <div class="post-num">02</div>
-        <div class="post-label"><span>Parmegiana · Qua</span></div>
-        <div class="post-overlay"><p>Quarta-feira é o dia da parmegiana. Processo + resultado + CTA para vir ao restaurante</p></div>
+        <div class="feed-num">03</div>
       </div>
-      <div class="post-item">
-        <div class="post-bg p3" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">🥩</div>
+
+      <!-- 04 Costela na Brasa -->
+      <div class="feed-card feed-costela">
+        <div class="feed-novidade">NOVIDADE! 🔥</div>
+        <div class="feed-costela-title">Costela na Brasa</div>
+        <div class="feed-costela-sub">Assada lentamente na brasa, puro sabor!</div>
+        <div class="feed-costela-img"></div>
+        <div class="feed-logo-bottom">OCA <span>Restaurante &amp; Grill</span></div>
+        <div class="feed-num">04</div>
+      </div>
+
+      <!-- 05 Carne Boa é na Oca -->
+      <div class="feed-card feed-carne">
+        <div class="feed-fire-icons">🔥 🔥</div>
+        <div class="feed-carne-title">CARNE BOA<br>É NA <span>OCA!</span></div>
+        <div class="feed-carne-sub">🥩🔥 Sexta-feira combina<br>com churrasco</div>
+        <div class="feed-logo-redbox">OCA</div>
+        <div class="feed-num">05</div>
+      </div>
+
+      <!-- 06 Da Brasa Pro Prato -->
+      <div class="feed-card feed-brasa">
+        <div class="feed-brasa-split"></div>
+        <div class="feed-brasa-title">DA BRASA<br>PRO PRATO</div>
+        <div class="feed-logo-mini">OCA</div>
+        <div class="feed-num">06</div>
+      </div>
+
+      <!-- 07 Cardápio Completo -->
+      <div class="feed-card feed-menu">
+        <div class="feed-menu-header">CARDÁPIO<br>COMPLETO</div>
+        <div class="feed-menu-list">
+          <div class="menu-line"><span>Picanha</span><span>R$49,90</span></div>
+          <div class="menu-line"><span>Frango</span><span>R$25,90</span></div>
+          <div class="menu-line"><span>Costela</span><span>R$39,90</span></div>
+          <div class="menu-line"><span>Combo</span><span>R$79,90</span></div>
         </div>
-        <div class="post-num">03</div>
-        <div class="post-label"><span>Costela · Sáb</span></div>
-        <div class="post-overlay"><p>Sábado na brasa. Textura, cor, preparo. Conteúdo que dá água na boca antes de abrir</p></div>
+        <div class="feed-logo-mini">OCA</div>
+        <div class="feed-num">07</div>
       </div>
-      <div class="post-item">
-        <div class="post-bg p4" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">🫕</div>
-        </div>
-        <div class="post-num">04</div>
-        <div class="post-label"><span>Feijoada · Qui</span></div>
-        <div class="post-overlay"><p>Quinta de feijoada. Ingredientes, panela, caldeirão. Tradição e pertencimento</p></div>
+
+      <!-- 08 Depoimento -->
+      <div class="feed-card feed-review">
+        <div class="feed-review-quote">"</div>
+        <div class="feed-review-text">A melhor picanha da cidade! Carne no ponto, atendimento incrível.</div>
+        <div class="feed-review-stars">★ ★ ★ ★ ★</div>
+        <div class="feed-review-author">— Maria S., cliente fiel</div>
+        <div class="feed-logo-mini">OCA</div>
+        <div class="feed-num">08</div>
       </div>
-      <div class="post-item">
-        <div class="post-bg p5" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">👨‍🍳</div>
-        </div>
-        <div class="post-num">05</div>
-        <div class="post-label"><span>Bastidores</span></div>
-        <div class="post-overlay"><p>A cozinha em ação. Equipe, ingredientes frescos. Transparência que gera confiança</p></div>
+
+      <!-- 09 Peça Já -->
+      <div class="feed-card feed-delivery">
+        <div class="feed-fire-corner"></div>
+        <div class="feed-pecaja-logo">OCA</div>
+        <div class="feed-pecaja-title">PEÇA JÁ!</div>
+        <div class="feed-bike">🛵</div>
+        <div class="feed-delivery-info">Delivery disponível!</div>
+        <div class="feed-num">09</div>
       </div>
-      <div class="post-item">
-        <div class="post-bg p6" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">🏠</div>
-        </div>
-        <div class="post-num">06</div>
-        <div class="post-label"><span>Ambiente</span></div>
-        <div class="post-overlay"><p>O espaço do Oca: mesas, decoração, atmosfera. A experiência além do prato</p></div>
-      </div>
-      <div class="post-item">
-        <div class="post-bg p7" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">⭐</div>
-        </div>
-        <div class="post-num">07</div>
-        <div class="post-label"><span>Diferencial</span></div>
-        <div class="post-overlay"><p>O que o Oca tem que ninguém tem. Posicionamento único que justifica a escolha</p></div>
-      </div>
-      <div class="post-item">
-        <div class="post-bg p8" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">💬</div>
-        </div>
-        <div class="post-num">08</div>
-        <div class="post-label"><span>Prova Social</span></div>
-        <div class="post-overlay"><p>Cliente satisfeito, avaliações reais. Depoimentos vendem mais que qualquer anúncio</p></div>
-      </div>
-      <div class="post-item">
-        <div class="post-bg p9" style="display:flex;align-items:center;justify-content:center;">
-          <div class="post-icon">📍</div>
-        </div>
-        <div class="post-num">09</div>
-        <div class="post-label"><span>Conversão</span></div>
-        <div class="post-overlay"><p>Horário, localização, como pedir. CTA direto para fechar a visita ou o delivery</p></div>
-      </div>
+
     </div>
-    <p style="text-align:center; margin-top:16px; font-size:0.8rem;">Passe o mouse sobre cada post para ver o objetivo</p>
   </div>
 </section>
 
 <!-- ══ STORIES MOCKUP ══ -->
 <section class="stories-section" id="stories">
   <div class="container">
-    <div class="stories-wrap">
+    <span class="label">Formato · Stories Diários</span>
+    <h2 style="text-align:center; max-width:700px; margin: 0 auto 16px;">Postados entre 9h e 10h</h2>
+    <p style="text-align:center; max-width:680px; margin: 0 auto 16px;">O restaurante abre às 11h. Nossos stories chegam antes — enquanto seu cliente ainda está escolhendo onde almoçar. A decisão começa aqui.</p>
 
-      <div class="stories-phones">
-        <!-- Phone 1 — Prato do Dia -->
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-status">
-            <span>9:00</span>
-            <span style="display:flex;gap:3px;align-items:center;">
-              <svg width="10" height="8" viewBox="0 0 10 8"><rect x="0" y="3" width="2" height="5" fill="rgba(255,255,255,0.7)"/><rect x="3" y="2" width="2" height="6" fill="rgba(255,255,255,0.7)"/><rect x="6" y="0" width="2" height="8" fill="rgba(255,255,255,0.7)"/></svg>
-              <svg width="12" height="8" viewBox="0 0 12 8"><rect x="0" y="1" width="10" height="6" rx="1.5" stroke="rgba(255,255,255,0.7)" stroke-width="1" fill="none"/><rect x="10.5" y="2.5" width="1.5" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="0.8" y="1.8" width="6" height="4.4" rx="0.8" fill="rgba(255,255,255,0.7)"/></svg>
-            </span>
-          </div>
-          <div class="phone-screen story-prato">
-            <div class="story-bg"></div>
-            <div class="food-art"></div>
-            <div class="food-highlight"></div>
-            <div class="story-bars">
-              <div class="story-bar active"></div>
-              <div class="story-bar"></div>
-            </div>
-            <div class="story-header">
-              <span class="story-logo-tag">OCA</span>
-            </div>
-            <div class="story-body">
-              <div class="story-title">Prato<br>do Dia</div>
-              <div class="story-sub">Seg à Sex · 11h às 15h</div>
-              <div class="story-cta">Vem Hoje ↗</div>
-            </div>
-            <div class="swipe-hint">
-              <div class="swipe-arrow">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-              </div>
-              <div class="swipe-line">deslize para cima</div>
-            </div>
-          </div>
-        </div>
+    <div class="phones-gallery">
 
-        <!-- Phone 2 — Horário -->
-        <div class="phone">
-          <div class="phone-notch"></div>
-          <div class="phone-status">
-            <span>9:30</span>
-            <span style="display:flex;gap:3px;align-items:center;">
-              <svg width="10" height="8" viewBox="0 0 10 8"><rect x="0" y="3" width="2" height="5" fill="rgba(255,255,255,0.7)"/><rect x="3" y="2" width="2" height="6" fill="rgba(255,255,255,0.7)"/><rect x="6" y="0" width="2" height="8" fill="rgba(255,255,255,0.7)"/></svg>
-              <svg width="12" height="8" viewBox="0 0 12 8"><rect x="0" y="1" width="10" height="6" rx="1.5" stroke="rgba(255,255,255,0.7)" stroke-width="1" fill="none"/><rect x="10.5" y="2.5" width="1.5" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="0.8" y="1.8" width="6" height="4.4" rx="0.8" fill="rgba(255,255,255,0.7)"/></svg>
-            </span>
-          </div>
-          <div class="phone-screen story-horario">
-            <div class="story-bg"></div>
-            <div class="geo-pattern"></div>
-            <div class="story-bars">
-              <div class="story-bar"></div>
-              <div class="story-bar active"></div>
-            </div>
-            <div class="story-header">
-              <span class="story-logo-tag">OCA</span>
-            </div>
-            <div class="story-body">
-              <div class="story-time-badge">
-                <div class="t-label">Aberto agora</div>
-                <div class="t-value">11h às 14h</div>
-              </div>
-              <div class="story-title">Venha<br>Almoçar</div>
-              <div class="story-sub">Seg a Sáb · Blumenau/SC</div>
-              <div class="story-cta">📍 Como Chegar</div>
-            </div>
-          </div>
+      <!-- Phone 1 — Promoção do Dia -->
+      <div class="phone phone-sm">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:00</span><span>📶 🔋</span></div>
+        <div class="phone-screen st-promo">
+          <div class="st-bars"><div class="st-bar active"></div></div>
+          <div class="st-title-top">PROMOÇÃO<br><span>DO DIA</span></div>
+          <div class="st-meat-plate"></div>
+          <div class="st-price-big">R$ <strong>29</strong><sup>,90</sup></div>
+          <div class="st-fire-bottom"></div>
+          <div class="st-logo-tag">OCA</div>
         </div>
+        <div class="phone-caption">Promoção do Dia</div>
       </div>
 
-      <div class="stories-info">
-        <span class="label">Formato · Stories Diários</span>
-        <h2>Postados entre 9h e 10h</h2>
-        <p>O restaurante abre às 11h. Nossos stories chegam antes — enquanto seu cliente ainda está escolhendo onde almoçar. A decisão começa aqui.</p>
-        <div class="story-detail">
-          <div class="story-detail-time">Story 1 · 9h00</div>
-          <div class="story-detail-title">Prato do Dia</div>
-          <div class="story-detail-desc">Imagem apetitosa do prato + CTA direto para visitar. "Vem hoje às 11h"</div>
+      <!-- Phone 2 — Cardápio -->
+      <div class="phone phone-sm">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:05</span><span>📶 🔋</span></div>
+        <div class="phone-screen st-menu">
+          <div class="st-bars"><div class="st-bar active"></div></div>
+          <div class="st-logo-tag" style="margin-bottom:8px;">OCA</div>
+          <div class="st-menu-title">CONFIRA NOSSO<br>CARDÁPIO</div>
+          <div class="st-menu-items">
+            <div class="st-menu-row"><span>Picanha</span><span>R$49,90</span></div>
+            <div class="st-menu-row"><span>Frango</span><span>R$25,90</span></div>
+            <div class="st-menu-row"><span>Costela</span><span>R$39,90</span></div>
+            <div class="st-menu-row"><span>Combo</span><span>R$79,90</span></div>
+          </div>
+          <div class="st-swipe">▲ Arraste para cima</div>
         </div>
-        <div class="story-detail">
-          <div class="story-detail-time">Story 2 · 9h30</div>
-          <div class="story-detail-title">Horário & Localização</div>
-          <div class="story-detail-desc">Lembrete de funcionamento + botão de como chegar. Reduz fricção para a visita.</div>
+        <div class="phone-caption">Cardápio</div>
+      </div>
+
+      <!-- Phone 3 — Peça Já -->
+      <div class="phone phone-sm">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:15</span><span>📶 🔋</span></div>
+        <div class="phone-screen st-delivery">
+          <div class="st-bars"><div class="st-bar active"></div></div>
+          <div class="st-fire-top"></div>
+          <div class="st-logo-big">OCA</div>
+          <div class="st-delivery-title">PEÇA JÁ!</div>
+          <div class="st-bike">🛵</div>
+          <div class="st-delivery-info">Delivery disponível!</div>
+          <div class="st-whatsapp">📱 (47) XXXX-XXXX</div>
         </div>
+        <div class="phone-caption">Peça Já</div>
+      </div>
+
+      <!-- Phone 4 — Depoimento -->
+      <div class="phone phone-sm">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:20</span><span>📶 🔋</span></div>
+        <div class="phone-screen st-review">
+          <div class="st-bars"><div class="st-bar active"></div></div>
+          <div class="st-review-title">O que nossos<br>clientes dizem:</div>
+          <div class="st-review-quote">"</div>
+          <div class="st-review-text">A melhor picanha da cidade! Carne no ponto, atendimento incrível. Super recomendo!</div>
+          <div class="st-review-stars">★ ★ ★ ★ ★</div>
+          <div class="st-review-by">— Maria S., cliente fiel</div>
+          <div class="st-logo-tag">OCA</div>
+        </div>
+        <div class="phone-caption">Depoimento</div>
+      </div>
+
+      <!-- Phone 5 — Direto da Brasa -->
+      <div class="phone phone-sm">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:25</span><span>📶 🔋</span></div>
+        <div class="phone-screen st-brasa">
+          <div class="st-bars"><div class="st-bar active"></div></div>
+          <div class="st-brasa-title">DIRETO DA BRASA 🔥</div>
+          <div class="st-brasa-img"></div>
+          <div class="st-brasa-logo">OCA</div>
+          <div class="st-brasa-sub">Feito com amor e carvão</div>
+        </div>
+        <div class="phone-caption">Direto da Brasa</div>
+      </div>
+
+      <!-- Phone 6 — Aberto Hoje -->
+      <div class="phone phone-sm">
+        <div class="phone-notch"></div>
+        <div class="phone-status"><span>9:30</span><span>📶 🔋</span></div>
+        <div class="phone-screen st-aberto">
+          <div class="st-bars"><div class="st-bar active"></div></div>
+          <div class="st-aberto-logo">OCA</div>
+          <div class="st-aberto-title">ABERTO<br>HOJE!</div>
+          <div class="st-aberto-clock">🕐</div>
+          <div class="st-aberto-time">
+            <div>Segunda a Sábado</div>
+            <div class="t-big">11h às 23h</div>
+            <div style="margin-top:8px;">Domingo</div>
+            <div class="t-big">11h às 16h</div>
+          </div>
+          <div class="st-aberto-foot">Aguardamos sua visita!</div>
+        </div>
+        <div class="phone-caption">Aberto Hoje</div>
+      </div>
+
+    </div>
+
+    <div class="story-strategy">
+      <div class="story-strategy-item">
+        <div class="story-detail-time">Story 1 · 9h00</div>
+        <div class="story-detail-title">Prato do Dia / Promoção</div>
+        <div class="story-detail-desc">Imagem apetitosa do prato + CTA direto para visitar. "Vem hoje às 11h"</div>
+      </div>
+      <div class="story-strategy-item">
+        <div class="story-detail-time">Story 2 · 9h30</div>
+        <div class="story-detail-title">Horário & Localização</div>
+        <div class="story-detail-desc">Lembrete de funcionamento + botão de como chegar. Reduz fricção para a visita.</div>
       </div>
     </div>
   </div>
