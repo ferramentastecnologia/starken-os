@@ -3,534 +3,894 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Proposta de Presença Digital - Oca Restaurante & Grill</title>
+  <title>Proposta Digital · Oca Restaurante & Grill</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #000; background: #fff; }
+    body { font-family: 'Inter', sans-serif; background: #0d0d0d; color: #fff; }
 
+    /* ─── TOKENS ─── */
     :root {
-      --red: #E8231A;
-      --black: #1a1a1a;
-      --white: #ffffff;
-      --t: 150ms ease;
+      --red:       #E8231A;
+      --red-dark:  #B91C14;
+      --black:     #0d0d0d;
+      --surface:   #161616;
+      --surface2:  #1e1e1e;
+      --border:    rgba(255,255,255,0.08);
+      --white:     #ffffff;
+      --muted:     rgba(255,255,255,0.55);
+      --t:         180ms ease;
     }
 
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
-    @media (max-width: 768px) { .container { padding: 0 20px; } }
+    /* ─── UTILS ─── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 32px; }
+    .label {
+      display: inline-block; font-size: 0.68rem; font-weight: 800;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--red);
+      margin-bottom: 14px;
+    }
+    .accent { color: var(--red); }
+    .muted  { color: var(--muted); }
 
-    /* ── HEADER ── */
+    /* ─── HEADER ─── */
     header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 20px 32px; background: #fff; border-bottom: 1px solid #eee;
-      position: sticky; top: 0; z-index: 100;
+      padding: 18px 32px; background: var(--black);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 200;
     }
-    .logo-wrap { display: flex; align-items: center; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 12px; }
     .logo-box {
-      width: 40px; height: 40px; background: var(--red); border-radius: 8px;
+      width: 38px; height: 38px; background: var(--red); border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 1rem; color: #fff;
+      font-weight: 900; font-size: 0.9rem; color: #fff; letter-spacing: -1px;
     }
-    .logo-text { font-weight: 700; font-size: 1.1rem; }
-    nav { display: flex; gap: 24px; }
-    nav a { color: #666; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
-    nav a:hover { color: var(--red); }
-    .badge { background: #f0f0f0; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
-    @media (max-width: 768px) { nav { display: none; } }
+    .logo-name { font-weight: 700; font-size: 1rem; color: #fff; }
+    nav { display: flex; gap: 28px; }
+    nav a { color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: color var(--t); }
+    nav a:hover { color: #fff; }
+    .badge-free {
+      background: rgba(232,35,26,0.15); border: 1px solid rgba(232,35,26,0.4);
+      color: var(--red); font-size: 0.7rem; font-weight: 800;
+      padding: 5px 14px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    @media(max-width:768px){ nav { display:none; } }
 
-    /* ── HERO ── */
+    /* ─── HERO ─── */
     .hero {
-      background: var(--red); color: #fff; padding: 80px 32px; text-align: center;
-      min-height: 500px; display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      text-align: center; position: relative; overflow: hidden;
+      background: var(--black);
+      padding: 80px 32px;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 80% 50%, rgba(232,35,26,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 20% 70%, rgba(232,35,26,0.07) 0%, transparent 60%);
+    }
+    .hero-grid-lines {
+      position: absolute; inset: 0; z-index: 0; opacity: 0.04;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 800px; }
+    .hero-tag {
+      display: inline-block; background: rgba(232,35,26,0.15);
+      border: 1px solid rgba(232,35,26,0.35); color: var(--red);
+      font-size: 0.7rem; font-weight: 800; padding: 6px 18px;
+      border-radius: 20px; letter-spacing: 1.5px; text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-size: clamp(2.4rem, 6vw, 4.2rem); font-weight: 900;
+      line-height: 1.1; margin-bottom: 24px; letter-spacing: -1.5px;
+    }
+    .hero h1 em { color: var(--red); font-style: normal; }
+    .hero p { font-size: 1.1rem; color: var(--muted); line-height: 1.8; margin-bottom: 44px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--red); color: #fff;
+      padding: 15px 36px; font-weight: 700; border-radius: 8px;
+      text-decoration: none; transition: all var(--t); font-size: 0.95rem;
+    }
+    .btn-primary:hover { background: var(--red-dark); transform: translateY(-2px); }
+
+    /* ─── STATS BAR ─── */
+    .stats-bar {
+      background: var(--surface); border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 28px 32px;
+      display: flex; justify-content: center; gap: 64px; flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 900; color: var(--red); line-height: 1; }
+    .stat-lbl { font-size: 0.72rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+
+    /* ─── SECTION ─── */
+    .section { padding: 88px 32px; }
+    .section-white { background: #fff; color: var(--black); }
+    .section-white .label { color: var(--red); }
+    .section-white h2 { color: var(--black); }
+    .section-white p { color: #555; }
+    .section-white .muted { color: #888; }
+    h2 { font-size: clamp(1.8rem, 3vw, 2.6rem); font-weight: 900; line-height: 1.15; letter-spacing: -0.5px; margin-bottom: 16px; }
+    p { font-size: 0.95rem; color: var(--muted); line-height: 1.85; }
+
+    /* ─── DIAGNOSIS ─── */
+    .diag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+    .diag-col-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1.5px; margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .diag-col-title.red { color: var(--red); border-color: rgba(232,35,26,0.3); }
+    .diag-col-title.green { color: #22c55e; border-color: rgba(34,197,94,0.3); }
+    .diag-item {
+      padding: 16px; border-radius: 8px; margin-bottom: 10px;
+      border: 1px solid;
+    }
+    .diag-item.bad  { background: rgba(232,35,26,0.06); border-color: rgba(232,35,26,0.2); }
+    .diag-item.good { background: rgba(34,197,94,0.06); border-color: rgba(34,197,94,0.2); }
+    .diag-item strong { display: block; font-size: 0.875rem; margin-bottom: 4px; color: #fff; }
+    .section-white .diag-item strong { color: var(--black); }
+    .diag-item span { font-size: 0.8rem; color: var(--muted); line-height: 1.6; }
+    .section-white .diag-item span { color: #666; }
+    @media(max-width:640px){ .diag-grid { grid-template-columns: 1fr; } }
+
+    /* ─── DELIVERABLES ─── */
+    .deliverables { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border-radius: 12px; overflow: hidden; margin-top: 44px; }
+    .deliv-item { background: var(--surface); padding: 36px 28px; }
+    .deliv-num { font-size: 3.5rem; font-weight: 900; color: var(--red); line-height: 1; margin-bottom: 12px; opacity: 0.8; }
+    .deliv-title { font-size: 1.1rem; font-weight: 800; color: #fff; margin-bottom: 10px; }
+    .deliv-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
+    @media(max-width:640px){ .deliverables { grid-template-columns: 1fr; } }
+
+    /* ─── GRID 9 POSTS ─── */
+    .posts-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; margin-top: 44px; border-radius: 12px; overflow: hidden; }
+    .post-item {
+      aspect-ratio: 1; position: relative; overflow: hidden;
+      cursor: default;
+    }
+    .post-item:hover .post-overlay { opacity: 1; }
+    .post-bg {
+      width: 100%; height: 100%;
+      background-size: cover; background-position: center;
+    }
+    .post-overlay {
+      position: absolute; inset: 0; background: rgba(232,35,26,0.85);
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      padding: 16px; opacity: 0; transition: opacity var(--t);
+    }
+    .post-overlay p { font-size: 0.82rem; color: #fff; font-weight: 600; line-height: 1.5; }
+    .post-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+      padding: 20px 14px 12px;
+    }
+    .post-label span { font-size: 0.72rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.5px; }
+    .post-num {
+      position: absolute; top: 10px; left: 10px;
+      background: var(--red); color: #fff;
+      font-size: 0.6rem; font-weight: 900; padding: 3px 8px; border-radius: 4px;
+    }
+    /* Post backgrounds using CSS art */
+    .p1 { background: linear-gradient(135deg,#1a0a0a,#2d1010); }
+    .p2 { background: linear-gradient(135deg,#1a1005,#2d2010); }
+    .p3 { background: linear-gradient(135deg,#0d1a0d,#102d10); }
+    .p4 { background: linear-gradient(135deg,#0a0a1a,#10102d); }
+    .p5 { background: linear-gradient(135deg,#1a0d0a,#2d1a10); }
+    .p6 { background: linear-gradient(135deg,#0d0d1a,#1a1a2d); }
+    .p7 { background: linear-gradient(135deg,#1a0a10,#2d1020); }
+    .p8 { background: linear-gradient(135deg,#0a1a10,#102d1a); }
+    .p9 { background: linear-gradient(135deg,#1a1510,#2d2518); }
+    .post-icon { font-size: 2.5rem; opacity: 0.4; }
+
+    /* ─── STORIES MOCKUP ─── */
+    .stories-section { background: var(--black); padding: 88px 32px; }
+    .stories-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+    .stories-phones { display: flex; gap: 24px; justify-content: center; }
+
+    .phone {
+      width: 220px; flex-shrink: 0;
+      background: #111; border-radius: 36px;
+      border: 7px solid #222; box-shadow: 0 0 0 1px #333, 0 32px 64px rgba(0,0,0,0.6);
+      position: relative; overflow: hidden;
+      aspect-ratio: 9/19.5;
+    }
+    .phone-notch {
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100px; height: 22px; background: #111; border-radius: 0 0 16px 16px; z-index: 20;
+    }
+    .phone-status {
+      position: absolute; top: 6px; left: 14px; right: 14px;
+      display: flex; justify-content: space-between; align-items: center; z-index: 21;
+      font-size: 9px; color: rgba(255,255,255,0.7); font-weight: 600;
+    }
+    .phone-screen { width: 100%; height: 100%; position: relative; overflow: hidden; }
+
+    /* Story 1 — Prato do Dia */
+    .story-prato .story-bg {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.0) 40%, rgba(0,0,0,0.75) 100%),
+        linear-gradient(135deg, #1a0a00 0%, #3d1a00 30%, #5a2800 60%, #2d1200 100%);
+    }
+    .story-prato .food-art {
+      position: absolute; top: 15%; left: 50%; transform: translateX(-50%);
+      width: 75%; aspect-ratio: 1; border-radius: 50%;
+      background: radial-gradient(circle at 40% 35%, #c47a2a 0%, #8b4513 30%, #5d2e0c 60%, #2d1500 100%);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 -4px 12px rgba(0,0,0,0.3);
+    }
+    .story-prato .food-highlight {
+      position: absolute; top: 18%; left: 38%; width: 16%; height: 8%;
+      background: rgba(255,220,140,0.25); border-radius: 50%; filter: blur(4px);
+    }
+
+    /* Story 2 — Horário */
+    .story-horario .story-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, var(--red-dark) 0%, var(--red) 50%, #8b0000 100%);
+    }
+    .story-horario .geo-pattern {
+      position: absolute; inset: 0; opacity: 0.07;
+      background-image:
+        linear-gradient(45deg, #fff 25%, transparent 25%),
+        linear-gradient(-45deg, #fff 25%, transparent 25%);
+      background-size: 24px 24px;
+    }
+
+    /* Story shared elements */
+    .story-header {
+      position: absolute; top: 10%; left: 0; right: 0; z-index: 10; text-align: center;
+    }
+    .story-logo-tag {
+      display: inline-block; background: var(--red); color: #fff;
+      font-weight: 900; font-size: 0.9rem; padding: 4px 12px; border-radius: 6px;
+      letter-spacing: 1px;
+    }
+    .story-horario .story-logo-tag { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.3); }
+    .story-bars { position: absolute; top: 5%; left: 0; right: 0; display: flex; gap: 2px; padding: 0 8px; z-index: 30; }
+    .story-bar { height: 2px; flex: 1; background: rgba(255,255,255,0.3); border-radius: 2px; }
+    .story-bar.active { background: #fff; }
+
+    .story-body { position: absolute; bottom: 8%; left: 0; right: 0; z-index: 10; text-align: center; padding: 0 16px; }
+    .story-title { font-size: 1.1rem; font-weight: 900; color: #fff; line-height: 1.2; margin-bottom: 8px; letter-spacing: -0.3px; }
+    .story-sub { font-size: 0.6rem; color: rgba(255,255,255,0.8); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .story-cta {
+      display: inline-block; background: var(--red); color: #fff;
+      font-size: 0.6rem; font-weight: 800; padding: 5px 14px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.5px; margin-top: 8px;
+    }
+    .story-horario .story-cta { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3); }
+    .story-time-badge {
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px; padding: 10px 16px; margin-bottom: 10px;
+    }
+    .story-time-badge .t-label { font-size: 0.5rem; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+    .story-time-badge .t-value { font-size: 0.85rem; font-weight: 900; color: #fff; }
+
+    /* Swipe hint */
+    .swipe-hint { position: absolute; bottom: 2%; left: 50%; transform: translateX(-50%); z-index: 20; }
+    .swipe-arrow {
+      width: 24px; height: 24px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .swipe-line { font-size: 0.45rem; color: rgba(255,255,255,0.5); text-align: center; margin-top: 1px; }
+
+    .stories-info { padding: 12px 0; }
+    .stories-info h2 { margin-bottom: 16px; }
+    .stories-info p { margin-bottom: 20px; }
+    .story-detail {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 20px; margin-bottom: 12px;
+    }
+    .story-detail-time { font-size: 0.68rem; font-weight: 800; color: var(--red); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .story-detail-title { font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .story-detail-desc { font-size: 0.8rem; color: var(--muted); }
+    @media(max-width:768px){
+      .stories-wrap { grid-template-columns: 1fr; }
+      .stories-phones { gap: 16px; }
+      .phone { width: 160px; }
+    }
+
+    /* ─── DESTAQUES ─── */
+    .destaques-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 12px; margin-top: 40px; }
+    .dest-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px 12px; text-align: center;
+      transition: all var(--t); cursor: default;
+    }
+    .dest-card:hover { border-color: var(--red); background: rgba(232,35,26,0.08); transform: translateY(-4px); }
+    .dest-icon { width: 40px; height: 40px; margin: 0 auto 12px; }
+    .dest-icon svg { width: 100%; height: 100%; }
+    .dest-label { font-size: 0.78rem; font-weight: 700; color: #fff; }
+    @media(max-width:900px){ .destaques-grid { grid-template-columns: repeat(3,1fr); } }
+    @media(max-width:480px){ .destaques-grid { grid-template-columns: repeat(2,1fr); } }
+
+    /* ─── BENEFITS ─── */
+    .benefits-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 44px; }
+    .benefit {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px 24px; transition: all var(--t);
+    }
+    .benefit:hover { border-color: rgba(232,35,26,0.4); transform: translateY(-4px); }
+    .benefit-icon { width: 40px; height: 40px; margin-bottom: 16px; }
+    .benefit-icon svg { width: 100%; height: 100%; }
+    .benefit h3 { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 10px; }
+    .benefit p { font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
+    @media(max-width:768px){ .benefits-grid { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:480px){ .benefits-grid { grid-template-columns: 1fr; } }
+
+    /* ─── TIMELINE ─── */
+    .timeline { display: flex; flex-direction: column; gap: 0; margin-top: 44px; }
+    .tl-item { display: flex; gap: 20px; position: relative; }
+    .tl-item:not(:last-child)::after {
+      content: ''; position: absolute; left: 19px; top: 44px;
+      width: 2px; height: calc(100% - 20px); background: var(--border);
+    }
+    .tl-dot {
+      width: 40px; height: 40px; background: var(--surface); border: 2px solid var(--red);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 800; color: var(--red); flex-shrink: 0; z-index: 1;
+    }
+    .tl-body { padding-bottom: 32px; }
+    .tl-body h4 { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 6px; }
+    .tl-body p { font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
+
+    /* ─── CTA FINAL ─── */
+    .cta-block {
+      background: var(--red); border-radius: 16px;
+      padding: 60px 48px; text-align: center; margin: 44px 0;
       position: relative; overflow: hidden;
     }
-    .hero::before {
-      content: ''; position: absolute; top: -30%; right: -5%;
-      width: 500px; height: 500px; background: rgba(255,255,255,0.05); border-radius: 50%;
+    .cta-block::before {
+      content: ''; position: absolute; top: -50%; right: -10%;
+      width: 400px; height: 400px; background: rgba(255,255,255,0.05); border-radius: 50%;
     }
-    .hero-content { position: relative; z-index: 1; max-width: 700px; }
-    .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.2; margin-bottom: 20px; }
-    .hero p { font-size: 1.1rem; opacity: 0.95; margin-bottom: 36px; }
-    .hero-btn {
-      display: inline-block; background: #fff; color: var(--red);
-      padding: 14px 36px; font-weight: 700; border-radius: 8px;
-      text-decoration: none; transition: all var(--t); font-size: 1rem;
+    .cta-block h2 { color: #fff; margin-bottom: 14px; position: relative; }
+    .cta-block p { color: rgba(255,255,255,0.85); margin-bottom: 32px; font-size: 1rem; position: relative; }
+    .btn-white {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #fff; color: var(--red);
+      padding: 15px 36px; font-weight: 800; border-radius: 8px;
+      text-decoration: none; transition: all var(--t); font-size: 0.95rem;
+      position: relative;
     }
-    .hero-btn:hover { transform: translateY(-2px); }
-    @media (max-width: 768px) {
-      .hero { padding: 60px 20px; }
-      .hero h1 { font-size: 2rem; }
-      .hero p { font-size: 0.95rem; }
-    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.25); }
 
-    /* ── SECTION ── */
-    .section { padding: 72px 32px; }
-    .section-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--red); margin-bottom: 12px; }
-    h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
-    p { font-size: 1rem; color: #555; line-height: 1.8; }
-    .accent { color: var(--red); font-weight: 700; }
-
-    /* ── GRID ── */
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 40px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 36px; }
-
-    /* ── CARD ── */
-    .card {
-      background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 28px;
-      transition: all var(--t);
+    /* ─── FOOTER ─── */
+    footer {
+      background: #000; border-top: 1px solid var(--border);
+      padding: 32px; text-align: center;
     }
-    .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-    .card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 12px; }
-    .card p { font-size: 0.95rem; }
-
-    /* ── HIGHLIGHT ── */
-    .highlight {
-      background: var(--red); color: #fff; border-radius: 12px; padding: 40px 32px;
-      text-align: center; margin: 40px auto; max-width: 900px;
-    }
-    .highlight h3 { font-size: 1.8rem; font-weight: 800; margin-bottom: 16px; color: #fff; }
-    .highlight p { color: rgba(255,255,255,0.9); }
-
-    /* ── ICONS ── */
-    .icon { width: 44px; height: 44px; margin: 0 auto 12px; }
-    svg { width: 100%; height: 100%; }
-
-    /* ── DESTAQUES ── */
-    .destaques-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 28px; }
-    .destaque {
-      background: #f5f5f5; border: 2px solid #eee; border-radius: 12px;
-      padding: 20px; text-align: center; transition: all var(--t);
-    }
-    .destaque:hover { border-color: var(--red); background: #fff5f5; }
-    .destaque-icon { width: 40px; height: 40px; margin: 0 auto 12px; }
-    .destaque-label { font-weight: 700; font-size: 0.9rem; }
-
-    /* ── DIAGNOSIS ── */
-    .diag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 40px; }
-    .diag-col h3 { font-size: 1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-    .diag-item {
-      padding: 16px; border-radius: 10px; margin-bottom: 16px; font-size: 0.9375rem;
-      line-height: 1.6;
-    }
-    .diag-problem { background: #fff5f5; border-left: 3px solid var(--red); }
-    .diag-ok { background: #f5fff5; border-left: 3px solid #22c55e; }
-    .diag-item strong { display: block; margin-bottom: 6px; }
-    @media (max-width: 768px) {
-      .diag-grid { grid-template-columns: 1fr; }
-    }
-
-    /* ── STORIES MOCKUP ── */
-    .stories-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 40px; }
-    .iphone-frame {
-      width: 280px; height: 560px; background: #000; border-radius: 40px;
-      border: 8px solid #000; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      position: relative; overflow: hidden; margin: 0 auto;
-    }
-    .iphone-frame::before {
-      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-      width: 140px; height: 25px; background: #000; border-radius: 0 0 20px 20px; z-index: 10;
-    }
-    .story-content {
-      width: 100%; height: 100%; background: var(--red); display: flex;
-      align-items: flex-end; justify-content: center; padding: 40px 20px;
-      position: relative; color: #fff; text-align: center;
-    }
-    .story-image {
-      width: 100%; height: 60%; background: linear-gradient(135deg, rgba(0,0,0,0.2), rgba(0,0,0,0.4));
-      border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center;
-      justify-content: center; font-size: 3rem;
-    }
-    .story-text h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
-    .story-text p { font-size: 0.8rem; opacity: 0.9; }
-    .stories-info {
-      display: flex; flex-direction: column; justify-content: center;
-    }
-    .stories-info h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 16px; }
-    .stories-info p { margin-bottom: 20px; }
-    .story-desc {
-      background: #f5f5f5; padding: 14px; border-radius: 8px; font-size: 0.85rem;
-      margin-bottom: 12px; border-left: 3px solid var(--red);
-    }
-    @media (max-width: 768px) {
-      .stories-showcase { grid-template-columns: 1fr; gap: 32px; }
-      .iphone-frame { width: 220px; height: 440px; }
-    }
-
-    /* ── TIMELINE ── */
-    .timeline { display: flex; flex-direction: column; gap: 24px; margin-top: 40px; }
-    .tl-item { display: flex; gap: 20px; }
-    .tl-num {
-      width: 40px; height: 40px; background: var(--red); border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; flex-shrink: 0;
-    }
-    .tl-text h4 { font-weight: 700; margin-bottom: 4px; }
-    .tl-text p { font-size: 0.9rem; color: #666; margin: 0; }
-
-    /* ── CTA ── */
-    .cta-final {
-      background: var(--red); color: #fff; border-radius: 12px;
-      padding: 48px 40px; text-align: center; margin-top: 40px;
-    }
-    .cta-final h2 { color: #fff; margin-bottom: 12px; }
-    .cta-final p { color: rgba(255,255,255,0.9); margin-bottom: 28px; }
-    .cta-btn-final {
-      display: inline-block; background: #fff; color: var(--red);
-      padding: 14px 36px; font-weight: 700; border-radius: 8px;
-      text-decoration: none; transition: all var(--t); font-size: 1rem;
-    }
-    .cta-btn-final:hover { transform: translateY(-2px); }
-
-    /* ── FOOTER ── */
-    footer { background: var(--black); color: #fff; padding: 32px; text-align: center; }
-    footer p { font-size: 0.85rem; margin: 0; }
-
-    @media (max-width: 768px) {
-      .section { padding: 52px 20px; }
-      h2 { font-size: 1.6rem; }
-      .grid-2, .grid-3 { gap: 20px; }
-    }
+    footer p { font-size: 0.8rem; color: var(--muted); margin: 0; }
+    footer strong { color: #fff; }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ══ HEADER ══ -->
 <header>
-  <div class="logo-wrap">
-    <div class="logo-box">OC</div>
-    <div class="logo-text">Oca Restaurante</div>
+  <div class="logo">
+    <div class="logo-box">OCA</div>
+    <div class="logo-name">Oca Restaurante &amp; Grill</div>
   </div>
   <nav>
-    <a href="#proposta">Proposta</a>
-    <a href="#criativos">Criativos</a>
+    <a href="#diagnostico">Diagnóstico</a>
+    <a href="#entregaveis">Entregáveis</a>
     <a href="#stories">Stories</a>
-    <a href="#beneficios">Benefícios</a>
+    <a href="#beneficios">Impacto</a>
   </nav>
-  <span class="badge">100% Gratuito</span>
+  <span class="badge-free">100% Gratuito</span>
 </header>
 
-<!-- HERO -->
+<!-- ══ HERO ══ -->
 <section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid-lines"></div>
   <div class="hero-content">
-    <h1>Sua identidade no Instagram à altura do seu restaurante</h1>
-    <p>9 criativos exclusivos, 2 stories diários com estratégia de horário e destaques organizados — tudo para converter seguidores em clientes reais.</p>
-    <a href="#proposta" class="hero-btn">Ver Proposta Completa</a>
+    <div class="hero-tag">Presença Digital · Blumenau/SC · 2025</div>
+    <h1>Sua identidade no Instagram<br>à altura do seu <em>restaurante</em></h1>
+    <p>9 criativos exclusivos, 2 stories diários com CTAs estratégicos e destaques organizados — sem custo, com execução real.</p>
+    <a href="#diagnostico" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+      Ver Proposta
+    </a>
   </div>
 </section>
 
-<!-- DIAGNÓSTICO -->
-<section class="section">
+<!-- ══ STATS ══ -->
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">9</div><div class="stat-lbl">Criativos Exclusivos</div></div>
+  <div class="stat"><div class="stat-num">2</div><div class="stat-lbl">Stories Diários</div></div>
+  <div class="stat"><div class="stat-num">6</div><div class="stat-lbl">Destaques Organizados</div></div>
+  <div class="stat"><div class="stat-num">R$0</div><div class="stat-lbl">Investimento</div></div>
+</div>
+
+<!-- ══ DIAGNÓSTICO ══ -->
+<section class="section" id="diagnostico">
   <div class="container">
-    <div class="section-label">Diagnóstico</div>
-    <h2>O que encontramos no @restaurante_oca</h2>
-    <p>Analisamos o perfil e identificamos oportunidades claras. Aqui está o que vamos resolver:</p>
+    <span class="label">Diagnóstico · @restaurante_oca</span>
+    <h2>O que encontramos no seu perfil</h2>
+    <p>Antes de propor qualquer coisa, analisamos o Instagram do Oca. 235 seguidores, 229 seguindo, 68 posts. Isso nos diz tudo.</p>
 
     <div class="diag-grid">
-      <div class="diag-col">
-        <h3>⚠️ Problemas</h3>
-        <div class="diag-item diag-problem">
-          <strong>235 seguidores / 229 seguindo</strong>
-          Proporção 1:1 passa insegurança. Perfil sem autoridade.
+      <div>
+        <div class="diag-col-title red">⚠ Pontos de melhoria</div>
+        <div class="diag-item bad">
+          <strong>235 seguidores · 229 seguindo</strong>
+          <span>Proporção 1:1 transmite falta de autoridade. Visitante novo percebe isso imediatamente.</span>
         </div>
-        <div class="diag-item diag-problem">
-          <strong>Visual inconsistente</strong>
-          Feed mistura fotos brutas com artes sem padrão. Sem identidade visual.
+        <div class="diag-item bad">
+          <strong>Identidade visual inconsistente</strong>
+          <span>Feed mistura fotos brutas com artes gráficas sem padrão. Não existe um "estilo Oca".</span>
         </div>
-        <div class="diag-item diag-problem">
-          <strong>Destaques genéricos</strong>
-          Capas sem personalização. Parecem provisórios.
+        <div class="diag-item bad">
+          <strong>Destaques sem personalidade</strong>
+          <span>Os destaques existem mas as capas são genéricas. Não reforçam a marca.</span>
         </div>
-        <div class="diag-item diag-problem">
-          <strong>Sem CTAs estratégicos</strong>
-          Posts divulgam mas não convertem. Faltam chamadas de ação.
+        <div class="diag-item bad">
+          <strong>Zero CTAs estratégicos</strong>
+          <span>Posts divulgam mas não convertem. Faltam chamadas claras para visita e pedido.</span>
         </div>
       </div>
-
-      <div class="diag-col">
-        <h3>✅ Pontos Fortes</h3>
-        <div class="diag-item diag-ok">
-          <strong>Delivery ativo (iFood)</strong>
-          Canal de venda online funcionando. Vamos explorar nos CTAs.
+      <div>
+        <div class="diag-col-title green">✓ Pontos fortes</div>
+        <div class="diag-item good">
+          <strong>Delivery ativo no iFood</strong>
+          <span>Canal de venda online funcionando. Vamos explorar isso nos CTAs de todos os criativos.</span>
         </div>
-        <div class="diag-item diag-ok">
-          <strong>WhatsApp na bio</strong>
-          Acesso direto disponível para fechar vendas.
+        <div class="diag-item good">
+          <strong>WhatsApp direto na bio</strong>
+          <span>Acesso imediato ao restaurante. Ótimo ponto de conversão para fechar vendas.</span>
         </div>
-        <div class="diag-item diag-ok">
-          <strong>Conteúdo real e autêntico</strong>
-          Fotos dos pratos reais, feijoada, ambiente. Matéria-prima existe.
+        <div class="diag-item good">
+          <strong>Conteúdo real e apetitoso</strong>
+          <span>Fotos de feijoada, costela, marmita — a matéria-prima existe. Falta só o enquadramento certo.</span>
         </div>
-        <div class="diag-item diag-ok">
-          <strong>Branding vermelho</strong>
-          Cores e identidade já começadas. Vamos elevar o padrão.
+        <div class="diag-item good">
+          <strong>Identidade vermelha estabelecida</strong>
+          <span>A cor da marca já aparece nos posts. A nova identidade parte daí e eleva tudo.</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- A SOLUÇÃO -->
-<section class="section" id="proposta">
+<!-- ══ ENTREGÁVEIS ══ -->
+<section class="section section-white" id="entregaveis">
   <div class="container">
-    <div class="section-label">O que vamos entregar</div>
+    <span class="label">O que vamos entregar</span>
     <h2>Três frentes de atuação</h2>
-    <p>Cada entregável foi pensado para construir autoridade, criar hábito e aumentar visibilidade orgânica.</p>
+    <p>Cada entregável foi pensado para construir autoridade, criar hábito no público e aumentar a visibilidade sem anúncio pago.</p>
 
-    <div class="grid-2">
-      <div class="card">
-        <h3>📌 9 Criativos de Posts</h3>
-        <p style="margin: 12px 0 20px;">Nova identidade visual que repagina o perfil e posiciona o Oca com autoridade:</p>
-        <ul style="margin-left: 20px; font-size: 0.9rem; line-height: 1.8;">
-          <li>Padrão visual premium consistente</li>
-          <li>Pratos signature com dias fixos</li>
-          <li>Diferenciais e bastidores</li>
-          <li>Chamadas de ação em cada peça</li>
-          <li>Design alinhado à marca</li>
-        </ul>
+    <div class="deliverables">
+      <div class="deliv-item" style="background:#fff; border-right:1px solid #eee;">
+        <div class="deliv-num">09</div>
+        <div class="deliv-title" style="color:#111;">Criativos Mensais</div>
+        <div class="deliv-desc" style="color:#666;">Posts de alto padrão visual com identidade forte. Cada um com um propósito de comunicação e CTA definido.</div>
       </div>
-
-      <div class="card">
-        <h3>⏰ 2 Stories Diários</h3>
-        <p style="margin: 12px 0 20px;">Postados entre <strong>9h e 10h</strong> — antes de abrir às 11h — para despertar apetite:</p>
-        <ul style="margin-left: 20px; font-size: 0.9rem; line-height: 1.8;">
-          <li>CTA direto para visitar (11h–14h)</li>
-          <li>Prato do dia com visual apetitoso</li>
-          <li>Promoção ou destaque do cardápio</li>
-          <li>Padrão visual que cria reconhecimento</li>
-          <li>Agendamento automático</li>
-        </ul>
+      <div class="deliv-item" style="background:#fff; border-right:1px solid #eee;">
+        <div class="deliv-num">02</div>
+        <div class="deliv-title" style="color:#111;">Stories Diários</div>
+        <div class="deliv-desc" style="color:#666;">Postados entre 9h e 10h, antes da abertura às 11h. Despertar apetite e gerar antecipação para o almoço.</div>
+      </div>
+      <div class="deliv-item" style="background:#fff;">
+        <div class="deliv-num">06</div>
+        <div class="deliv-title" style="color:#111;">Destaques Organizados</div>
+        <div class="deliv-desc" style="color:#666;">Capas padronizadas para os Destaques permanentes do perfil, com identidade visual coesa.</div>
       </div>
     </div>
 
-    <!-- DESTAQUES -->
-    <div style="margin-top: 48px;">
-      <h3 style="margin-bottom: 20px;">⭐ Destaques do Perfil Organizados</h3>
-      <p>Capas padronizadas para os destaques permanentes do seu perfil:</p>
-      <div class="destaques-grid">
-        <div class="destaque">
-          <div class="destaque-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7m-6 4v6m-4-6v6"/>
+    <!-- DESTAQUES ICONS -->
+    <div style="margin-top: 56px;">
+      <span class="label" style="margin-bottom:12px;">Destaques do Perfil</span>
+      <h3 style="font-size:1.4rem; font-weight:800; color:#111; margin-bottom:8px;">6 capas padronizadas para o seu perfil</h3>
+      <p style="color:#666; margin-bottom:0;">Primeira impressão organizada para quem visita o @restaurante_oca pela primeira vez.</p>
+
+      <div class="destaques-grid" style="margin-top:28px;">
+        <!-- Cardápio -->
+        <div class="dest-card" style="background:#f8f8f8; border-color:#eee;">
+          <div class="dest-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".1"/>
+              <path d="M12 10h16v3H12zM12 18h16v3H12zM12 26h10v3H12z" fill="#E8231A"/>
+              <circle cx="29" cy="27.5" r="4" fill="#E8231A" opacity=".3"/>
+              <path d="M27 27.5h4M29 25.5v4" stroke="#E8231A" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </div>
-          <div class="destaque-label">Cardápio</div>
+          <div class="dest-label" style="color:#111;">Cardápio</div>
         </div>
-        <div class="destaque">
-          <div class="destaque-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+
+        <!-- Horários -->
+        <div class="dest-card" style="background:#f8f8f8; border-color:#eee;">
+          <div class="dest-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".1"/>
+              <circle cx="20" cy="20" r="10" stroke="#E8231A" stroke-width="1.8"/>
+              <path d="M20 13v7l4 4" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="destaque-label">Horários</div>
+          <div class="dest-label" style="color:#111;">Horários</div>
         </div>
-        <div class="destaque">
-          <div class="destaque-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+
+        <!-- Como Chegar -->
+        <div class="dest-card" style="background:#f8f8f8; border-color:#eee;">
+          <div class="dest-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".1"/>
+              <path d="M20 10c-4.4 0-8 3.6-8 8 0 5.5 8 14 8 14s8-8.5 8-14c0-4.4-3.6-8-8-8z" stroke="#E8231A" stroke-width="1.8"/>
+              <circle cx="20" cy="18" r="2.5" fill="#E8231A"/>
             </svg>
           </div>
-          <div class="destaque-label">Como Chegar</div>
+          <div class="dest-label" style="color:#111;">Como Chegar</div>
         </div>
-        <div class="destaque">
-          <div class="destaque-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"/>
+
+        <!-- Bastidores -->
+        <div class="dest-card" style="background:#f8f8f8; border-color:#eee;">
+          <div class="dest-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".1"/>
+              <circle cx="20" cy="15" r="5" stroke="#E8231A" stroke-width="1.8"/>
+              <path d="M10 30c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M26 12l2-2M14 12l-2-2M20 10V8" stroke="#E8231A" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </div>
-          <div class="destaque-label">Bastidores</div>
+          <div class="dest-label" style="color:#111;">Bastidores</div>
         </div>
-        <div class="destaque">
-          <div class="destaque-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+
+        <!-- Avaliações -->
+        <div class="dest-card" style="background:#f8f8f8; border-color:#eee;">
+          <div class="dest-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".1"/>
+              <path d="M20 10l2.8 5.6 6.2.9-4.5 4.4 1.1 6.1L20 24.1l-5.6 2.9 1.1-6.1L11 16.5l6.2-.9L20 10z" stroke="#E8231A" stroke-width="1.8" stroke-linejoin="round"/>
             </svg>
           </div>
-          <div class="destaque-label">Avaliações</div>
+          <div class="dest-label" style="color:#111;">Avaliações</div>
         </div>
-        <div class="destaque">
-          <div class="destaque-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+
+        <!-- Promoções -->
+        <div class="dest-card" style="background:#f8f8f8; border-color:#eee;">
+          <div class="dest-icon">
+            <svg viewBox="0 0 40 40" fill="none">
+              <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".1"/>
+              <path d="M12 20l8-10 8 10-8 10-8-10z" stroke="#E8231A" stroke-width="1.8" stroke-linejoin="round"/>
+              <circle cx="20" cy="20" r="3" fill="#E8231A"/>
+              <path d="M20 10V8M28 20h2M12 20h-2M20 30v2" stroke="#E8231A" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </div>
-          <div class="destaque-label">Promoções</div>
+          <div class="dest-label" style="color:#111;">Promoções</div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- OS 9 CRIATIVOS -->
+<!-- ══ OS 9 CRIATIVOS ══ -->
 <section class="section" id="criativos">
   <div class="container">
-    <div class="section-label">Estratégia</div>
+    <span class="label">Os 9 Criativos</span>
     <h2>Cada post com um propósito</h2>
-    <p>9 criativos pensados para demonstrar valor, autoridade e criar conexão com o público.</p>
+    <p>Não é sobre quantidade — é sobre relevância. Cada criativo ocupa um papel específico na construção da marca Oca.</p>
 
-    <div class="grid-3">
-      <div class="card"><h3>01 · Identidade</h3><p>Novo visual do perfil. Primeiro impacto: "o Oca mudou"</p></div>
-      <div class="card"><h3>02 · Parmegiana</h3><p>Quarta-feira. Processo + resultado + CTA</p></div>
-      <div class="card"><h3>03 · Costela</h3><p>Sábado na brasa. Textura, cor, preparo</p></div>
-      <div class="card"><h3>04 · Feijoada</h3><p>Quinta-feira. Tradição, ingredientes, comunidade</p></div>
-      <div class="card"><h3>05 · Bastidores</h3><p>Cozinha em ação. Equipe, ingredientes frescos</p></div>
-      <div class="card"><h3>06 · Ambiente</h3><p>Espaço do Oca. Atmosfera e experiência</p></div>
-      <div class="card"><h3>07 · Diferencial</h3><p>O que ninguém tem. Posicionamento único</p></div>
-      <div class="card"><h3>08 · Prova Social</h3><p>Cliente satisfeito. Depoimentos reais</p></div>
-      <div class="card"><h3>09 · Conversão</h3><p>Horário, localização, como pedir. CTA direto</p></div>
+    <div class="posts-grid">
+      <div class="post-item">
+        <div class="post-bg p1" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">🏷️</div>
+        </div>
+        <div class="post-num">01</div>
+        <div class="post-label"><span>Nova Identidade</span></div>
+        <div class="post-overlay"><p>Apresentação do novo visual. "O Oca mudou" — primeiro impacto que gera curiosidade e retorno</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p2" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">🍖</div>
+        </div>
+        <div class="post-num">02</div>
+        <div class="post-label"><span>Parmegiana · Qua</span></div>
+        <div class="post-overlay"><p>Quarta-feira é o dia da parmegiana. Processo + resultado + CTA para vir ao restaurante</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p3" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">🥩</div>
+        </div>
+        <div class="post-num">03</div>
+        <div class="post-label"><span>Costela · Sáb</span></div>
+        <div class="post-overlay"><p>Sábado na brasa. Textura, cor, preparo. Conteúdo que dá água na boca antes de abrir</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p4" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">🫕</div>
+        </div>
+        <div class="post-num">04</div>
+        <div class="post-label"><span>Feijoada · Qui</span></div>
+        <div class="post-overlay"><p>Quinta de feijoada. Ingredientes, panela, caldeirão. Tradição e pertencimento</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p5" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">👨‍🍳</div>
+        </div>
+        <div class="post-num">05</div>
+        <div class="post-label"><span>Bastidores</span></div>
+        <div class="post-overlay"><p>A cozinha em ação. Equipe, ingredientes frescos. Transparência que gera confiança</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p6" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">🏠</div>
+        </div>
+        <div class="post-num">06</div>
+        <div class="post-label"><span>Ambiente</span></div>
+        <div class="post-overlay"><p>O espaço do Oca: mesas, decoração, atmosfera. A experiência além do prato</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p7" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">⭐</div>
+        </div>
+        <div class="post-num">07</div>
+        <div class="post-label"><span>Diferencial</span></div>
+        <div class="post-overlay"><p>O que o Oca tem que ninguém tem. Posicionamento único que justifica a escolha</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p8" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">💬</div>
+        </div>
+        <div class="post-num">08</div>
+        <div class="post-label"><span>Prova Social</span></div>
+        <div class="post-overlay"><p>Cliente satisfeito, avaliações reais. Depoimentos vendem mais que qualquer anúncio</p></div>
+      </div>
+      <div class="post-item">
+        <div class="post-bg p9" style="display:flex;align-items:center;justify-content:center;">
+          <div class="post-icon">📍</div>
+        </div>
+        <div class="post-num">09</div>
+        <div class="post-label"><span>Conversão</span></div>
+        <div class="post-overlay"><p>Horário, localização, como pedir. CTA direto para fechar a visita ou o delivery</p></div>
+      </div>
     </div>
+    <p style="text-align:center; margin-top:16px; font-size:0.8rem;">Passe o mouse sobre cada post para ver o objetivo</p>
   </div>
 </section>
 
-<!-- STORIES MOCKUP -->
-<section class="section" id="stories">
+<!-- ══ STORIES MOCKUP ══ -->
+<section class="stories-section" id="stories">
   <div class="container">
-    <div class="section-label">Formato</div>
-    <h2>2 Stories Diários · Entre 9h e 10h</h2>
-    <p style="margin-bottom: 40px;">O restaurante abre às 11h. Nossos stories chegam antes — enquanto seu cliente ainda está escolhendo onde almoçar.</p>
+    <div class="stories-wrap">
 
-    <div class="stories-showcase">
-      <div>
-        <div class="iphone-frame">
-          <div class="story-content">
-            <div style="width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 20px;">
-              <div class="story-image">🍖</div>
-              <div class="story-text">
-                <h4>Parmegiana</h4>
-                <p>Vem hoje 11h!</p>
+      <div class="stories-phones">
+        <!-- Phone 1 — Prato do Dia -->
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-status">
+            <span>9:00</span>
+            <span style="display:flex;gap:3px;align-items:center;">
+              <svg width="10" height="8" viewBox="0 0 10 8"><rect x="0" y="3" width="2" height="5" fill="rgba(255,255,255,0.7)"/><rect x="3" y="2" width="2" height="6" fill="rgba(255,255,255,0.7)"/><rect x="6" y="0" width="2" height="8" fill="rgba(255,255,255,0.7)"/></svg>
+              <svg width="12" height="8" viewBox="0 0 12 8"><rect x="0" y="1" width="10" height="6" rx="1.5" stroke="rgba(255,255,255,0.7)" stroke-width="1" fill="none"/><rect x="10.5" y="2.5" width="1.5" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="0.8" y="1.8" width="6" height="4.4" rx="0.8" fill="rgba(255,255,255,0.7)"/></svg>
+            </span>
+          </div>
+          <div class="phone-screen story-prato">
+            <div class="story-bg"></div>
+            <div class="food-art"></div>
+            <div class="food-highlight"></div>
+            <div class="story-bars">
+              <div class="story-bar active"></div>
+              <div class="story-bar"></div>
+            </div>
+            <div class="story-header">
+              <span class="story-logo-tag">OCA</span>
+            </div>
+            <div class="story-body">
+              <div class="story-title">Prato<br>do Dia</div>
+              <div class="story-sub">Seg à Sex · 11h às 15h</div>
+              <div class="story-cta">Vem Hoje ↗</div>
+            </div>
+            <div class="swipe-hint">
+              <div class="swipe-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
               </div>
+              <div class="swipe-line">deslize para cima</div>
             </div>
           </div>
         </div>
-        <div class="story-desc" style="text-align: center; margin-top: 16px;">
-          <strong>Story 1 · 9h</strong><br/>Prato do dia + CTA de visita
-        </div>
-      </div>
 
-      <div>
-        <div class="iphone-frame">
-          <div class="story-content">
-            <div style="width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 20px;">
-              <div class="story-image">⏰</div>
-              <div class="story-text">
-                <h4>Aberto!</h4>
-                <p>11h às 14h</p>
+        <!-- Phone 2 — Horário -->
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-status">
+            <span>9:30</span>
+            <span style="display:flex;gap:3px;align-items:center;">
+              <svg width="10" height="8" viewBox="0 0 10 8"><rect x="0" y="3" width="2" height="5" fill="rgba(255,255,255,0.7)"/><rect x="3" y="2" width="2" height="6" fill="rgba(255,255,255,0.7)"/><rect x="6" y="0" width="2" height="8" fill="rgba(255,255,255,0.7)"/></svg>
+              <svg width="12" height="8" viewBox="0 0 12 8"><rect x="0" y="1" width="10" height="6" rx="1.5" stroke="rgba(255,255,255,0.7)" stroke-width="1" fill="none"/><rect x="10.5" y="2.5" width="1.5" height="3" rx="0.5" fill="rgba(255,255,255,0.7)"/><rect x="0.8" y="1.8" width="6" height="4.4" rx="0.8" fill="rgba(255,255,255,0.7)"/></svg>
+            </span>
+          </div>
+          <div class="phone-screen story-horario">
+            <div class="story-bg"></div>
+            <div class="geo-pattern"></div>
+            <div class="story-bars">
+              <div class="story-bar"></div>
+              <div class="story-bar active"></div>
+            </div>
+            <div class="story-header">
+              <span class="story-logo-tag">OCA</span>
+            </div>
+            <div class="story-body">
+              <div class="story-time-badge">
+                <div class="t-label">Aberto agora</div>
+                <div class="t-value">11h às 14h</div>
               </div>
+              <div class="story-title">Venha<br>Almoçar</div>
+              <div class="story-sub">Seg a Sáb · Blumenau/SC</div>
+              <div class="story-cta">📍 Como Chegar</div>
             </div>
           </div>
         </div>
-        <div class="story-desc" style="text-align: center; margin-top: 16px;">
-          <strong>Story 2 · 9h30</strong><br/>Horário de funcionamento
+      </div>
+
+      <div class="stories-info">
+        <span class="label">Formato · Stories Diários</span>
+        <h2>Postados entre 9h e 10h</h2>
+        <p>O restaurante abre às 11h. Nossos stories chegam antes — enquanto seu cliente ainda está escolhendo onde almoçar. A decisão começa aqui.</p>
+        <div class="story-detail">
+          <div class="story-detail-time">Story 1 · 9h00</div>
+          <div class="story-detail-title">Prato do Dia</div>
+          <div class="story-detail-desc">Imagem apetitosa do prato + CTA direto para visitar. "Vem hoje às 11h"</div>
+        </div>
+        <div class="story-detail">
+          <div class="story-detail-time">Story 2 · 9h30</div>
+          <div class="story-detail-title">Horário & Localização</div>
+          <div class="story-detail-desc">Lembrete de funcionamento + botão de como chegar. Reduz fricção para a visita.</div>
         </div>
       </div>
-    </div>
-
-    <div class="highlight">
-      <h3>A hora certa importa</h3>
-      <p>9h-10h é quando o cliente está no café pensando onde almoçar. Nossos stories chegam para ser a decisão que faltava.</p>
     </div>
   </div>
 </section>
 
-<!-- BENEFÍCIOS -->
+<!-- ══ BENEFÍCIOS ══ -->
 <section class="section" id="beneficios">
   <div class="container">
-    <div class="section-label">Impacto</div>
+    <span class="label">Impacto esperado</span>
     <h2>O que essa estratégia constrói</h2>
 
-    <div class="grid-2">
-      <div class="card">
-        <h3>👁️ Autoridade Visual</h3>
-        <p>Perfil com padrão consistente transmite profissionalismo. Cliente percebe qualidade antes de provar o prato.</p>
+    <div class="benefits-grid">
+      <div class="benefit">
+        <div class="benefit-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".15"/>
+            <circle cx="20" cy="16" r="6" stroke="#E8231A" stroke-width="1.8"/>
+            <path d="M8 32c0-6.6 5.4-12 12-12s12 5.4 12 12" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Autoridade Visual</h3>
+        <p>Padrão consistente transmite profissionalismo. O cliente percebe a qualidade antes mesmo de provar o prato.</p>
       </div>
-      <div class="card">
-        <h3>📈 Visibilidade Orgânica</h3>
-        <p>Stories diários mantêm o perfil ativo. Algoritmo favorece quem posta com regularidade — alcance cresce sem anúncio.</p>
+      <div class="benefit">
+        <div class="benefit-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".15"/>
+            <polyline points="8,28 16,18 22,23 32,12" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M29 12h3v3" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>Visibilidade Orgânica</h3>
+        <p>Stories diários mantêm o perfil ativo. O algoritmo favorece quem posta com consistência — alcance cresce sem anúncio.</p>
       </div>
-      <div class="card">
-        <h3>❤️ Fidelização por Hábito</h3>
+      <div class="benefit">
+        <div class="benefit-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".15"/>
+            <path d="M20 10c-5.5 0-10 4.5-10 10 0 2.8 1.1 5.3 2.9 7.1L12 30l3-1.5c1.4.9 3.2 1.5 5 1.5 5.5 0 10-4.5 10-10s-4.5-10-10-10z" stroke="#E8231A" stroke-width="1.8"/>
+            <path d="M16 19h8M16 23h5" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Fidelização por Hábito</h3>
         <p>Ver o Oca às 9h vira rotina. "Vou no Oca hoje" começa com um story — e termina com o cliente na sua mesa.</p>
       </div>
-      <div class="card">
-        <h3>💰 Antecipação que Vende</h3>
-        <p>Quarta é parmegiana, quinta é feijoada. Cliente sabe e planeja a visita com antecedência. Isso é pipeline.</p>
+      <div class="benefit">
+        <div class="benefit-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".15"/>
+            <circle cx="20" cy="20" r="10" stroke="#E8231A" stroke-width="1.8"/>
+            <path d="M20 14v6l4 4" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M14 20h2M24 20h2M20 14v-2M20 28v-2" stroke="#E8231A" stroke-width="1.2" stroke-linecap="round" opacity=".5"/>
+          </svg>
+        </div>
+        <h3>Antecipação que Vende</h3>
+        <p>Quarta é parmegiana, quinta é feijoada. O cliente sabe o que esperar e já planeja a visita. Isso é pipeline de clientes.</p>
       </div>
-      <div class="card">
-        <h3>🎯 CTAs que Convertem</h3>
-        <p>Todo story com chamada clara: "venha hoje", "peça pelo iFood", "reserve sua mesa". Engajamento que vira movimento real.</p>
+      <div class="benefit">
+        <div class="benefit-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".15"/>
+            <path d="M12 20h16M22 14l6 6-6 6" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3>CTAs que Convertem</h3>
+        <p>Todo story com chamada clara: "venha hoje", "peça pelo iFood", "reserve sua mesa". Engajamento que move o salão.</p>
       </div>
-      <div class="card">
-        <h3>🆕 Renovação de Imagem</h3>
-        <p>"O Oca mudou" — quando cliente percebe mudança, volta por curiosidade. Repaginação gera buzz espontâneo.</p>
+      <div class="benefit">
+        <div class="benefit-icon">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect width="40" height="40" rx="8" fill="#E8231A" opacity=".15"/>
+            <path d="M14 26l6-6 4 4 6-8" stroke="#E8231A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="20" cy="14" r="4" stroke="#E8231A" stroke-width="1.8"/>
+          </svg>
+        </div>
+        <h3>Renovação de Imagem</h3>
+        <p>"O Oca mudou" — quando o cliente percebe evolução, volta por curiosidade. Repaginação gera buzz espontâneo.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- PRÓXIMOS PASSOS -->
-<section class="section">
+<!-- ══ TIMELINE ══ -->
+<section class="section section-white">
   <div class="container">
-    <div class="section-label">Execução</div>
+    <span class="label">Como vamos trabalhar</span>
     <h2>Do briefing ao perfil no ar</h2>
-
-    <div class="timeline">
+    <div class="timeline" style="margin-top:44px;">
       <div class="tl-item">
-        <div class="tl-num">1</div>
-        <div class="tl-text">
-          <h4>Alinhamento e Briefing</h4>
-          <p>Visão, pratos signature, dias de funcionamento, refs visuais e tom de voz</p>
+        <div class="tl-dot" style="background:#fff;border-color:var(--red);">1</div>
+        <div class="tl-body">
+          <h4 style="color:#111;">Alinhamento e Briefing</h4>
+          <p>Conversa sobre visão, pratos signature, dias de funcionamento, referências visuais e tom de voz</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-num">2</div>
-        <div class="tl-text">
-          <h4>Produção dos 9 Criativos</h4>
-          <p>Design das peças com identidade visual + templates dos 2 stories diários</p>
+        <div class="tl-dot" style="background:#fff;border-color:var(--red);">2</div>
+        <div class="tl-body">
+          <h4 style="color:#111;">Produção dos 9 Criativos</h4>
+          <p>Design das peças com a nova identidade visual + templates para os stories diários com CTAs</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-num">3</div>
-        <div class="tl-text">
-          <h4>Destaques do Perfil</h4>
-          <p>Capas padronizadas para os 6 Destaques — Cardápio, Horários, Como Chegar, Bastidores, Avaliações e Promoções</p>
+        <div class="tl-dot" style="background:#fff;border-color:var(--red);">3</div>
+        <div class="tl-body">
+          <h4 style="color:#111;">Capas dos Destaques</h4>
+          <p>6 capas padronizadas para Cardápio, Horários, Como Chegar, Bastidores, Avaliações e Promoções</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-num">4</div>
-        <div class="tl-text">
-          <h4>Aprovação e Ajustes</h4>
-          <p>Review com você, rodada de feedbacks, refinamentos até estar 100% alinhado</p>
+        <div class="tl-dot" style="background:#fff;border-color:var(--red);">4</div>
+        <div class="tl-body">
+          <h4 style="color:#111;">Aprovação e Ajustes</h4>
+          <p>Review junto com você, rodada de feedbacks e refinamentos até estar 100% alinhado</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-num">5</div>
-        <div class="tl-text">
-          <h4>Publicação e Agendamento</h4>
-          <p>Posts publicados, stories agendados para 9h–10h diariamente, perfil pronto para converter</p>
+        <div class="tl-dot" style="background:#fff;border-color:var(--red);">5</div>
+        <div class="tl-body" style="padding-bottom:0;">
+          <h4 style="color:#111;">Publicação e Agendamento</h4>
+          <p>Posts publicados, stories agendados para 9h–10h diariamente. Perfil completo e pronto para converter.</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA FINAL -->
+<!-- ══ CTA FINAL ══ -->
 <section class="section">
   <div class="container">
-    <div class="cta-final">
+    <div class="cta-block">
       <h2>Pronto para transformar o Oca no Instagram?</h2>
       <p>Seus pratos são incríveis. Sua rotina é rica. Falta o visual que mostre isso para quem ainda não te conhece.</p>
-      <a href="https://wa.me/5547930413137" class="cta-btn-final">Vamos Começar</a>
+      <a href="https://wa.me/5547930413137" class="btn-white">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.098.543 4.068 1.489 5.779L0 24l6.389-1.677A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.003-1.37l-.36-.214-3.713.974.992-3.622-.235-.373A9.82 9.82 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182c5.43 0 9.818 4.388 9.818 9.818 0 5.43-4.388 9.818-9.818 9.818z"/></svg>
+        Falar com a Starken
+      </a>
     </div>
   </div>
 </section>
 
-<!-- FOOTER -->
+<!-- ══ FOOTER ══ -->
 <footer>
   <p><strong>Oca Restaurante & Grill</strong> · Proposta de Presença Digital Gratuita · 2025</p>
-  <p style="margin-top: 8px; opacity: 0.7;">Desenvolvido por Starken Performance</p>
+  <p style="margin-top:6px; font-size:0.72rem; opacity:0.5;">Desenvolvido por Starken Performance · Blumenau/SC</p>
 </footer>
 
 </body>
