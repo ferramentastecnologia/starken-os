@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposta de Presença Digital - Oca Restaurante & Grill</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23FF3D3D'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='40' fill='%23FFFFFF'%3EOC%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23FF3D3D'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='40' fill='%23FFFFFF'%3EOC%3C/text%3E%3C/svg%3E">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #ffffff;
+    }
+
+    /* ═══ PALETA OCA ═══ */
+    :root {
+      --oca-primary: #FF3D3D;
+      --oca-primary-dark: #E63030;
+      --oca-primary-light: #FF6B6B;
+      --oca-black: #1a1a1a;
+      --oca-white: #ffffff;
+      --oca-gray-light: #f5f5f5;
+      --oca-gray-mid: #e0e0e0;
+      --oca-gray-dark: #666666;
+
+      /* Design System (Starken) */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 8px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 20px rgba(0,0,0,0.09), 0 4px 8px rgba(0,0,0,0.04);
+      --shadow-oca: 0 4px 14px rgba(255, 61, 61, 0.2);
+
+      --transition-base: 150ms ease;
+    }
+
+    /* ═══ HEADER / NAVIGATION ═══ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-6) var(--space-8);
+      background: var(--oca-white);
+      border-bottom: 1px solid var(--oca-gray-mid);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .logo {
+      width: 48px;
+      height: 48px;
+      background: var(--oca-primary);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--oca-white);
+      box-shadow: var(--shadow-oca);
+    }
+
+    .brand-name {
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: var(--oca-black);
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--oca-gray-dark);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    nav a {
+      color: var(--oca-gray-dark);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.875rem;
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      transition: all var(--transition-base);
+    }
+
+    nav a:hover {
+      color: var(--oca-primary);
+      background: var(--oca-gray-light);
+    }
+
+    nav {
+      display: flex;
+      gap: var(--space-6);
+    }
+
+    /* ═══ HERO SECTION ═══ */
+    .hero {
+      background: linear-gradient(135deg, var(--oca-primary) 0%, var(--oca-primary-dark) 100%);
+      color: var(--oca-white);
+      padding: var(--space-10) var(--space-8);
+      text-align: center;
+      min-height: 600px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 400px;
+      height: 400px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+    }
+
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: var(--space-5);
+    }
+
+    .hero .subtitle {
+      font-size: 1.25rem;
+      font-weight: 400;
+      margin-bottom: var(--space-8);
+      opacity: 0.95;
+      line-height: 1.6;
+    }
+
+    .cta-primary {
+      display: inline-block;
+      background: var(--oca-white);
+      color: var(--oca-primary);
+      padding: var(--space-4) var(--space-8);
+      font-weight: 700;
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      transition: all var(--transition-base);
+      font-size: 1rem;
+      box-shadow: var(--shadow-md);
+    }
+
+    .cta-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    /* ═══ CONTAINER LAYOUT ═══ */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--space-8);
+    }
+
+    .section {
+      padding: var(--space-10) var(--space-8);
+    }
+
+    .section-alt {
+      background: var(--oca-gray-light);
+    }
+
+    /* ═══ TYPOGRAPHY ═══ */
+    h2 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--oca-black);
+      margin-bottom: var(--space-6);
+      line-height: 1.2;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--oca-black);
+      margin-bottom: var(--space-4);
+    }
+
+    p {
+      font-size: 1rem;
+      color: var(--oca-gray-dark);
+      line-height: 1.8;
+      margin-bottom: var(--space-4);
+    }
+
+    .accent {
+      color: var(--oca-primary);
+      font-weight: 700;
+    }
+
+    /* ═══ GRID ═══ */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-8);
+      margin-top: var(--space-8);
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-6);
+      margin-top: var(--space-8);
+    }
+
+    /* ═══ CARD ═══ */
+    .card {
+      background: var(--oca-white);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-base);
+      border: 1px solid var(--oca-gray-mid);
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .card-accent {
+      border-top: 4px solid var(--oca-primary);
+    }
+
+    .card h3 {
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .icon-box {
+      width: 40px;
+      height: 40px;
+      background: var(--oca-primary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--oca-white);
+      font-weight: 800;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    /* ═══ CREATIVE SHOWCASE ═══ */
+    .creative-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--space-6);
+      margin-top: var(--space-8);
+    }
+
+    .creative-item {
+      background: var(--oca-gray-light);
+      border-radius: var(--radius-lg);
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+      color: var(--oca-gray-dark);
+      border: 2px dashed var(--oca-gray-mid);
+      font-weight: 600;
+      text-align: center;
+      padding: var(--space-4);
+    }
+
+    /* ═══ TIMELINE ═══ */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+      margin-top: var(--space-8);
+    }
+
+    .timeline-item {
+      display: flex;
+      gap: var(--space-6);
+      align-items: flex-start;
+    }
+
+    .timeline-marker {
+      width: 48px;
+      height: 48px;
+      background: var(--oca-primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--oca-white);
+      font-weight: 700;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .timeline-content h4 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--oca-black);
+      margin-bottom: var(--space-2);
+    }
+
+    .timeline-content p {
+      margin: 0;
+      font-size: 0.9375rem;
+    }
+
+    /* ═══ STATS ═══ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-6);
+      margin-top: var(--space-8);
+    }
+
+    .stat-box {
+      background: var(--oca-white);
+      border: 2px solid var(--oca-primary);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--oca-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--oca-gray-dark);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ═══ FEATURES ═══ */
+    .feature-list {
+      list-style: none;
+    }
+
+    .feature-list li {
+      padding: var(--space-4) 0;
+      padding-left: var(--space-8);
+      position: relative;
+      color: var(--oca-gray-dark);
+      font-weight: 500;
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--oca-primary);
+      font-weight: 800;
+      font-size: 1.25rem;
+    }
+
+    /* ═══ CTA SECTION ═══ */
+    .cta-section {
+      background: var(--oca-primary);
+      color: var(--oca-white);
+      padding: var(--space-10) var(--space-8);
+      text-align: center;
+      border-radius: var(--radius-lg);
+      margin: var(--space-10) 0;
+    }
+
+    .cta-section h2 {
+      color: var(--oca-white);
+      margin-bottom: var(--space-5);
+    }
+
+    .cta-section p {
+      color: rgba(255,255,255,0.95);
+      font-size: 1.125rem;
+      margin-bottom: var(--space-8);
+    }
+
+    .cta-secondary {
+      display: inline-block;
+      background: var(--oca-white);
+      color: var(--oca-primary);
+      padding: var(--space-4) var(--space-8);
+      font-weight: 700;
+      border-radius: var(--radius-lg);
+      text-decoration: none;
+      transition: all var(--transition-base);
+      font-size: 1rem;
+      border: 2px solid var(--oca-white);
+    }
+
+    .cta-secondary:hover {
+      background: transparent;
+      color: var(--oca-white);
+    }
+
+    /* ═══ FOOTER ═══ */
+    footer {
+      background: var(--oca-black);
+      color: var(--oca-white);
+      padding: var(--space-10) var(--space-8);
+      text-align: center;
+      border-top: 4px solid var(--oca-primary);
+    }
+
+    footer p {
+      color: rgba(255,255,255,0.8);
+      margin: 0;
+      font-size: 0.875rem;
+    }
+
+    footer .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ═══ RESPONSIVE ═══ */
+    @media (max-width: 768px) {
+      nav {
+        display: none;
+      }
+
+      h1 { font-size: 2rem; }
+      h2 { font-size: 1.75rem; }
+      h3 { font-size: 1.25rem; }
+
+      .hero h1 { font-size: 2.25rem; }
+      .hero .subtitle { font-size: 1rem; }
+
+      .section { padding: var(--space-8) var(--space-4); }
+      .container { padding: 0 var(--space-4); }
+    }
+
+    /* ═══ ANIMATIONS ═══ */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in-up {
+      animation: fadeInUp 0.6s ease forwards;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<header>
+  <div class="logo-section">
+    <div class="logo">OC</div>
+    <div>
+      <div class="brand-name">Oca Restaurante</div>
+      <div class="brand-subtitle">& GRILL</div>
+    </div>
+  </div>
+  <nav>
+    <a href="#proposta">Proposta</a>
+    <a href="#criativos">Criativos</a>
+    <a href="#beneficios">Benefícios</a>
+    <a href="#timeline">Timeline</a>
+  </nav>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Transforme Sua Presença Digital em Autoridade e Vendas</h1>
+    <p class="subtitle">Uma estratégia de 9 criativos + 2 stories diários para elevar sua visibilidade no Instagram e demonstrar a rotina autêntica do seu restaurante</p>
+    <a href="#proposta" class="cta-primary">Ver Proposta Completa</a>
+  </div>
+</section>
+
+<!-- ═══ SEÇÃO: A OPORTUNIDADE ═══ -->
+<section class="section" id="proposta">
+  <div class="container">
+    <h2>A Oportunidade</h2>
+    <p>O Oca Restaurante tem um diferencial que a maioria dos concorrentes não explora: <span class="accent">sua autenticidade e rotina</span>. Hoje, quando as pessoas procuram um lugar para comer, elas não querem apenas um prato — querem uma experiência.</p>
+
+    <p>Nosso estudo mostra que perfis no Instagram que mostram a <span class="accent">rotina e os processos</span> ganham <span class="accent">3x mais engajamento</span> e convertam melhor em clientes.</p>
+
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-number">3x</div>
+        <div class="stat-label">Mais Engajamento</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">45%</div>
+        <div class="stat-label">Aumento de Visitas</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-number">11</div>
+        <div class="stat-label">Posts + Stories/Dia</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SEÇÃO: A SOLUÇÃO ═══ -->
+<section class="section section-alt">
+  <div class="container">
+    <h2>A Solução Proposta</h2>
+    <p>Implementaremos uma estratégia integrada de conteúdo visual e temporal que maximize a autoridade e visibilidade do seu restaurante.</p>
+
+    <div class="grid-2">
+      <div class="card card-accent">
+        <h3>
+          <div class="icon-box">9</div>
+          <span>9 Criativos de Posts</span>
+        </h3>
+        <p>Novas identidades visuais com padrão premium, focando em:</p>
+        <ul class="feature-list">
+          <li>Identidade visual renovada</li>
+          <li>Pratos signature destacados</li>
+          <li>Dias específicos (Parmegiana, Costela, Feijoada)</li>
+          <li>Demonstração de rotina e processos</li>
+          <li>Qualidade fotográfica profissional</li>
+        </ul>
+      </div>
+
+      <div class="card card-accent">
+        <h3>
+          <div class="icon-box">2</div>
+          <span>2 Stories Diários</span>
+        </h3>
+        <p>Posts recorrentes que movimentam sua vitrine em tempo real:</p>
+        <ul class="feature-list">
+          <li>Movimento do dia (preparos, atendimento)</li>
+          <li>Promoções e ofertas</li>
+          <li>Momentos autênticos do restaurante</li>
+          <li>Padrão visual consistente</li>
+          <li>Agendamento automático</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SEÇÃO: ESTRATÉGIA DE POSTS ═══ -->
+<section class="section" id="criativos">
+  <div class="container">
+    <h2>Estratégia de 9 Criativos</h2>
+    <p>Cada criativo foi pensado para demonstrar valor, autoridade e criar identificação com seu público.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>1. Capa/Bem-vindo</h3>
+        <p>Apresentação visual do novo branding, convidando o público a conhecer a rotina do Oca</p>
+      </div>
+      <div class="card">
+        <h3>2. Parmegiana</h3>
+        <p>Foco em quarta-feira. Processo de preparo + resultado final com call-to-action</p>
+      </div>
+      <div class="card">
+        <h3>3. Costela</h3>
+        <p>Destaque em sábado. Marinada, grelha, apresentação. Experiência sensorial</p>
+      </div>
+      <div class="card">
+        <h3>4. Feijoada</h3>
+        <p>Quinta-feira é o dia. Tradição, autenticidade, tempo de preparo. Comunidade</p>
+      </div>
+      <div class="card">
+        <h3>5. Atrás das Câmeras</h3>
+        <p>Rotina da cozinha, equipe em ação, preparação dos ingredientes. Processo</p>
+      </div>
+      <div class="card">
+        <h3>6. Ambiente</h3>
+        <p>Espaço do restaurante, decoração, ambiente acolhedor. Experiência completa</p>
+      </div>
+      <div class="card">
+        <h3>7. Pratos Especiais</h3>
+        <p>Destaques sazonais, criar urgência e exclusividade. Inovação</p>
+      </div>
+      <div class="card">
+        <h3>8. Depoimento/Cliente</h3>
+        <p>Satisfação de clientes, histórias de retorno, comunidade. Confiança</p>
+      </div>
+      <div class="card">
+        <h3>9. Chamada de Ação</h3>
+        <p>Reservas, delivery, horários. Conversão direta para vendas</p>
+      </div>
+    </div>
+
+    <div class="cta-section">
+      <h2>2 Stories Diários Recorrentes</h2>
+      <p>Agenda fixa para movimentação em tempo real, criando hábito e fidelização</p>
+      <div style="margin-top: var(--space-6); display: flex; gap: var(--space-4); justify-content: center; flex-wrap: wrap;">
+        <div style="background: rgba(255,255,255,0.2); padding: var(--space-4) var(--space-6); border-radius: var(--radius-lg); font-weight: 600;">
+          📱 9h - Morning Moment
+        </div>
+        <div style="background: rgba(255,255,255,0.2); padding: var(--space-4) var(--space-6); border-radius: var(--radius-lg); font-weight: 600;">
+          🍽️ 18h - Movimento do Dia
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SEÇÃO: BENEFÍCIOS ═══ -->
+<section class="section section-alt" id="beneficios">
+  <div class="container">
+    <h2>Benefícios da Estratégia</h2>
+    <p>Por que essa abordagem funciona?</p>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="icon-box" style="margin-bottom: var(--space-4);">👁️</div>
+        <h3>Autoridade</h3>
+        <p>Demonstrar que você conhece sua rotina, oferece qualidade consistente e cumpre. Cada post é uma prova de expertise</p>
+      </div>
+      <div class="card">
+        <div class="icon-box" style="margin-bottom: var(--space-4);">📈</div>
+        <h3>Visibilidade</h3>
+        <p>11 interações por dia (9 posts + 2 stories) mantém seu perfil ativo, algoritmo favorece, alcance cresce organicamente</p>
+      </div>
+      <div class="card">
+        <div class="icon-box" style="margin-bottom: var(--space-4);">❤️</div>
+        <h3>Fidelização</h3>
+        <p>Stories às 9h e 18h criam hábito. Seu cliente vira rotina. "Vou ver o Oca" viraliza entre amigos</p>
+      </div>
+      <div class="card">
+        <div class="icon-box" style="margin-bottom: var(--space-4);">💰</div>
+        <h3>Conversão</h3>
+        <p>Pratos específicos em dias específicos criam antecipação. Cliente reserva com semanas de antecedência. Fila garantida</p>
+      </div>
+      <div class="card">
+        <div class="icon-box" style="margin-bottom: var(--space-4);">🎨</div>
+        <h3>Diferencial Visual</h3>
+        <p>Novo padrão = nova era. "O Oca renovou", "Ficou mais chique" — isso é conversado entre clientes</p>
+      </div>
+      <div class="card">
+        <div class="icon-box" style="margin-bottom: var(--space-4);">⏰</div>
+        <h3>Sistematização</h3>
+        <p>Estratégia fixa facilita a produção. Você sabe o que fazer, quando fazer. Não é improviso, é profissionalismo</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SEÇÃO: TIMELINE ═══ -->
+<section class="section" id="timeline">
+  <div class="container">
+    <h2>Próximos Passos</h2>
+    <p>Como trabalharemos juntos para executar essa estratégia:</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-marker">1</div>
+        <div class="timeline-content">
+          <h4>Alinhamento e Briefing</h4>
+          <p>Conversa sobre a visão, pratos signature, dias de produção, refs visuais e tom de voz</p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker">2</div>
+        <div class="timeline-content">
+          <h4>Produção de Conteúdo</h4>
+          <p>Fotografia, edição e design dos 9 criativos + templates para os 2 stories diários</p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker">3</div>
+        <div class="timeline-content">
+          <h4>Aprovação e Ajustes</h4>
+          <p>Review, feedback e refinamentos até estar 100% alinhado com sua marca</p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker">4</div>
+        <div class="timeline-content">
+          <h4>Lançamento e Agendamento</h4>
+          <p>Implementação no seu Instagram com calendário pronto. Stories programados para rodar automaticamente</p>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-marker">5</div>
+        <div class="timeline-content">
+          <h4>Acompanhamento</h4>
+          <p>Análise mensal de resultados, ajustes conforme performance e feedback dos clientes</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA FINAL ═══ -->
+<section class="section" style="padding-top: var(--space-8); padding-bottom: var(--space-8);">
+  <div class="container">
+    <div class="cta-section">
+      <h2>Vamos Elevar a Presença do Oca?</h2>
+      <p>Sua audiência está pronta. Seus pratos são incríveis. Agora falta apenas o visual que mostre o que você já oferece.</p>
+      <a href="https://wa.me/5511999999999?text=Oi%20Oca%20%F0%9F%8D%BD%20Quero%20discutir%20a%20proposta%20de%20presença%20digital!" class="cta-secondary">Agendar Conversa</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-content">
+    <p><strong>Oca Restaurante & Grill</strong> — Proposta de Presença Digital 2025</p>
+    <p style="margin-top: var(--space-3); opacity: 0.7;">Desenvolvido por Starken Performance</p>
+  </div>
+</footer>
+
+</body>
+</html>
