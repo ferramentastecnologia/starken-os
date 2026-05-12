@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proposta de Presença Digital - Oca Restaurante & Grill</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23FF3D3D'/%3E%3Ctext x='50' y='68' text-anchor='middle' font-family='Inter,sans-serif' font-weight='800' font-size='40' fill='%23FFFFFF'%3EOC%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -12,236 +11,188 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #1a1a1a; background: #fff; }
+    body { font-family: 'Inter', sans-serif; line-height: 1.6; color: #000; background: #fff; }
 
     :root {
       --red: #E8231A;
-      --red-dark: #C41B13;
-      --red-light: #FF5A52;
       --black: #1a1a1a;
       --white: #ffffff;
-      --gray-light: #f5f5f5;
-      --gray-mid: #e0e0e0;
-      --gray-dark: #666666;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-      --shadow-lg: 0 10px 24px rgba(0,0,0,0.10);
-      --shadow-red: 0 4px 14px rgba(232,35,26,0.22);
-      --r-md: 8px; --r-lg: 12px; --r-xl: 16px; --r-full: 9999px;
       --t: 150ms ease;
     }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+    @media (max-width: 768px) { .container { padding: 0 20px; } }
 
     /* ── HEADER ── */
     header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 40px; background: #fff; border-bottom: 1px solid var(--gray-mid);
-      position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-sm);
+      padding: 20px 32px; background: #fff; border-bottom: 1px solid #eee;
+      position: sticky; top: 0; z-index: 100;
     }
-    .logo-wrap { display: flex; align-items: center; gap: 14px; }
+    .logo-wrap { display: flex; align-items: center; gap: 12px; }
     .logo-box {
-      width: 44px; height: 44px; background: var(--red); border-radius: var(--r-lg);
+      width: 40px; height: 40px; background: var(--red); border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; font-size: 1.1rem; color: #fff; box-shadow: var(--shadow-red);
+      font-weight: 800; font-size: 1rem; color: #fff;
     }
-    .logo-name { font-size: 1.2rem; font-weight: 700; color: var(--black); }
-    .logo-sub { font-size: 0.7rem; color: var(--gray-dark); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
-    nav { display: flex; gap: 4px; }
-    nav a {
-      color: var(--gray-dark); text-decoration: none; font-weight: 500; font-size: 0.875rem;
-      padding: 6px 14px; border-radius: var(--r-md); transition: all var(--t);
-    }
-    nav a:hover { color: var(--red); background: #fff0f0; }
-    .badge-gratuito {
-      background: #e8faf0; color: #16a34a; font-size: 0.75rem; font-weight: 700;
-      padding: 4px 12px; border-radius: var(--r-full); border: 1px solid #86efac; letter-spacing: 0.3px;
-    }
+    .logo-text { font-weight: 700; font-size: 1.1rem; }
+    nav { display: flex; gap: 24px; }
+    nav a { color: #666; text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+    nav a:hover { color: var(--red); }
+    .badge { background: #f0f0f0; padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+    @media (max-width: 768px) { nav { display: none; } }
 
     /* ── HERO ── */
     .hero {
-      background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
-      color: #fff; padding: 80px 40px; text-align: center;
-      min-height: 580px; display: flex; align-items: center; justify-content: center;
+      background: var(--red); color: #fff; padding: 80px 32px; text-align: center;
+      min-height: 500px; display: flex; align-items: center; justify-content: center;
       position: relative; overflow: hidden;
     }
     .hero::before {
       content: ''; position: absolute; top: -30%; right: -5%;
-      width: 500px; height: 500px; background: rgba(255,255,255,0.04); border-radius: 50%;
+      width: 500px; height: 500px; background: rgba(255,255,255,0.05); border-radius: 50%;
     }
-    .hero::after {
-      content: ''; position: absolute; bottom: -20%; left: -5%;
-      width: 350px; height: 350px; background: rgba(0,0,0,0.06); border-radius: 50%;
-    }
-    .hero-content { position: relative; z-index: 1; max-width: 780px; }
-    .hero-tag {
-      display: inline-block; background: rgba(255,255,255,0.18); color: #fff;
-      font-size: 0.8rem; font-weight: 700; padding: 5px 16px; border-radius: var(--r-full);
-      border: 1px solid rgba(255,255,255,0.35); margin-bottom: 24px; letter-spacing: 0.5px;
-      text-transform: uppercase;
-    }
-    .hero h1 { font-size: 2.9rem; font-weight: 800; line-height: 1.15; margin-bottom: 20px; }
-    .hero .subtitle {
-      font-size: 1.15rem; font-weight: 400; margin-bottom: 36px;
-      opacity: 0.93; line-height: 1.7; max-width: 640px; margin-left: auto; margin-right: auto;
-    }
-    .hero-cta {
+    .hero-content { position: relative; z-index: 1; max-width: 700px; }
+    .hero h1 { font-size: 2.8rem; font-weight: 800; line-height: 1.2; margin-bottom: 20px; }
+    .hero p { font-size: 1.1rem; opacity: 0.95; margin-bottom: 36px; }
+    .hero-btn {
       display: inline-block; background: #fff; color: var(--red);
-      padding: 14px 36px; font-weight: 700; border-radius: var(--r-lg);
-      text-decoration: none; transition: all var(--t); font-size: 1rem; box-shadow: var(--shadow-md);
+      padding: 14px 36px; font-weight: 700; border-radius: 8px;
+      text-decoration: none; transition: all var(--t); font-size: 1rem;
     }
-    .hero-cta:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-
-    /* ── LAYOUT ── */
-    .container { max-width: 1160px; margin: 0 auto; padding: 0 40px; }
-    .section { padding: 72px 40px; }
-    .section-alt { background: var(--gray-light); }
-
-    /* ── TYPOGRAPHY ── */
-    .section-label {
-      font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-      color: var(--red); margin-bottom: 10px;
+    .hero-btn:hover { transform: translateY(-2px); }
+    @media (max-width: 768px) {
+      .hero { padding: 60px 20px; }
+      .hero h1 { font-size: 2rem; }
+      .hero p { font-size: 0.95rem; }
     }
-    h2 { font-size: 2.25rem; font-weight: 800; color: var(--black); margin-bottom: 16px; line-height: 1.2; }
-    h3 { font-size: 1.35rem; font-weight: 700; color: var(--black); margin-bottom: 12px; }
-    p { font-size: 1rem; color: var(--gray-dark); line-height: 1.8; margin-bottom: 16px; }
-    p:last-child { margin-bottom: 0; }
+
+    /* ── SECTION ── */
+    .section { padding: 72px 32px; }
+    .section-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--red); margin-bottom: 12px; }
+    h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 16px; line-height: 1.2; }
+    p { font-size: 1rem; color: #555; line-height: 1.8; }
     .accent { color: var(--red); font-weight: 700; }
 
     /* ── GRID ── */
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; margin-top: 36px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 36px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 32px; margin-top: 40px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-top: 36px; }
 
     /* ── CARD ── */
     .card {
-      background: #fff; border-radius: var(--r-xl); padding: 28px;
-      box-shadow: var(--shadow-md); transition: all var(--t); border: 1px solid var(--gray-mid);
+      background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 28px;
+      transition: all var(--t);
     }
-    .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-    .card-top { border-top: 3px solid var(--red); }
-    .card h3 { display: flex; align-items: center; gap: 12px; }
-    .icon-num {
-      width: 38px; height: 38px; background: var(--red); border-radius: var(--r-md);
-      display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 800; font-size: 1.3rem; flex-shrink: 0;
+    .card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 12px; }
+    .card p { font-size: 0.95rem; }
+
+    /* ── HIGHLIGHT ── */
+    .highlight {
+      background: var(--red); color: #fff; border-radius: 12px; padding: 40px 32px;
+      text-align: center; margin: 40px auto; max-width: 900px;
     }
-    .icon-emoji {
-      width: 44px; height: 44px; background: #fff0f0; border-radius: var(--r-md);
-      display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
-      margin-bottom: 16px; flex-shrink: 0;
+    .highlight h3 { font-size: 1.8rem; font-weight: 800; margin-bottom: 16px; color: #fff; }
+    .highlight p { color: rgba(255,255,255,0.9); }
+
+    /* ── ICONS ── */
+    .icon { width: 44px; height: 44px; margin: 0 auto 12px; }
+    svg { width: 100%; height: 100%; }
+
+    /* ── DESTAQUES ── */
+    .destaques-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-top: 28px; }
+    .destaque {
+      background: #f5f5f5; border: 2px solid #eee; border-radius: 12px;
+      padding: 20px; text-align: center; transition: all var(--t);
+    }
+    .destaque:hover { border-color: var(--red); background: #fff5f5; }
+    .destaque-icon { width: 40px; height: 40px; margin: 0 auto 12px; }
+    .destaque-label { font-weight: 700; font-size: 0.9rem; }
+
+    /* ── DIAGNOSIS ── */
+    .diag-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 40px; }
+    .diag-col h3 { font-size: 1rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .diag-item {
+      padding: 16px; border-radius: 10px; margin-bottom: 16px; font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+    .diag-problem { background: #fff5f5; border-left: 3px solid var(--red); }
+    .diag-ok { background: #f5fff5; border-left: 3px solid #22c55e; }
+    .diag-item strong { display: block; margin-bottom: 6px; }
+    @media (max-width: 768px) {
+      .diag-grid { grid-template-columns: 1fr; }
     }
 
-    /* ── CHECKLIST ── */
-    .check-list { list-style: none; margin-top: 12px; }
-    .check-list li {
-      padding: 10px 0 10px 32px; position: relative;
-      color: var(--gray-dark); font-weight: 500; font-size: 0.9375rem;
-      border-bottom: 1px solid var(--gray-light);
+    /* ── STORIES MOCKUP ── */
+    .stories-showcase { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; margin-top: 40px; }
+    .iphone-frame {
+      width: 280px; height: 560px; background: #000; border-radius: 40px;
+      border: 8px solid #000; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative; overflow: hidden; margin: 0 auto;
     }
-    .check-list li:last-child { border-bottom: none; }
-    .check-list li::before {
-      content: '✓'; position: absolute; left: 0; color: var(--red);
-      font-weight: 800; font-size: 1rem;
+    .iphone-frame::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 140px; height: 25px; background: #000; border-radius: 0 0 20px 20px; z-index: 10;
     }
-
-    /* ── STATS ── */
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-top: 36px; }
-    .stat-box {
-      background: #fff; border: 2px solid var(--red); border-radius: var(--r-xl);
-      padding: 28px 20px; text-align: center;
+    .story-content {
+      width: 100%; height: 100%; background: var(--red); display: flex;
+      align-items: flex-end; justify-content: center; padding: 40px 20px;
+      position: relative; color: #fff; text-align: center;
     }
-    .stat-num { font-size: 2.4rem; font-weight: 800; color: var(--red); margin-bottom: 6px; }
-    .stat-lbl { font-size: 0.8rem; color: var(--gray-dark); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-
-    /* ── STORIES BLOCK ── */
-    .stories-block {
-      background: var(--red); color: #fff; border-radius: var(--r-xl);
-      padding: 40px; text-align: center; margin-top: 40px;
+    .story-image {
+      width: 100%; height: 60%; background: linear-gradient(135deg, rgba(0,0,0,0.2), rgba(0,0,0,0.4));
+      border-radius: 12px; margin-bottom: 16px; display: flex; align-items: center;
+      justify-content: center; font-size: 3rem;
     }
-    .stories-block h3 { color: #fff; font-size: 1.6rem; margin-bottom: 10px; }
-    .stories-block p { color: rgba(255,255,255,0.9); margin-bottom: 28px; }
-    .stories-times { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
-    .story-time {
-      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-      padding: 14px 28px; border-radius: var(--r-lg); font-weight: 700; font-size: 1rem;
+    .story-text h4 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .story-text p { font-size: 0.8rem; opacity: 0.9; }
+    .stories-info {
+      display: flex; flex-direction: column; justify-content: center;
     }
-    .story-time span { display: block; font-size: 0.75rem; font-weight: 500; opacity: 0.85; margin-top: 4px; }
-
-    /* ── DESTAQUES BLOCK ── */
-    .destaques-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 24px; }
-    .destaque-item {
-      background: #fff; border: 1px solid var(--gray-mid); border-radius: var(--r-xl);
-      padding: 18px 12px; text-align: center;
+    .stories-info h3 { font-size: 1.4rem; font-weight: 800; margin-bottom: 16px; }
+    .stories-info p { margin-bottom: 20px; }
+    .story-desc {
+      background: #f5f5f5; padding: 14px; border-radius: 8px; font-size: 0.85rem;
+      margin-bottom: 12px; border-left: 3px solid var(--red);
     }
-    .destaque-item .d-icon { font-size: 1.8rem; margin-bottom: 8px; }
-    .destaque-item .d-label { font-size: 0.8rem; font-weight: 700; color: var(--black); }
-
-    /* ── HORARIO BANNER ── */
-    .horario-banner {
-      background: var(--black); color: #fff; border-radius: var(--r-xl);
-      padding: 24px 32px; display: flex; align-items: center; gap: 20px; margin-top: 36px;
-      flex-wrap: wrap;
+    @media (max-width: 768px) {
+      .stories-showcase { grid-template-columns: 1fr; gap: 32px; }
+      .iphone-frame { width: 220px; height: 440px; }
     }
-    .horario-banner .h-icon { font-size: 2rem; }
-    .horario-banner .h-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
-    .horario-banner .h-text { font-size: 1.25rem; font-weight: 700; }
-    .horario-sep { width: 1px; height: 40px; background: rgba(255,255,255,0.15); }
 
     /* ── TIMELINE ── */
-    .timeline { display: flex; flex-direction: column; gap: 28px; margin-top: 36px; }
-    .tl-item { display: flex; gap: 20px; align-items: flex-start; }
-    .tl-marker {
-      width: 44px; height: 44px; background: var(--red); border-radius: 50%;
+    .timeline { display: flex; flex-direction: column; gap: 24px; margin-top: 40px; }
+    .tl-item { display: flex; gap: 20px; }
+    .tl-num {
+      width: 40px; height: 40px; background: var(--red); border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
+      color: #fff; font-weight: 700; flex-shrink: 0;
     }
-    .tl-content h4 { font-size: 1.05rem; font-weight: 700; color: var(--black); margin-bottom: 4px; }
-    .tl-content p { margin: 0; font-size: 0.9375rem; }
+    .tl-text h4 { font-weight: 700; margin-bottom: 4px; }
+    .tl-text p { font-size: 0.9rem; color: #666; margin: 0; }
 
-    /* ── CTA FINAL ── */
+    /* ── CTA ── */
     .cta-final {
-      background: var(--red); color: #fff; border-radius: var(--r-xl);
-      padding: 56px 40px; text-align: center;
+      background: var(--red); color: #fff; border-radius: 12px;
+      padding: 48px 40px; text-align: center; margin-top: 40px;
     }
-    .cta-final h2 { color: #fff; margin-bottom: 14px; }
-    .cta-final p { color: rgba(255,255,255,0.92); font-size: 1.1rem; margin-bottom: 32px; }
-    .cta-btn {
+    .cta-final h2 { color: #fff; margin-bottom: 12px; }
+    .cta-final p { color: rgba(255,255,255,0.9); margin-bottom: 28px; }
+    .cta-btn-final {
       display: inline-block; background: #fff; color: var(--red);
-      padding: 14px 36px; font-weight: 700; border-radius: var(--r-lg);
-      text-decoration: none; transition: all var(--t); font-size: 1rem; border: 2px solid #fff;
+      padding: 14px 36px; font-weight: 700; border-radius: 8px;
+      text-decoration: none; transition: all var(--t); font-size: 1rem;
     }
-    .cta-btn:hover { background: transparent; color: #fff; }
-
-    /* ── DIAGNÓSTICO ── */
-    .diag-item {
-      display: flex; gap: 14px; align-items: flex-start;
-      padding: 16px; border-radius: var(--r-lg); border: 1px solid;
-    }
-    .diag-problem { background: #fff8f8; border-color: #fecaca; }
-    .diag-ok { background: #f0fdf4; border-color: #86efac; }
-    .diag-item .diag-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
-    .diag-item strong { display: block; font-size: 0.9375rem; color: var(--black); margin-bottom: 4px; }
-    .diag-item p { font-size: 0.875rem; margin: 0; line-height: 1.6; }
+    .cta-btn-final:hover { transform: translateY(-2px); }
 
     /* ── FOOTER ── */
-    footer {
-      background: var(--black); color: #fff; padding: 36px 40px; text-align: center;
-      border-top: 4px solid var(--red);
-    }
-    footer .f-inner { max-width: 1160px; margin: 0 auto; }
-    footer p { color: rgba(255,255,255,0.75); margin: 0; font-size: 0.875rem; }
+    footer { background: var(--black); color: #fff; padding: 32px; text-align: center; }
+    footer p { font-size: 0.85rem; margin: 0; }
 
-    /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      nav { display: none; }
-      header { padding: 16px 20px; }
-      .hero { padding: 60px 20px; min-height: auto; }
-      .hero h1 { font-size: 2rem; }
-      .hero .subtitle { font-size: 0.95rem; }
       .section { padding: 52px 20px; }
-      .container { padding: 0 20px; }
-      h2 { font-size: 1.75rem; }
-      .horario-sep { display: none; }
-      .horario-banner { flex-direction: column; align-items: flex-start; gap: 12px; }
-      footer { padding: 28px 20px; }
+      h2 { font-size: 1.6rem; }
+      .grid-2, .grid-3 { gap: 20px; }
     }
   </style>
 </head>
@@ -251,348 +202,235 @@
 <header>
   <div class="logo-wrap">
     <div class="logo-box">OC</div>
-    <div>
-      <div class="logo-name">Oca Restaurante</div>
-      <div class="logo-sub">& Grill</div>
-    </div>
+    <div class="logo-text">Oca Restaurante</div>
   </div>
   <nav>
     <a href="#proposta">Proposta</a>
     <a href="#criativos">Criativos</a>
+    <a href="#stories">Stories</a>
     <a href="#beneficios">Benefícios</a>
-    <a href="#timeline">Próximos Passos</a>
   </nav>
-  <span class="badge-gratuito">100% Gratuito</span>
+  <span class="badge">100% Gratuito</span>
 </header>
 
 <!-- HERO -->
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-tag">Presença Digital Gratuita · 2025</div>
     <h1>Sua identidade no Instagram à altura do seu restaurante</h1>
-    <p class="subtitle">
-      Vamos transformar o perfil do Oca com 9 criativos exclusivos, 2 stories diários com CTAs e destaques organizados — sem custo, com estratégia real.
-    </p>
-    <a href="#proposta" class="hero-cta">Ver a Proposta Completa</a>
+    <p>9 criativos exclusivos, 2 stories diários com estratégia de horário e destaques organizados — tudo para converter seguidores em clientes reais.</p>
+    <a href="#proposta" class="hero-btn">Ver Proposta Completa</a>
   </div>
 </section>
 
-<!-- O QUE ESTÁ EM JOGO -->
-<section class="section" id="proposta">
+<!-- DIAGNÓSTICO -->
+<section class="section">
   <div class="container">
-    <div class="section-label">A Oportunidade</div>
-    <h2>Seu restaurante merece um Instagram que converte</h2>
-    <p>A maioria dos restaurantes publica sem estratégia — fotos soltas, sem padrão visual e sem conexão com o público. O resultado: perfil fraco, pouco engajamento e clientes que passam direto.</p>
-    <p>O Oca tem o que mais importa: <span class="accent">produto de qualidade e uma rotina rica</span>. A missão é fazer o Instagram mostrar exatamente isso — com identidade forte, conteúdo recorrente e chamadas de ação que estimulam a visita.</p>
-
-    <div class="stats-grid">
-      <div class="stat-box">
-        <div class="stat-num">9</div>
-        <div class="stat-lbl">Criativos Exclusivos</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-num">2</div>
-        <div class="stat-lbl">Stories Diários</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-num">+</div>
-        <div class="stat-lbl">Destaques Organizados</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-num">R$0</div>
-        <div class="stat-lbl">Investimento</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- DIAGNÓSTICO REAL -->
-<section class="section section-alt">
-  <div class="container">
-    <div class="section-label">Diagnóstico do Perfil Atual</div>
+    <div class="section-label">Diagnóstico</div>
     <h2>O que encontramos no @restaurante_oca</h2>
-    <p>Antes de propor qualquer coisa, analisamos o perfil do Oca no Instagram. Aqui está o que os números e o conteúdo revelam — e o que vamos resolver.</p>
+    <p>Analisamos o perfil e identificamos oportunidades claras. Aqui está o que vamos resolver:</p>
 
-    <div class="grid-2" style="margin-top:32px;">
-
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <div class="section-label" style="margin-bottom:4px;">⚠️ Problemas Identificados</div>
-
+    <div class="diag-grid">
+      <div class="diag-col">
+        <h3>⚠️ Problemas</h3>
         <div class="diag-item diag-problem">
-          <div class="diag-icon">👥</div>
-          <div>
-            <strong>235 seguidores · 229 seguindo</strong>
-            <p>Proporção quase 1:1 passa insegurança. Um restaurante estabelecido deveria ter muito mais seguidores do que seguidos</p>
-          </div>
+          <strong>235 seguidores / 229 seguindo</strong>
+          Proporção 1:1 passa insegurança. Perfil sem autoridade.
         </div>
-
         <div class="diag-item diag-problem">
-          <div class="diag-icon">🎨</div>
-          <div>
-            <strong>Identidade visual inconsistente</strong>
-            <p>O feed mistura fotos tiradas no celular com artes gráficas sem padrão. Não há um "estilo Oca" reconhecível</p>
-          </div>
+          <strong>Visual inconsistente</strong>
+          Feed mistura fotos brutas com artes sem padrão. Sem identidade visual.
         </div>
-
         <div class="diag-item diag-problem">
-          <div class="diag-icon">📌</div>
-          <div>
-            <strong>Destaques sem identidade</strong>
-            <p>Os 6 destaques existem, mas as capas são genéricas e não comunicam a marca. Parecem provisórios</p>
-          </div>
+          <strong>Destaques genéricos</strong>
+          Capas sem personalização. Parecem provisórios.
         </div>
-
         <div class="diag-item diag-problem">
-          <div class="diag-icon">📢</div>
-          <div>
-            <strong>Sem CTAs estratégicos</strong>
-            <p>Os posts divulgam mas não convertem. Faltam chamadas claras: "venha hoje", "peça pelo link", "reserve sua mesa"</p>
-          </div>
-        </div>
-
-        <div class="diag-item diag-problem">
-          <div class="diag-icon">📅</div>
-          <div>
-            <strong>68 posts sem crescimento proporcional</strong>
-            <p>Muito conteúdo produzido mas sem estratégia de publicação. O algoritmo não favorece quem posta sem consistência</p>
-          </div>
+          <strong>Sem CTAs estratégicos</strong>
+          Posts divulgam mas não convertem. Faltam chamadas de ação.
         </div>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <div class="section-label" style="margin-bottom:4px; color:#16a34a;">✅ O Que Já Funciona</div>
-
+      <div class="diag-col">
+        <h3>✅ Pontos Fortes</h3>
         <div class="diag-item diag-ok">
-          <div class="diag-icon">🛵</div>
-          <div>
-            <strong>Delivery ativo no iFood</strong>
-            <p>Canal de venda online funcionando. Vamos explorar isso nos CTAs dos criativos e stories</p>
-          </div>
+          <strong>Delivery ativo (iFood)</strong>
+          Canal de venda online funcionando. Vamos explorar nos CTAs.
         </div>
-
         <div class="diag-item diag-ok">
-          <div class="diag-icon">📱</div>
-          <div>
-            <strong>WhatsApp na bio</strong>
-            <p>Acesso direto ao restaurante disponível. Ótimo ponto de contato para completar a jornada do cliente</p>
-          </div>
+          <strong>WhatsApp na bio</strong>
+          Acesso direto disponível para fechar vendas.
         </div>
-
         <div class="diag-item diag-ok">
-          <div class="diag-icon">🍽️</div>
-          <div>
-            <strong>Conteúdo real e autêntico</strong>
-            <p>Fotos dos pratos reais, feijoada, marmita, ambiente. A matéria-prima existe — falta emoldurar bem</p>
-          </div>
+          <strong>Conteúdo real e autêntico</strong>
+          Fotos dos pratos reais, feijoada, ambiente. Matéria-prima existe.
         </div>
-
         <div class="diag-item diag-ok">
-          <div class="diag-icon">📍</div>
-          <div>
-            <strong>Localização e horários na bio</strong>
-            <p>Informações essenciais já estão corretas: Blumenau/SC, Seg–Sab, 11h às 14h</p>
-          </div>
-        </div>
-
-        <div class="diag-item diag-ok">
-          <div class="diag-icon">🔴</div>
-          <div>
-            <strong>Branding vermelho já estabelecido</strong>
-            <p>A cor da marca já aparece nos posts. A nova identidade vai partir daí e elevar o padrão</p>
-          </div>
+          <strong>Branding vermelho</strong>
+          Cores e identidade já começadas. Vamos elevar o padrão.
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
 <!-- A SOLUÇÃO -->
-<section class="section section-alt">
+<section class="section" id="proposta">
   <div class="container">
     <div class="section-label">O que vamos entregar</div>
-    <h2>Três frentes de atuação no seu perfil</h2>
-    <p>Cada entregável foi pensado para construir autoridade, criar hábito no seu público e aumentar a visibilidade orgânica.</p>
+    <h2>Três frentes de atuação</h2>
+    <p>Cada entregável foi pensado para construir autoridade, criar hábito e aumentar visibilidade orgânica.</p>
 
-    <div class="grid-2" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
-
-      <div class="card card-top">
-        <h3>
-          <div class="icon-num">9</div>
-          <span>9 Criativos de Posts</span>
-        </h3>
-        <p style="margin-top:8px;">Nova identidade visual que repagina o perfil e posiciona o Oca com autoridade. Cada post tem um objetivo claro:</p>
-        <ul class="check-list">
-          <li>Padrão visual premium e consistente</li>
+    <div class="grid-2">
+      <div class="card">
+        <h3>📌 9 Criativos de Posts</h3>
+        <p style="margin: 12px 0 20px;">Nova identidade visual que repagina o perfil e posiciona o Oca com autoridade:</p>
+        <ul style="margin-left: 20px; font-size: 0.9rem; line-height: 1.8;">
+          <li>Padrão visual premium consistente</li>
           <li>Pratos signature com dias fixos</li>
-          <li>Diferenciais e bastidores do restaurante</li>
+          <li>Diferenciais e bastidores</li>
           <li>Chamadas de ação em cada peça</li>
-          <li>Design alinhado à identidade da marca</li>
+          <li>Design alinhado à marca</li>
         </ul>
       </div>
 
-      <div class="card card-top">
-        <h3>
-          <div class="icon-num">2</div>
-          <span>2 Stories Diários</span>
-        </h3>
-        <p style="margin-top:8px;">Postados entre <span class="accent">9h e 10h</span> — antes da abertura — para despertar o apetite e criar antecipação na hora certa:</p>
-        <ul class="check-list">
-          <li>CTA direto para visitar no almoço (11h–14h)</li>
+      <div class="card">
+        <h3>⏰ 2 Stories Diários</h3>
+        <p style="margin: 12px 0 20px;">Postados entre <strong>9h e 10h</strong> — antes de abrir às 11h — para despertar apetite:</p>
+        <ul style="margin-left: 20px; font-size: 0.9rem; line-height: 1.8;">
+          <li>CTA direto para visitar (11h–14h)</li>
           <li>Prato do dia com visual apetitoso</li>
           <li>Promoção ou destaque do cardápio</li>
           <li>Padrão visual que cria reconhecimento</li>
-          <li>Agendamento automático pela plataforma</li>
+          <li>Agendamento automático</li>
         </ul>
       </div>
+    </div>
 
-      <div class="card card-top" style="grid-column: 1 / -1;">
-        <h3>
-          <div class="icon-num" style="font-size:1rem;">★</div>
-          <span>Destaques do Perfil Organizados</span>
-        </h3>
-        <p style="margin-top:8px;">Os Destaques são a vitrine permanente do seu perfil — quem visita pela primeira vez vai direto neles. Vamos criar e organizar com capas padronizadas:</p>
-        <div class="destaques-grid">
-          <div class="destaque-item">
-            <div class="d-icon">🍖</div>
-            <div class="d-label">Cardápio</div>
+    <!-- DESTAQUES -->
+    <div style="margin-top: 48px;">
+      <h3 style="margin-bottom: 20px;">⭐ Destaques do Perfil Organizados</h3>
+      <p>Capas padronizadas para os destaques permanentes do seu perfil:</p>
+      <div class="destaques-grid">
+        <div class="destaque">
+          <div class="destaque-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V7m-6 4v6m-4-6v6"/>
+            </svg>
           </div>
-          <div class="destaque-item">
-            <div class="d-icon">📍</div>
-            <div class="d-label">Como Chegar</div>
+          <div class="destaque-label">Cardápio</div>
+        </div>
+        <div class="destaque">
+          <div class="destaque-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
           </div>
-          <div class="destaque-item">
-            <div class="d-icon">⏰</div>
-            <div class="d-label">Horários</div>
+          <div class="destaque-label">Horários</div>
+        </div>
+        <div class="destaque">
+          <div class="destaque-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
           </div>
-          <div class="destaque-item">
-            <div class="d-icon">🤳</div>
-            <div class="d-label">Bastidores</div>
+          <div class="destaque-label">Como Chegar</div>
+        </div>
+        <div class="destaque">
+          <div class="destaque-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z"/>
+            </svg>
           </div>
-          <div class="destaque-item">
-            <div class="d-icon">⭐</div>
-            <div class="d-label">Avaliações</div>
+          <div class="destaque-label">Bastidores</div>
+        </div>
+        <div class="destaque">
+          <div class="destaque-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
           </div>
-          <div class="destaque-item">
-            <div class="d-icon">🎉</div>
-            <div class="d-label">Promoções</div>
+          <div class="destaque-label">Avaliações</div>
+        </div>
+        <div class="destaque">
+          <div class="destaque-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
           </div>
+          <div class="destaque-label">Promoções</div>
         </div>
       </div>
-
     </div>
   </div>
 </section>
 
-<!-- ESTRATÉGIA DE 9 CRIATIVOS -->
+<!-- OS 9 CRIATIVOS -->
 <section class="section" id="criativos">
   <div class="container">
-    <div class="section-label">Os 9 Criativos</div>
-    <h2>Cada post com um propósito estratégico</h2>
-    <p>Não é sobre quantidade — é sobre relevância. Cada criativo foi desenhado para ocupar um papel específico na percepção do público.</p>
+    <div class="section-label">Estratégia</div>
+    <h2>Cada post com um propósito</h2>
+    <p>9 criativos pensados para demonstrar valor, autoridade e criar conexão com o público.</p>
 
     <div class="grid-3">
-      <div class="card">
-        <h3>01 · Identidade</h3>
-        <p>Apresentação do novo visual do perfil. Primeiro impacto: "o Oca mudou"</p>
-      </div>
-      <div class="card">
-        <h3>02 · Parmegiana</h3>
-        <p>Quarta-feira é o dia. Processo + resultado + CTA para ir ao restaurante</p>
-      </div>
-      <div class="card">
-        <h3>03 · Costela</h3>
-        <p>Sábado na brasa. Textura, cor, preparo. Conteúdo que dá água na boca</p>
-      </div>
-      <div class="card">
-        <h3>04 · Feijoada</h3>
-        <p>Quinta-feira de tradição. Ingredientes, panela, caldeirão. Comunidade e pertencimento</p>
-      </div>
-      <div class="card">
-        <h3>05 · Bastidores</h3>
-        <p>A cozinha em ação, a equipe, os ingredientes frescos. Transparência que gera confiança</p>
-      </div>
-      <div class="card">
-        <h3>06 · Ambiente</h3>
-        <p>O espaço do Oca: mesas, decoração, atmosfera. A experiência além do prato</p>
-      </div>
-      <div class="card">
-        <h3>07 · Diferencial</h3>
-        <p>O que o Oca tem que nenhum concorrente tem. Posicionamento e autoridade</p>
-      </div>
-      <div class="card">
-        <h3>08 · Prova Social</h3>
-        <p>Cliente satisfeito, avaliação, retorno. Depoimentos reais que vendem mais que anúncio</p>
-      </div>
-      <div class="card">
-        <h3>09 · Conversão</h3>
-        <p>Horário, localização, como pedir. CTA direto para fechar a visita</p>
-      </div>
+      <div class="card"><h3>01 · Identidade</h3><p>Novo visual do perfil. Primeiro impacto: "o Oca mudou"</p></div>
+      <div class="card"><h3>02 · Parmegiana</h3><p>Quarta-feira. Processo + resultado + CTA</p></div>
+      <div class="card"><h3>03 · Costela</h3><p>Sábado na brasa. Textura, cor, preparo</p></div>
+      <div class="card"><h3>04 · Feijoada</h3><p>Quinta-feira. Tradição, ingredientes, comunidade</p></div>
+      <div class="card"><h3>05 · Bastidores</h3><p>Cozinha em ação. Equipe, ingredientes frescos</p></div>
+      <div class="card"><h3>06 · Ambiente</h3><p>Espaço do Oca. Atmosfera e experiência</p></div>
+      <div class="card"><h3>07 · Diferencial</h3><p>O que ninguém tem. Posicionamento único</p></div>
+      <div class="card"><h3>08 · Prova Social</h3><p>Cliente satisfeito. Depoimentos reais</p></div>
+      <div class="card"><h3>09 · Conversão</h3><p>Horário, localização, como pedir. CTA direto</p></div>
     </div>
-
-    <!-- STORIES BLOCK -->
-    <div class="stories-block">
-      <h3>2 Stories Diários · Entre 9h e 10h</h3>
-      <p>O restaurante abre às 11h. Nossos stories chegam antes — enquanto seu cliente ainda está escolhendo onde almoçar.</p>
-      <div class="stories-times">
-        <div class="story-time">
-          🌅 Story 1 · 9h
-          <span>Prato do dia + CTA de visita</span>
-        </div>
-        <div class="story-time">
-          🍽️ Story 2 · 9h30
-          <span>Destaque do cardápio ou promoção</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- HORÁRIO BANNER -->
-    <div class="horario-banner">
-      <div class="h-icon">⏰</div>
-      <div>
-        <div class="h-title">Horário de Funcionamento</div>
-        <div class="h-text">Segunda a Sábado · 11h às 14h</div>
-      </div>
-      <div class="horario-sep"></div>
-      <div class="h-icon">📱</div>
-      <div>
-        <div class="h-title">Stories postados</div>
-        <div class="h-text">Diariamente entre 9h e 10h</div>
-      </div>
-      <div class="horario-sep"></div>
-      <div class="h-icon">🔥</div>
-      <div>
-        <div class="h-title">Estratégia</div>
-        <div class="h-text">Estimular antes de abrir a fome</div>
-      </div>
-    </div>
-
   </div>
 </section>
 
-<!-- ORIENTAÇÃO AO CLIENTE -->
-<section class="section section-alt">
+<!-- STORIES MOCKUP -->
+<section class="section" id="stories">
   <div class="container">
-    <div class="section-label">Você também faz parte</div>
-    <h2>O conteúdo orgânico que você pode criar</h2>
-    <p>Além do que vamos produzir, o engajamento cresce muito quando o próprio restaurante mostra o dia a dia de forma espontânea. O público de hoje quer <span class="accent">conexão, não perfeição.</span></p>
+    <div class="section-label">Formato</div>
+    <h2>2 Stories Diários · Entre 9h e 10h</h2>
+    <p style="margin-bottom: 40px;">O restaurante abre às 11h. Nossos stories chegam antes — enquanto seu cliente ainda está escolhendo onde almoçar.</p>
 
-    <div class="grid-3">
-      <div class="card">
-        <div class="icon-emoji">🥩</div>
-        <h3>Banca de Alimentos</h3>
-        <p>Mostre a matéria-prima: carne chegando, legumes frescos, o cuidado com os ingredientes. Isso cria credibilidade</p>
+    <div class="stories-showcase">
+      <div>
+        <div class="iphone-frame">
+          <div class="story-content">
+            <div style="width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 20px;">
+              <div class="story-image">🍖</div>
+              <div class="story-text">
+                <h4>Parmegiana</h4>
+                <p>Vem hoje 11h!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="story-desc" style="text-align: center; margin-top: 16px;">
+          <strong>Story 1 · 9h</strong><br/>Prato do dia + CTA de visita
+        </div>
       </div>
-      <div class="card">
-        <div class="icon-emoji">👨‍🍳</div>
-        <h3>Cozinha em Ação</h3>
-        <p>A equipe preparando, o fogo, o tempero. As pessoas adoram ver como o prato que vão comer é feito</p>
+
+      <div>
+        <div class="iphone-frame">
+          <div class="story-content">
+            <div style="width: 100%; display: flex; flex-direction: column; align-items: center; padding-top: 20px;">
+              <div class="story-image">⏰</div>
+              <div class="story-text">
+                <h4>Aberto!</h4>
+                <p>11h às 14h</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="story-desc" style="text-align: center; margin-top: 16px;">
+          <strong>Story 2 · 9h30</strong><br/>Horário de funcionamento
+        </div>
       </div>
-      <div class="card">
-        <div class="icon-emoji">😄</div>
-        <h3>Momentos Reais</h3>
-        <p>Cliente feliz, mesa cheia, uma reação de alguém provando pela primeira vez. Autenticidade engaja mais que anúncio</p>
-      </div>
+    </div>
+
+    <div class="highlight">
+      <h3>A hora certa importa</h3>
+      <p>9h-10h é quando o cliente está no café pensando onde almoçar. Nossos stories chegam para ser a decisão que faltava.</p>
     </div>
   </div>
 </section>
@@ -600,84 +438,78 @@
 <!-- BENEFÍCIOS -->
 <section class="section" id="beneficios">
   <div class="container">
-    <div class="section-label">Por que funciona</div>
+    <div class="section-label">Impacto</div>
     <h2>O que essa estratégia constrói</h2>
 
     <div class="grid-2">
       <div class="card">
-        <div class="icon-emoji">👁️</div>
-        <h3>Autoridade Visual</h3>
-        <p>Perfil com padrão visual consistente transmite profissionalismo. O cliente percebe a diferença antes de provar o prato</p>
+        <h3>👁️ Autoridade Visual</h3>
+        <p>Perfil com padrão consistente transmite profissionalismo. Cliente percebe qualidade antes de provar o prato.</p>
       </div>
       <div class="card">
-        <div class="icon-emoji">📈</div>
-        <h3>Visibilidade Orgânica</h3>
-        <p>Stories diários mantêm o perfil ativo. O algoritmo do Instagram favorece quem posta com regularidade — alcance cresce sem anúncio</p>
+        <h3>📈 Visibilidade Orgânica</h3>
+        <p>Stories diários mantêm o perfil ativo. Algoritmo favorece quem posta com regularidade — alcance cresce sem anúncio.</p>
       </div>
       <div class="card">
-        <div class="icon-emoji">❤️</div>
-        <h3>Fidelização por Hábito</h3>
-        <p>Ver o Oca todos os dias às 9h vira rotina. "Vou no Oca hoje" começa com um story — e termina com o cliente na sua mesa</p>
+        <h3>❤️ Fidelização por Hábito</h3>
+        <p>Ver o Oca às 9h vira rotina. "Vou no Oca hoje" começa com um story — e termina com o cliente na sua mesa.</p>
       </div>
       <div class="card">
-        <div class="icon-emoji">💰</div>
-        <h3>Antecipação que Vende</h3>
-        <p>Quarta é parmegiana, quinta é feijoada. O cliente sabe o que esperar e já planeja a visita com antecedência. Isso é pipeline</p>
+        <h3>💰 Antecipação que Vende</h3>
+        <p>Quarta é parmegiana, quinta é feijoada. Cliente sabe e planeja a visita com antecedência. Isso é pipeline.</p>
       </div>
       <div class="card">
-        <div class="icon-emoji">🎯</div>
-        <h3>CTAs que Convertem</h3>
-        <p>Todo story com chamada de ação: "Vem hoje às 11h", "Reserva pelo link na bio". Engajamento que vira movimento real no salão</p>
+        <h3>🎯 CTAs que Convertem</h3>
+        <p>Todo story com chamada clara: "venha hoje", "peça pelo iFood", "reserve sua mesa". Engajamento que vira movimento real.</p>
       </div>
       <div class="card">
-        <div class="icon-emoji">🆕</div>
-        <h3>Renovação de Imagem</h3>
-        <p>"O Oca mudou" — e quando o cliente percebe mudança, ele volta por curiosidade. Repaginação visual gera buzz espontâneo</p>
+        <h3>🆕 Renovação de Imagem</h3>
+        <p>"O Oca mudou" — quando cliente percebe mudança, volta por curiosidade. Repaginação gera buzz espontâneo.</p>
       </div>
     </div>
   </div>
 </section>
 
 <!-- PRÓXIMOS PASSOS -->
-<section class="section section-alt" id="timeline">
+<section class="section">
   <div class="container">
-    <div class="section-label">Como vamos trabalhar</div>
+    <div class="section-label">Execução</div>
     <h2>Do briefing ao perfil no ar</h2>
 
     <div class="timeline">
       <div class="tl-item">
-        <div class="tl-marker">1</div>
-        <div class="tl-content">
+        <div class="tl-num">1</div>
+        <div class="tl-text">
           <h4>Alinhamento e Briefing</h4>
-          <p>Conversa sobre a visão do restaurante, pratos signature, dias de funcionamento, referências visuais e tom de voz</p>
+          <p>Visão, pratos signature, dias de funcionamento, refs visuais e tom de voz</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-marker">2</div>
-        <div class="tl-content">
+        <div class="tl-num">2</div>
+        <div class="tl-text">
           <h4>Produção dos 9 Criativos</h4>
-          <p>Design das peças com nova identidade visual + templates dos 2 stories diários com layout para CTAs</p>
+          <p>Design das peças com identidade visual + templates dos 2 stories diários</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-marker">3</div>
-        <div class="tl-content">
-          <h4>Criação dos Destaques</h4>
-          <p>Capas padronizadas para os Destaques do perfil — Cardápio, Horários, Como Chegar, Bastidores, Avaliações e Promoções</p>
+        <div class="tl-num">3</div>
+        <div class="tl-text">
+          <h4>Destaques do Perfil</h4>
+          <p>Capas padronizadas para os 6 Destaques — Cardápio, Horários, Como Chegar, Bastidores, Avaliações e Promoções</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-marker">4</div>
-        <div class="tl-content">
+        <div class="tl-num">4</div>
+        <div class="tl-text">
           <h4>Aprovação e Ajustes</h4>
-          <p>Revisão de tudo junto, rodada de feedbacks e refinamentos até estar 100% alinhado com o Oca</p>
+          <p>Review com você, rodada de feedbacks, refinamentos até estar 100% alinhado</p>
         </div>
       </div>
       <div class="tl-item">
-        <div class="tl-marker">5</div>
-        <div class="tl-content">
+        <div class="tl-num">5</div>
+        <div class="tl-text">
           <h4>Publicação e Agendamento</h4>
-          <p>Posts publicados, stories agendados para rodar diariamente entre 9h e 10h, perfil configurado e pronto para converter</p>
+          <p>Posts publicados, stories agendados para 9h–10h diariamente, perfil pronto para converter</p>
         </div>
       </div>
     </div>
@@ -689,18 +521,16 @@
   <div class="container">
     <div class="cta-final">
       <h2>Pronto para transformar o Oca no Instagram?</h2>
-      <p>Seus pratos são incríveis. Sua rotina é rica. Falta o visual que mostre isso para quem ainda não te conhece — e que traga de volta quem já foi uma vez.</p>
-      <a href="https://wa.me/5547930413137" class="cta-btn">Vamos Começar</a>
+      <p>Seus pratos são incríveis. Sua rotina é rica. Falta o visual que mostre isso para quem ainda não te conhece.</p>
+      <a href="https://wa.me/5547930413137" class="cta-btn-final">Vamos Começar</a>
     </div>
   </div>
 </section>
 
 <!-- FOOTER -->
 <footer>
-  <div class="f-inner">
-    <p><strong style="color:#fff;">Oca Restaurante & Grill</strong> · Proposta de Presença Digital Gratuita · 2025</p>
-    <p style="margin-top:8px; opacity:0.55;">Desenvolvido por Starken Performance</p>
-  </div>
+  <p><strong>Oca Restaurante & Grill</strong> · Proposta de Presença Digital Gratuita · 2025</p>
+  <p style="margin-top: 8px; opacity: 0.7;">Desenvolvido por Starken Performance</p>
 </footer>
 
 </body>
